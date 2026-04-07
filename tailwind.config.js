@@ -12,10 +12,10 @@ module.exports = {
         heading: ["var(--font-app-inter)", "sans-serif"],
       },
       colors: {
-        red: "#f12d33",
-        "light-gray": "#e5e7eb",
-        green: "#03c75a",
-        "slate-gray": "#6a7282",
+        "brand-red": "#f12d33",
+        "light-gray": "#d9d9d9",
+        "brand-green": "#03c75a",
+        "dark-gray": "#6a7282",
       },
       borderRadius: {
         sm: "0.375rem",
