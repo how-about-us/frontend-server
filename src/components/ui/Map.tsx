@@ -1,5 +1,5 @@
 const Map = () => (
-  <div className="h-screen shrink-0 bg-gray-border">
+  <div className="h-full w-full bg-gray-border">
     <div className="relative h-full border-l border-gray-border">
       <div className="absolute left-4 top-4 z-10 rounded-full bg-white px-3 py-1 text-xs font-medium text-dark-gray shadow-sm">
         지도 (고정)
