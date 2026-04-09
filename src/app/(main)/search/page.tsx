@@ -10,7 +10,7 @@ export default function SearchPage() {
       <div className="flex h-11 shrink-0 items-center border-b border-gray-border">
         <PlaceAutocomplete />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto -space-y-px">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {MOCK_SEARCH_RESULTS.map((result, i) => (
           <SearchResultCard key={i} {...result} />
         ))}

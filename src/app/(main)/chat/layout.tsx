@@ -2,6 +2,7 @@
 
 import { Minus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { MinimizeIcon } from "@/components/icons";
 
 export default function ChatLayout({
   children,
@@ -12,7 +13,7 @@ export default function ChatLayout({
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-white">
-      <div className="flex shrink-0 items-center justify-between px-6 py-4">
+      <div className="flex shrink-0 items-center justify-between px-3 py-2">
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-[10px] bg-light-gray">
             <img
@@ -31,13 +32,21 @@ export default function ChatLayout({
             </div>
           </div>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="rounded-full p-2 text-dark-gray transition hover:bg-light-gray"
-          aria-label="채팅 최소화"
-        >
-          <Minus className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="rounded-full p-2 text-dark-gray transition hover:bg-light-gray"
+            aria-label="최소화"
+          >
+            <MinimizeIcon className="h-5 w-5" stroke="currentColor" />
+          </button>
+          <button
+            onClick={() => router.back()}
+            className="rounded-full p-2 text-dark-gray transition hover:bg-light-gray"
+            aria-label="채팅 닫기"
+          >
+            <Minus className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="h-px bg-black/[0.08]" />
