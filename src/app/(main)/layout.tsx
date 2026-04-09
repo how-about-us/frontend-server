@@ -1,3 +1,4 @@
+import { GoogleMapsProvider } from "@/components/GoogleMapsProvider";
 import { HeaderBar, LeftSection, Map } from "@/components/ui/index";
 import { SideBar } from "@/components/ui/SideBar";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
@@ -8,6 +9,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
+    <GoogleMapsProvider>
     <SectionWidthProvider>
       <main className="h-screen">
         <div className="relative mx-auto flex h-full w-full overflow-hidden rounded-none bg-white">
@@ -27,5 +29,6 @@ export default function MainLayout({
         </div>
       </main>
     </SectionWidthProvider>
+    </GoogleMapsProvider>
   );
 }
