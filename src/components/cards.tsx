@@ -8,9 +8,9 @@ export function ScheduleCard({
   detail: string;
 }) {
   return (
-    <article className="rounded-2xl border border-[#e5e7eb] bg-white p-4">
+    <article className="rounded-2xl border border-gray-border bg-white p-4">
       <div className="flex items-start justify-between gap-4">
-        <span className="rounded-md bg-[#e5e7eb] px-2 py-1 text-xs font-semibold text-dark-gray">
+        <span className="rounded-md bg-gray-border px-2 py-1 text-xs font-semibold text-dark-gray">
           {time}
         </span>
         <span className="text-xs text-brand-green">{detail}</span>
@@ -22,7 +22,7 @@ export function ScheduleCard({
 
 export function PlaceCard({ name, tag }: { name: string; tag: string }) {
   return (
-    <article className="flex items-center justify-between rounded-2xl border border-[#e5e7eb] bg-white p-4">
+    <article className="flex items-center justify-between rounded-2xl border border-gray-border bg-white p-4">
       <h3 className="text-sm font-medium">{name}</h3>
       <span className="rounded-full bg-brand-red px-2 py-1 text-xs text-white">{tag}</span>
     </article>

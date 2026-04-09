@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-export default function ChatLayout({ children }: { children: React.ReactNode }) {
+export default function ChatLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-white">
       <div className="flex items-center justify-between border-b border-gray-border px-6 py-4">
