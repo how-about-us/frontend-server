@@ -25,21 +25,27 @@ function groupConsecutiveMessages(messages: ChatMessage[]) {
 
 function OtherMessageGroup({ messages }: { messages: ChatMessage[] }) {
   const first = messages[0];
-  const last = messages[messages.length - 1];
+  const groupTime = messages.findLast((m) => m.time)?.time;
 
   return (
-    <div className="flex gap-4">
-      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-light-gray">
-        {first.avatar && (
-          <img
-            src={first.avatar}
-            alt={first.sender ?? ""}
-            className="h-full w-full object-cover"
-          />
-        )}
+    <div className="flex gap-2">
+      <div className="flex flex-col gap-1 items-center">
+        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-light-gray">
+          {first.avatar && (
+            <img
+              src={first.avatar}
+              alt={first.sender ?? ""}
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+        <span className="text-[10px] leading-relaxed text-dark-gray">
+          {first.sender}
+        </span>
       </div>
+
       <div className="min-w-0">
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-1">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -49,26 +55,21 @@ function OtherMessageGroup({ messages }: { messages: ChatMessage[] }) {
             </div>
           ))}
         </div>
-        <div className="mt-1 flex items-center gap-2">
+        {groupTime && (
           <span className="text-[10px] leading-relaxed text-dark-gray">
-            {first.sender}
+            {groupTime}
           </span>
-          {last.time && (
-            <span className="text-[10px] leading-relaxed text-dark-gray">
-              {last.time}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
 function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
-  const last = messages[messages.length - 1];
+  const groupTime = messages.findLast((m) => m.time)?.time;
 
   return (
-    <div className="flex flex-col items-end gap-2.5">
+    <div className="flex flex-col items-end gap-1">
       {messages.map((msg) => (
         <div
           key={msg.id}
@@ -77,9 +78,9 @@ function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
           {msg.text}
         </div>
       ))}
-      {last.time && (
+      {groupTime && (
         <span className="text-[10px] leading-relaxed text-dark-gray">
-          {last.time}
+          {groupTime}
         </span>
       )}
     </div>
@@ -89,7 +90,7 @@ function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
 function SystemMessage({ message }: { message: ChatMessage }) {
   return (
     <div className="flex justify-center">
-      <div className="rounded-xl bg-bubble-gray px-4 py-2 text-sm leading-relaxed text-muted-brown">
+      <div className="rounded-xl bg-bubble-gray px-4 py-1 my-3 text-sm leading-relaxed text-muted-brown">
         {message.text}
       </div>
     </div>
@@ -102,7 +103,7 @@ export default function ChatPage() {
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const AI_PREFIX = "@AI ";
+  const AI_PREFIX = "@AI";
 
   function toggleAi() {
     setAiEnabled((prev) => {
@@ -137,8 +138,8 @@ export default function ChatPage() {
     <>
       <SetSectionMaxWidth value="400px" />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-6">
-        <div className="flex flex-col gap-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white py-2 px-3 [scrollbar-color:rgba(0,0,0,0.2)_transparent]">
+        <div className="flex flex-col gap-1">
           {groups.map((group, i) => {
             const type = group[0].type;
             if (type === "system") {
@@ -156,7 +157,7 @@ export default function ChatPage() {
         {/* 텍스트 입력 영역 */}
         <div className="relative min-h-0 flex-1 px-4 pt-3 pb-1">
           {aiEnabled && (
-            <span className="pointer-events-none absolute left-4 top-3 text-sm text-blue-500">
+            <span className="pointer-events-none absolute top-3 text-sm text-blue-500">
               @AI
             </span>
           )}
