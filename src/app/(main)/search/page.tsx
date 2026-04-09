@@ -1,12 +1,19 @@
+import { SearchResultCard } from "@/components/SearchResultCard";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
+import { MOCK_SEARCH_RESULTS } from "@/mocks";
 
 export default function SearchPage() {
   return (
-    <div className="rounded-2xl border border-gray-border bg-white p-4">
+    <div className="-m-6 flex h-full min-h-0 flex-col">
       <SetSectionMaxWidth value="400px" />
-      <p className="text-sm leading-6 text-dark-gray">
-        검색 탭입니다. 장소/일정 키워드 검색 결과를 이 영역에 표시하면 됩니다.
-      </p>
+      <div className="flex h-22 shrink-0 items-center justify-center border-b border-gray-border">
+        더 보기
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto -space-y-px">
+        {MOCK_SEARCH_RESULTS.map((result, i) => (
+          <SearchResultCard key={i} {...result} />
+        ))}
+      </div>
     </div>
   );
 }
