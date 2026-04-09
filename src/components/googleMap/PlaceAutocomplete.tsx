@@ -46,5 +46,5 @@ export function PlaceAutocomplete({ onPlaceSelect }: PlaceAutocompleteProps) {
     };
   }, [places]);
 
-  return <div ref={containerRef} className="h-full w-full [&>*]:h-full" />;
+  return <div ref={containerRef} className="w-full [&>*]:w-full" />;
 }

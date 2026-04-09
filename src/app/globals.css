@@ -8,3 +8,17 @@
     @apply font-sans;
   }
 }
+
+gmp-place-autocomplete {
+  width: 100%;
+  background-color: #ffffff;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  color-scheme: light;
+  font-family: inherit;
+}
+
+gmp-place-autocomplete:focus-within {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
