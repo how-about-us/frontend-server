@@ -1,4 +1,4 @@
-import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import { PlaceAutocomplete } from "@/components/googleMap";
 import { SearchResultCard } from "@/components/SearchResultCard";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { MOCK_SEARCH_RESULTS } from "@/mocks";

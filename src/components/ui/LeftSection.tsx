@@ -17,7 +17,7 @@ export default function LeftSection({
 
   return (
     <motion.section
-      className="relative flex min-w-[320px] flex-1 flex-col"
+      className="relative flex min-w-[320px] flex-1 flex-col border-r border-gray-border"
       initial={false}
       animate={{ maxWidth: maxWidth.trim() ? maxWidth : "none" }}
       transition={WIDTH_TRANSITION}

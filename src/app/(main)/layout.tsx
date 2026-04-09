@@ -1,4 +1,4 @@
-import { GoogleMapsProvider } from "@/components/GoogleMapsProvider";
+import { GoogleMapsProvider } from "@/components/googleMap";
 import { HeaderBar, LeftSection, Map } from "@/components/ui/index";
 import { SideBar } from "@/components/ui/SideBar";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";

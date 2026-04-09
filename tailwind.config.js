@@ -17,6 +17,9 @@ module.exports = {
         "brand-green": "#03c75a",
         "dark-gray": "#6a7282",
         "gray-border": "#e5e7eb",
+        "bubble-gray": "#f1f1f1",
+        "muted-brown": "#695656",
+        "gray-300": "#e2e8f0",
       },
       borderRadius: {
         sm: "0.375rem",
