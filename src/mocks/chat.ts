@@ -1,6 +1,6 @@
 export type ChatMessage = {
   id: string;
-  type: "other" | "mine" | "system";
+  type: "other" | "mine" | "system" | "ai";
   sender?: string;
   avatar?: string;
   text: string;
@@ -93,5 +93,28 @@ export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
     avatar: "https://picsum.photos/seed/minsu/80/80",
     text: "woohoooo 🔥",
     time: "19:13",
+  },
+  {
+    id: "14",
+    type: "mine",
+    text: "@AI 히코네 여행에서 꼭 가야 할 곳 추천해줘",
+    time: "19:14",
+  },
+  {
+    id: "15",
+    type: "ai",
+    text: "안녕하세요 WOORI입니다!\n\n히코네 여행 필수 코스를 안내해드릴게요.\n\n• 히코네성 — 일본 국보 천수각, 약 400년 역사\n• 겐큐엔 정원 — 성 바로 옆, 봄 벚꽃이 유명\n• 유메쿄바시 캐슬로드 — 레트로 상점가 산책\n• 비와코 유람선 — 비와코 호수 선셋 크루즈",
+    time: "19:14",
+  },
+  {
+    id: "16",
+    type: "ai",
+    text: "히코네성 입장료는 성인 800엔이에요. 오전 8시 30분부터 오후 5시까지 운영합니다.",
+  },
+  {
+    id: "17",
+    type: "mine",
+    text: "완전 도움됐어 고마워!",
+    time: "19:15",
   },
 ];

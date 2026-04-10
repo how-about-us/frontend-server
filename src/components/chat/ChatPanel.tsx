@@ -30,7 +30,7 @@ export function ChatPanel() {
           className={
             isMinimized
               ? "absolute bottom-6 right-6 z-20 flex h-[460px] w-72 flex-col overflow-hidden border border-gray-border bg-white"
-              : "absolute top-0 left-0 w-[400px] z-10 flex flex-col overflow-hidden bg-white"
+              : "absolute top-0 left-0 bottom-0 w-[400px] z-10 flex flex-col overflow-hidden bg-white"
           }
         >
           <ChatPanelHeader
