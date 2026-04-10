@@ -1,7 +1,9 @@
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { HeaderBar, LeftSection, Map } from "@/components/ui/index";
 import { SideBar } from "@/components/ui/SideBar";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 
 export default function MainLayout({
   children,
@@ -11,6 +13,7 @@ export default function MainLayout({
   return (
     <GoogleMapsProvider>
     <SectionWidthProvider>
+    <ChatProvider>
       <main className="h-screen">
         <div className="relative mx-auto flex h-full w-full overflow-hidden rounded-none bg-white">
           <LeftSection>
@@ -26,8 +29,11 @@ export default function MainLayout({
           <section className="hidden h-full min-w-[400px] flex-1 border-l border-gray-border md:flex">
             <Map />
           </section>
+
+          <ChatPanel />
         </div>
       </main>
+    </ChatProvider>
     </SectionWidthProvider>
     </GoogleMapsProvider>
   );

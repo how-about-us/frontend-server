@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const CHAT_ITEM = { href: "/chat", icon: "/icons/chat.svg" } as const;
+import { useChat } from "@/contexts/ChatContext";
 
 const sidebarItems = [
   { href: "/search", icon: "/icons/search.svg" },
@@ -14,21 +13,26 @@ const sidebarItems = [
 
 export function SideBar() {
   const pathname = usePathname();
+  const { chatState, openChat } = useChat();
+
+  const isChatActive = chatState !== "closed";
 
   return (
     <aside className="flex w-13 shrink-0 flex-col items-center gap-2 border-r border-gray-border bg-white">
       {/* chat - 최상단, brand-red rounded-r 사각형 */}
-      <Link
-        href={CHAT_ITEM.href}
-        className="flex w-20 items-center justify-center rounded-br-2xl bg-brand-red py-3 transition hover:opacity-80"
+      <button
+        onClick={openChat}
+        className={`flex w-20 items-center justify-center rounded-br-2xl py-3 transition hover:opacity-80 ${
+          isChatActive ? "bg-brand-red/80" : "bg-brand-red"
+        }`}
         aria-label="sidebar-chat"
       >
         <img
-          src={CHAT_ITEM.icon}
+          src="/icons/chat.svg"
           alt=""
           className="h-6 w-6 brightness-0 invert"
         />
-      </Link>
+      </button>
 
       <div className="flex flex-col items-center gap-2 px-1">
         {sidebarItems.map((item) => {
