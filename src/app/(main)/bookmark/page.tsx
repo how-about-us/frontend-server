@@ -5,7 +5,7 @@ import { MOCK_BOOKMARKS } from "@/mocks";
 export default function BookmarkPage() {
   return (
     <div className="space-y-3">
-      <SetSectionMaxWidth value="400px" />
+      <SetSectionMaxWidth value="s1" />
       {MOCK_BOOKMARKS.map((item) => (
         <PlaceCard key={item.name} {...item} />
       ))}

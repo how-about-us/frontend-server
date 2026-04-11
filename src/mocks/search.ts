@@ -15,6 +15,10 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
       "https://picsum.photos/seed/gyodong3/224/284",
       "https://picsum.photos/seed/gyodong4/224/284",
     ],
+    address: "경기 수원시 팔달구 교동 123-4",
+    phone: "031-123-4567",
+    hours: "매일 11:00 - 21:00 (브레이크 15:00 - 17:00)",
+    website: "https://example.com/gyodongdubu",
   },
   {
     name: "스시 오마카세",
@@ -29,6 +33,10 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
       "https://picsum.photos/seed/sushi3/224/284",
       "https://picsum.photos/seed/sushi4/224/284",
     ],
+    address: "서울 강남구 청담동 56-7 B1층",
+    phone: "02-987-6543",
+    hours: "화~일 18:00 - 22:00 (월요일 휴무)",
+    website: "https://example.com/sushiomakase",
   },
   {
     name: "파스타 공방",
@@ -44,6 +52,10 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
       "https://picsum.photos/seed/pasta3/224/284",
       "https://picsum.photos/seed/pasta4/224/284",
     ],
+    address: "서울 마포구 연남동 227-35",
+    phone: "02-345-6789",
+    hours: "매일 11:30 - 22:00",
+    website: "https://example.com/pastagongbang",
   },
   {
     name: "할머니 순두부",
@@ -58,5 +70,9 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
       "https://picsum.photos/seed/sundubu3/224/284",
       "https://picsum.photos/seed/sundubu4/224/284",
     ],
+    address: "경남 통영시 중앙로 47",
+    phone: "055-456-7890",
+    hours: "매일 07:00 - 20:00 (재료 소진 시 조기 마감)",
+    website: undefined,
   },
 ];

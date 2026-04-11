@@ -7,6 +7,9 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
+import { width } from "@/lib/layout-tokens";
+
+type WidthToken = keyof typeof width;
 
 type SectionWidthContextType = {
   maxWidth: string;
@@ -32,10 +35,10 @@ export function useSectionWidth() {
 }
 
 /** Drop into any page to declaratively set the section max-width. */
-export function SetSectionMaxWidth({ value }: { value: string }) {
+export function SetSectionMaxWidth({ value }: { value: WidthToken }) {
   const { setMaxWidth } = useSectionWidth();
   useEffect(() => {
-    setMaxWidth(value);
+    setMaxWidth(width[value]);
     return () => setMaxWidth("");
   }, [value, setMaxWidth]);
   return null;

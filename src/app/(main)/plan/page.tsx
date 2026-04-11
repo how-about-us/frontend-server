@@ -5,7 +5,7 @@ import { MOCK_SCHEDULE_ITEMS } from "@/mocks";
 export default function PlanPage() {
   return (
     <div className="space-y-3">
-      <SetSectionMaxWidth value="720px" />
+      <SetSectionMaxWidth value="s2" />
       {MOCK_SCHEDULE_ITEMS.map((item) => (
         <ScheduleCard key={item.time} {...item} />
       ))}

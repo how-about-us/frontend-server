@@ -12,6 +12,10 @@ export type SearchResultCardProps = {
   isOpen: boolean;
   reviewCount: number;
   images: string[];
+  address?: string;
+  phone?: string;
+  hours?: string;
+  website?: string;
 };
 
 function ImageCarousel({ images, name }: { images: string[]; name: string }) {
@@ -91,9 +95,15 @@ export function SearchResultCard({
   isOpen,
   reviewCount,
   images,
-}: SearchResultCardProps) {
+  onClick,
+}: SearchResultCardProps & { onClick?: () => void }) {
   return (
-    <article className="overflow-hidden border-b border-gray-border bg-white">
+    <article
+      className="overflow-hidden border-b border-gray-border bg-white transition-colors hover:bg-gray-50 active:bg-gray-100"
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      style={onClick ? { cursor: "pointer" } : undefined}
+    >
       <div className="flex flex-col gap-0.5 px-4 pt-3.5">
         <div className="flex items-baseline gap-1.5">
           <h3 className="text-sm font-semibold leading-5 tracking-tight text-brand-green">

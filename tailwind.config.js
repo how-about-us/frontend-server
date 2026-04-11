@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const layoutTokens = require("./src/lib/layout-tokens");
+
 module.exports = {
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -29,6 +31,11 @@ module.exports = {
         "2xl": "1.125rem",
         "3xl": "1.375rem",
         "4xl": "1.625rem",
+      },
+      width: layoutTokens.width,
+      screens: {
+        s1: layoutTokens.width.s1,
+        s2: layoutTokens.width.s2,
       },
     },
   },
