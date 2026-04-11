@@ -64,10 +64,14 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
           </div>
         ))}
       </div>
-
+      {/* 좌우 이동 버튼 */}
       {canScrollLeft && (
         <button
-          onClick={() => scroll("left")}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            scroll("left");
+          }}
           className="absolute opacity-80 hover:opacity-100 left-1 top-1/2 -translate-y-[calc(50%+8px)] flex h-7 w-7 items-center justify-center rounded-full bg-white "
           aria-label="이전 이미지"
         >
@@ -76,7 +80,11 @@ function ImageCarousel({ images, name }: { images: string[]; name: string }) {
       )}
       {canScrollRight && (
         <button
-          onClick={() => scroll("right")}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            scroll("right");
+          }}
           className="absolute opacity-85 hover:opacity-100 right-1 top-1/2 -translate-y-[calc(50%+8px)] flex h-7 w-7 items-center justify-center rounded-full bg-white "
           aria-label="다음 이미지"
         >
