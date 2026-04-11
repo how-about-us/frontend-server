@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import Map from "@/components/ui/Map";
-import { PlaceDetailPanel } from "@/components/PlaceDetailPanel";
+import Map from "./Map";
+import { PlaceDetailPanel } from "@/components/place/PlaceDetailPanel";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 
 export function MapWithDetailPanel() {

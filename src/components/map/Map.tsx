@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Map as GoogleMap, AdvancedMarker } from "@vis.gl/react-google-maps";
-import { FilterDropdown } from "./FilterDropdown";
+import { FilterDropdown } from "@/components/globalUI/FilterDropdown";
 import {
   PRICE_OPTIONS,
   RATING_OPTIONS,

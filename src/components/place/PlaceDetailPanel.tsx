@@ -13,7 +13,7 @@ import {
   Share2,
 } from "lucide-react";
 import { useState } from "react";
-import type { SearchResultCardProps } from "@/components/SearchResultCard";
+import type { SearchResultCardProps } from "./SearchResultCard";
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;

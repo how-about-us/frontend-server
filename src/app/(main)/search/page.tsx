@@ -1,7 +1,7 @@
 "use client";
 
 import { PlaceAutocomplete } from "@/components/googleMap";
-import { SearchResultCard } from "@/components/SearchResultCard";
+import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { MOCK_SEARCH_RESULTS } from "@/mocks";

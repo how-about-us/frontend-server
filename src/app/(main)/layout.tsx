@@ -1,8 +1,7 @@
 import { GoogleMapsProvider } from "@/components/googleMap";
-import { HeaderBar, LeftSection } from "@/components/ui/index";
-import { SideBar } from "@/components/ui/SideBar";
+import { HeaderBar, LeftSection, SideBar } from "@/components/layout";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { MapWithDetailPanel } from "@/components/ui/MapWithDetailPanel";
+import { MapWithDetailPanel } from "@/components/map";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { SelectedPlaceProvider } from "@/contexts/SelectedPlaceContext";

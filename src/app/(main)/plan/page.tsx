@@ -1,4 +1,4 @@
-import { ScheduleCard } from "@/components/cards";
+import { ScheduleCard } from "@/components/globalUI";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { MOCK_SCHEDULE_ITEMS } from "@/mocks";
 
