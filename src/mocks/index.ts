@@ -3,3 +3,4 @@ export { MOCK_SCHEDULE_ITEMS, type ScheduleItem } from "./plan";
 export { MOCK_BOOKMARKS, type BookmarkItem } from "./bookmark";
 export { MOCK_TRIP_INFO, type TripInfo } from "./header";
 export { MOCK_CHAT_MESSAGES, type ChatMessage } from "./chat";
+export { HIKONE_CENTER, MOCK_MARKERS, type MapMarker } from "./map";

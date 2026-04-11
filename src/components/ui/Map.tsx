@@ -1,47 +1,23 @@
 "use client";
 
-import { Map as GoogleMap, AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useState } from "react";
-import { MOCK_SEARCH_RESULTS } from "@/mocks";
-
-const CATEGORIES = [
-  { label: "음식점", emoji: "🍴" },
-  { label: "호텔", emoji: "🛏" },
-  { label: "즐길 거리", emoji: "📷" },
-  { label: "박물관", emoji: "🏛" },
-  { label: "대중교통", emoji: "🚌" },
-  { label: "약국", emoji: "💊" },
-  { label: "ATM", emoji: "🏧" },
-];
-
-const HIKONE_CENTER = { lat: 35.276, lng: 136.258 };
-
-const OFFSET_SEEDS = [
-  [0.004, -0.003],
-  [-0.005, 0.006],
-  [0.007, 0.002],
-  [-0.003, -0.007],
-  [0.001, 0.008],
-  [-0.006, 0.001],
-  [0.008, -0.005],
-  [-0.002, 0.004],
-];
-
-const MOCK_MARKERS = MOCK_SEARCH_RESULTS.map((r, i) => ({
-  name: r.name,
-  category: r.category,
-  description: r.description,
-  rating: r.rating,
-  position: {
-    lat: HIKONE_CENTER.lat + (OFFSET_SEEDS[i % OFFSET_SEEDS.length][0]),
-    lng: HIKONE_CENTER.lng + (OFFSET_SEEDS[i % OFFSET_SEEDS.length][1]),
-  },
-  id: i,
-}));
+import { Map as GoogleMap, AdvancedMarker } from "@vis.gl/react-google-maps";
+import { FilterDropdown } from "./FilterDropdown";
+import {
+  PRICE_OPTIONS,
+  RATING_OPTIONS,
+  OPEN_OPTIONS,
+  type PriceValue,
+  type RatingValue,
+  type OpenValue,
+} from "./map-filters";
+import { HIKONE_CENTER, MOCK_MARKERS, type MapMarker } from "@/mocks/map";
 
 export default function Map() {
-  const [selected, setSelected] = useState<(typeof MOCK_MARKERS)[number] | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selected, setSelected] = useState<MapMarker | null>(null);
+  const [price, setPrice] = useState<PriceValue>("all");
+  const [rating, setRating] = useState<RatingValue>("all");
+  const [openNow, setOpenNow] = useState<OpenValue>("all");
 
   return (
     <div className="relative h-full w-full">
@@ -77,26 +53,27 @@ export default function Map() {
         ))}
       </GoogleMap>
 
-      {/* 카테고리 필터 */}
-      <div className="pointer-events-none absolute left-0 right-0 top-[72px] flex justify-end px-4">
-        <div className="pointer-events-auto flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {CATEGORIES.map((cat) => {
-            const active = activeCategory === cat.label;
-            return (
-              <button
-                key={cat.label}
-                onClick={() => setActiveCategory(active ? null : cat.label)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition ${
-                  active
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-black hover:bg-gray-50"
-                }`}
-              >
-                <span>{cat.emoji}</span>
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
+      {/* 필터 */}
+      <div className="pointer-events-none absolute left-0 right-0 top-0 mt-4 flex px-4">
+        <div className="pointer-events-auto flex gap-2">
+          <FilterDropdown
+            label="가격"
+            options={PRICE_OPTIONS}
+            value={price}
+            onChange={setPrice}
+          />
+          <FilterDropdown
+            label="평점"
+            options={RATING_OPTIONS}
+            value={rating}
+            onChange={setRating}
+          />
+          <FilterDropdown
+            label="영업시간"
+            options={OPEN_OPTIONS}
+            value={openNow}
+            onChange={setOpenNow}
+          />
         </div>
       </div>
 
