@@ -1,10 +1,7 @@
-import { GoogleMapsProvider } from "@/components/googleMap";
 import { HeaderBar, LeftSection, SideBar } from "@/components/layout";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { MapWithDetailPanel } from "@/components/map";
-import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
-import { ChatProvider } from "@/contexts/ChatContext";
-import { SelectedPlaceProvider } from "@/contexts/SelectedPlaceContext";
+import { MainProviders } from "./MainProviders";
 
 export default function MainLayout({
   children,
@@ -12,10 +9,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <GoogleMapsProvider>
-    <SectionWidthProvider>
-    <ChatProvider>
-    <SelectedPlaceProvider>
+    <MainProviders>
       <main className="h-screen">
         <div className="relative mx-auto flex h-full w-full overflow-hidden rounded-none bg-white">
           <LeftSection>
@@ -33,9 +27,6 @@ export default function MainLayout({
           <ChatPanel />
         </div>
       </main>
-    </SelectedPlaceProvider>
-    </ChatProvider>
-    </SectionWidthProvider>
-    </GoogleMapsProvider>
+    </MainProviders>
   );
 }
