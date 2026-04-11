@@ -35,23 +35,23 @@ function reorder<T>(list: T[], fromIndex: number, toIndex: number): T[] {
 }
 
 export type PlanItineraryProps = {
-  initialPlaces: PlanPlace[];
+  places: PlanPlace[];
+  onPlacesChange: (next: PlanPlace[]) => void;
 };
 
-export function PlanItinerary({ initialPlaces }: PlanItineraryProps) {
-  const [places, setPlaces] = useState<PlanPlace[]>(initialPlaces);
+export function PlanItinerary({ places, onPlacesChange }: PlanItineraryProps) {
   const [newTitle, setNewTitle] = useState("");
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
   const handleAddPlace = useCallback(() => {
     const title = newTitle.trim() || "새 장소";
-    setPlaces((prev) => [
-      ...prev,
+    onPlacesChange([
+      ...places,
       { id: newPlaceId(), title, subtitle: undefined },
     ]);
     setNewTitle("");
-  }, [newTitle]);
+  }, [newTitle, onPlacesChange, places]);
 
   const handleDragStart = useCallback((index: number, e: React.DragEvent) => {
     setDraggingIndex(index);
@@ -92,24 +92,26 @@ export function PlanItinerary({ initialPlaces }: PlanItineraryProps) {
         handleDragEnd();
         return;
       }
-      setPlaces((prev) => reorder(prev, from, dropIndex));
+      onPlacesChange(reorder(places, from, dropIndex));
       handleDragEnd();
     },
-    [draggingIndex, handleDragEnd],
+    [draggingIndex, handleDragEnd, onPlacesChange, places],
   );
 
   return (
-    <div className="space-y-0">
+    <div>
       {places.length === 0 ? (
         <p className="py-4 text-center text-sm text-dark-gray">
           아직 등록된 장소가 없습니다. 아래에서 추가해 보세요.
         </p>
       ) : null}
 
+      <div className="flex flex-col gap-3">
       {places.map((place, index) => (
         <Fragment key={place.id}>
           <PlanPlaceCard
             place={place}
+            orderIndex={index + 1}
             isDragging={draggingIndex === index}
             isDropTarget={
               overIndex === index && draggingIndex !== null && draggingIndex !== index
@@ -129,6 +131,7 @@ export function PlanItinerary({ initialPlaces }: PlanItineraryProps) {
           ) : null}
         </Fragment>
       ))}
+      </div>
 
       <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
         <p className="text-xs font-medium text-dark-gray">장소 추가</p>

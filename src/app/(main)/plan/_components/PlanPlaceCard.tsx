@@ -1,13 +1,15 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { GripVertical } from "lucide-react";
+import Image from "next/image";
 
 import type { PlanPlace } from "@/mocks/plan";
 import { cn } from "@/lib/utils";
 
 export type PlanPlaceCardProps = {
   place: PlanPlace;
+  /** 카드에 표시하는 순번 (1부터) */
+  orderIndex: number;
   isDragging: boolean;
   isDropTarget: boolean;
   onDragStart: (e: DragEvent) => void;
@@ -19,6 +21,7 @@ export type PlanPlaceCardProps = {
 
 export function PlanPlaceCard({
   place,
+  orderIndex,
   isDragging,
   isDropTarget,
   onDragStart,
@@ -27,6 +30,9 @@ export function PlanPlaceCard({
   onDragLeave,
   onDrop,
 }: PlanPlaceCardProps) {
+  const imageSrc =
+    place.imageUrl ?? `https://picsum.photos/seed/plan-${place.id}/320/240`;
+
   return (
     <article
       draggable
@@ -36,24 +42,41 @@ export function PlanPlaceCard({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={cn(
-        "flex cursor-grab items-center gap-3 rounded-2xl border bg-white p-4 shadow-sm transition-[box-shadow,opacity,transform,border-color] active:cursor-grabbing",
-        "border-gray-border select-none",
-        isDragging && "scale-[0.98] opacity-60 shadow-md ring-2 ring-brand-green/40",
-        isDropTarget && "ring-2 ring-brand-green ring-offset-2 ring-offset-white",
+        "relative flex w-[70%] h-40 cursor-grab select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm active:cursor-grabbing",
+        isDragging && "scale-[0.99] opacity-70 shadow-md",
+        isDropTarget &&
+          "ring-2 ring-brand-green ring-offset-2 ring-offset-white",
       )}
       aria-grabbed={isDragging}
     >
-      <span
-        className="touch-none text-dark-gray/50"
-        aria-hidden
-      >
-        <GripVertical className="h-5 w-5 shrink-0" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <h3 className="text-base font-semibold text-gray-900">{place.title}</h3>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex items-start gap-2">
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-red text-xs font-bold text-white"
+            aria-label={`${orderIndex}번째 장소`}
+          >
+            {orderIndex}
+          </span>
+          <h3 className="min-w-0 flex-1 pt-0.5 text-base font-semibold leading-snug text-gray-900">
+            {place.title}
+          </h3>
+        </div>
         {place.subtitle ? (
-          <p className="mt-0.5 truncate text-xs text-dark-gray">{place.subtitle}</p>
+          <p className="text-sm leading-relaxed text-dark-gray">
+            {place.subtitle}
+          </p>
         ) : null}
+      </div>
+
+      <div className="absolute top-0 rounded-xl overflow-hidden left-[102%] h-40 w-[164px] shrink-0 bg-light-gray">
+        <Image
+          src={imageSrc}
+          alt={place.title}
+          fill
+          className="object-cover"
+          sizes="140px"
+          draggable={false}
+        />
       </div>
     </article>
   );

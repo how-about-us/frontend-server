@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+import { useRef, useState } from "react";
 
 export type FilterOption<T extends string> = { label: string; value: T };
 
@@ -19,16 +20,7 @@ export function FilterDropdown<T extends string>({
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  useOnClickOutside(ref, () => setOpen(false));
 
   const isActive = value !== "all";
   const selectedLabel = options.find((o) => o.value === value)?.label ?? label;

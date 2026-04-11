@@ -24,7 +24,9 @@ export function PlaceCard({ name, tag }: { name: string; tag: string }) {
   return (
     <article className="flex items-center justify-between rounded-2xl border border-gray-border bg-white p-4">
       <h3 className="text-sm font-medium">{name}</h3>
-      <span className="rounded-full bg-brand-red px-2 py-1 text-xs text-white">{tag}</span>
+      <span className="rounded-full bg-brand-red px-2 py-1 text-xs text-white">
+        {tag}
+      </span>
     </article>
   );
 }
