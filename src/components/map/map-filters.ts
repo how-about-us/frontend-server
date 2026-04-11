@@ -1,4 +1,4 @@
-import type { FilterOption } from "./FilterDropdown";
+import type { FilterOption } from "@/components/globalUI/FilterDropdown";
 
 export type PriceValue = "all" | "₩" | "₩₩" | "₩₩₩" | "₩₩₩₩";
 export type RatingValue = "all" | "3.0" | "3.5" | "4.0" | "4.5";

@@ -1,4 +1,4 @@
-import { PlaceCard } from "@/components/globalUI";
+import { PlaceCard } from "./_components/cards";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { MOCK_BOOKMARKS } from "@/mocks";
 

@@ -1,5 +1,5 @@
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
-import { RoomMembersSection } from "@/components/settings";
+import { RoomMembersSection } from "./_components";
 
 export default function SettingsPage() {
   return (

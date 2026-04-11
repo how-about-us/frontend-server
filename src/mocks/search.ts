@@ -1,4 +1,4 @@
-import type { SearchResultCardProps } from "@/components/SearchResultCard";
+import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 
 export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
   {
