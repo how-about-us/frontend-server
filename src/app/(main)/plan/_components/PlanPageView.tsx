@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from "react";
 
 import {
-  buildPlanDaysFromRange,
   countInclusiveLocalDays,
   mergePlanDaysWithPlaces,
   startOfLocalDay,
@@ -57,7 +56,7 @@ export function PlanPageView() {
   }, []);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pl-6 pr-6">
       <PlanTripRangeToolbar
         rangeStart={range.start}
         rangeEnd={range.end}
@@ -80,9 +79,7 @@ export function PlanPageView() {
           title={day.dayLabel}
           subtitle={day.dateLabel}
           onRequestDeleteDay={
-            planDays.length > 1
-              ? () => handleDeleteDay(dayIndex)
-              : undefined
+            planDays.length > 1 ? () => handleDeleteDay(dayIndex) : undefined
           }
         >
           <PlanItinerary

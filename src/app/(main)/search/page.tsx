@@ -15,7 +15,10 @@ export default function SearchPage() {
       <div className="shrink-0 border-b border-gray-border px-6 pb-4">
         <PlaceAutocomplete />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto 
+    [scrollbar-color:rgba(0,0,0,0.2)_transparent]"
+      >
         {MOCK_SEARCH_RESULTS.map((result, i) => (
           <SearchResultCard
             key={i}

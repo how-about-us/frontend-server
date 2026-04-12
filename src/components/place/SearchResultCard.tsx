@@ -107,7 +107,7 @@ export function SearchResultCard({
 }: SearchResultCardProps & { onClick?: () => void }) {
   return (
     <article
-      className="overflow-hidden border-b border-gray-border bg-white transition-colors hover:bg-gray-50 active:bg-gray-100"
+      className="overflow-hidden border-b border-gray-border bg-white transition-colors hover:bg-gray-50 active:bg-gray-100 "
       onClick={onClick}
       role={onClick ? "button" : undefined}
       style={onClick ? { cursor: "pointer" } : undefined}

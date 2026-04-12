@@ -16,7 +16,7 @@ export default function MainLayout({
             <HeaderBar />
             <section className="flex h-full w-auto overflow-hidden">
               <SideBar />
-              <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent] pt-6">
                 {children}
               </div>
             </section>

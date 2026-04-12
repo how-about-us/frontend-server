@@ -3,7 +3,7 @@ import { RoomMembersSection } from "./_components";
 
 export default function SettingsPage() {
   return (
-    <div className="rounded-2xl border border-gray-border bg-white p-4">
+    <div className="rounded-2xl pl-6 pr-6">
       <SetSectionMaxWidth value="s1" />
       <RoomMembersSection />
     </div>

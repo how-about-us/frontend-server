@@ -1,14 +1,11 @@
-import { PlaceCard } from "./_components/cards";
+import { BookmarkFoldersView } from "./_components/BookmarkFoldersView";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
-import { MOCK_BOOKMARKS } from "@/mocks";
 
 export default function BookmarkPage() {
   return (
-    <div className="space-y-3">
+    <div>
       <SetSectionMaxWidth value="s1" />
-      {MOCK_BOOKMARKS.map((item) => (
-        <PlaceCard key={item.name} {...item} />
-      ))}
+      <BookmarkFoldersView />
     </div>
   );
 }
