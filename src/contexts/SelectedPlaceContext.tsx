@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 
 type SelectedPlaceContextType = {

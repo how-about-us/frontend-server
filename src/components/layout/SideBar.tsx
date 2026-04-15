@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 
@@ -12,6 +13,7 @@ const sidebarItems = [
 ] as const;
 
 export function SideBar() {
+  const [chatNum, setChatNum] = useState("99+");
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
 
@@ -30,8 +32,9 @@ export function SideBar() {
         <img
           src="/icons/chat.svg"
           alt=""
-          className="h-6 w-6 brightness-0 invert"
+          className="h-9 w-9 brightness-0 invert"
         />
+        <span className="absolute text-white text-xs font-bold">{chatNum}</span>
       </button>
 
       <div className="flex flex-col items-center gap-2 px-1">
