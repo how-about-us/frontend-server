@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 import { MOCK_TRIP_INFO } from "@/mocks";
 import { useRef, useState } from "react";
@@ -86,15 +87,15 @@ const HeaderBar = () => {
                   ))}
                 </ul>
                 <div className="border-t-2 border-gray-border">
-                  <button
-                    type="button"
+                  <Link
+                    href="/room"
                     onClick={() => setOpen(false)}
-                    className="w-full px-2.5 py-2 text-left text-xs font-medium leading-tight text-brand-green transition hover:bg-gray-50"
+                    className="block w-full px-2.5 py-2 text-left text-xs font-medium leading-tight text-brand-green transition hover:bg-gray-50"
                   >
                     <span className="text-xs font-medium leading-tight text-brand-red">
-                      방 만들기 / 참여하기
+                      여행 만들기 / 참여하기
                     </span>
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}
