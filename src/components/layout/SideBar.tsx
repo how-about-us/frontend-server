@@ -12,8 +12,14 @@ const sidebarItems = [
   { href: "/settings", icon: "/icons/user-cog.svg" },
 ] as const;
 
+const getChatNum = (chatNum: number) => {
+  if (chatNum === 0) return;
+  else if (chatNum > 99) return "99+";
+  else return chatNum;
+};
+
 export function SideBar() {
-  const [chatNum, setChatNum] = useState("99+");
+  const [chatNum, setChatNum] = useState(100);
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
 
@@ -24,7 +30,7 @@ export function SideBar() {
       {/* chat - 최상단, brand-red rounded-r 사각형 */}
       <button
         onClick={openChat}
-        className={`flex w-20 items-center justify-center rounded-br-2xl py-3 transition hover:opacity-80 ${
+        className={`flex w-20 items-center justify-center rounded-br-2xl py-2 transition hover:opacity-80 ${
           isChatActive ? "bg-brand-red/80" : "bg-brand-red"
         }`}
         aria-label="sidebar-chat"
@@ -34,7 +40,10 @@ export function SideBar() {
           alt=""
           className="h-9 w-9 brightness-0 invert"
         />
-        <span className="absolute text-white text-xs font-bold">{chatNum}</span>
+
+        <span className="absolute text-white text-xs font-bold">
+          {getChatNum(chatNum)}
+        </span>
       </button>
 
       <div className="flex flex-col items-center gap-2 px-1">

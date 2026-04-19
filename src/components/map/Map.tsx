@@ -2,19 +2,33 @@
 
 import { useState } from "react";
 import { Map as GoogleMap, AdvancedMarker } from "@vis.gl/react-google-maps";
-import { FilterDropdown } from "@/components/globalUI/FilterDropdown";
+
+import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
-  PRICE_OPTIONS,
-  RATING_OPTIONS,
-  OPEN_OPTIONS,
   type PriceValue,
   type RatingValue,
   type OpenValue,
 } from "./map-filters";
 import { HIKONE_CENTER, MOCK_MARKERS, type MapMarker } from "@/mocks/map";
+import { MapPinIcon } from "@/components/icons";
+import MapFilter from "./MapFilter";
+
+function markerToPlaceProps(marker: MapMarker): SearchResultCardProps {
+  const { id: _id, position: _position, ...place } = marker;
+  return place;
+}
+
+function isSamePlace(
+  a: SearchResultCardProps | null,
+  marker: MapMarker,
+): boolean {
+  if (!a) return false;
+  return a.name === marker.name && a.address === marker.address;
+}
 
 export default function Map() {
-  const [selected, setSelected] = useState<MapMarker | null>(null);
+  const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const [price, setPrice] = useState<PriceValue>("all");
   const [rating, setRating] = useState<RatingValue>("all");
   const [openNow, setOpenNow] = useState<OpenValue>("all");
@@ -32,72 +46,41 @@ export default function Map() {
         mapTypeControl={false}
         fullscreenControl={false}
         clickableIcons={false}
-        onClick={() => setSelected(null)}
+        onClick={() => setSelectedPlace(null)}
       >
         {MOCK_MARKERS.map((marker) => (
           <AdvancedMarker
             key={marker.id}
             position={marker.position}
-            onClick={() => setSelected(marker)}
+            onClick={(e) => {
+              e.stop();
+              setSelectedPlace(markerToPlaceProps(marker));
+            }}
           >
             <div
-              className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold shadow-md transition ${
-                selected?.id === marker.id
-                  ? "bg-brand-red text-white"
-                  : "bg-white text-black"
+              className={`flex flex-col items-center justify-end transition ${
+                isSamePlace(selectedPlace, marker)
+                  ? "scale-110 drop-shadow-lg"
+                  : "drop-shadow-md"
               }`}
+              aria-label={marker.name}
             >
-              <span>{marker.name}</span>
+              <span className="text-brand-red">
+                <MapPinIcon size={44} />
+              </span>
             </div>
           </AdvancedMarker>
         ))}
       </GoogleMap>
 
-      {/* 필터 */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 mt-4 flex px-4">
-        <div className="pointer-events-auto flex gap-2">
-          <FilterDropdown
-            label="가격"
-            options={PRICE_OPTIONS}
-            value={price}
-            onChange={setPrice}
-          />
-          <FilterDropdown
-            label="평점"
-            options={RATING_OPTIONS}
-            value={rating}
-            onChange={setRating}
-          />
-          <FilterDropdown
-            label="영업시간"
-            options={OPEN_OPTIONS}
-            value={openNow}
-            onChange={setOpenNow}
-          />
-        </div>
-      </div>
-
-      {/* 선택된 장소 카드 */}
-      {selected && (
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="rounded-xl border border-gray-border bg-white p-3 shadow-lg">
-            <div className="flex items-baseline gap-1.5">
-              <h3 className="text-sm font-semibold text-brand-green">
-                {selected.name}
-              </h3>
-              <span className="text-[11px] text-dark-gray">
-                {selected.category}
-              </span>
-            </div>
-            <p className="mt-0.5 truncate text-[11px] text-dark-gray">
-              {selected.description}
-            </p>
-            <div className="mt-1 text-[11px] text-dark-gray">
-              ⭐ {selected.rating}
-            </div>
-          </div>
-        </div>
-      )}
+      <MapFilter
+        price={price}
+        rating={rating}
+        openNow={openNow}
+        setPrice={setPrice}
+        setRating={setRating}
+        setOpenNow={setOpenNow}
+      />
     </div>
   );
 }

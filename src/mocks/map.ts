@@ -14,11 +14,8 @@ const OFFSET_SEEDS = [
 ];
 
 export const MOCK_MARKERS = MOCK_SEARCH_RESULTS.map((r, i) => ({
+  ...r,
   id: i,
-  name: r.name,
-  category: r.category,
-  description: r.description,
-  rating: r.rating,
   position: {
     lat: HIKONE_CENTER.lat + OFFSET_SEEDS[i % OFFSET_SEEDS.length][0],
     lng: HIKONE_CENTER.lng + OFFSET_SEEDS[i % OFFSET_SEEDS.length][1],
