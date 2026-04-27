@@ -3,22 +3,22 @@ import type { NextRequest } from "next/server";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 
+const BYPASS_AUTH = true; // 로컬 테스트용: true면 인증 없이 통과
+
 function isProtectedPath(pathname: string) {
   if (pathname === "/") return true;
-  const prefixes = ["/plan", "/bookmark", "/search", "/settings"];
-  return prefixes.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
+  const prefixes = ["/home", "/plan", "/bookmark", "/search", "/settings"];
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession =
-    request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
+    BYPASS_AUTH || request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
 
   if (pathname === "/login") {
     if (hasSession) {
-      return NextResponse.redirect(new URL("/plan", request.url));
+      return NextResponse.redirect(new URL("/home", request.url));
     }
     return NextResponse.next();
   }
@@ -39,6 +39,8 @@ export const config = {
     "/",
     "/login",
     "/auth/callback",
+    "/home",
+    "/home/:path*",
     "/plan",
     "/plan/:path*",
     "/bookmark",

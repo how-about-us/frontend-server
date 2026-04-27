@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "https://api.howaboutus.app/auth/google/login";
+//const BACKEND_URL = "https://api.howaboutus.app/auth/google/login";
+const BACKEND_URL = "http://localhost:3000/auth/google/login";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();

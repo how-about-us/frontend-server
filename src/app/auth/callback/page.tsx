@@ -31,7 +31,7 @@ function AuthCallbackContent() {
           const maxAge = 60 * 60 * 24 * 365;
           const secure = location.protocol === "https:" ? "; Secure" : "";
           document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-          router.replace("/plan");
+          router.replace("/home");
         } else {
           router.replace("/login?error=OAuthCallback");
         }

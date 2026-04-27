@@ -48,14 +48,12 @@ function GoogleMark({ className }: { className?: string }) {
 function mapOAuthErrorParam(code: string | null): string | null {
   if (!code) return null;
   const map: Record<string, string> = {
-    Configuration:
-      "로그인 설정에 문제가 있습니다. 관리자에게 문의해 주세요.",
+    Configuration: "로그인 설정에 문제가 있습니다. 관리자에게 문의해 주세요.",
     AccessDenied: "접근이 거부되었습니다. 계정을 확인해 주세요.",
     Verification: "인증 링크가 만료되었거나 이미 사용되었습니다.",
     OAuthSignin:
       "로그인 요청을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.",
-    OAuthCallback:
-      "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
+    OAuthCallback: "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
     OAuthCreateAccount:
       "계정을 만들 수 없습니다. 다른 방법으로 로그인해 주세요.",
     Callback: "로그인 응답을 처리하지 못했습니다. 다시 시도해 주세요.",
