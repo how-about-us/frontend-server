@@ -38,6 +38,7 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/auth/callback",
     "/plan",
     "/plan/:path*",
     "/bookmark",

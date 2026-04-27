@@ -1,12 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { LoginErrorAlert } from "@/app/login/_components/LoginErrorAlert";
-import { LoginSuccessNotice } from "@/app/login/_components/LoginSuccessNotice";
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+
+const REDIRECT_URI =
+  process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ??
+  "https://howaboutus.app/auth/callback";
+
+const GOOGLE_OAUTH_URL =
+  "https://accounts.google.com/o/oauth2/v2/auth" +
+  "?client_id=813204192877-90g2mt3v5e74k19m7betqdn1u3n393nh.apps.googleusercontent.com" +
+  `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+  "&response_type=code" +
+  "&scope=openid%20email%20profile";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -42,54 +51,23 @@ function mapOAuthErrorParam(code: string | null): string | null {
     Configuration:
       "로그인 설정에 문제가 있습니다. 관리자에게 문의해 주세요.",
     AccessDenied: "접근이 거부되었습니다. 계정을 확인해 주세요.",
-    Verification:
-      "인증 링크가 만료되었거나 이미 사용되었습니다.",
+    Verification: "인증 링크가 만료되었거나 이미 사용되었습니다.",
     OAuthSignin:
       "로그인 요청을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.",
     OAuthCallback:
       "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
     OAuthCreateAccount:
       "계정을 만들 수 없습니다. 다른 방법으로 로그인해 주세요.",
-    Callback:
-      "로그인 응답을 처리하지 못했습니다. 다시 시도해 주세요.",
+    Callback: "로그인 응답을 처리하지 못했습니다. 다시 시도해 주세요.",
     Default: "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
   };
   return map[code] ?? map.Default;
 }
 
-const LOGIN_DELAY_MS = 750;
-const SUCCESS_REDIRECT_MS = 1200;
-
-const PREVIEW_FAILURE_MESSAGE =
-  "인증 서버에 연결할 수 없습니다. 네트워크를 확인한 뒤 다시 시도해 주세요.";
-
-async function attemptGoogleLogin(options: {
-  simulateFailure: boolean;
-}): Promise<{ ok: true } | { ok: false; message: string }> {
-  await new Promise((r) => setTimeout(r, LOGIN_DELAY_MS));
-  // 실제 연동 예: const result = await signIn("google", { redirect: false });
-  // if (result?.error) return { ok: false, message: ... };
-
-  if (options.simulateFailure) {
-    return {
-      ok: false,
-      message: PREVIEW_FAILURE_MESSAGE,
-    };
-  }
-
-  return { ok: true };
-}
-
 function LoginPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [googlePending, setGooglePending] = useState(false);
-  const [previewPending, setPreviewPending] = useState(false);
-  const busy = googlePending || previewPending;
-  const [phase, setPhase] = useState<"form" | "success">("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const simulateFailure = searchParams.get("simulateError") === "1";
   const oauthErrorCode = searchParams.get("error");
 
   useEffect(() => {
@@ -99,47 +77,11 @@ function LoginPageContent() {
 
   const clearError = useCallback(() => setErrorMessage(null), []);
 
-  const handleContinueWithGoogle = async () => {
-    clearError();
-    setGooglePending(true);
-    try {
-      const result = await attemptGoogleLogin({ simulateFailure });
-      if (!result.ok) {
-        setErrorMessage(result.message);
-        setPhase("form");
-        return;
-      }
-
-      setPhase("success");
-      const maxAge = 60 * 60 * 24 * 365;
-      window.setTimeout(() => {
-        document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; max-age=${maxAge}; SameSite=Lax`;
-        router.replace("/plan");
-      }, SUCCESS_REDIRECT_MS);
-    } catch {
-      setErrorMessage(
-        "예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
-      );
-      setPhase("form");
-    } finally {
-      setGooglePending(false);
-    }
+  const handleContinueWithGoogle = () => {
+    const state = crypto.randomUUID();
+    sessionStorage.setItem("oauth_state", state);
+    window.location.href = `${GOOGLE_OAUTH_URL}&state=${state}`;
   };
-
-  /** 임시: 로그인 실패 UI 확인용 (실제 배포 전 제거) */
-  const handlePreviewLoginFailure = async () => {
-    clearError();
-    setPhase("form");
-    setPreviewPending(true);
-    try {
-      await new Promise((r) => setTimeout(r, LOGIN_DELAY_MS));
-      setErrorMessage(PREVIEW_FAILURE_MESSAGE);
-    } finally {
-      setPreviewPending(false);
-    }
-  };
-
-  const showForm = phase === "form";
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4 py-12">
@@ -164,43 +106,18 @@ function LoginPageContent() {
             </p>
           </div>
 
-          {errorMessage && showForm && (
+          {errorMessage && (
             <LoginErrorAlert message={errorMessage} onDismiss={clearError} />
           )}
 
-          {phase === "success" && <LoginSuccessNotice />}
-
-          {showForm && (
-            <div className="flex w-full flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleContinueWithGoogle}
-                disabled={busy}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-[15px] font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-wait disabled:opacity-70"
-              >
-                {googlePending ? (
-                  <span
-                    className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#1f1f1f]/25 border-t-[#1f1f1f]"
-                    aria-hidden
-                  />
-                ) : (
-                  <GoogleMark className="h-5 w-5 shrink-0" />
-                )}
-                <span>
-                  {googlePending ? "연결 중…" : "Google로 계속하기"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePreviewLoginFailure}
-                disabled={busy}
-                className="rounded-lg border border-dashed border-brand-red/40 bg-brand-red/[0.04] px-3 py-2 text-xs font-medium text-brand-red transition hover:bg-brand-red/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {previewPending ? "불러오는 중…" : "[임시] 로그인 실패 UI 보기"}
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={handleContinueWithGoogle}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-[15px] font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow"
+          >
+            <GoogleMark className="h-5 w-5 shrink-0" />
+            <span>Google로 계속하기</span>
+          </button>
         </div>
       </div>
     </div>
