@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Calendar, Users } from "lucide-react";
+import { addRoom } from "@/stores/rooms-store";
 
 export default function NewTripPage() {
   const router = useRouter();
@@ -13,7 +14,13 @@ export default function NewTripPage() {
 
   const handleSubmit = () => {
     if (!destination.trim()) return;
-    router.push("/plan");
+    const newRoom = addRoom(
+      destination.trim(),
+      startDate || undefined,
+      endDate || undefined,
+    );
+    // replace로 이동해 history에서 /home/new를 제거 → 뒤로가기 시 /home으로
+    router.replace(`/plan/${newRoom.id}`);
   };
 
   return (

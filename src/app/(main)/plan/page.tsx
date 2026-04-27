@@ -1,5 +1,5 @@
-import { PlanPageView } from "./_components";
+import { redirect } from "next/navigation";
 
-export default function PlanPage() {
-  return <PlanPageView />;
+export default function PlanIndexPage() {
+  redirect("/home");
 }

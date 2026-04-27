@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useSessionStore } from "@/stores/session-store";
 
 import {
   countInclusiveLocalDays,
@@ -28,7 +30,16 @@ const INITIAL_DAY_COUNT = countInclusiveLocalDays(
   INITIAL_RANGE.end,
 );
 
-export function PlanPageView() {
+interface Props {
+  /** 현재 방 ID — 향후 API 호출 시 queryKey 등에 사용 */
+  roomId: string;
+}
+
+export function PlanPageView({ roomId }: Props) {
+  const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
+  useEffect(() => {
+    setCurrentRoomId(roomId);
+  }, [roomId, setCurrentRoomId]);
   const [range, setRange] = useState(INITIAL_RANGE);
   const [placesPerDay, setPlacesPerDay] = useState<PlanPlace[][]>(() =>
     Array.from({ length: INITIAL_DAY_COUNT }, () => []),

@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
+import { useSessionStore } from "@/stores/session-store";
 
-const sidebarItems = [
-  { href: "/search", icon: "/icons/search.svg" },
-  { href: "/plan", icon: "/icons/calendar-days.svg" },
-  { href: "/bookmark", icon: "/icons/bookmark.svg" },
-  { href: "/settings", icon: "/icons/user-cog.svg" },
+const SIDEBAR_ITEMS = [
+  { key: "search", href: "/search", icon: "/icons/search.svg" },
+  { key: "plan", href: "/plan", icon: "/icons/calendar-days.svg" },
+  { key: "bookmark", href: "/bookmark", icon: "/icons/bookmark.svg" },
+  { key: "settings", href: "/settings", icon: "/icons/user-cog.svg" },
 ] as const;
 
 const getChatNum = (chatNum: number) => {
@@ -22,6 +23,7 @@ export function SideBar() {
   const [chatNum, setChatNum] = useState(100);
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
+  const currentRoomId = useSessionStore((s) => s.currentRoomId);
 
   const isChatActive = chatState !== "closed";
 
@@ -47,12 +49,18 @@ export function SideBar() {
       </button>
 
       <div className="flex flex-col items-center gap-2 px-1">
-        {sidebarItems.map((item) => {
+        {SIDEBAR_ITEMS.map((item) => {
+          const href =
+            item.key === "plan"
+              ? currentRoomId
+                ? `/plan/${currentRoomId}`
+                : "/home"
+              : item.href;
           const isActive = pathname.startsWith(item.href);
           return (
             <div key={item.href}>
               <Link
-                href={item.href}
+                href={href}
                 className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
                   isActive
                     ? "bg-light-gray"
@@ -62,7 +70,7 @@ export function SideBar() {
               >
                 <img src={item.icon} alt="" className="h-6 w-6" />
               </Link>
-              {item.href === "/bookmark" && (
+              {item.key === "bookmark" && (
                 <div className="mt-2 w-10 border-t border-gray-border" />
               )}
             </div>
