@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 import { useSessionStore } from "@/stores/session-store";
@@ -19,8 +18,8 @@ const getChatNum = (chatNum: number) => {
   else return chatNum;
 };
 
-export function SideBar() {
-  const [chatNum, setChatNum] = useState(100);
+function SideBar() {
+  const chatNum = 100;
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
   const currentRoomId = useSessionStore((s) => s.currentRoomId);

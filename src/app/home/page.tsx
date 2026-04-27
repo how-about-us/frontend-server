@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Bell, MoreHorizontal, Share2 } from "lucide-react";
+import { Bell, Share2, Trash2 } from "lucide-react";
 
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
@@ -121,10 +121,10 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => removeRoom(room.id)}
-                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow backdrop-blur-sm transition hover:bg-white"
-                        title="삭제"
+                        className="flex h-6 w-auto items-center gap-1 rounded-full bg-white/90 px-2 text-[11px] font-medium text-dark-gray shadow backdrop-blur-sm transition hover:bg-white"
                       >
-                        <MoreHorizontal size={12} className="text-dark-gray" />
+                        <Trash2 size={10} />
+                        삭제
                       </button>
                     </div>
                   </div>
