@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Search, MapPin, Loader2, AlertCircle } from "lucide-react";
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { usePlacesSearch } from "@/hooks/usePlacesSearch";
+import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 
 const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 }; // Seoul fallback
 
@@ -36,9 +37,7 @@ function useGeolocation() {
 
 export default function SearchPage() {
   const { setSelectedPlace } = useSelectedPlace();
-  const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const { coords, locationError } = useGeolocation();
 
   const { data: results, isLoading, isError, error } = usePlacesSearch(
@@ -47,38 +46,13 @@ export default function SearchPage() {
     coords?.lng ?? null,
   );
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = inputValue.trim();
-    if (trimmed) setQuery(trimmed);
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
 
       {/* Search input */}
       <div className="shrink-0 border-b border-gray-border px-4 pb-4 pt-3">
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <div className="relative flex flex-1 items-center">
-            <Search className="absolute left-3 h-4 w-4 text-dark-gray pointer-events-none" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="장소를 검색하세요"
-              className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-3 text-sm outline-none placeholder:text-[#99A1AF] focus:border-brand-green focus:ring-1 focus:ring-brand-green"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || !coords}
-            className="shrink-0 rounded-lg bg-brand-green px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
-          >
-            검색
-          </button>
-        </form>
+        <PlacesSearchInput coords={coords} onSearch={setQuery} />
 
         {locationError && (
           <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#99A1AF]">
