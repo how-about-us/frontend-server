@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 
-const BYPASS_AUTH = true; // 로컬 테스트용: true면 인증 없이 통과
+const BYPASS_AUTH = false; // 로컬 테스트용: true면 인증 없이 통과
 
 function isProtectedPath(pathname: string) {
   if (pathname === "/") return true;

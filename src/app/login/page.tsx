@@ -6,13 +6,17 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { LoginErrorAlert } from "@/app/login/_components/LoginErrorAlert";
 
+const CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
+  "813204192877-5ueflcpjqdd9cpntpnkrmjgnro1mc4rr.apps.googleusercontent.com";
+
 const REDIRECT_URI =
   process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ??
   "https://howaboutus.app/auth/callback";
 
 const GOOGLE_OAUTH_URL =
   "https://accounts.google.com/o/oauth2/v2/auth" +
-  "?client_id=813204192877-90g2mt3v5e74k19m7betqdn1u3n393nh.apps.googleusercontent.com" +
+  `?client_id=${CLIENT_ID}` +
   `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
   "&response_type=code" +
   "&scope=openid%20email%20profile";

@@ -1,366 +1,24 @@
 "use client";
 
-import {
-  ArrowLeft,
-  X,
-  MapPin,
-  Clock,
-  Phone,
-  Globe,
-  Star,
-  Bookmark,
-  Calendar,
-  ChevronRight,
-  Send,
-} from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useState } from "react";
 import type { SearchResultCardProps } from "./SearchResultCard";
-
+import { TABS, type Tab } from "./detail/types";
+import { usePlaceDetailData } from "./detail/usePlaceDetailData";
+import { HeroSkeleton, HeroGrid } from "./detail/HeroSection";
+import { PlaceSummaryHeader } from "./detail/PlaceSummaryHeader";
+import { HomeTab } from "./detail/HomeTab";
+import { ReviewsTab } from "./detail/ReviewsTab";
+import { PhotosTab } from "./detail/PhotosTab";
+import { InfoTab } from "./detail/InfoTab";
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;
 };
 
-const TABS = ["홈", "소식", "메뉴", "리뷰", "사진", "정보"] as const;
-type Tab = (typeof TABS)[number];
-
-const MOCK_REVIEWS = [
-  {
-    id: 1,
-    author: "김지현",
-    avatar: "https://i.pravatar.cc/40?img=1",
-    rating: 5,
-    date: "2주 전",
-    text: "음식이 정말 맛있고 직원분들도 친절해요. 분위기도 너무 좋아서 특별한 날에 방문하기 딱 좋은 곳이에요!",
-  },
-  {
-    id: 2,
-    author: "이민준",
-    avatar: "https://i.pravatar.cc/40?img=2",
-    rating: 4,
-    date: "1달 전",
-    text: "가성비가 좋고 맛도 훌륭합니다. 다만 주말 저녁은 웨이팅이 있을 수 있으니 미리 예약하시길 추천해요.",
-  },
-  {
-    id: 3,
-    author: "박수연",
-    avatar: "https://i.pravatar.cc/40?img=5",
-    rating: 5,
-    date: "2달 전",
-    text: "재방문 의사 100%입니다. 메뉴 구성도 다양하고 매번 퀄리티가 일정해서 믿고 찾는 곳이에요.",
-  },
-];
-
-function StarRow({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={`h-3 w-3 ${
-            i <= Math.round(rating)
-              ? "fill-[#FDC700] text-[#FDC700]"
-              : "fill-gray-200 text-gray-200"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function HomeTab({
-  isOpen,
-  address,
-  phone,
-  hours,
-  website,
-  rating,
-  reviewCount,
-}: Pick<
-  SearchResultCardProps,
-  "isOpen" | "address" | "phone" | "hours" | "website" | "rating" | "reviewCount"
->) {
-  return (
-    <div>
-      {/* Info section */}
-      <div className="border-b border-gray-border px-4 py-3">
-        <h3 className="mb-2.5 text-[11px] font-semibold text-[#364153]">
-          기본 정보
-        </h3>
-        <ul className="space-y-3">
-          {address && (
-            <li className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-dark-gray" />
-              <span className="text-[11px] leading-relaxed text-[#364153]">
-                {address}
-              </span>
-            </li>
-          )}
-          {hours && (
-            <li className="flex items-start gap-3">
-              <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-dark-gray" />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`text-[11px] font-medium ${
-                      isOpen ? "text-brand-green" : "text-[#FF6467]"
-                    }`}
-                  >
-                    {isOpen ? "영업 중" : "영업 종료"}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-[11px] leading-relaxed text-dark-gray">
-                  {hours}
-                </p>
-              </div>
-            </li>
-          )}
-          {phone && (
-            <li className="flex items-center gap-3">
-              <Phone className="h-3.5 w-3.5 shrink-0 text-dark-gray" />
-              <a
-                href={`tel:${phone}`}
-                className="text-[11px] text-[#364153] underline-offset-2 hover:underline"
-              >
-                {phone}
-              </a>
-            </li>
-          )}
-          {website && (
-            <li className="flex items-center gap-3">
-              <Globe className="h-3.5 w-3.5 shrink-0 text-dark-gray" />
-              <a
-                href={website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="truncate text-[11px] text-[#364153] underline-offset-2 hover:underline"
-              >
-                {website.replace(/^https?:\/\//, "")}
-              </a>
-            </li>
-          )}
-        </ul>
-      </div>
-
-      {/* Reviews summary */}
-      <div className="border-b border-gray-border px-4 py-3">
-        <div className="mb-2.5 flex items-center justify-between">
-          <h3 className="text-[11px] font-semibold text-[#364153]">리뷰</h3>
-          <button className="flex items-center gap-0.5 text-[11px] text-dark-gray">
-            전체보기
-            <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
-        <div className="mb-3 flex items-center gap-2">
-          <span className="text-xl font-bold text-[#364153]">{rating}</span>
-          <div>
-            <StarRow rating={rating} />
-            <p className="mt-0.5 text-[10px] text-dark-gray">
-              리뷰 {reviewCount.toLocaleString()}개
-            </p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          {MOCK_REVIEWS.slice(0, 2).map((review) => (
-            <div key={review.id} className="flex gap-2.5">
-              <img
-                src={review.avatar}
-                alt={review.author}
-                className="h-7 w-7 shrink-0 rounded-full object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-[#364153]">
-                    {review.author}
-                  </span>
-                  <StarRow rating={review.rating} />
-                  <span className="ml-auto text-[10px] text-dark-gray">
-                    {review.date}
-                  </span>
-                </div>
-                <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-dark-gray">
-                  {review.text}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ReviewsTab({
-  rating,
-  reviewCount,
-}: Pick<SearchResultCardProps, "rating" | "reviewCount">) {
-  return (
-    <div className="px-4 py-3">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="text-center">
-          <p className="text-3xl font-bold text-[#364153]">{rating}</p>
-          <StarRow rating={rating} />
-          <p className="mt-0.5 text-[10px] text-dark-gray">
-            {reviewCount.toLocaleString()}개
-          </p>
-        </div>
-        <div className="flex-1">
-          {[5, 4, 3, 2, 1].map((star) => {
-            const pct =
-              star === 5
-                ? 60
-                : star === 4
-                  ? 25
-                  : star === 3
-                    ? 10
-                    : star === 2
-                      ? 3
-                      : 2;
-            return (
-              <div key={star} className="flex items-center gap-1.5">
-                <span className="w-3 text-right text-[10px] text-dark-gray">
-                  {star}
-                </span>
-                <div className="flex-1 overflow-hidden rounded-full bg-gray-200 h-1.5">
-                  <div
-                    className="h-full rounded-full bg-[#FDC700]"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div className="space-y-4">
-        {MOCK_REVIEWS.map((review) => (
-          <div key={review.id} className="flex gap-2.5">
-            <img
-              src={review.avatar}
-              alt={review.author}
-              className="h-8 w-8 shrink-0 rounded-full object-cover"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-[#364153]">
-                  {review.author}
-                </span>
-                <span className="text-[10px] text-dark-gray">{review.date}</span>
-              </div>
-              <StarRow rating={review.rating} />
-              <p className="mt-1 text-[11px] leading-relaxed text-dark-gray">
-                {review.text}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PhotosTab({ images }: Pick<SearchResultCardProps, "images">) {
-  const allImages =
-    images.length >= 6
-      ? images
-      : [...images, ...images, ...images].slice(0, 9);
-  return (
-    <div className="grid grid-cols-3 gap-0.5 p-0.5">
-      {allImages.map((src, i) => (
-        <div key={i} className="aspect-square overflow-hidden bg-light-gray">
-          <img
-            src={src}
-            alt={`사진 ${i + 1}`}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function InfoTab({
-  address,
-  phone,
-  hours,
-  website,
-  isOpen,
-}: Pick<
-  SearchResultCardProps,
-  "address" | "phone" | "hours" | "website" | "isOpen"
->) {
-  return (
-    <div className="px-4 py-3">
-      <h3 className="mb-3 text-[11px] font-semibold text-[#364153]">
-        상세 정보
-      </h3>
-      <ul className="space-y-4">
-        {address && (
-          <li className="flex items-start gap-3">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-dark-gray" />
-            <div>
-              <p className="text-[11px] font-medium text-[#364153]">주소</p>
-              <p className="mt-0.5 text-[11px] text-dark-gray">{address}</p>
-            </div>
-          </li>
-        )}
-        {hours && (
-          <li className="flex items-start gap-3">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-dark-gray" />
-            <div>
-              <p className="text-[11px] font-medium text-[#364153]">
-                영업시간{" "}
-                <span
-                  className={`font-normal ${
-                    isOpen ? "text-brand-green" : "text-[#FF6467]"
-                  }`}
-                >
-                  {isOpen ? "· 영업 중" : "· 영업 종료"}
-                </span>
-              </p>
-              <p className="mt-0.5 text-[11px] text-dark-gray">{hours}</p>
-            </div>
-          </li>
-        )}
-        {phone && (
-          <li className="flex items-start gap-3">
-            <Phone className="mt-0.5 h-4 w-4 shrink-0 text-dark-gray" />
-            <div>
-              <p className="text-[11px] font-medium text-[#364153]">전화번호</p>
-              <a
-                href={`tel:${phone}`}
-                className="mt-0.5 text-[11px] text-[#364153] underline-offset-2 hover:underline"
-              >
-                {phone}
-              </a>
-            </div>
-          </li>
-        )}
-        {website && (
-          <li className="flex items-start gap-3">
-            <Globe className="mt-0.5 h-4 w-4 shrink-0 text-dark-gray" />
-            <div>
-              <p className="text-[11px] font-medium text-[#364153]">웹사이트</p>
-              <a
-                href={website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-0.5 text-[11px] text-[#364153] underline-offset-2 hover:underline"
-              >
-                {website.replace(/^https?:\/\//, "")}
-              </a>
-            </div>
-          </li>
-        )}
-      </ul>
-    </div>
-  );
-}
-
-/** 블로그 리뷰 수는 별도 필드가 없어 방문자 리뷰와 동일 비율로 표시용 값만 산출 */
-function approximateBlogReviewCount(visitorCount: number): number {
-  return Math.max(0, Math.round(visitorCount * (270 / 1693)));
+function approximateBlogReviewCount(n?: number) {
+  if (n === undefined) return undefined;
+  return Math.max(0, Math.round(n * (270 / 1693)));
 }
 
 export function PlaceDetailPanel({
@@ -370,70 +28,46 @@ export function PlaceDetailPanel({
   rating,
   isOpen,
   reviewCount,
-  images,
+  image,
   address,
-  phone,
-  hours,
-  website,
+  phone: propPhone,
+  hours: propHours,
+  website: propWebsite,
+  googlePlaceId,
   onClose,
 }: PlaceDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
-  const blogReviewCount = approximateBlogReviewCount(reviewCount);
 
-  const photoGrid =
-    images.length >= 3
-      ? images
-      : [...images, ...images, ...images].slice(0, 3);
+  const { data: detailData, isLoading: isDetailLoading } =
+    usePlaceDetailData(googlePlaceId);
+
+  const phone = detailData?.phone || propPhone;
+  const website = detailData?.websiteUri || propWebsite;
+  const hours = detailData?.weekdayDescriptions?.join("\n") || propHours;
+  const photoUrls = detailData?.photoUrls ?? [];
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-white">
-      {/* Photo grid hero */}
-      <div className="relative h-[185px] shrink-0">
-        <div className="flex h-full gap-0.5 overflow-hidden">
-          {/* Large left image */}
-          <div className="w-[62%] overflow-hidden rounded-tl-none">
-            <img
-              src={photoGrid[0]}
-              alt={name}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          {/* Two stacked images on right */}
-          <div className="flex flex-1 flex-col gap-0.5">
-            <div className="flex-1 overflow-hidden">
-              <img
-                src={photoGrid[1] ?? photoGrid[0]}
-                alt={name}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="relative flex-1 overflow-hidden">
-              <img
-                src={photoGrid[2] ?? photoGrid[0]}
-                alt={name}
-                className="h-full w-full object-cover"
-              />
-              {images.length > 3 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-                  <span className="text-xs font-semibold text-white">
-                    +{images.length - 3}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Hero – click to jump to 사진 tab */}
+      <div
+        className="relative h-[185px] shrink-0 cursor-pointer"
+        onClick={() => setActiveTab("사진")}
+      >
+        {isDetailLoading && googlePlaceId ? (
+          <HeroSkeleton />
+        ) : (
+          <HeroGrid photoUrls={photoUrls} fallbackImage={image} name={name} />
+        )}
 
-        {/* Back / close buttons */}
         <button
-          onClick={onClose}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
           aria-label="뒤로가기"
           className="absolute left-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/65"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
         <button
-          onClick={onClose}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
           aria-label="닫기"
           className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition hover:bg-black/65"
         >
@@ -443,68 +77,14 @@ export function PlaceDetailPanel({
 
       {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* 상단 요약: 이름·카테고리, 채팅 보내기, 평점·리뷰, 주요 액션 */}
-        <div className="border-b border-gray-border px-4 pb-4 pt-3">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 flex-1 text-balance leading-snug">
-              <span className="text-lg font-bold tracking-tight text-[#111827]">
-                {name}
-              </span>
-              <span className="ml-2 text-sm font-normal text-[#6b7280]">
-                {category}
-              </span>
-            </h2>
-            <button
-              type="button"
-              className="flex shrink-0 flex-col items-center gap-0.5"
-              aria-label="채팅으로 보내기"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#3b82f6] bg-white shadow-sm">
-                <Send className="h-4 w-4 text-[#3b82f6]" strokeWidth={2} />
-              </span>
-              <span className="max-w-[72px] text-center text-[10px] leading-tight text-[#9ca3af]">
-                채팅으로 보내기
-              </span>
-            </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px]">
-            <Star
-              className="h-4 w-4 shrink-0 fill-[#FDC700] text-[#FDC700]"
-              aria-hidden
-            />
-            <span className="font-semibold text-[#364153]">{rating}</span>
-            <span className="text-[#9ca3af]">
-              방문자 리뷰 {reviewCount.toLocaleString()}
-            </span>
-            <span className="text-[#9ca3af]">
-              블로그 리뷰 {blogReviewCount.toLocaleString()}
-            </span>
-          </div>
-
-          {description && (
-            <p className="mt-2.5 text-[11px] leading-relaxed text-[#6b7280]">
-              {description}
-            </p>
-          )}
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700"
-            >
-              <Calendar className="h-4 w-4" strokeWidth={2} />
-              일정에 추가
-            </button>
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-border bg-white py-3 text-xs font-semibold text-[#111827] transition hover:bg-gray-50 active:bg-gray-100"
-            >
-              <Bookmark className="h-4 w-4" strokeWidth={2} />
-              북마크에 추가
-            </button>
-          </div>
-        </div>
+        <PlaceSummaryHeader
+          name={name}
+          category={category}
+          description={description}
+          rating={rating}
+          reviewCount={reviewCount}
+          blogReviewCount={approximateBlogReviewCount(reviewCount)}
+        />
 
         {/* Tab navigation */}
         <div className="flex shrink-0 border-b border-gray-border">
@@ -538,7 +118,13 @@ export function PlaceDetailPanel({
         {activeTab === "리뷰" && (
           <ReviewsTab rating={rating} reviewCount={reviewCount} />
         )}
-        {activeTab === "사진" && <PhotosTab images={images} />}
+        {activeTab === "사진" && (
+          <PhotosTab
+            photoUrls={photoUrls}
+            isLoading={isDetailLoading && !!googlePlaceId}
+            fallbackImage={image}
+          />
+        )}
         {activeTab === "정보" && (
           <InfoTab
             address={address}

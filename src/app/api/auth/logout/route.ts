@@ -4,12 +4,12 @@ const API_BASE =
   process.env.API_BASE_URL ?? "http://localhost:8080";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-
-  const backendRes = await fetch(`${API_BASE}/auth/google/login`, {
+  const backendRes = await fetch(`${API_BASE}/auth/logout`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+      cookie: request.headers.get("cookie") ?? "",
+    },
   });
 
   const res = new NextResponse(backendRes.body, {
