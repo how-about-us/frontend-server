@@ -41,7 +41,6 @@ function PlaceEditRow({
   onToggle: () => void;
 }) {
   const labelId = `place-label-${place.id}`;
-  const thumbs = place.images.slice(0, 3);
   const address = place.address ?? place.description;
 
   return (
@@ -63,21 +62,16 @@ function PlaceEditRow({
         <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-dark-gray">
           {address}
         </p>
-        {thumbs.length > 0 && (
-          <div className="mt-2.5 flex gap-1">
-            {thumbs.map((src, i) => (
-              <div
-                key={`${place.id}-img-${i}`}
-                className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-light-gray"
-              >
-                <img
-                  src={src}
-                  alt=""
-                  className="size-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
+        {place.image && (
+          <div className="mt-2.5">
+            <div className="h-16 w-16 overflow-hidden rounded-lg bg-light-gray">
+              <img
+                src={place.image}
+                alt=""
+                className="size-full object-cover"
+                loading="lazy"
+              />
+            </div>
           </div>
         )}
       </div>

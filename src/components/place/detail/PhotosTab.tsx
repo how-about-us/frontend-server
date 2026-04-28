@@ -1,4 +1,8 @@
+"use client";
+
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { PhotoLightbox } from "./PhotoLightbox";
 
 type Props = {
   photoUrls: string[];
@@ -7,6 +11,8 @@ type Props = {
 };
 
 export function PhotosTab({ photoUrls, isLoading, fallbackImage }: Props) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16">
@@ -28,17 +34,35 @@ export function PhotosTab({ photoUrls, isLoading, fallbackImage }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-0.5 p-0.5">
-      {photos.map((src, i) => (
-        <div key={i} className="aspect-square overflow-hidden bg-light-gray">
-          <img
-            src={src}
-            alt={`사진 ${i + 1}`}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-3 gap-0.5 p-0.5">
+        {photos.map((src, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setLightboxIndex(i)}
+            className="aspect-square overflow-hidden bg-light-gray"
+            aria-label={`사진 ${i + 1} 크게 보기`}
+          >
+            <img
+              src={src}
+              alt={`사진 ${i + 1}`}
+              className="h-full w-full object-cover transition-opacity hover:opacity-85"
+              loading="lazy"
+            />
+          </button>
+        ))}
+      </div>
+
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          initialIndex={lightboxIndex}
+          currentIndex={lightboxIndex}
+          onChangeIndex={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </>
   );
 }

@@ -17,6 +17,8 @@ export type SearchResultCardProps = {
   website?: string;
   /** Present when coming from real API; absent for mock/bookmark data */
   googlePlaceId?: string;
+  /** Coordinates – present for real API results, used to pan the map */
+  location?: { lat: number; lng: number };
 };
 
 export function SearchResultCard({
