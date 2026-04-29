@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface SessionUser {
   name: string;
@@ -10,23 +11,30 @@ interface SessionStore {
   user: SessionUser | null;
   setUser: (user: SessionUser) => void;
   clearUser: () => void;
-  /** 마지막으로 열었던 방 ID — 사이드바 plan 링크에 사용 */
+  /** 마지막으로 입장한 방 ID — localStorage에 저장되어 새로고침 후에도 유지됩니다. */
   currentRoomId: string | null;
   setCurrentRoomId: (id: string) => void;
+  clearCurrentRoomId: () => void;
 }
 
-export const useSessionStore = create<SessionStore>((set) => ({
-  /**
-   * BYPASS_AUTH=true 환경에서는 mock 유저를 기본값으로 사용.
-   * 실제 로그인 연동 후에는 auth/callback 에서 setUser() 호출로 채워진다.
-   */
-  user: {
-    name: "테스트 유저",
-    email: "test@example.com",
-    avatarInitial: "T",
-  },
-  setUser: (user) => set({ user }),
-  clearUser: () => set({ user: null }),
-  currentRoomId: null,
-  setCurrentRoomId: (id) => set({ currentRoomId: id }),
-}));
+export const useSessionStore = create<SessionStore>()(
+  persist(
+    (set) => ({
+      user: {
+        name: "테스트 유저",
+        email: "test@example.com",
+        avatarInitial: "T",
+      },
+      setUser: (user) => set({ user }),
+      clearUser: () => set({ user: null }),
+      currentRoomId: null,
+      setCurrentRoomId: (id) => set({ currentRoomId: id }),
+      clearCurrentRoomId: () => set({ currentRoomId: null }),
+    }),
+    {
+      name: "hau:session",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ currentRoomId: state.currentRoomId }),
+    },
+  ),
+);

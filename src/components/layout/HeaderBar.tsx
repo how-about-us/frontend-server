@@ -4,19 +4,34 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useRooms } from "@/stores/rooms-store";
+import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+
+function formatDateRange(startDate: string, endDate: string): string {
+  const fmt = (d: string) => {
+    const date = new Date(d);
+    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  };
+  if (!startDate && !endDate) return "";
+  if (startDate === endDate) return fmt(startDate);
+  return `${fmt(startDate)} – ${fmt(endDate)}`;
+}
 
 const HeaderBar = () => {
   const params = useParams();
-  // URL에 roomId가 있으면 그것을, 없으면 마지막으로 열었던 방 ID를 사용
   const paramRoomId =
     typeof params.roomId === "string" ? params.roomId : undefined;
   const storedRoomId = useSessionStore((s) => s.currentRoomId);
   const roomId = paramRoomId ?? storedRoomId ?? undefined;
 
-  const { rooms } = useRooms();
-  const currentRoom = roomId ? rooms.find((r) => r.id === roomId) : undefined;
+  const { data } = useRoomsList();
+  const currentRoom = roomId
+    ? (data?.rooms ?? []).find((r) => r.id === roomId)
+    : undefined;
+
+  const dateStr = currentRoom
+    ? formatDateRange(currentRoom.startDate, currentRoom.endDate)
+    : "";
 
   return (
     <Link href="/home" className="block">
@@ -28,9 +43,9 @@ const HeaderBar = () => {
                 <span className="block text-sm font-semibold leading-tight">
                   {currentRoom.title}
                 </span>
-                {currentRoom.date && (
+                {dateStr && (
                   <span className="block text-xs leading-tight text-dark-gray">
-                    {currentRoom.date}
+                    {dateStr}
                   </span>
                 )}
               </>
