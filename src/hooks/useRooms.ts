@@ -9,6 +9,8 @@ import {
   getRoomMembers,
   getRooms,
   joinRoom,
+  kickMember,
+  leaveRoom,
   regenerateInviteCode,
   rejectJoinRequest,
   RoomCreateRequest,
@@ -88,6 +90,28 @@ export function useJoinRequests(roomId: string | null) {
     queryFn: () => getJoinRequests(roomId!),
     enabled: !!roomId,
     refetchInterval: 8000,
+  });
+}
+
+export function useLeaveRoom() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (roomId: string) => leaveRoom(roomId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
+    },
+  });
+}
+
+export function useKickMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomId, userId }: { roomId: string; userId: number }) =>
+      kickMember(roomId, userId),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
+    },
   });
 }
 

@@ -193,6 +193,25 @@ export async function getJoinRequests(
   return res.json();
 }
 
+export async function leaveRoom(roomId: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/members/me`,
+    { ...FETCH_OPTS, method: "DELETE" },
+  );
+  if (!res.ok) throw new HttpError(res.status, `방 나가기 실패: ${res.status}`);
+}
+
+export async function kickMember(
+  roomId: string,
+  userId: number,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/members/${userId}`,
+    { ...FETCH_OPTS, method: "DELETE" },
+  );
+  if (!res.ok) throw new HttpError(res.status, `멤버 추방 실패: ${res.status}`);
+}
+
 export async function approveJoinRequest(
   roomId: string,
   requestId: number,

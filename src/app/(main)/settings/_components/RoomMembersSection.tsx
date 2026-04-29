@@ -1,23 +1,33 @@
 "use client";
 
+"use client";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useSessionStore } from "@/stores/session-store";
-import { useRoomMembers, useRoomsList } from "@/hooks/useRooms";
+import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList } from "@/hooks/useRooms";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
 
 export function RoomMembersSection() {
+  const router = useRouter();
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [kickTargetId, setKickTargetId] = useState<number | null>(null);
 
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
+  const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
+  const clearCurrentRoomInviteCode = useSessionStore((s) => s.clearCurrentRoomInviteCode);
   const inviteCode = useSessionStore((s) => s.currentRoomInviteCode);
 
   const { data: roomsData } = useRoomsList();
   const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
   const isHost = currentRoom?.role === "HOST";
+
+  const { mutate: kick, isPending: isKicking } = useKickMember();
+  const { mutate: leave, isPending: isLeaving } = useLeaveRoom();
 
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
@@ -27,9 +37,14 @@ export function RoomMembersSection() {
   const others = members.filter((m) => m.userId !== user?.id);
 
   function handleLeaveRoom() {
-    setShowLeaveConfirm(false);
-    // TODO: call leave-room API
-    alert("방에서 나갔습니다.");
+    if (!currentRoomId) return;
+    leave(currentRoomId, {
+      onSuccess: () => {
+        clearCurrentRoomId();
+        clearCurrentRoomInviteCode();
+        router.replace("/home");
+      },
+    });
   }
 
   return (
@@ -110,29 +125,61 @@ export function RoomMembersSection() {
           </p>
           <div className="rounded-xl border border-gray-border bg-white">
             {others.map((member, i) => (
-              <div
-                key={member.userId}
-                className={
-                  i < others.length - 1 ? "border-b border-gray-border" : ""
-                }
-              >
-                <MemberCard
-                  member={{
-                    id: String(member.userId),
-                    name: member.nickname,
-                    avatarInitial: member.nickname.charAt(0),
-                    profileImageUrl: member.profileImageUrl,
-                    role: member.role,
-                    isCurrentUser: false,
-                  }}
-                  isViewerHost={isHost}
-                  onKick={() => {
-                    // TODO: kick API
-                  }}
-                  onTransfer={() => {
-                    // TODO: transfer API
-                  }}
-                />
+              <div key={member.userId}>
+                <div
+                  className={
+                    i < others.length - 1 && kickTargetId !== member.userId
+                      ? "border-b border-gray-border"
+                      : ""
+                  }
+                >
+                  <MemberCard
+                    member={{
+                      id: String(member.userId),
+                      name: member.nickname,
+                      avatarInitial: member.nickname.charAt(0),
+                      profileImageUrl: member.profileImageUrl,
+                      role: member.role,
+                      isCurrentUser: false,
+                    }}
+                    isViewerHost={isHost}
+                    onKick={() => setKickTargetId(member.userId)}
+                    onTransfer={() => {
+                      // TODO: transfer API
+                    }}
+                  />
+                </div>
+
+                {/* 추방 확인 인라인 UI */}
+                {kickTargetId === member.userId && (
+                  <div className="border-b border-gray-border bg-brand-red/5 px-4 py-3">
+                    <p className="mb-2 text-xs font-medium text-gray-800">
+                      <span className="font-semibold">{member.nickname}</span>님을 추방하시겠어요?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setKickTargetId(null)}
+                        disabled={isKicking}
+                        className="flex-1 rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:opacity-40"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!currentRoomId) return;
+                          kick(
+                            { roomId: currentRoomId, userId: member.userId },
+                            { onSuccess: () => setKickTargetId(null) },
+                          );
+                        }}
+                        disabled={isKicking}
+                        className="flex-1 rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                      >
+                        {isKicking ? "처리 중…" : "추방"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -177,9 +224,10 @@ export function RoomMembersSection() {
               </button>
               <button
                 onClick={handleLeaveRoom}
-                className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                disabled={isLeaving}
+                className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                나가기
+                {isLeaving ? "처리 중…" : "나가기"}
               </button>
             </div>
           </div>
