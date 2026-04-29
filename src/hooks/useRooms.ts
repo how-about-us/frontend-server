@@ -5,6 +5,7 @@ import {
   createRoom,
   deleteRoom,
   getJoinRequests,
+  getJoinStatus,
   getRoomMembers,
   getRooms,
   joinRoom,
@@ -78,6 +79,12 @@ export function useJoinRoom() {
   });
 }
 
+export function useCheckJoinStatus() {
+  return useMutation({
+    mutationFn: (roomId: string) => getJoinStatus(roomId),
+  });
+}
+
 export function useJoinRequests(roomId: string | null) {
   return useQuery({
     queryKey: ["join-requests", roomId],
@@ -99,6 +106,8 @@ export function useApproveJoinRequest() {
     }) => approveJoinRequest(roomId, requestId),
     onSuccess: (_, { roomId }) => {
       queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
+      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
   });
 }

@@ -14,14 +14,16 @@ export function JoinRequestsPoller() {
   );
 
   const { data: roomsData } = useRoomsList();
-  const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
-  const isHost = currentRoom?.role === "HOST";
 
-  // On the settings page, JoinRequestsSection owns the count; avoid double-setting
+  // currentRoomId가 있으면 그 방 우선, 없으면 HOST 권한인 첫 번째 방
+  const hostRoom =
+    roomsData?.rooms.find((r) => r.id === currentRoomId && r.role === "HOST") ??
+    roomsData?.rooms.find((r) => r.role === "HOST");
+
   const isOnSettings = pathname.startsWith("/settings");
 
   const { data: requestsData } = useJoinRequests(
-    isHost && !isOnSettings ? currentRoomId : null,
+    hostRoom && !isOnSettings ? hostRoom.id : null,
   );
 
   useEffect(() => {
@@ -29,7 +31,6 @@ export function JoinRequestsPoller() {
     setPendingJoinRequestsCount(requestsData?.requests.length ?? 0);
   }, [requestsData, isOnSettings, setPendingJoinRequestsCount]);
 
-  // Reset count when navigating to settings (section takes over)
   useEffect(() => {
     if (isOnSettings) {
       setPendingJoinRequestsCount(0);

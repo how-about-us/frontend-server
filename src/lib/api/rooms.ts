@@ -153,6 +153,24 @@ export async function getRoomMembers(
   return res.json();
 }
 
+export class HttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export async function getJoinStatus(roomId: string): Promise<JoinRoomResponse> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/join/status`,
+    FETCH_OPTS,
+  );
+  if (!res.ok) throw new HttpError(res.status, `입장 상태 조회 실패: ${res.status}`);
+  return res.json();
+}
+
 export async function joinRoom(inviteCode: string): Promise<JoinRoomResponse> {
   const res = await fetch(`${API_BASE}/rooms/join`, {
     ...FETCH_OPTS,
