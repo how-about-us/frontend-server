@@ -5,6 +5,7 @@ import {
   createRoom,
   deleteRoom,
   getJoinRequests,
+  getRoomMembers,
   getRooms,
   joinRoom,
   regenerateInviteCode,
@@ -57,6 +58,14 @@ export function useDeleteRoom() {
 export function useRegenerateInviteCode() {
   return useMutation({
     mutationFn: (roomId: string) => regenerateInviteCode(roomId),
+  });
+}
+
+export function useRoomMembers(roomId: string | null) {
+  return useQuery({
+    queryKey: ["room-members", roomId],
+    queryFn: () => getRoomMembers(roomId!),
+    enabled: !!roomId,
   });
 }
 

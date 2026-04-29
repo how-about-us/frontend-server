@@ -9,7 +9,7 @@ import {
   useRejectJoinRequest,
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
-import { type JoinRequest } from "@/lib/api/rooms";
+import type { JoinRequest } from "@/lib/api/rooms";
 
 type Props = {
   roomId: string;
@@ -39,13 +39,24 @@ function JoinRequestCard({
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       {/* avatar */}
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
-        {request.userName.charAt(0)}
+      <div className="relative flex-shrink-0">
+        {request.profileImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={request.profileImageUrl}
+            alt={request.nickname}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
+            {request.nickname.charAt(0)}
+          </div>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-gray-800">
-          {request.userName}
+          {request.nickname}
         </p>
         <p className="text-xs text-dark-gray">
           {formatRelativeTime(request.requestedAt)}
@@ -54,7 +65,7 @@ function JoinRequestCard({
 
       <div className="flex gap-1.5">
         <button
-          onClick={() => approve({ roomId, requestId: request.id })}
+          onClick={() => approve({ roomId, requestId: request.requestId })}
           disabled={isPending}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-green/40 bg-brand-green/10 text-brand-green transition-colors hover:bg-brand-green/20 disabled:opacity-40"
           aria-label="승인"
@@ -62,7 +73,7 @@ function JoinRequestCard({
           <CheckIcon size={14} strokeWidth={2.5} />
         </button>
         <button
-          onClick={() => reject({ roomId, requestId: request.id })}
+          onClick={() => reject({ roomId, requestId: request.requestId })}
           disabled={isPending}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-red/30 bg-brand-red/10 text-brand-red transition-colors hover:bg-brand-red/20 disabled:opacity-40"
           aria-label="거절"
@@ -118,7 +129,7 @@ export function JoinRequestsSection({ roomId }: Props) {
       <div className="overflow-hidden rounded-xl border border-brand-red/20 bg-white shadow-sm">
         {requests.map((req, i) => (
           <div
-            key={req.id}
+            key={req.requestId}
             className={i < requests.length - 1 ? "border-b border-gray-border" : ""}
           >
             <JoinRequestCard request={req} roomId={roomId} />

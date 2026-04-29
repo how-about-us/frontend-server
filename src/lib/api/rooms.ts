@@ -85,10 +85,23 @@ export type JoinRoomResponse = {
   role: string;
 };
 
+export type RoomMember = {
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
+  role: "HOST" | "MEMBER";
+  joinedAt: string;
+};
+
+export type RoomMemberListResponse = {
+  members: RoomMember[];
+};
+
 export type JoinRequest = {
-  id: number;
-  userId: string;
-  userName: string;
+  requestId: number;
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
   requestedAt: string;
 };
 
@@ -126,6 +139,17 @@ export async function regenerateInviteCode(
     method: "POST",
   });
   if (!res.ok) throw new Error(`초대 코드 재발급 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function getRoomMembers(
+  roomId: string,
+): Promise<RoomMemberListResponse> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/members`,
+    FETCH_OPTS,
+  );
+  if (!res.ok) throw new Error(`멤버 목록 조회 실패: ${res.status}`);
   return res.json();
 }
 

@@ -1,12 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 import { useSessionStore } from "@/stores/session-store";
-import { useRoomsList } from "@/hooks/useRooms";
+import { useRoomMembers, useRoomsList } from "@/hooks/useRooms";
+import type { RoomMember } from "@/lib/api/rooms";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
+
+function MemberAvatar({
+  member,
+}: {
+  member: Pick<RoomMember, "nickname" | "profileImageUrl">;
+}) {
+  if (member.profileImageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={member.profileImageUrl}
+        alt={member.nickname}
+        className="h-9 w-9 rounded-full object-cover"
+      />
+    );
+  }
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
+      {member.nickname.charAt(0)}
+    </div>
+  );
+}
 
 export function RoomMembersSection() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -19,6 +41,13 @@ export function RoomMembersSection() {
   const { data: roomsData } = useRoomsList();
   const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
   const isHost = currentRoom?.role === "HOST";
+
+  const { data: membersData, isLoading: isMembersLoading } =
+    useRoomMembers(currentRoomId);
+  const members = membersData?.members ?? [];
+
+  const me = members.find((m) => m.userId === user?.id);
+  const others = members.filter((m) => m.userId !== user?.id);
 
   function handleLeaveRoom() {
     setShowLeaveConfirm(false);
@@ -65,8 +94,15 @@ export function RoomMembersSection() {
         />
       )}
 
-      {/* 나 (현재 유저) */}
-      {user && (
+      {/* 로딩 */}
+      {isMembersLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
+        </div>
+      )}
+
+      {/* 나 */}
+      {!isMembersLoading && me && (
         <section>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
             나
@@ -74,11 +110,11 @@ export function RoomMembersSection() {
           <div className="rounded-xl border border-gray-border bg-white">
             <MemberCard
               member={{
-                id: String(user.id),
-                name: user.nickname,
-                avatarInitial: user.nickname.charAt(0),
-                profileImageUrl: user.profileImageUrl,
-                role: isHost ? "HOST" : "MEMBER",
+                id: String(me.userId),
+                name: me.nickname,
+                avatarInitial: me.nickname.charAt(0),
+                profileImageUrl: me.profileImageUrl,
+                role: me.role,
                 isCurrentUser: true,
               }}
               isViewerHost={isHost}
@@ -87,6 +123,50 @@ export function RoomMembersSection() {
             />
           </div>
         </section>
+      )}
+
+      {/* 다른 멤버 */}
+      {!isMembersLoading && others.length > 0 && (
+        <section>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
+            멤버 · {others.length}
+          </p>
+          <div className="rounded-xl border border-gray-border bg-white">
+            {others.map((member, i) => (
+              <div
+                key={member.userId}
+                className={
+                  i < others.length - 1 ? "border-b border-gray-border" : ""
+                }
+              >
+                <MemberCard
+                  member={{
+                    id: String(member.userId),
+                    name: member.nickname,
+                    avatarInitial: member.nickname.charAt(0),
+                    profileImageUrl: member.profileImageUrl,
+                    role: member.role,
+                    isCurrentUser: false,
+                  }}
+                  isViewerHost={isHost}
+                  onKick={() => {
+                    // TODO: kick API
+                  }}
+                  onTransfer={() => {
+                    // TODO: transfer API
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 멤버 없음 (방 미선택 등) */}
+      {!isMembersLoading && members.length === 0 && !currentRoomId && (
+        <p className="py-4 text-center text-sm text-dark-gray">
+          방을 선택하면 멤버 목록이 표시됩니다.
+        </p>
       )}
 
       {/* 하단 버튼 */}
