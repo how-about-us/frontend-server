@@ -23,8 +23,14 @@ function SideBar() {
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
+  const pendingJoinRequestsCount = useSessionStore(
+    (s) => s.pendingJoinRequestsCount,
+  );
 
   const isChatActive = chatState !== "closed";
+  const isOnSettings = pathname.startsWith("/settings");
+  const showSettingsNotification =
+    pendingJoinRequestsCount > 0 && !isOnSettings;
 
   return (
     <aside className="flex w-13 shrink-0 flex-col items-center gap-2 border-r border-gray-border bg-white">
@@ -56,8 +62,10 @@ function SideBar() {
                 : "/home"
               : item.href;
           const isActive = pathname.startsWith(item.href);
+          const isSettings = item.key === "settings";
+
           return (
-            <div key={item.href}>
+            <div key={item.href} className="relative">
               <Link
                 href={href}
                 className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
@@ -69,6 +77,15 @@ function SideBar() {
               >
                 <img src={item.icon} alt="" className="h-6 w-6" />
               </Link>
+
+              {/* Notification badge for settings icon */}
+              {isSettings && showSettingsNotification && (
+                <span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-red opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-red" />
+                </span>
+              )}
+
               {item.key === "bookmark" && (
                 <div className="mt-2 w-10 border-t border-gray-border" />
               )}

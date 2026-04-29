@@ -78,6 +78,24 @@ export type RoomUpdateRequest = {
   endDate?: string;
 };
 
+export type JoinRoomResponse = {
+  status: string;
+  id: string;
+  roomTitle: string;
+  role: string;
+};
+
+export type JoinRequest = {
+  id: number;
+  userId: string;
+  userName: string;
+  requestedAt: string;
+};
+
+export type JoinRequestListResponse = {
+  requests: JoinRequest[];
+};
+
 export async function updateRoom(
   roomId: string,
   data: RoomUpdateRequest,
@@ -109,4 +127,48 @@ export async function regenerateInviteCode(
   });
   if (!res.ok) throw new Error(`초대 코드 재발급 실패: ${res.status}`);
   return res.json();
+}
+
+export async function joinRoom(inviteCode: string): Promise<JoinRoomResponse> {
+  const res = await fetch(`${API_BASE}/rooms/join`, {
+    ...FETCH_OPTS,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ inviteCode }),
+  });
+  if (!res.ok) throw new Error(`입장 요청 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function getJoinRequests(
+  roomId: string,
+): Promise<JoinRequestListResponse> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/join-requests`,
+    FETCH_OPTS,
+  );
+  if (!res.ok) throw new Error(`입장 요청 목록 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function approveJoinRequest(
+  roomId: string,
+  requestId: number,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/join-requests/${requestId}/approve`,
+    { ...FETCH_OPTS, method: "POST" },
+  );
+  if (!res.ok) throw new Error(`입장 승인 실패: ${res.status}`);
+}
+
+export async function rejectJoinRequest(
+  roomId: string,
+  requestId: number,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/rooms/${roomId}/join-requests/${requestId}/reject`,
+    { ...FETCH_OPTS, method: "POST" },
+  );
+  if (!res.ok) throw new Error(`입장 거절 실패: ${res.status}`);
 }

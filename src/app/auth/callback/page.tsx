@@ -3,13 +3,15 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 
-import { exchangeGoogleCode } from "@/lib/api/auth";
+import { exchangeGoogleCode, getMe } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { useSessionStore } from "@/stores/session-store";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const called = useRef(false);
+  const setUser = useSessionStore((s) => s.setUser);
 
   useEffect(() => {
     if (called.current) return;
@@ -26,12 +28,26 @@ function AuthCallbackContent() {
     }
 
     exchangeGoogleCode(code)
-      .then((result) => {
+      .then(async (result) => {
         if (result.ok) {
           const maxAge = 60 * 60 * 24 * 365;
           const secure = location.protocol === "https:" ? "; Secure" : "";
           document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-          router.replace("/home");
+
+          try {
+            const me = await getMe();
+            setUser(me);
+          } catch {
+            // 사용자 정보 조회 실패해도 로그인은 계속 진행
+          }
+
+          const pendingInviteCode = sessionStorage.getItem("pendingInviteCode");
+          if (pendingInviteCode) {
+            sessionStorage.removeItem("pendingInviteCode");
+            router.replace(`/join/${pendingInviteCode}`);
+          } else {
+            router.replace("/home");
+          }
         } else {
           router.replace("/login?error=OAuthCallback");
         }
@@ -39,7 +55,7 @@ function AuthCallbackContent() {
       .catch(() => {
         router.replace("/login?error=OAuthCallback");
       });
-  }, [searchParams, router]);
+  }, [searchParams, router, setUser]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">

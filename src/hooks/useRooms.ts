@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  approveJoinRequest,
   createRoom,
   deleteRoom,
+  getJoinRequests,
   getRooms,
+  joinRoom,
   regenerateInviteCode,
+  rejectJoinRequest,
   RoomCreateRequest,
   RoomUpdateRequest,
   updateRoom,
@@ -53,5 +57,55 @@ export function useDeleteRoom() {
 export function useRegenerateInviteCode() {
   return useMutation({
     mutationFn: (roomId: string) => regenerateInviteCode(roomId),
+  });
+}
+
+export const JOIN_REQUESTS_QUERY_KEY = (roomId: string) =>
+  ["join-requests", roomId] as const;
+
+export function useJoinRoom() {
+  return useMutation({
+    mutationFn: (inviteCode: string) => joinRoom(inviteCode),
+  });
+}
+
+export function useJoinRequests(roomId: string | null) {
+  return useQuery({
+    queryKey: ["join-requests", roomId],
+    queryFn: () => getJoinRequests(roomId!),
+    enabled: !!roomId,
+    refetchInterval: 8000,
+  });
+}
+
+export function useApproveJoinRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      requestId,
+    }: {
+      roomId: string;
+      requestId: number;
+    }) => approveJoinRequest(roomId, requestId),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
+    },
+  });
+}
+
+export function useRejectJoinRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      requestId,
+    }: {
+      roomId: string;
+      requestId: number;
+    }) => rejectJoinRequest(roomId, requestId),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
+    },
   });
 }

@@ -1,23 +1,56 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import type { RoomMember } from "@/mocks/members";
+
+export type MemberRole = "HOST" | "MEMBER";
+
+export type MemberCardData = {
+  id: string;
+  name: string;
+  avatarInitial: string;
+  profileImageUrl?: string | null;
+  role: MemberRole;
+  isCurrentUser?: boolean;
+};
 
 type Props = {
-  member: RoomMember;
-  isViewerAdmin: boolean;
+  member: MemberCardData;
+  isViewerHost: boolean;
   onKick: (memberId: string) => void;
   onTransfer: (memberId: string) => void;
 };
 
-export function MemberCard({
-  member,
-  isViewerAdmin,
-  onKick,
-  onTransfer,
-}: Props) {
+function Avatar({
+  name,
+  initial,
+  imageUrl,
+}: {
+  name: string;
+  initial: string;
+  imageUrl?: string | null;
+}) {
+  if (imageUrl) {
+    return (
+      <Image
+        src={imageUrl}
+        alt={name}
+        width={36}
+        height={36}
+        className="h-9 w-9 rounded-full object-cover"
+      />
+    );
+  }
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
+      {initial}
+    </div>
+  );
+}
+
+export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) {
   const canAct =
-    isViewerAdmin && !member.isCurrentUser && member.role !== "ADMIN";
+    isViewerHost && !member.isCurrentUser && member.role !== "HOST";
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -37,13 +70,10 @@ export function MemberCard({
     <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-gray-50">
       {/* Avatar */}
       <div className="relative flex-shrink-0">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
-          {member.avatarInitial}
-        </div>
-        <span
-          className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${
-            member.status === "online" ? "bg-brand-green" : "bg-light-gray"
-          }`}
+        <Avatar
+          name={member.name}
+          initial={member.avatarInitial}
+          imageUrl={member.profileImageUrl}
         />
       </div>
 
@@ -57,23 +87,20 @@ export function MemberCard({
             <span className="text-xs text-dark-gray">(나)</span>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-1.5">
+        <div className="mt-0.5">
           <span
             className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ${
-              member.role === "ADMIN"
+              member.role === "HOST"
                 ? "bg-brand-red/10 text-brand-red"
                 : "bg-gray-100 text-dark-gray"
             }`}
           >
             {member.role}
           </span>
-          <span className="text-xs text-dark-gray">
-            {member.status === "online" ? "접속 중" : "오프라인"}
-          </span>
         </div>
       </div>
 
-      {/* ··· dropdown — ADMIN only, non-self, non-ADMIN targets */}
+      {/* ··· dropdown — HOST only, non-self, non-HOST targets */}
       {canAct && (
         <div ref={menuRef} className="relative flex-shrink-0">
           <button

@@ -1,4 +1,5 @@
 import { HeaderBar, LeftSection, SideBar } from "@/components/layout";
+import { JoinRequestsPoller } from "@/components/layout/JoinRequestsPoller";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { MapWithDetailPanel } from "@/components/map";
 import { MainProviders } from "./MainProviders";
@@ -10,6 +11,7 @@ export default function MainLayout({
 }) {
   return (
     <MainProviders>
+      <JoinRequestsPoller />
       <main className="h-screen">
         <div className="relative mx-auto flex h-full w-full overflow-hidden rounded-none bg-white">
           <LeftSection>

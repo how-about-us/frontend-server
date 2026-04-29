@@ -2,9 +2,11 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface SessionUser {
-  name: string;
+  id: number;
   email: string;
-  avatarInitial: string;
+  nickname: string;
+  profileImageUrl: string | null;
+  provider: string;
 }
 
 interface SessionStore {
@@ -19,16 +21,15 @@ interface SessionStore {
   currentRoomInviteCode: string | null;
   setCurrentRoomInviteCode: (code: string) => void;
   clearCurrentRoomInviteCode: () => void;
+  /** 방장 전용: 현재 방의 미처리 입장 요청 수 */
+  pendingJoinRequestsCount: number;
+  setPendingJoinRequestsCount: (count: number) => void;
 }
 
 export const useSessionStore = create<SessionStore>()(
   persist(
     (set) => ({
-      user: {
-        name: "테스트 유저",
-        email: "test@example.com",
-        avatarInitial: "T",
-      },
+      user: null,
       setUser: (user) => set({ user }),
       clearUser: () => set({ user: null }),
       currentRoomId: null,
@@ -37,13 +38,15 @@ export const useSessionStore = create<SessionStore>()(
       currentRoomInviteCode: null,
       setCurrentRoomInviteCode: (code) => set({ currentRoomInviteCode: code }),
       clearCurrentRoomInviteCode: () => set({ currentRoomInviteCode: null }),
+      pendingJoinRequestsCount: 0,
+      setPendingJoinRequestsCount: (count) =>
+        set({ pendingJoinRequestsCount: count }),
     }),
     {
       name: "hau:session",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        currentRoomId: state.currentRoomId,
-        currentRoomInviteCode: state.currentRoomInviteCode,
+        user: state.user,
       }),
     },
   ),

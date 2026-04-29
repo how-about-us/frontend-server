@@ -1,6 +1,23 @@
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+
 const FETCH_OPTS: RequestInit = {
   credentials: "include",
 };
+
+export type UserMe = {
+  id: number;
+  email: string;
+  nickname: string;
+  profileImageUrl: string | null;
+  provider: string;
+};
+
+export async function getMe(): Promise<UserMe> {
+  const res = await fetch(`${API_BASE}/users/me`, FETCH_OPTS);
+  if (!res.ok) throw new Error(`내 정보 조회 실패: ${res.status}`);
+  return res.json();
+}
 
 export async function exchangeGoogleCode(
   code: string,

@@ -7,7 +7,14 @@ const BYPASS_AUTH = false; // 로컬 테스트용: true면 인증 없이 통과
 
 function isProtectedPath(pathname: string) {
   if (pathname === "/") return true;
-  const prefixes = ["/home", "/plan", "/bookmark", "/search", "/settings"];
+  const prefixes = [
+    "/home",
+    "/plan",
+    "/bookmark",
+    "/search",
+    "/settings",
+    "/waiting",
+  ];
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
@@ -50,5 +57,6 @@ export const config = {
     "/search/:path*",
     "/settings",
     "/settings/:path*",
+    "/waiting",
   ],
 };

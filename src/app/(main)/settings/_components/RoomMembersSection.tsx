@@ -1,44 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
-import { MOCK_ROOM_MEMBERS, type RoomMember } from "@/mocks/members";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
 
 export function RoomMembersSection() {
-  const [members, setMembers] = useState<RoomMember[]>(MOCK_ROOM_MEMBERS);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
 
+  const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const inviteCode = useSessionStore((s) => s.currentRoomInviteCode);
 
-  // 현재 방의 role을 API 목록에서 읽어 HOST 여부 판단
   const { data: roomsData } = useRoomsList();
   const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
   const isHost = currentRoom?.role === "HOST";
-
-  const currentUser = members.find((m) => m.isCurrentUser);
-  const isViewerAdmin = currentUser?.role === "ADMIN" || isHost;
-  const onlineMembers = members.filter((m) => m.status === "online");
-  const offlineMembers = members.filter((m) => m.status === "offline");
-
-  function handleKick(memberId: string) {
-    setMembers((prev) => prev.filter((m) => m.id !== memberId));
-  }
-
-  function handleTransfer(memberId: string) {
-    setMembers((prev) =>
-      prev.map((m) => {
-        if (m.isCurrentUser) return { ...m, role: "MEMBER" };
-        if (m.id === memberId) return { ...m, role: "ADMIN" };
-        return m;
-      }),
-    );
-  }
 
   function handleLeaveRoom() {
     setShowLeaveConfirm(false);
@@ -51,7 +31,7 @@ export function RoomMembersSection() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
-        {isViewerAdmin && (
+        {isHost && (
           <button
             onClick={() => setShowInvitePanel((v) => !v)}
             className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -85,56 +65,26 @@ export function RoomMembersSection() {
         />
       )}
 
-      {/* 온라인 멤버 */}
-      {onlineMembers.length > 0 && (
+      {/* 나 (현재 유저) */}
+      {user && (
         <section>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
-            온라인 · {onlineMembers.length}
+            나
           </p>
           <div className="rounded-xl border border-gray-border bg-white">
-            {onlineMembers.map((member, i) => (
-              <div
-                key={member.id}
-                className={
-                  i < onlineMembers.length - 1 ? "border-b border-gray-border" : ""
-                }
-              >
-                <MemberCard
-                  member={member}
-                  isViewerAdmin={isViewerAdmin}
-                  onKick={handleKick}
-                  onTransfer={handleTransfer}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 오프라인 멤버 */}
-      {offlineMembers.length > 0 && (
-        <section>
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
-            오프라인 · {offlineMembers.length}
-          </p>
-          <div className="rounded-xl border border-gray-border bg-white">
-            {offlineMembers.map((member, i) => (
-              <div
-                key={member.id}
-                className={
-                  i < offlineMembers.length - 1
-                    ? "border-b border-gray-border"
-                    : ""
-                }
-              >
-                <MemberCard
-                  member={member}
-                  isViewerAdmin={isViewerAdmin}
-                  onKick={handleKick}
-                  onTransfer={handleTransfer}
-                />
-              </div>
-            ))}
+            <MemberCard
+              member={{
+                id: String(user.id),
+                name: user.nickname,
+                avatarInitial: user.nickname.charAt(0),
+                profileImageUrl: user.profileImageUrl,
+                role: isHost ? "HOST" : "MEMBER",
+                isCurrentUser: true,
+              }}
+              isViewerHost={isHost}
+              onKick={() => {}}
+              onTransfer={() => {}}
+            />
           </div>
         </section>
       )}
@@ -155,7 +105,7 @@ export function RoomMembersSection() {
             </p>
             <p className="mb-4 text-xs leading-5 text-dark-gray">
               방을 나가면 현재 여행 플랜에 접근할 수 없게 됩니다.
-              {isViewerAdmin && (
+              {isHost && (
                 <span className="mt-1 block font-medium text-brand-red">
                   HOST가 나가면 다른 멤버에게 권한이 이전됩니다.
                 </span>
