@@ -1,9 +1,7 @@
+import { apiFetch } from "./client";
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
-const FETCH_OPTS: RequestInit = {
-  credentials: "include",
-};
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -71,7 +69,7 @@ export async function searchPlaces(params: {
     url.searchParams.set("radius", String(params.radius));
   }
 
-  const res = await fetch(url.toString(), FETCH_OPTS);
+  const res = await apiFetch(url.toString());
   if (!res.ok) throw new Error(`Places search failed: ${res.status}`);
   return res.json();
 }
@@ -79,9 +77,8 @@ export async function searchPlaces(params: {
 export async function getPlaceDetail(
   googlePlaceId: string,
 ): Promise<PlaceDetail> {
-  const res = await fetch(
+  const res = await apiFetch(
     `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}`,
-    FETCH_OPTS,
   );
   if (!res.ok) throw new Error(`Place detail failed: ${res.status}`);
   return res.json();
@@ -91,7 +88,7 @@ export async function getPlacePhotoUrl(photoName: string): Promise<string> {
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("photoName", photoName);
 
-  const res = await fetch(url.toString(), FETCH_OPTS);
+  const res = await apiFetch(url.toString());
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
   return data.photoUrl;

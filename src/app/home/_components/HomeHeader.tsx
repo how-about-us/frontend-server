@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { logout } from "@/lib/api/auth";
 import { useSessionStore } from "@/stores/session-store";
 
 function UserAvatar({ user }: { user: { nickname: string; profileImageUrl: string | null } }) {
@@ -37,7 +38,8 @@ export function HomeHeader() {
   const user = useSessionStore((s) => s.user);
   const clearUser = useSessionStore((s) => s.clearUser);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
     clearUser();
     router.replace("/login");
