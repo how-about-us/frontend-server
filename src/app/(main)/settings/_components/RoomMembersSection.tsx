@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useSessionStore } from "@/stores/session-store";
-import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList } from "@/hooks/useRooms";
+import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
 
@@ -15,6 +15,7 @@ export function RoomMembersSection() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
+  const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
@@ -28,6 +29,7 @@ export function RoomMembersSection() {
 
   const { mutate: kick, isPending: isKicking } = useKickMember();
   const { mutate: leave, isPending: isLeaving } = useLeaveRoom();
+  const { mutate: transfer, isPending: isTransferring } = useTransferHost();
 
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
@@ -143,12 +145,50 @@ export function RoomMembersSection() {
                       isCurrentUser: false,
                     }}
                     isViewerHost={isHost}
-                    onKick={() => setKickTargetId(member.userId)}
+                    onKick={() => {
+                      setTransferTargetId(null);
+                      setKickTargetId(member.userId);
+                    }}
                     onTransfer={() => {
-                      // TODO: transfer API
+                      setKickTargetId(null);
+                      setTransferTargetId(member.userId);
                     }}
                   />
                 </div>
+
+                {/* 방장 위임 확인 인라인 UI */}
+                {transferTargetId === member.userId && (
+                  <div className="border-b border-gray-border bg-brand-red/5 px-4 py-3">
+                    <p className="mb-2 text-xs font-medium text-gray-800">
+                      <span className="font-semibold">{member.nickname}</span>님에게 방장을 위임하시겠어요?
+                    </p>
+                    <p className="mb-3 text-[11px] text-dark-gray">
+                      위임 후 당신은 일반 멤버가 됩니다.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setTransferTargetId(null)}
+                        disabled={isTransferring}
+                        className="flex-1 rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:opacity-40"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!currentRoomId) return;
+                          transfer(
+                            { roomId: currentRoomId, targetUserId: member.userId },
+                            { onSuccess: () => setTransferTargetId(null) },
+                          );
+                        }}
+                        disabled={isTransferring}
+                        className="flex-1 rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                      >
+                        {isTransferring ? "처리 중…" : "위임"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* 추방 확인 인라인 UI */}
                 {kickTargetId === member.userId && (

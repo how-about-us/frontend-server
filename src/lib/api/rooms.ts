@@ -145,10 +145,7 @@ export async function regenerateInviteCode(
 export async function getRoomMembers(
   roomId: string,
 ): Promise<RoomMemberListResponse> {
-  const res = await fetch(
-    `${API_BASE}/rooms/${roomId}/members`,
-    FETCH_OPTS,
-  );
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/members`, FETCH_OPTS);
   if (!res.ok) throw new Error(`멤버 목록 조회 실패: ${res.status}`);
   return res.json();
 }
@@ -167,7 +164,8 @@ export async function getJoinStatus(roomId: string): Promise<JoinRoomResponse> {
     `${API_BASE}/rooms/${roomId}/join/status`,
     FETCH_OPTS,
   );
-  if (!res.ok) throw new HttpError(res.status, `입장 상태 조회 실패: ${res.status}`);
+  if (!res.ok)
+    throw new HttpError(res.status, `입장 상태 조회 실패: ${res.status}`);
   return res.json();
 }
 
@@ -193,11 +191,24 @@ export async function getJoinRequests(
   return res.json();
 }
 
+export async function transferHost(
+  roomId: string,
+  targetUserId: number,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/host`, {
+    ...FETCH_OPTS,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetUserId }),
+  });
+  if (!res.ok) throw new HttpError(res.status, `방장 위임 실패: ${res.status}`);
+}
+
 export async function leaveRoom(roomId: string): Promise<void> {
-  const res = await fetch(
-    `${API_BASE}/rooms/${roomId}/members/me`,
-    { ...FETCH_OPTS, method: "DELETE" },
-  );
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/members/me`, {
+    ...FETCH_OPTS,
+    method: "DELETE",
+  });
   if (!res.ok) throw new HttpError(res.status, `방 나가기 실패: ${res.status}`);
 }
 
@@ -205,10 +216,10 @@ export async function kickMember(
   roomId: string,
   userId: number,
 ): Promise<void> {
-  const res = await fetch(
-    `${API_BASE}/rooms/${roomId}/members/${userId}`,
-    { ...FETCH_OPTS, method: "DELETE" },
-  );
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/members/${userId}`, {
+    ...FETCH_OPTS,
+    method: "DELETE",
+  });
   if (!res.ok) throw new HttpError(res.status, `멤버 추방 실패: ${res.status}`);
 }
 

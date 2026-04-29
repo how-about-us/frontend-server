@@ -15,6 +15,7 @@ import {
   rejectJoinRequest,
   RoomCreateRequest,
   RoomUpdateRequest,
+  transferHost,
   updateRoom,
 } from "@/lib/api/rooms";
 
@@ -40,8 +41,13 @@ export function useCreateRoom() {
 export function useUpdateRoom() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ roomId, data }: { roomId: string; data: RoomUpdateRequest }) =>
-      updateRoom(roomId, data),
+    mutationFn: ({
+      roomId,
+      data,
+    }: {
+      roomId: string;
+      data: RoomUpdateRequest;
+    }) => updateRoom(roomId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
@@ -90,6 +96,23 @@ export function useJoinRequests(roomId: string | null) {
     queryFn: () => getJoinRequests(roomId!),
     enabled: !!roomId,
     refetchInterval: 8000,
+  });
+}
+
+export function useTransferHost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      targetUserId,
+    }: {
+      roomId: string;
+      targetUserId: number;
+    }) => transferHost(roomId, targetUserId),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
+    },
   });
 }
 
