@@ -17,6 +17,9 @@ export default function NewTripPage() {
   const [endDate, setEndDate] = useState("");
 
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
+  const setCurrentRoomInviteCode = useSessionStore(
+    (s) => s.setCurrentRoomInviteCode,
+  );
   const { mutate: createRoom, isPending, error } = useCreateRoom();
 
   const canSubmit = title.trim() && destination.trim() && !isPending;
@@ -33,6 +36,7 @@ export default function NewTripPage() {
       {
         onSuccess: (room) => {
           setCurrentRoomId(room.id);
+          setCurrentRoomInviteCode(room.inviteCode);
           router.replace(`/plan/${room.id}`);
         },
       },

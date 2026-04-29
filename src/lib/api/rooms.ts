@@ -99,3 +99,14 @@ export async function deleteRoom(roomId: string): Promise<void> {
   });
   if (!res.ok) throw new Error(`방 삭제 실패: ${res.status}`);
 }
+
+export async function regenerateInviteCode(
+  roomId: string,
+): Promise<{ inviteCode: string }> {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}/invite-code`, {
+    ...FETCH_OPTS,
+    method: "POST",
+  });
+  if (!res.ok) throw new Error(`초대 코드 재발급 실패: ${res.status}`);
+  return res.json();
+}

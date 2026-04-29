@@ -15,6 +15,10 @@ interface SessionStore {
   currentRoomId: string | null;
   setCurrentRoomId: (id: string) => void;
   clearCurrentRoomId: () => void;
+  /** 현재 방의 초대 코드 — 방 생성/재발급 시 갱신됩니다. */
+  currentRoomInviteCode: string | null;
+  setCurrentRoomInviteCode: (code: string) => void;
+  clearCurrentRoomInviteCode: () => void;
 }
 
 export const useSessionStore = create<SessionStore>()(
@@ -30,11 +34,17 @@ export const useSessionStore = create<SessionStore>()(
       currentRoomId: null,
       setCurrentRoomId: (id) => set({ currentRoomId: id }),
       clearCurrentRoomId: () => set({ currentRoomId: null }),
+      currentRoomInviteCode: null,
+      setCurrentRoomInviteCode: (code) => set({ currentRoomInviteCode: code }),
+      clearCurrentRoomInviteCode: () => set({ currentRoomInviteCode: null }),
     }),
     {
       name: "hau:session",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ currentRoomId: state.currentRoomId }),
+      partialize: (state) => ({
+        currentRoomId: state.currentRoomId,
+        currentRoomInviteCode: state.currentRoomInviteCode,
+      }),
     },
   ),
 );

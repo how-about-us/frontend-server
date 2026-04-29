@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
+import { useSessionStore } from "@/stores/session-store";
+import { useRoomsList } from "@/hooks/useRooms";
 import { MOCK_ROOM_MEMBERS, type RoomMember } from "@/mocks/members";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
@@ -8,11 +11,18 @@ import { AddMemberPanel } from "./AddMemberPanel";
 export function RoomMembersSection() {
   const [members, setMembers] = useState<RoomMember[]>(MOCK_ROOM_MEMBERS);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+
+  const currentRoomId = useSessionStore((s) => s.currentRoomId);
+  const inviteCode = useSessionStore((s) => s.currentRoomInviteCode);
+
+  // 현재 방의 role을 API 목록에서 읽어 HOST 여부 판단
+  const { data: roomsData } = useRoomsList();
+  const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
+  const isHost = currentRoom?.role === "HOST";
 
   const currentUser = members.find((m) => m.isCurrentUser);
-  const isViewerAdmin = currentUser?.role === "ADMIN";
-  const onlineCount = members.filter((m) => m.status === "online").length;
+  const isViewerAdmin = currentUser?.role === "ADMIN" || isHost;
   const onlineMembers = members.filter((m) => m.status === "online");
   const offlineMembers = members.filter((m) => m.status === "offline");
 
@@ -30,19 +40,6 @@ export function RoomMembersSection() {
     );
   }
 
-  function handleAddMember(name: string) {
-    const avatarInitial = name.charAt(0);
-    const newMember: RoomMember = {
-      id: `user-${Date.now()}`,
-      name,
-      avatarInitial,
-      role: "MEMBER",
-      status: "offline",
-    };
-    setMembers((prev) => [...prev, newMember]);
-    setShowAddPanel(false);
-  }
-
   function handleLeaveRoom() {
     setShowLeaveConfirm(false);
     // TODO: call leave-room API
@@ -53,14 +50,12 @@ export function RoomMembersSection() {
     <div className="flex flex-col gap-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
-        </div>
+        <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
         {isViewerAdmin && (
           <button
-            onClick={() => setShowAddPanel((v) => !v)}
+            onClick={() => setShowInvitePanel((v) => !v)}
             className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-              showAddPanel
+              showInvitePanel
                 ? "border-brand-red bg-brand-red/5 text-brand-red"
                 : "border-gray-border text-dark-gray hover:border-gray-400"
             }`}
@@ -76,20 +71,21 @@ export function RoomMembersSection() {
             >
               <path d="M5.5 1v9M1 5.5h9" />
             </svg>
-            멤버 추가
+            멤버 초대
           </button>
         )}
       </div>
 
-      {/* 멤버 추가 패널 */}
-      {showAddPanel && (
+      {/* 멤버 초대 패널 */}
+      {showInvitePanel && currentRoomId && (
         <AddMemberPanel
-          onAdd={handleAddMember}
-          onClose={() => setShowAddPanel(false)}
+          roomId={currentRoomId}
+          inviteCode={inviteCode}
+          onClose={() => setShowInvitePanel(false)}
         />
       )}
 
-      {/* 현재 접속 중인 유저 */}
+      {/* 온라인 멤버 */}
       {onlineMembers.length > 0 && (
         <section>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
@@ -100,9 +96,7 @@ export function RoomMembersSection() {
               <div
                 key={member.id}
                 className={
-                  i < onlineMembers.length - 1
-                    ? "border-b border-gray-border"
-                    : ""
+                  i < onlineMembers.length - 1 ? "border-b border-gray-border" : ""
                 }
               >
                 <MemberCard
@@ -117,7 +111,7 @@ export function RoomMembersSection() {
         </section>
       )}
 
-      {/* 오프라인 유저 */}
+      {/* 오프라인 멤버 */}
       {offlineMembers.length > 0 && (
         <section>
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
@@ -145,7 +139,7 @@ export function RoomMembersSection() {
         </section>
       )}
 
-      {/* 하단 버튼 영역 */}
+      {/* 하단 버튼 */}
       <div className="flex gap-2 border-t border-gray-border pt-4">
         {!showLeaveConfirm ? (
           <button
@@ -163,7 +157,7 @@ export function RoomMembersSection() {
               방을 나가면 현재 여행 플랜에 접근할 수 없게 됩니다.
               {isViewerAdmin && (
                 <span className="mt-1 block font-medium text-brand-red">
-                  ADMIN이 나가면 다른 멤버에게 권한이 이전됩니다.
+                  HOST가 나가면 다른 멤버에게 권한이 이전됩니다.
                 </span>
               )}
             </p>

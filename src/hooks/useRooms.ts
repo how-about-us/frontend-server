@@ -4,6 +4,7 @@ import {
   createRoom,
   deleteRoom,
   getRooms,
+  regenerateInviteCode,
   RoomCreateRequest,
   RoomUpdateRequest,
   updateRoom,
@@ -46,5 +47,11 @@ export function useDeleteRoom() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
+  });
+}
+
+export function useRegenerateInviteCode() {
+  return useMutation({
+    mutationFn: (roomId: string) => regenerateInviteCode(roomId),
   });
 }
