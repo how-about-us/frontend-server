@@ -3,19 +3,17 @@ import { Star, Send, Calendar, Bookmark } from "lucide-react";
 type Props = {
   name: string;
   category: string;
-  description?: string;
-  rating: number;
-  reviewCount?: number;
-  blogReviewCount?: number;
+  reviewSummary?: string | null;
+  rating: number | null;
+  userRatingCount?: number | null;
 };
 
 export function PlaceSummaryHeader({
   name,
   category,
-  description,
+  reviewSummary,
   rating,
-  reviewCount,
-  blogReviewCount,
+  userRatingCount,
 }: Props) {
   return (
     <div className="border-b border-gray-border px-4 pb-4 pt-3">
@@ -44,22 +42,19 @@ export function PlaceSummaryHeader({
 
       <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px]">
         <Star className="h-4 w-4 shrink-0 fill-[#FDC700] text-[#FDC700]" />
-        <span className="font-semibold text-[#364153]">{rating}</span>
-        {reviewCount !== undefined && (
+        <span className="font-semibold text-[#364153]">
+          {rating != null ? rating.toFixed(1) : "-"}
+        </span>
+        {userRatingCount != null && (
           <span className="text-[#9ca3af]">
-            방문자 리뷰 {reviewCount.toLocaleString()}
-          </span>
-        )}
-        {blogReviewCount !== undefined && (
-          <span className="text-[#9ca3af]">
-            블로그 리뷰 {blogReviewCount.toLocaleString()}
+            리뷰 {userRatingCount.toLocaleString()}개
           </span>
         )}
       </div>
 
-      {description && (
+      {reviewSummary && (
         <p className="mt-2.5 text-[11px] leading-relaxed text-[#6b7280]">
-          {description}
+          {reviewSummary}
         </p>
       )}
 

@@ -20,18 +20,35 @@ export type PlaceSearchItem = {
   photoName: string;
 };
 
+export type PlaceReview = {
+  rating: number;
+  text: string;
+  authorDisplayName: string;
+  publishTime: string;
+  relativePublishTimeDescription: string;
+};
+
 export type PlaceDetail = {
   googlePlaceId: string;
   name: string;
   formattedAddress: string;
   location: { lat: number; lng: number };
   primaryType: string;
-  rating: number;
+  primaryTypeDisplayName: string;
+  rating: number | null;
+  userRatingCount: number | null;
   phoneNumber: string;
   websiteUri: string;
   googleMapsUri: string;
-  weekdayDescriptions: string[];
+  regularOpeningHours: {
+    openNow: boolean;
+    weekdayDescriptions: string[];
+    nextOpenTime?: string;
+    nextCloseTime?: string;
+  } | null;
   photoNames: string[];
+  reviewSummary: string | null;
+  reviews: PlaceReview[];
 };
 
 export type PlacePhotoResponse = {

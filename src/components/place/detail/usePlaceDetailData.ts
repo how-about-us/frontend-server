@@ -22,8 +22,12 @@ export function usePlaceDetailData(googlePlaceId?: string) {
         photoUrls,
         phone: detail.phoneNumber,
         websiteUri: detail.websiteUri,
-        weekdayDescriptions: detail.weekdayDescriptions,
         googleMapsUri: detail.googleMapsUri,
+        openNow: detail.regularOpeningHours?.openNow ?? null,
+        weekdayDescriptions: detail.regularOpeningHours?.weekdayDescriptions ?? [],
+        userRatingCount: detail.userRatingCount,
+        reviewSummary: detail.reviewSummary,
+        reviews: detail.reviews ?? [],
       };
     },
     enabled: !!googlePlaceId,

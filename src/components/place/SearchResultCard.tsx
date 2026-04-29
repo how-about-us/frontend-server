@@ -6,9 +6,11 @@ export type SearchResultCardProps = {
   name: string;
   /** 사람이 읽기 좋은 장소 유형 (e.g. "음식점") */
   category: string;
-  rating: number;
-  userRatingCount?: number;
-  isOpen?: boolean;
+  /** AI 생성 리뷰 요약 */
+  reviewSummary?: string | null;
+  rating: number | null;
+  userRatingCount?: number | null;
+  isOpen?: boolean | null;
   /** Single preview image URL from /places/photos */
   image?: string;
   address?: string;

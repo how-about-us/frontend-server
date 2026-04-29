@@ -11,28 +11,19 @@ import { HomeTab } from "./detail/HomeTab";
 import { ReviewsTab } from "./detail/ReviewsTab";
 import { PhotosTab } from "./detail/PhotosTab";
 
-
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;
 };
 
-function approximateBlogReviewCount(n?: number) {
-  if (n === undefined) return undefined;
-  return Math.max(0, Math.round(n * (270 / 1693)));
-}
-
 export function PlaceDetailPanel({
   name,
   category,
-  description,
+  reviewSummary: propReviewSummary,
   rating,
-  isOpen,
-  reviewCount,
+  userRatingCount: propUserRatingCount,
+  isOpen: propIsOpen,
   image,
   address,
-  phone: propPhone,
-  hours: propHours,
-  website: propWebsite,
   googlePlaceId,
   onClose,
 }: PlaceDetailPanelProps) {
@@ -41,10 +32,14 @@ export function PlaceDetailPanel({
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
 
-  const phone = detailData?.phone || propPhone;
-  const website = detailData?.websiteUri || propWebsite;
-  const hours = detailData?.weekdayDescriptions?.join("\n") || propHours;
+  const phone = detailData?.phone;
+  const website = detailData?.websiteUri;
+  const hours = detailData?.weekdayDescriptions?.join("\n");
   const photoUrls = detailData?.photoUrls ?? [];
+  const openNow = detailData?.openNow ?? propIsOpen;
+  const userRatingCount = detailData?.userRatingCount ?? propUserRatingCount;
+  const reviewSummary = detailData?.reviewSummary ?? propReviewSummary;
+  const reviews = detailData?.reviews ?? [];
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-white">
@@ -86,10 +81,8 @@ export function PlaceDetailPanel({
         <PlaceSummaryHeader
           name={name}
           category={category}
-          description={description}
           rating={rating}
-          reviewCount={reviewCount}
-          blogReviewCount={approximateBlogReviewCount(reviewCount)}
+          userRatingCount={userRatingCount}
         />
 
         {/* Tab navigation */}
@@ -112,17 +105,20 @@ export function PlaceDetailPanel({
         {/* Tab content */}
         {activeTab === "홈" && (
           <HomeTab
-            isOpen={isOpen}
+            isOpen={openNow}
             address={address}
             phone={phone}
             hours={hours}
             website={website}
-            rating={rating}
-            reviewCount={reviewCount}
+            reviewSummary={reviewSummary}
           />
         )}
         {activeTab === "리뷰" && (
-          <ReviewsTab rating={rating} reviewCount={reviewCount} />
+          <ReviewsTab
+            rating={rating}
+            userRatingCount={userRatingCount}
+            reviews={reviews}
+          />
         )}
         {activeTab === "사진" && (
           <PhotosTab
@@ -130,16 +126,6 @@ export function PlaceDetailPanel({
             isLoading={isDetailLoading && !!googlePlaceId}
             fallbackImage={image}
           />
-        )}
-        {activeTab === "메뉴" && (
-          <div className="flex flex-col items-center justify-center gap-2 px-4 py-16 text-center">
-            <p className="text-sm font-medium text-[#364153]">
-              아직 등록된 {activeTab}이 없어요
-            </p>
-            <p className="text-[11px] text-dark-gray">
-              업체 정보가 업데이트되면 여기에 표시됩니다.
-            </p>
-          </div>
         )}
       </div>
     </div>
