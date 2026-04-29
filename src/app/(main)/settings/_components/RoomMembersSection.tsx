@@ -4,31 +4,8 @@ import { useState } from "react";
 
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomMembers, useRoomsList } from "@/hooks/useRooms";
-import type { RoomMember } from "@/lib/api/rooms";
 import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
-
-function MemberAvatar({
-  member,
-}: {
-  member: Pick<RoomMember, "nickname" | "profileImageUrl">;
-}) {
-  if (member.profileImageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={member.profileImageUrl}
-        alt={member.nickname}
-        className="h-9 w-9 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
-      {member.nickname.charAt(0)}
-    </div>
-  );
-}
 
 export function RoomMembersSection() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);

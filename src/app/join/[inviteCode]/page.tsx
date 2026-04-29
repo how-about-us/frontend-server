@@ -7,7 +7,7 @@ import Image from "next/image";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { useJoinRoom } from "@/hooks/useRooms";
 
-export const PENDING_INVITE_KEY = "pendingInviteCode";
+const PENDING_INVITE_KEY = "pendingInviteCode";
 
 function hasSession() {
   if (typeof document === "undefined") return false;

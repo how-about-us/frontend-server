@@ -70,9 +70,6 @@ export function useRoomMembers(roomId: string | null) {
   });
 }
 
-export const JOIN_REQUESTS_QUERY_KEY = (roomId: string) =>
-  ["join-requests", roomId] as const;
-
 export function useJoinRoom() {
   return useMutation({
     mutationFn: (inviteCode: string) => joinRoom(inviteCode),

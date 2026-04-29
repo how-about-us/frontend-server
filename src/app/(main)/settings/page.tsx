@@ -1,5 +1,5 @@
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
-import { JoinRequestsSection, RoomMembersSection } from "./_components";
+import { RoomMembersSection } from "./_components";
 import { SettingsHostGuard } from "./_components/SettingsHostGuard";
 
 export default function SettingsPage() {
