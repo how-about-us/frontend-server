@@ -6,7 +6,7 @@ import { Suspense, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useCheckJoinStatus } from "@/hooks/useRooms";
-import { HttpError } from "@/lib/api/rooms";
+import { getRoomDetail, HttpError } from "@/lib/api/rooms";
 import { useSessionStore } from "@/stores/session-store";
 
 type JoinStatusResult = "PENDING" | "APPROVED" | "REJECTED" | null;
@@ -19,6 +19,7 @@ function WaitingContent() {
   const roomTitle = searchParams.get("roomTitle") ?? "여행 방";
 
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
+  const setCurrentRoomMeta = useSessionStore((s) => s.setCurrentRoomMeta);
 
   const [statusResult, setStatusResult] = useState<JoinStatusResult>(null);
   const [fetchError, setFetchError] = useState(false);
@@ -30,11 +31,17 @@ function WaitingContent() {
     setFetchError(false);
 
     checkStatus(roomId, {
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         const status = data.status.toUpperCase() as JoinStatusResult;
         setStatusResult(status);
         if (status === "APPROVED") {
           setCurrentRoomId(data.id);
+          try {
+            const meta = await getRoomDetail(data.id);
+            setCurrentRoomMeta(meta);
+          } catch {
+            // 메타 조회 실패해도 입장은 진행
+          }
           router.replace(`/plan/${data.id}`);
         }
       },

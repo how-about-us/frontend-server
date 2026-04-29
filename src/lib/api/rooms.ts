@@ -78,6 +78,18 @@ export type RoomUpdateRequest = {
   endDate?: string;
 };
 
+export type RoomDetail = {
+  id: string;
+  title: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  inviteCode: string;
+  memberCount: number;
+  role: string;
+  createdAt: string;
+};
+
 export type JoinRoomResponse = {
   status: string;
   id: string;
@@ -108,6 +120,12 @@ export type JoinRequest = {
 export type JoinRequestListResponse = {
   requests: JoinRequest[];
 };
+
+export async function getRoomDetail(roomId: string): Promise<RoomDetail> {
+  const res = await fetch(`${API_BASE}/rooms/${roomId}`, FETCH_OPTS);
+  if (!res.ok) throw new Error(`방 상세 조회 실패: ${res.status}`);
+  return res.json();
+}
 
 export async function updateRoom(
   roomId: string,

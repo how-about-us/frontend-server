@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import type { RoomDetail } from "@/lib/api/rooms";
 
 export interface SessionUser {
   id: number;
@@ -21,6 +22,10 @@ interface SessionStore {
   currentRoomInviteCode: string | null;
   setCurrentRoomInviteCode: (code: string) => void;
   clearCurrentRoomInviteCode: () => void;
+  /** 현재 참여 중인 방의 메타데이터 (방 상세 조회 후 저장) */
+  currentRoomMeta: RoomDetail | null;
+  setCurrentRoomMeta: (meta: RoomDetail) => void;
+  clearCurrentRoomMeta: () => void;
   /** 방장 전용: 현재 방의 미처리 입장 요청 수 */
   pendingJoinRequestsCount: number;
   setPendingJoinRequestsCount: (count: number) => void;
@@ -38,6 +43,9 @@ export const useSessionStore = create<SessionStore>()(
       currentRoomInviteCode: null,
       setCurrentRoomInviteCode: (code) => set({ currentRoomInviteCode: code }),
       clearCurrentRoomInviteCode: () => set({ currentRoomInviteCode: null }),
+      currentRoomMeta: null,
+      setCurrentRoomMeta: (meta) => set({ currentRoomMeta: meta }),
+      clearCurrentRoomMeta: () => set({ currentRoomMeta: null }),
       pendingJoinRequestsCount: 0,
       setPendingJoinRequestsCount: (count) =>
         set({ pendingJoinRequestsCount: count }),
