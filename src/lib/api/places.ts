@@ -13,7 +13,10 @@ export type PlaceSearchItem = {
   formattedAddress: string;
   location: { lat: number; lng: number };
   primaryType: string;
+  primaryTypeDisplayName: string;
   rating: number;
+  userRatingCount: number;
+  openNow: boolean;
   photoName: string;
 };
 

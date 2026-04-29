@@ -37,9 +37,11 @@ async function fetchPlacesWithPhotos(
       const result: PlaceSearchResult = {
         googlePlaceId: item.googlePlaceId,
         name: item.name,
-        category: item.primaryType,
+        category: item.primaryTypeDisplayName || item.primaryType,
         address: item.formattedAddress,
         rating: item.rating,
+        userRatingCount: item.userRatingCount,
+        isOpen: item.openNow,
         image: imageUrl,
         location: item.location,
       };
@@ -58,8 +60,7 @@ export function usePlacesSearch(
 ) {
   return useQuery({
     queryKey: ["places", "search", query, latitude, longitude, radius],
-    queryFn: () =>
-      fetchPlacesWithPhotos(query, latitude!, longitude!, radius),
+    queryFn: () => fetchPlacesWithPhotos(query, latitude!, longitude!, radius),
     enabled: query.trim().length > 0 && latitude !== null && longitude !== null,
     staleTime: 30_000,
   });
