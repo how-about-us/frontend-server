@@ -5,6 +5,7 @@ import { GoogleMapsProvider } from "@/components/googleMap";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { SelectedPlaceProvider } from "@/contexts/SelectedPlaceContext";
+import { MapCenterProvider } from "@/contexts/MapCenterContext";
 
 /**
  * (main) 라우트 그룹에서 공통으로 쓰는 클라이언트 Provider 묶음.
@@ -15,7 +16,9 @@ export function MainProviders({ children }: { children: ReactNode }) {
     <GoogleMapsProvider>
       <SectionWidthProvider>
         <ChatProvider>
-          <SelectedPlaceProvider>{children}</SelectedPlaceProvider>
+          <SelectedPlaceProvider>
+            <MapCenterProvider>{children}</MapCenterProvider>
+          </SelectedPlaceProvider>
         </ChatProvider>
       </SectionWidthProvider>
     </GoogleMapsProvider>

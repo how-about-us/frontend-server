@@ -1,49 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, MapPin, Loader2, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Search, Loader2, AlertCircle } from "lucide-react";
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { useMapCenter } from "@/contexts/MapCenterContext";
 import { usePlacesSearch } from "@/hooks/usePlacesSearch";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 
-const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 }; // Seoul fallback
-
-function useGeolocation() {
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
-  const [locationError, setLocationError] = useState(false);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setCoords(DEFAULT_LOCATION);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {
-        setCoords(DEFAULT_LOCATION);
-        setLocationError(true);
-      },
-      { timeout: 5000 },
-    );
-  }, []);
-
-  return { coords, locationError };
-}
-
 export default function SearchPage() {
   const { setSelectedPlace } = useSelectedPlace();
+  const { mapCenter } = useMapCenter();
   const [query, setQuery] = useState("");
-  const { coords, locationError } = useGeolocation();
 
   const { data: results, isLoading, isError, error } = usePlacesSearch(
     query,
-    coords?.lat ?? null,
-    coords?.lng ?? null,
+    mapCenter.lat,
+    mapCenter.lng,
   );
 
   return (
@@ -52,14 +26,7 @@ export default function SearchPage() {
 
       {/* Search input */}
       <div className="shrink-0 border-b border-gray-border px-4 pb-4 pt-3">
-        <PlacesSearchInput coords={coords} onSearch={setQuery} />
-
-        {locationError && (
-          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#99A1AF]">
-            <MapPin className="h-3 w-3" />
-            위치 권한이 없어 기본 위치로 검색합니다.
-          </p>
-        )}
+        <PlacesSearchInput coords={mapCenter} onSearch={setQuery} />
       </div>
 
       {/* Results */}

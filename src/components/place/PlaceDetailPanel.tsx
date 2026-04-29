@@ -10,7 +10,7 @@ import { PlaceSummaryHeader } from "./detail/PlaceSummaryHeader";
 import { HomeTab } from "./detail/HomeTab";
 import { ReviewsTab } from "./detail/ReviewsTab";
 import { PhotosTab } from "./detail/PhotosTab";
-import { InfoTab } from "./detail/InfoTab";
+
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;
@@ -131,16 +131,7 @@ export function PlaceDetailPanel({
             fallbackImage={image}
           />
         )}
-        {activeTab === "정보" && (
-          <InfoTab
-            address={address}
-            phone={phone}
-            hours={hours}
-            website={website}
-            isOpen={isOpen}
-          />
-        )}
-        {(activeTab === "소식" || activeTab === "메뉴") && (
+        {activeTab === "메뉴" && (
           <div className="flex flex-col items-center justify-center gap-2 px-4 py-16 text-center">
             <p className="text-sm font-medium text-[#364153]">
               아직 등록된 {activeTab}이 없어요

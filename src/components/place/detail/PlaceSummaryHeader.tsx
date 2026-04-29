@@ -20,11 +20,11 @@ export function PlaceSummaryHeader({
   return (
     <div className="border-b border-gray-border px-4 pb-4 pt-3">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="min-w-0 flex-1 text-balance leading-snug">
-          <span className="text-lg font-bold tracking-tight text-[#111827]">
+        <h2 className="min-w-0 flex-1 leading-snug">
+          <span className="block text-lg font-bold tracking-tight text-[#111827]">
             {name}
           </span>
-          <span className="ml-2 text-sm font-normal text-[#6b7280]">
+          <span className="block text-sm font-normal text-[#6b7280]">
             {category}
           </span>
         </h2>

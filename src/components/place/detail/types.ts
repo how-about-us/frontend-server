@@ -1,4 +1,4 @@
-export const TABS = ["홈", "소식", "메뉴", "리뷰", "사진", "정보"] as const;
+export const TABS = ["홈", "메뉴", "리뷰", "사진"] as const;
 export type Tab = (typeof TABS)[number];
 
 export type PlaceDetailResult = {

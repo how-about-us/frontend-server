@@ -5,6 +5,7 @@ import { Map as GoogleMap, AdvancedMarker, useMap } from "@vis.gl/react-google-m
 
 import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { useMapCenter } from "@/contexts/MapCenterContext";
 import {
   type PriceValue,
   type RatingValue,
@@ -49,6 +50,7 @@ function isSamePlace(
 
 export default function Map() {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
+  const { setMapCenter } = useMapCenter();
   const [price, setPrice] = useState<PriceValue>("all");
   const [rating, setRating] = useState<RatingValue>("all");
   const [openNow, setOpenNow] = useState<OpenValue>("all");
@@ -73,6 +75,9 @@ export default function Map() {
         fullscreenControl={false}
         clickableIcons={false}
         onClick={() => setSelectedPlace(null)}
+        onCameraChanged={(ev) =>
+          setMapCenter({ lat: ev.detail.center.lat, lng: ev.detail.center.lng })
+        }
       >
         <MapController />
 
