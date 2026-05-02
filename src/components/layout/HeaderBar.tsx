@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
+import { resolveEffectiveMainRoomId } from "@/components/layout/MainRoomGate";
 import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -18,13 +19,17 @@ function formatDateRange(startDate: string, endDate: string): string {
 }
 
 const HeaderBar = () => {
+  const pathname = usePathname();
   const params = useParams();
+  const storedRoomId = useSessionStore((s) => s.currentRoomId);
+
+  if (!resolveEffectiveMainRoomId(pathname, storedRoomId)) return null;
+
   const paramRoomId =
     typeof params.roomId === "string" ? params.roomId : undefined;
-  const storedRoomId = useSessionStore((s) => s.currentRoomId);
   const roomId = paramRoomId ?? storedRoomId ?? undefined;
 
-  const { data } = useRoomsList();
+  const { data, isPending } = useRoomsList();
   const currentRoom = roomId
     ? (data?.rooms ?? []).find((r) => r.id === roomId)
     : undefined;
@@ -49,10 +54,18 @@ const HeaderBar = () => {
                   </span>
                 )}
               </>
-            ) : (
-              <span className="block text-sm font-semibold leading-tight text-dark-gray">
-                방을 선택해주세요
+            ) : isPending ? (
+              <span
+                className="block text-sm font-semibold leading-tight text-dark-gray"
+                aria-busy="true"
+              >
+                …
               </span>
+            ) : (
+              <span
+                className="inline-block min-h-[1.25rem] align-top"
+                aria-hidden
+              />
             )}
           </div>
           <Image alt="logo" src="/icons/logo.svg" width={150} height={20} />
