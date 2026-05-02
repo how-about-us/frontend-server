@@ -11,7 +11,7 @@ export function BookmarkFolderDetailHeader({
   onEditClick,
 }: {
   folder: BookmarkFolder;
-  onEditClick: () => void;
+  onEditClick?: () => void;
 }) {
   return (
     <div className="shrink-0 border-b border-gray-border px-6 pb-5">
@@ -33,14 +33,18 @@ export function BookmarkFolderDetailHeader({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onEditClick}
-          className="shrink-0 rounded-lg p-2.5 text-neutral-700 transition-colors hover:bg-bubble-gray"
-          aria-label="장소 목록 편집"
-        >
-          <SquarePen className="size-6" strokeWidth={2} />
-        </button>
+        {onEditClick ? (
+          <button
+            type="button"
+            onClick={onEditClick}
+            className="shrink-0 rounded-lg p-2.5 text-neutral-700 transition-colors hover:bg-bubble-gray"
+            aria-label="장소 목록 편집"
+          >
+            <SquarePen className="size-6" strokeWidth={2} />
+          </button>
+        ) : (
+          <span className="w-11 shrink-0" aria-hidden />
+        )}
       </div>
     </div>
   );

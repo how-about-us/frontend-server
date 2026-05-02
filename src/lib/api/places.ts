@@ -1,3 +1,4 @@
+import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 import { apiFetch } from "./client";
 
 const API_BASE =
@@ -92,4 +93,38 @@ export async function getPlacePhotoUrl(photoName: string): Promise<string> {
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
   return data.photoUrl;
+}
+
+/** Loads place detail and first photo for list/search card display (e.g. bookmarks). */
+export async function getPlaceCardPropsByGoogleId(
+  googlePlaceId: string,
+): Promise<SearchResultCardProps> {
+  const detail = await getPlaceDetail(googlePlaceId);
+  let image: string | undefined;
+  const firstPhoto = detail.photoNames[0];
+  if (firstPhoto) {
+    try {
+      image = await getPlacePhotoUrl(firstPhoto);
+    } catch {
+      /* preview optional */
+    }
+  }
+  const hours = detail.regularOpeningHours?.weekdayDescriptions?.length
+    ? detail.regularOpeningHours.weekdayDescriptions.join("\n")
+    : undefined;
+  return {
+    name: detail.name,
+    category: detail.primaryTypeDisplayName || detail.primaryType,
+    rating: detail.rating,
+    userRatingCount: detail.userRatingCount,
+    isOpen: detail.regularOpeningHours?.openNow ?? null,
+    address: detail.formattedAddress,
+    googlePlaceId: detail.googlePlaceId,
+    location: detail.location,
+    reviewSummary: detail.reviewSummary,
+    image,
+    phone: detail.phoneNumber || undefined,
+    hours,
+    website: detail.websiteUri || undefined,
+  };
 }

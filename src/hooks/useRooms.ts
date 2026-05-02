@@ -3,14 +3,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveJoinRequest,
   createBookmarkCategory,
+  createRoomBookmark,
   createRoom,
+  deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
   getBookmarkCategories,
-  updateBookmarkCategory,
   getJoinRequests,
   getJoinStatus,
+  getRoomBookmarks,
   getRoomMembers,
+  patchRoomBookmarkCategory,
   getRooms,
   joinRoom,
   kickMember,
@@ -20,6 +23,7 @@ import {
   RoomCreateRequest,
   RoomUpdateRequest,
   transferHost,
+  updateBookmarkCategory,
   updateRoom,
 } from "@/lib/api/rooms";
 
@@ -240,6 +244,97 @@ export function useDeleteBookmarkCategory() {
       categoryId: number;
     }) => deleteBookmarkCategory(roomId, categoryId),
     onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+    },
+  });
+}
+
+export const roomBookmarksQueryKey = (
+  roomId: string | null,
+  categoryId: number | null,
+) => ["room-bookmarks", roomId, categoryId] as const;
+
+export function useRoomBookmarks(
+  roomId: string | null,
+  categoryId: number | null,
+) {
+  const idOk =
+    categoryId != null && Number.isFinite(categoryId) && categoryId >= 0;
+  return useQuery({
+    queryKey: roomBookmarksQueryKey(roomId, idOk ? categoryId : null),
+    queryFn: () => getRoomBookmarks(roomId!, categoryId!),
+    enabled: !!roomId && idOk,
+  });
+}
+
+export function useCreateRoomBookmark() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      googlePlaceId,
+      categoryId,
+    }: {
+      roomId: string;
+      googlePlaceId: string;
+      categoryId: number;
+    }) => createRoomBookmark(roomId, { googlePlaceId, categoryId }),
+    onSuccess: (_, { roomId, categoryId }) => {
+      queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(roomId, categoryId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+    },
+  });
+}
+
+export function useMoveRoomBookmark() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      bookmarkId,
+      categoryId,
+    }: {
+      roomId: string;
+      bookmarkId: number;
+      categoryId: number;
+      fromCategoryId: number;
+    }) => patchRoomBookmarkCategory(roomId, bookmarkId, { categoryId }),
+    onSuccess: (_, { roomId, categoryId, fromCategoryId }) => {
+      queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(roomId, fromCategoryId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(roomId, categoryId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+    },
+  });
+}
+
+export function useDeleteRoomBookmarkItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      bookmarkId,
+      categoryId,
+    }: {
+      roomId: string;
+      bookmarkId: number;
+      categoryId: number;
+    }) => deleteRoomBookmark(roomId, bookmarkId),
+    onSuccess: (_, { roomId, categoryId }) => {
+      queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(roomId, categoryId),
+      });
       queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(roomId),
       });

@@ -1,6 +1,7 @@
 "use client";
 
 import { Star, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type SearchResultCardProps = {
   name: string;
@@ -32,10 +33,14 @@ export function SearchResultCard({
   image,
   address,
   onClick,
-}: SearchResultCardProps & { onClick?: () => void }) {
+  className,
+}: SearchResultCardProps & { onClick?: () => void; className?: string }) {
   return (
     <article
-      className="flex items-start gap-3 border-b border-gray-border bg-white px-4 py-3.5 transition-colors hover:bg-gray-50 active:bg-gray-100"
+      className={cn(
+        "flex items-start gap-3 border-b border-gray-border bg-white px-4 py-3.5 transition-colors hover:bg-gray-50 active:bg-gray-100",
+        className,
+      )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       style={onClick ? { cursor: "pointer" } : undefined}

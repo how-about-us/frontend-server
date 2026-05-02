@@ -6,6 +6,8 @@ type Props = {
   reviewSummary?: string | null;
   rating: number | null;
   userRatingCount?: number | null;
+  onAddBookmark?: () => void;
+  addBookmarkDisabled?: boolean;
 };
 
 export function PlaceSummaryHeader({
@@ -14,6 +16,8 @@ export function PlaceSummaryHeader({
   reviewSummary,
   rating,
   userRatingCount,
+  onAddBookmark,
+  addBookmarkDisabled = false,
 }: Props) {
   return (
     <div className="border-b border-gray-border px-4 pb-4 pt-3">
@@ -68,7 +72,9 @@ export function PlaceSummaryHeader({
         </button>
         <button
           type="button"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-border bg-white py-3 text-xs font-semibold text-[#111827] transition hover:bg-gray-50 active:bg-gray-100"
+          onClick={onAddBookmark}
+          disabled={addBookmarkDisabled || !onAddBookmark}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-border bg-white py-3 text-xs font-semibold text-[#111827] transition hover:bg-gray-50 active:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Bookmark className="h-4 w-4" strokeWidth={2} />
           북마크에 추가

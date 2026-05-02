@@ -3,6 +3,7 @@
 import { ArrowLeft, X } from "lucide-react";
 import { useState } from "react";
 import type { SearchResultCardProps } from "./SearchResultCard";
+import { AddToBookmarkModal } from "./AddToBookmarkModal";
 import { TABS, type Tab } from "./detail/types";
 import { usePlaceDetailData } from "./detail/usePlaceDetailData";
 import { HeroSkeleton, HeroGrid } from "./detail/HeroSection";
@@ -28,6 +29,7 @@ export function PlaceDetailPanel({
   onClose,
 }: PlaceDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
+  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
 
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
@@ -83,6 +85,12 @@ export function PlaceDetailPanel({
           category={category}
           rating={rating}
           userRatingCount={userRatingCount}
+          onAddBookmark={
+            googlePlaceId
+              ? () => setBookmarkModalOpen(true)
+              : undefined
+          }
+          addBookmarkDisabled={!googlePlaceId}
         />
 
         {/* Tab navigation */}
@@ -128,6 +136,13 @@ export function PlaceDetailPanel({
           />
         )}
       </div>
+
+      {bookmarkModalOpen && googlePlaceId && (
+        <AddToBookmarkModal
+          googlePlaceId={googlePlaceId}
+          onClose={() => setBookmarkModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

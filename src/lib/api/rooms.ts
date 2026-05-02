@@ -346,3 +346,76 @@ export async function deleteBookmarkCategory(
   );
   if (!res.ok) throw new Error(`보관함 카테고리 삭제 실패: ${res.status}`);
 }
+
+// ─── Room bookmarks (places in categories) ─────────────────────────────────
+
+export type RoomBookmark = {
+  bookmarkId: number;
+  roomId: string;
+  googlePlaceId: string;
+  categoryId: number;
+  category: string;
+  addedBy: number;
+  createdAt: string;
+};
+
+export type RoomBookmarkCreateRequest = {
+  googlePlaceId: string;
+  categoryId: number;
+};
+
+export async function getRoomBookmarks(
+  roomId: string,
+  categoryId: number,
+): Promise<RoomBookmark[]> {
+  const url = new URL(`${API_BASE}/rooms/${roomId}/bookmarks`);
+  url.searchParams.set("categoryId", String(categoryId));
+  const res = await apiFetch(url.toString());
+  if (!res.ok) throw new Error(`보관함 목록 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function createRoomBookmark(
+  roomId: string,
+  body: RoomBookmarkCreateRequest,
+): Promise<RoomBookmark> {
+  const res = await apiFetch(`${API_BASE}/rooms/${roomId}/bookmarks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`보관함 항목 추가 실패: ${res.status}`);
+  return res.json();
+}
+
+export type RoomBookmarkCategoryPatchRequest = {
+  categoryId: number;
+};
+
+export async function patchRoomBookmarkCategory(
+  roomId: string,
+  bookmarkId: number,
+  body: RoomBookmarkCategoryPatchRequest,
+): Promise<RoomBookmark> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmarks/${bookmarkId}/category`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) throw new Error(`보관함 카테고리 변경 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteRoomBookmark(
+  roomId: string,
+  bookmarkId: number,
+): Promise<void> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmarks/${bookmarkId}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw new Error(`보관함 항목 삭제 실패: ${res.status}`);
+}
