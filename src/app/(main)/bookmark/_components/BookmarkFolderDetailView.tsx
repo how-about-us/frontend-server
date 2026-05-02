@@ -28,7 +28,12 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
 
   const placeQueries = useQueries({
     queries: (bookmarkRows ?? []).map((b) => ({
-      queryKey: ["place-card-bookmark", b.googlePlaceId, b.bookmarkId] as const,
+      queryKey: [
+        "place-card-bookmark",
+        roomId,
+        b.googlePlaceId,
+        b.bookmarkId,
+      ] as const,
       queryFn: async () => {
         const card = await getPlaceCardPropsByGoogleId(b.googlePlaceId);
         return { ...card, id: String(b.bookmarkId) } satisfies BookmarkedPlace;

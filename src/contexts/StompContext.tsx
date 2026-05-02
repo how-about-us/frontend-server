@@ -8,16 +8,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Client, StompSubscription } from "@stomp/stompjs";
 
 import {
-  bookmarkChangedMessage,
+  buildBookmarkBroadcastMessage,
   type RoomBookmarkChangedEvent,
   RoomBroadcastBookmarkIcon,
   RoomBroadcastProfileIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
+import { invalidateRoomBookmarkQueries } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
 interface RoomPresenceChangedEvent {
@@ -41,6 +43,9 @@ const StompContext = createContext<StompContextValue>({
 export function StompProvider({ children }: { children: ReactNode }) {
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
+  const queryClient = useQueryClient();
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
 
   const clientRef = useRef<Client | null>(null);
   const presenceSubRef = useRef<StompSubscription | null>(null);
@@ -87,15 +92,25 @@ export function StompProvider({ children }: { children: ReactNode }) {
     bookmarksSubRef.current = client.subscribe(
       `/topic/rooms/${roomId}/bookmarks`,
       (message) => {
-        try {
-          const event: RoomBookmarkChangedEvent = JSON.parse(message.body);
-          showRoomBroadcastAlert({
-            message: bookmarkChangedMessage(event.type),
-            icon: <RoomBroadcastBookmarkIcon />,
-          });
-        } catch {
-          // malformed message — ignore
-        }
+        void (async () => {
+          try {
+            const event: RoomBookmarkChangedEvent = JSON.parse(message.body);
+            const rid = String(event.roomId ?? "").trim();
+            if (!rid) return;
+
+            const msg = await buildBookmarkBroadcastMessage(
+              queryClientRef.current,
+              event,
+            );
+            await invalidateRoomBookmarkQueries(queryClientRef.current, rid);
+            showRoomBroadcastAlert({
+              message: msg,
+              icon: <RoomBroadcastBookmarkIcon />,
+            });
+          } catch {
+            // malformed message / network — ignore
+          }
+        })();
       },
     );
   };

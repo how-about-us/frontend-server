@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import {
   approveJoinRequest,
@@ -188,6 +193,7 @@ export function useBookmarkCategories(roomId: string | null) {
     queryKey: bookmarkCategoriesQueryKey(roomId),
     queryFn: () => getBookmarkCategories(roomId!),
     enabled: !!roomId,
+    staleTime: 0,
   });
 }
 
@@ -256,6 +262,30 @@ export const roomBookmarksQueryKey = (
   categoryId: number | null,
 ) => ["room-bookmarks", roomId, categoryId] as const;
 
+/** STOMP 북마크 브로드캐스트 등 — 카테고리·북마크 목록 refetch + 해당 방 장소 카드 캐시 제거 */
+export async function invalidateRoomBookmarkQueries(
+  queryClient: QueryClient,
+  roomId: string,
+): Promise<void> {
+  const rid = String(roomId ?? "").trim();
+  if (!rid) return;
+
+  queryClient.removeQueries({
+    queryKey: ["place-card-bookmark", rid],
+  });
+
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: bookmarkCategoriesQueryKey(rid),
+      refetchType: "all",
+    }),
+    queryClient.invalidateQueries({
+      queryKey: ["room-bookmarks", rid],
+      refetchType: "all",
+    }),
+  ]);
+}
+
 export function useRoomBookmarks(
   roomId: string | null,
   categoryId: number | null,
@@ -266,6 +296,7 @@ export function useRoomBookmarks(
     queryKey: roomBookmarksQueryKey(roomId, idOk ? categoryId : null),
     queryFn: () => getRoomBookmarks(roomId!, categoryId!),
     enabled: !!roomId && idOk,
+    staleTime: 0,
   });
 }
 
