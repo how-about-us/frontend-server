@@ -6,5 +6,5 @@ import { useStompContext } from "@/contexts/StompContext";
  * 이후 추가될 /topic 또는 /user 구독이 필요한 컴포넌트에서 사용하세요.
  */
 export function useStompClient(): Client | null {
-  return useStompContext();
+  return useStompContext().client;
 }

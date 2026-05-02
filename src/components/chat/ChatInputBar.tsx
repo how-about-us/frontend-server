@@ -6,7 +6,12 @@ import { ChatEnterIcon } from "@/components/icons";
 
 const AI_PREFIX = "@AI";
 
-export function ChatInputBar({ isMinimized }: { isMinimized: boolean }) {
+interface ChatInputBarProps {
+  isMinimized: boolean;
+  onSend: (content: string) => void;
+}
+
+export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -38,6 +43,21 @@ export function ChatInputBar({ isMinimized }: { isMinimized: boolean }) {
     setMessage(val);
   }
 
+  function handleSend() {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    onSend(trimmed);
+    setMessage("");
+    setAiEnabled(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
   return (
     <div
       className="flex shrink-0 flex-col border-t border-gray-300"
@@ -53,6 +73,7 @@ export function ChatInputBar({ isMinimized }: { isMinimized: boolean }) {
           ref={inputRef}
           value={message}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요."
           className={`h-full w-full resize-none bg-transparent text-sm leading-relaxed text-black outline-none placeholder:text-black/40 [scrollbar-color:rgba(0,0,0,0.2)_transparent] ${
             aiEnabled ? "text-transparent caret-black" : ""
@@ -84,7 +105,10 @@ export function ChatInputBar({ isMinimized }: { isMinimized: boolean }) {
             {aiEnabled && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
           </button>
         </div>
-        <button className="flex items-center gap-2 px-2 py-2 transition hover:opacity-80">
+        <button
+          onClick={handleSend}
+          className="flex items-center gap-2 px-2 py-2 transition hover:opacity-80"
+        >
           <ChatEnterIcon
             className={message.trim() ? "text-brand-red" : "text-light-gray"}
           />

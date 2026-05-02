@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/mocks";
+import type { ChatMessage } from "@/types/chat";
 
 const AI_AVATAR_SRC = "https://picsum.photos/seed/woori-ai/80/80";
 

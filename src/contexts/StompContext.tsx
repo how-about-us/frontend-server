@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import type { Client, StompSubscription } from "@stomp/stompjs";
@@ -22,7 +23,15 @@ interface RoomPresenceChangedEvent {
   userId: number;
 }
 
-const StompContext = createContext<Client | null>(null);
+interface StompContextValue {
+  client: Client | null;
+  connected: boolean;
+}
+
+const StompContext = createContext<StompContextValue>({
+  client: null,
+  connected: false,
+});
 
 function PresenceToastIcon({ url }: { url: string | null }) {
   if (!url) return null;
@@ -43,6 +52,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const clientRef = useRef<Client | null>(null);
   const subscriptionRef = useRef<StompSubscription | null>(null);
+  const [contextValue, setContextValue] = useState<StompContextValue>({
+    client: null,
+    connected: false,
+  });
 
   const subscribeToPresence = (client: Client, roomId: string) => {
     if (subscriptionRef.current) {
@@ -84,16 +97,27 @@ export function StompProvider({ children }: { children: ReactNode }) {
         clientRef.current.deactivate();
         clientRef.current = null;
       }
+      setContextValue({ client: null, connected: false });
       return;
     }
 
     const client = createStompClient(getStompBrokerURL());
     clientRef.current = client;
+    setContextValue({ client, connected: false });
 
     client.onConnect = () => {
+      setContextValue({ client, connected: true });
       if (currentRoomId) {
         subscribeToPresence(client, currentRoomId);
       }
+    };
+
+    client.onDisconnect = () => {
+      setContextValue((prev) => ({ ...prev, connected: false }));
+    };
+
+    client.onStompError = () => {
+      setContextValue((prev) => ({ ...prev, connected: false }));
     };
 
     client.activate();
@@ -122,12 +146,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
   }, [currentRoomId]);
 
   return (
-    <StompContext.Provider value={clientRef.current}>
+    <StompContext.Provider value={contextValue}>
       {children}
     </StompContext.Provider>
   );
 }
 
-export function useStompContext(): Client | null {
+export function useStompContext(): StompContextValue {
   return useContext(StompContext);
 }

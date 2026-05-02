@@ -1,8 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
-import { MOCK_CHAT_MESSAGES } from "@/mocks";
+import { useSessionStore } from "@/stores/session-store";
+import { useChatMessages } from "@/hooks/useChatMessages";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInputBar } from "./ChatInputBar";
@@ -12,9 +14,20 @@ import {
   getPanelAnimate,
 } from "./chat.animations";
 
+/** 스토어의 currentRoomId가 없을 때 `/plan/{roomId}` 경로에서 roomId 보강 (persist 비대상 대응) */
+function useChatRoomId(): string | null {
+  const pathname = usePathname();
+  const storeRoomId = useSessionStore((s) => s.currentRoomId);
+  const match = pathname.match(/^\/plan\/([^/]+)$/);
+  const pathRoomId = match?.[1] ?? null;
+  return storeRoomId ?? pathRoomId;
+}
+
 export function ChatPanel() {
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const isMinimized = chatState === "minimized";
+  const roomId = useChatRoomId();
+  const { messages, sendMessage } = useChatMessages(roomId);
 
   return (
     <AnimatePresence>
@@ -40,8 +53,8 @@ export function ChatPanel() {
             onClose={closeChat}
           />
           <div className="h-px bg-black/[0.08]" />
-          <ChatMessageList messages={MOCK_CHAT_MESSAGES} />
-          <ChatInputBar isMinimized={isMinimized} />
+          <ChatMessageList messages={messages} />
+          <ChatInputBar isMinimized={isMinimized} onSend={sendMessage} />
         </motion.div>
       )}
     </AnimatePresence>

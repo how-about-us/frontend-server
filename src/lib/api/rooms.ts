@@ -225,6 +225,30 @@ export async function kickMember(
   if (!res.ok) throw new HttpError(res.status, `멤버 추방 실패: ${res.status}`);
 }
 
+export type RoomMessage = {
+  id: string;
+  roomId: string;
+  senderId: number;
+  messageType: "CHAT" | "AI";
+  content: string;
+  metadata?: Record<string, string>;
+  createdAt: string;
+};
+
+export async function getRoomMessages(
+  roomId: string,
+  params?: { afterId?: string; size?: number },
+): Promise<RoomMessage[]> {
+  const url = new URL(`${API_BASE}/rooms/${roomId}/messages`);
+  if (params?.afterId) url.searchParams.set("afterId", params.afterId);
+  if (params?.size !== undefined)
+    url.searchParams.set("size", String(params.size));
+
+  const res = await apiFetch(url.toString());
+  if (!res.ok) throw new Error(`메시지 목록 조회 실패: ${res.status}`);
+  return res.json();
+}
+
 export async function approveJoinRequest(
   roomId: string,
   requestId: number,

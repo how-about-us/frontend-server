@@ -1,4 +1,5 @@
-import type { ChatMessage } from "@/mocks";
+import { useEffect, useRef } from "react";
+import type { ChatMessage } from "@/types/chat";
 import { groupConsecutiveMessages } from "./chat.utils";
 import {
   OtherMessageGroup,
@@ -9,6 +10,11 @@ import {
 
 export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
   const groups = groupConsecutiveMessages(messages);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2 [scrollbar-color:rgba(0,0,0,0.2)_transparent]">
@@ -24,6 +30,7 @@ export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
           return <OtherMessageGroup key={i} messages={group} />;
         })}
       </div>
+      <div ref={bottomRef} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/mocks";
+import type { ChatMessage } from "@/types/chat";
 
 export function groupConsecutiveMessages(
   messages: ChatMessage[],
