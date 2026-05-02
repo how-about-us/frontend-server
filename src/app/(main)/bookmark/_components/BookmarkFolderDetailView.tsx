@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { SearchResultCard } from "@/components/place";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import type { BookmarkFolder } from "@/mocks";
+import type { BookmarkFolder } from "@/types/bookmark";
 import { useBookmarkFolders } from "../context";
 import {
   movePlacesBetweenFolders,

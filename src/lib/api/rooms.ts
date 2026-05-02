@@ -270,3 +270,46 @@ export async function rejectJoinRequest(
   );
   if (!res.ok) throw new Error(`입장 거절 실패: ${res.status}`);
 }
+
+// ─── Bookmark categories ───────────────────────────────────────────────────
+
+export type BookmarkCategory = {
+  categoryId: number;
+  roomId: string;
+  name: string;
+  colorCode: string;
+  createdBy: number;
+  createdAt: string;
+  placeCount: number;
+};
+
+export type BookmarkCategoryCreateRequest = {
+  name: string;
+  colorCode: string;
+};
+
+export async function getBookmarkCategories(
+  roomId: string,
+): Promise<BookmarkCategory[]> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmark-categories`,
+  );
+  if (!res.ok) throw new Error(`보관함 카테고리 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function createBookmarkCategory(
+  roomId: string,
+  body: BookmarkCategoryCreateRequest,
+): Promise<BookmarkCategory> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmark-categories`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) throw new Error(`보관함 카테고리 생성 실패: ${res.status}`);
+  return res.json();
+}

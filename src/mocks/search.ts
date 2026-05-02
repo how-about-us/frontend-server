@@ -4,11 +4,11 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
   {
     name: "교동두부",
     category: "두부요리",
-    description:
+    reviewSummary:
       "자연의 맛, 정성의 맛 그 자체 · 가격과 함께 즐기는 건강한 식사",
     rating: 4.5,
     isOpen: false,
-    reviewCount: 1693,
+    userRatingCount: 1693,
     image: "https://picsum.photos/seed/gyodong1/224/224",
     address: "경기 수원시 팔달구 교동 123-4",
     phone: "031-123-4567",
@@ -18,10 +18,10 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
   {
     name: "스시 오마카세",
     category: "일식",
-    description: "신선한 재료로 만드는 정통 오마카세 · 특별한 날의 완벽한 선택",
+    reviewSummary: "신선한 재료로 만드는 정통 오마카세 · 특별한 날의 완벽한 선택",
     rating: 4.8,
     isOpen: true,
-    reviewCount: 2847,
+    userRatingCount: 2847,
     image: "https://picsum.photos/seed/sushi1/224/224",
     address: "서울 강남구 청담동 56-7 B1층",
     phone: "02-987-6543",
@@ -31,11 +31,11 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
   {
     name: "파스타 공방",
     category: "양식",
-    description:
+    reviewSummary:
       "수제 면으로 만드는 정통 이탈리안 · 매일 아침 직접 만드는 생면",
     rating: 4.3,
     isOpen: true,
-    reviewCount: 956,
+    userRatingCount: 956,
     image: "https://picsum.photos/seed/pasta1/224/224",
     address: "서울 마포구 연남동 227-35",
     phone: "02-345-6789",
@@ -45,10 +45,10 @@ export const MOCK_SEARCH_RESULTS: SearchResultCardProps[] = [
   {
     name: "할머니 순두부",
     category: "한식",
-    description: "40년 전통의 깊은 맛 · 정성으로 끓여낸 순두부찌개",
+    reviewSummary: "40년 전통의 깊은 맛 · 정성으로 끓여낸 순두부찌개",
     rating: 4.6,
     isOpen: false,
-    reviewCount: 3241,
+    userRatingCount: 3241,
     image: "https://picsum.photos/seed/sundubu1/224/224",
     address: "경남 통영시 중앙로 47",
     phone: "055-456-7890",

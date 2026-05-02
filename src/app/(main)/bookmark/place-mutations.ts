@@ -1,4 +1,4 @@
-import type { BookmarkFolder } from "@/mocks";
+import type { BookmarkFolder } from "@/types/bookmark";
 
 export function removePlacesFromFolder(
   folders: BookmarkFolder[],

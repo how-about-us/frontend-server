@@ -2,7 +2,7 @@
 
 import { SquarePen } from "lucide-react";
 import Link from "next/link";
-import type { BookmarkFolder } from "@/mocks";
+import type { BookmarkFolder } from "@/types/bookmark";
 import { BOOKMARK_LIST_PATH } from "../routes";
 import { FolderRibbonIcon } from "./FolderRibbonIcon";
 
@@ -29,7 +29,7 @@ export function BookmarkFolderDetailHeader({
               {folder.title}
             </p>
             <p className="mt-0.5 text-sm text-dark-gray">
-              {folder.places.length}개 장소
+              {folder.placeCount ?? folder.places.length}개 장소
             </p>
           </div>
         </div>

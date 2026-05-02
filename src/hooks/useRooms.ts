@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   approveJoinRequest,
+  createBookmarkCategory,
   createRoom,
   deleteRoom,
+  getBookmarkCategories,
   getJoinRequests,
   getJoinStatus,
   getRoomMembers,
@@ -168,6 +170,37 @@ export function useRejectJoinRequest() {
     }) => rejectJoinRequest(roomId, requestId),
     onSuccess: (_, { roomId }) => {
       queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
+    },
+  });
+}
+
+export const bookmarkCategoriesQueryKey = (roomId: string | null) =>
+  ["bookmark-categories", roomId] as const;
+
+export function useBookmarkCategories(roomId: string | null) {
+  return useQuery({
+    queryKey: bookmarkCategoriesQueryKey(roomId),
+    queryFn: () => getBookmarkCategories(roomId!),
+    enabled: !!roomId,
+  });
+}
+
+export function useCreateBookmarkCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      name,
+      colorCode,
+    }: {
+      roomId: string;
+      name: string;
+      colorCode: string;
+    }) => createBookmarkCategory(roomId, { name, colorCode }),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
     },
   });
 }

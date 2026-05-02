@@ -2,7 +2,7 @@
 
 import { Check, ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { BookmarkFolder, BookmarkedPlace } from "@/mocks";
+import type { BookmarkFolder, BookmarkedPlace } from "@/types/bookmark";
 
 function CircleCheckbox({
   checked,
@@ -41,7 +41,7 @@ function PlaceEditRow({
   onToggle: () => void;
 }) {
   const labelId = `place-label-${place.id}`;
-  const address = place.address ?? place.description;
+  const address = place.address ?? place.reviewSummary ?? "";
 
   return (
     <div className="flex gap-3 border-b border-gray-border px-4 py-3">

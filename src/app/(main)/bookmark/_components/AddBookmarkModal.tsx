@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { BookmarkFolder } from "@/mocks";
+import type { BookmarkFolder } from "@/types/bookmark";
 
 const COLOR_PRESETS = [
   "#EAB308",
@@ -29,11 +29,13 @@ function initialColor(mode: Mode, initialFolder: BookmarkFolder | null) {
 export function AddBookmarkModal({
   mode,
   initialFolder,
+  busy = false,
   onClose,
   onSave,
 }: {
   mode: Mode;
   initialFolder: BookmarkFolder | null;
+  busy?: boolean;
   onClose: () => void;
   onSave: (payload: { title: string; color: string }) => void;
 }) {
@@ -50,6 +52,7 @@ export function AddBookmarkModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     const trimmed = title.trim();
     onSave({
       title: trimmed || "제목 없는 북마크",
@@ -150,7 +153,8 @@ export function AddBookmarkModal({
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-95"
+              disabled={busy}
+              className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-95 disabled:opacity-60"
             >
               {mode === "edit" ? "저장" : "추가"}
             </button>
