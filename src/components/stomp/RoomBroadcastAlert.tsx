@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { Bookmark } from "lucide-react";
+import { Bookmark, User } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import {
   getBookmarkCategories,
   getRoomMembers,
   type BookmarkCategory,
+  type RoomMember,
   type RoomMemberListResponse,
 } from "@/lib/api/rooms";
 import { bookmarkCategoriesQueryKey } from "@/hooks/useRooms";
@@ -47,6 +48,25 @@ export function RoomBroadcastProfileIcon({ url }: { url: string | null }) {
       />
     </span>
   );
+}
+
+/** 프로필 이미지 URL이 없을 때 presence 등에서 토스트 아이콘으로 사용 */
+export function RoomBroadcastUserPlaceholderIcon() {
+  return (
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-border/80 text-dark-gray">
+      <User className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
+    </span>
+  );
+}
+
+/** presence 토스트: URL이 있으면 프로필, 없으면 유저 플레이스홀더 항상 표시 */
+export function roomPresenceToastIcon(profileImageUrl: string | null) {
+  const trimmed =
+    typeof profileImageUrl === "string" ? profileImageUrl.trim() : "";
+  if (trimmed.length > 0) {
+    return <RoomBroadcastProfileIcon url={trimmed} />;
+  }
+  return <RoomBroadcastUserPlaceholderIcon />;
 }
 
 export function RoomBroadcastBookmarkIcon() {
@@ -115,11 +135,10 @@ function formatBookmarkBroadcastDetailMessage(
   }
 }
 
-async function resolveActorNickname(
+async function fetchRoomMembersList(
   queryClient: QueryClient,
   roomId: string,
-  userId: number,
-): Promise<string> {
+): Promise<RoomMember[] | null> {
   const key = ["room-members", roomId] as const;
   const cached = queryClient.getQueryData<RoomMemberListResponse>(key);
   let members = cached?.members;
@@ -129,12 +148,44 @@ async function resolveActorNickname(
       queryClient.setQueryData(key, res);
       members = res.members;
     } catch {
-      return userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
+      return null;
     }
   }
-  const nick = members?.find((m) => m.userId === userId)?.nickname?.trim();
+  return members ?? [];
+}
+
+/** presence 등 payload에 nickname이 비어 있을 때 멤버 목록으로 표시 이름 보강 */
+export async function resolveActorNickname(
+  queryClient: QueryClient,
+  roomId: string,
+  userId: number,
+): Promise<string> {
+  const members = await fetchRoomMembersList(queryClient, roomId);
+  if (!members?.length) {
+    return userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
+  }
+  const nick = members.find((m) => m.userId === userId)?.nickname?.trim();
   if (nick) return nick;
   return userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
+}
+
+/** 닉네임·프로필 이미지 — 브로드캐스트 payload가 비어도 멤버 목록으로 보강 */
+export async function resolveActorPresence(
+  queryClient: QueryClient,
+  roomId: string,
+  userId: number,
+): Promise<{ nickname: string; profileImageUrl: string | null }> {
+  const fallbackNick = userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
+  const members = await fetchRoomMembersList(queryClient, roomId);
+  if (!members?.length) {
+    return { nickname: fallbackNick, profileImageUrl: null };
+  }
+  const row = members.find((m) => m.userId === userId);
+  const nick = row?.nickname?.trim();
+  return {
+    nickname: nick && nick.length > 0 ? nick : fallbackNick,
+    profileImageUrl: row?.profileImageUrl ?? null,
+  };
 }
 
 /**

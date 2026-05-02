@@ -15,7 +15,8 @@ import {
   buildBookmarkBroadcastMessage,
   type RoomBookmarkChangedEvent,
   RoomBroadcastBookmarkIcon,
-  RoomBroadcastProfileIcon,
+  resolveActorPresence,
+  roomPresenceToastIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
@@ -23,7 +24,7 @@ import { invalidateRoomBookmarkQueries } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
 interface RoomPresenceChangedEvent {
-  nickname: string;
+  nickname: string | null;
   profileImageUrl: string | null;
   roomId: string;
   type: "USER_CONNECTED" | "USER_DISCONNECTED";
@@ -68,24 +69,58 @@ export function StompProvider({ children }: { children: ReactNode }) {
     presenceSubRef.current = client.subscribe(
       `/topic/rooms/${roomId}/presence`,
       (message) => {
-        try {
-          const event: RoomPresenceChangedEvent = JSON.parse(message.body);
-          const icon = <RoomBroadcastProfileIcon url={event.profileImageUrl} />;
+        void (async () => {
+          try {
+            const event = JSON.parse(message.body) as RoomPresenceChangedEvent;
 
-          if (event.type === "USER_CONNECTED") {
-            showRoomBroadcastAlert({
-              message: `${event.nickname}님이 입장했습니다`,
-              icon,
-            });
-          } else {
-            showRoomBroadcastAlert({
-              message: `${event.nickname}님이 퇴장했습니다`,
-              icon,
-            });
+            const trimmed =
+              typeof event.nickname === "string"
+                ? event.nickname.trim()
+                : "";
+
+            const payloadImgRaw = event.profileImageUrl;
+            const payloadImg =
+              typeof payloadImgRaw === "string" &&
+              payloadImgRaw.trim().length > 0
+                ? payloadImgRaw.trim()
+                : null;
+
+            const uid =
+              typeof event.userId === "number" && Number.isFinite(event.userId)
+                ? event.userId
+                : Number(event.userId);
+
+            let displayName = trimmed;
+            let profileUrl: string | null = payloadImg;
+
+            if (!displayName || profileUrl === null) {
+              const fromMembers = await resolveActorPresence(
+                queryClientRef.current,
+                roomId,
+                Number.isFinite(uid) ? uid : 0,
+              );
+              if (!displayName) displayName = fromMembers.nickname;
+              if (profileUrl === null)
+                profileUrl = fromMembers.profileImageUrl ?? null;
+            }
+
+            const icon = roomPresenceToastIcon(profileUrl);
+
+            if (event.type === "USER_CONNECTED") {
+              showRoomBroadcastAlert({
+                message: `${displayName}님이 입장했습니다`,
+                icon,
+              });
+            } else if (event.type === "USER_DISCONNECTED") {
+              showRoomBroadcastAlert({
+                message: `${displayName}님이 퇴장했습니다`,
+                icon,
+              });
+            }
+          } catch {
+            // malformed message — ignore
           }
-        } catch {
-          // malformed message — ignore
-        }
+        })();
       },
     );
 
