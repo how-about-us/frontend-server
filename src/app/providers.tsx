@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Toaster } from "sonner";
 
 import { createQueryClient } from "@/lib/query/queryClient";
+import { StompProvider } from "@/contexts/StompContext";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
@@ -33,7 +35,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <StompProvider>
+        {children}
+        <Toaster position="bottom-right" richColors />
+      </StompProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

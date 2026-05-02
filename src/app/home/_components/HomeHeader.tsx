@@ -9,7 +9,11 @@ import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { logout } from "@/lib/api/auth";
 import { useSessionStore } from "@/stores/session-store";
 
-function UserAvatar({ user }: { user: { nickname: string; profileImageUrl: string | null } }) {
+function UserAvatar({
+  user,
+}: {
+  user: { nickname: string; profileImageUrl: string | null };
+}) {
   const initial = user.nickname.charAt(0);
 
   if (user.profileImageUrl) {
@@ -24,9 +28,7 @@ function UserAvatar({ user }: { user: { nickname: string; profileImageUrl: strin
     );
   }
 
-  return (
-    <span className="text-xs font-semibold text-white">{initial}</span>
-  );
+  return <span className="text-xs font-semibold text-white">{initial}</span>;
 }
 
 export function HomeHeader() {
