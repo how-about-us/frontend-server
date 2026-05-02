@@ -86,10 +86,7 @@ export function BookmarkPlaceRow({
         className="min-w-0 flex-1 border-0 hover:bg-gray-50 active:bg-gray-100"
         onClick={onOpenDetail}
       />
-      <div
-        className="relative flex shrink-0 items-center self-stretch"
-        ref={menuRef}
-      >
+      <div className="relative flex shrink-0 items-center" ref={menuRef}>
         <button
           type="button"
           onClick={(e) => {
@@ -103,7 +100,7 @@ export function BookmarkPlaceRow({
             });
           }}
           disabled={busy}
-          className="rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray disabled:opacity-50"
+          className="rounded-lg p-2 text-dark-gray cursor-pointer"
           aria-label="장소 메뉴"
           aria-expanded={menuOpen}
         >

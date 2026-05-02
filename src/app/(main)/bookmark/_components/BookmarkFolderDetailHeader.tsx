@@ -29,7 +29,7 @@ export function BookmarkFolderDetailHeader({
               {folder.title}
             </p>
             <p className="mt-0.5 text-sm text-dark-gray">
-              {folder.placeCount ?? folder.places.length}개 장소
+              {folder.placeCount ?? 0}개 장소
             </p>
           </div>
         </div>

@@ -18,7 +18,7 @@ export type SearchResultCardProps = {
   phone?: string;
   hours?: string;
   website?: string;
-  /** Present when coming from real API; absent for mock/bookmark data */
+  /** Google Places resource id when resolved from API */
   googlePlaceId?: string;
   /** Coordinates – present for real API results, used to pan the map */
   location?: { lat: number; lng: number };
