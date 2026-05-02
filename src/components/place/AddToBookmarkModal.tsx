@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { HttpError } from "@/lib/api/rooms";
 import type { BookmarkCategory } from "@/lib/api/rooms";
 import { useBookmarkCategories, useCreateRoomBookmark } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
@@ -46,6 +48,12 @@ export function AddToBookmarkModal({
           onClose();
         },
         onError: (e) => {
+          if (e instanceof HttpError && e.status === 409) {
+            toast.error(
+              e.message || "이미 북마크에 추가된 장소입니다",
+            );
+            return;
+          }
           setSubmitError(
             e instanceof Error ? e.message : "보관함에 추가하지 못했습니다.",
           );
