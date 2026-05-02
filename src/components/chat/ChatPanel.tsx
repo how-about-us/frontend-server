@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
+import { roomIdFromPlanPath } from "@/lib/main-room";
 import { useSessionStore } from "@/stores/session-store";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { ChatPanelHeader } from "./ChatPanelHeader";
@@ -18,8 +19,7 @@ import {
 function useChatRoomId(): string | null {
   const pathname = usePathname();
   const storeRoomId = useSessionStore((s) => s.currentRoomId);
-  const match = pathname.match(/^\/plan\/([^/]+)$/);
-  const pathRoomId = match?.[1] ?? null;
+  const pathRoomId = roomIdFromPlanPath(pathname);
   return storeRoomId ?? pathRoomId;
 }
 

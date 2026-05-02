@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 
-import { resolveEffectiveMainRoomId } from "@/components/layout/MainRoomGate";
+import { useEffectiveMainRoomId } from "@/hooks/useEffectiveMainRoomId";
 import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -19,17 +19,17 @@ function formatDateRange(startDate: string, endDate: string): string {
 }
 
 const HeaderBar = () => {
-  const pathname = usePathname();
+  const effective = useEffectiveMainRoomId();
   const params = useParams();
   const storedRoomId = useSessionStore((s) => s.currentRoomId);
+  const { data, isPending } = useRoomsList();
 
-  if (!resolveEffectiveMainRoomId(pathname, storedRoomId)) return null;
+  if (!effective) return null;
 
   const paramRoomId =
     typeof params.roomId === "string" ? params.roomId : undefined;
   const roomId = paramRoomId ?? storedRoomId ?? undefined;
 
-  const { data, isPending } = useRoomsList();
   const currentRoom = roomId
     ? (data?.rooms ?? []).find((r) => r.id === roomId)
     : undefined;
