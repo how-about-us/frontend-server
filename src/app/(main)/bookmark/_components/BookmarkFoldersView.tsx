@@ -7,6 +7,7 @@ import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
   useDeleteBookmarkCategory,
+  useUpdateBookmarkCategory,
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import type { BookmarkFolder } from "@/types/bookmark";
@@ -18,12 +19,7 @@ import { FolderRibbonIcon } from "./FolderRibbonIcon";
 export function BookmarkFoldersView() {
   const roomId = useSessionStore((s) => s.currentRoomId);
   const { folders } = useBookmarkFolders();
-  const {
-    isPending,
-    isError,
-    error,
-    refetch,
-  } = useBookmarkCategories(roomId);
+  const { isPending, isError, error, refetch } = useBookmarkCategories(roomId);
   const { mutate: createCategory, isPending: isCreating } =
     useCreateBookmarkCategory();
   const {
@@ -31,9 +27,18 @@ export function BookmarkFoldersView() {
     isPending: isDeleting,
     variables: deleteVariables,
   } = useDeleteBookmarkCategory();
+  const {
+    mutate: updateCategory,
+    isPending: isUpdating,
+    variables: updateVariables,
+  } = useUpdateBookmarkCategory();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKey, setModalKey] = useState(0);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [editingFolder, setEditingFolder] = useState<BookmarkFolder | null>(
+    null,
+  );
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -55,11 +60,35 @@ export function BookmarkFoldersView() {
 
   const openCreate = () => {
     setModalKey((k) => k + 1);
+    setModalMode("create");
+    setEditingFolder(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (folder: BookmarkFolder) => {
+    closeMenu();
+    setModalKey((k) => k + 1);
+    setModalMode("edit");
+    setEditingFolder(folder);
     setModalOpen(true);
   };
 
   const handleSave = ({ title, color }: { title: string; color: string }) => {
     if (!roomId) return;
+    if (modalMode === "edit" && editingFolder) {
+      const categoryId = Number.parseInt(editingFolder.id, 10);
+      if (!Number.isFinite(categoryId)) return;
+      updateCategory(
+        { roomId, categoryId, name: title, colorCode: color },
+        {
+          onSuccess: () => {
+            setModalOpen(false);
+            setEditingFolder(null);
+          },
+        },
+      );
+      return;
+    }
     createCategory(
       { roomId, name: title, colorCode: color },
       {
@@ -88,6 +117,14 @@ export function BookmarkFoldersView() {
     isDeleting &&
     deleteVariables != null &&
     String(deleteVariables.categoryId) === folderId;
+
+  const isRowUpdating = (folderId: string) =>
+    isUpdating &&
+    updateVariables != null &&
+    String(updateVariables.categoryId) === folderId;
+
+  const rowMenuBusy = (folderId: string) =>
+    isRowDeleting(folderId) || isRowUpdating(folderId);
 
   if (!roomId) {
     return (
@@ -125,15 +162,15 @@ export function BookmarkFoldersView() {
   }
 
   return (
-    <div className="space-y-4 overflow-y-auto pb-8 pl-6 pr-6">
+    <div className="space-y-4 pb-8 pl-6 pr-6">
       <button
         type="button"
         onClick={openCreate}
-        disabled={isCreating}
+        disabled={isCreating || isUpdating}
         className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red py-3 text-base font-bold text-white shadow-md transition-opacity hover:opacity-95 active:opacity-90 disabled:opacity-60"
       >
-        <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />
-        새 북마크 추가
+        <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새 북마크
+        추가
       </button>
 
       <div className="rounded-2xl border border-gray-border bg-white">
@@ -171,7 +208,7 @@ export function BookmarkFoldersView() {
                           id === folder.id ? null : folder.id,
                         )
                       }
-                      disabled={isRowDeleting(folder.id)}
+                      disabled={rowMenuBusy(folder.id)}
                       className="rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray disabled:opacity-50"
                       aria-label="메뉴"
                     >
@@ -185,8 +222,21 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
+                          className="block w-full px-4 py-2 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:opacity-50"
+                          disabled={
+                            isRowDeleting(folder.id) || isRowUpdating(folder.id)
+                          }
+                          onClick={() => openEdit(folder)}
+                        >
+                          {isRowUpdating(folder.id) ? "편집 중…" : "편집"}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
                           className="block w-full px-4 py-2 text-left text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
-                          disabled={isRowDeleting(folder.id)}
+                          disabled={
+                            isRowDeleting(folder.id) || isRowUpdating(folder.id)
+                          }
                           onClick={() => handleDelete(folder)}
                         >
                           {isRowDeleting(folder.id) ? "삭제 중…" : "삭제"}
@@ -204,11 +254,12 @@ export function BookmarkFoldersView() {
       {modalOpen && (
         <AddBookmarkModal
           key={modalKey}
-          mode="create"
-          initialFolder={null}
-          busy={isCreating}
+          mode={modalMode}
+          initialFolder={editingFolder}
+          busy={modalMode === "edit" ? isUpdating : isCreating}
           onClose={() => {
             setModalOpen(false);
+            setEditingFolder(null);
           }}
           onSave={handleSave}
         />

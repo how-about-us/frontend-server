@@ -288,6 +288,11 @@ export type BookmarkCategoryCreateRequest = {
   colorCode: string;
 };
 
+export type BookmarkCategoryUpdateRequest = {
+  name: string;
+  colorCode: string;
+};
+
 export async function getBookmarkCategories(
   roomId: string,
 ): Promise<BookmarkCategory[]> {
@@ -311,6 +316,23 @@ export async function createBookmarkCategory(
     },
   );
   if (!res.ok) throw new Error(`보관함 카테고리 생성 실패: ${res.status}`);
+  return res.json();
+}
+
+export async function updateBookmarkCategory(
+  roomId: string,
+  categoryId: number,
+  body: BookmarkCategoryUpdateRequest,
+): Promise<BookmarkCategory> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmark-categories/${categoryId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) throw new Error(`보관함 카테고리 수정 실패: ${res.status}`);
   return res.json();
 }
 

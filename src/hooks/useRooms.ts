@@ -7,6 +7,7 @@ import {
   deleteBookmarkCategory,
   deleteRoom,
   getBookmarkCategories,
+  updateBookmarkCategory,
   getJoinRequests,
   getJoinStatus,
   getRoomMembers,
@@ -198,6 +199,28 @@ export function useCreateBookmarkCategory() {
       name: string;
       colorCode: string;
     }) => createBookmarkCategory(roomId, { name, colorCode }),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+    },
+  });
+}
+
+export function useUpdateBookmarkCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      categoryId,
+      name,
+      colorCode,
+    }: {
+      roomId: string;
+      categoryId: number;
+      name: string;
+      colorCode: string;
+    }) => updateBookmarkCategory(roomId, categoryId, { name, colorCode }),
     onSuccess: (_, { roomId }) => {
       queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(roomId),
