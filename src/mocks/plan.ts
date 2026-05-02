@@ -5,6 +5,9 @@ export type PlanPlace = {
   /** 짧은 부제 또는 긴 설명(여러 줄) */
   subtitle?: string;
   imageUrl?: string;
+  /** 서버 일정 항목과 매핑 시 */
+  itemId?: number;
+  googlePlaceId?: string;
 };
 
 /** 일차별 플랜 — `PlanPageView`가 일차별 장소 배열을 들고 `PlanItinerary`에 넘긴다 */

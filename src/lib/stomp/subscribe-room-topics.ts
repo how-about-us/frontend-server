@@ -5,10 +5,12 @@ import type { QueryClient } from "@tanstack/react-query";
 import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { dispatchRoomPresenceToast } from "@/lib/stomp/presence-dispatch";
+import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
+import { invalidateRoomSchedulesQueries } from "@/lib/stomp/schedules-dispatch";
 
 export type RoomTopicsUnsubscriber = () => void;
 
-/** 방 단위 presence·bookmarks 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 presence·bookmarks·schedules 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
@@ -20,11 +22,7 @@ export function subscribeRoomStompTopics(
       void (async () => {
         const event = parseRoomPresenceMessage(message.body);
         if (!event) return;
-        await dispatchRoomPresenceToast(
-          queryClientRef.current,
-          roomId,
-          event,
-        );
+        await dispatchRoomPresenceToast(queryClientRef.current, roomId, event);
       })();
     },
   );
@@ -34,7 +32,10 @@ export function subscribeRoomStompTopics(
     (message) => {
       void (async () => {
         try {
-          await dispatchRoomBookmarksToast(queryClientRef.current, message.body);
+          await dispatchRoomBookmarksToast(
+            queryClientRef.current,
+            message.body,
+          );
         } catch {
           // malformed payload / 네트워크 — 무시
         }
@@ -42,8 +43,23 @@ export function subscribeRoomStompTopics(
     },
   );
 
+  const schedulesSub = client.subscribe(
+    `/topic/rooms/${roomId}/schedules`,
+    (message) => {
+      void (async () => {
+        const event = parseRoomScheduleMessage(message.body);
+        if (!event) return;
+        await invalidateRoomSchedulesQueries(
+          queryClientRef.current,
+          event.roomId,
+        );
+      })();
+    },
+  );
+
   return () => {
     presenceSub.unsubscribe();
     bookmarksSub.unsubscribe();
+    schedulesSub.unsubscribe();
   };
 }

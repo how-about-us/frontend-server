@@ -2,44 +2,18 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
-import {
-  buildMonthCells,
-  isSameLocalDay,
-  startOfLocalDay,
-} from "@/lib/plan/tripRange";
-import { cn } from "@/lib/utils";
+import { startOfLocalDay } from "@/lib/plan/tripRange";
 
-const WEEK_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+import { monthTitle, shiftMonth } from "./planTripRangeCalendar";
+import { PlanTripRangeMonthGrid } from "./PlanTripRangeMonthGrid";
 
-function monthTitle(year: number, monthIndex0: number): string {
-  return `${monthIndex0 + 1}월 ${year}`;
-}
-
-function shiftMonth(year: number, monthIndex0: number, delta: number) {
-  const d = new Date(year, monthIndex0 + delta, 1);
-  return { y: d.getFullYear(), m: d.getMonth() };
-}
-
-function inInclusiveRange(
-  d: Date,
-  start: Date | null,
-  end: Date | null,
-): boolean {
-  if (!start || !end) return false;
-  const t = startOfLocalDay(d).getTime();
-  const a = startOfLocalDay(start).getTime();
-  const b = startOfLocalDay(end).getTime();
-  const lo = Math.min(a, b);
-  const hi = Math.max(a, b);
-  return t >= lo && t <= hi;
-}
-
-type PlanTripRangePickerProps = {
+export type PlanTripRangePickerProps = {
   open: boolean;
   onClose: () => void;
-  /** 확인 시 (시작일, 종료일) — 로컬 날짜 기준 */
-  onConfirm: (start: Date, end: Date) => void;
+  /** 확인 시 — 비동기면 완료 후 다이얼로그가 닫힙니다. 실패 시 닫히지 않습니다. */
+  onConfirm: (start: Date, end: Date) => void | Promise<void>;
   /** 패널 열 때 달력이 가리킬 기준 (기본: 오늘) */
   initialViewDate?: Date;
   initialStart?: Date | null;
@@ -57,8 +31,11 @@ export function PlanTripRangePicker({
   const base = initialViewDate ?? new Date();
   const [viewY, setViewY] = useState(base.getFullYear());
   const [viewM, setViewM] = useState(base.getMonth());
-  const [rangeStart, setRangeStart] = useState<Date | null>(initialStart ?? null);
+  const [rangeStart, setRangeStart] = useState<Date | null>(
+    initialStart ?? null,
+  );
   const [rangeEnd, setRangeEnd] = useState<Date | null>(initialEnd ?? null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -67,6 +44,7 @@ export function PlanTripRangePicker({
     setViewM(v.getMonth());
     setRangeStart(initialStart ?? null);
     setRangeEnd(initialEnd ?? null);
+    setConfirmBusy(false);
   }, [open, initialViewDate, initialStart, initialEnd]);
 
   useEffect(() => {
@@ -100,21 +78,27 @@ export function PlanTripRangePicker({
     [rangeStart, rangeEnd],
   );
 
-  const handleConfirm = useCallback(() => {
-    if (!rangeStart || !rangeEnd) return;
-    onConfirm(rangeStart, rangeEnd);
-    onClose();
-  }, [rangeStart, rangeEnd, onConfirm, onClose]);
+  const handleConfirm = useCallback(async () => {
+    if (!rangeStart || !rangeEnd || confirmBusy) return;
+    try {
+      setConfirmBusy(true);
+      await Promise.resolve(onConfirm(rangeStart, rangeEnd));
+      onClose();
+    } catch {
+      // 부모에서 토스트 처리
+    } finally {
+      setConfirmBusy(false);
+    }
+  }, [rangeStart, rangeEnd, onConfirm, onClose, confirmBusy]);
 
   const today = startOfLocalDay(new Date());
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4">
-      <button
-        type="button"
-        aria-label="닫기"
+  const overlay = (
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4">
+      <div
+        role="presentation"
         className="absolute inset-0 bg-black/25"
         onClick={onClose}
       />
@@ -123,7 +107,6 @@ export function PlanTripRangePicker({
         aria-modal="true"
         aria-labelledby="plan-trip-range-title"
         className="relative z-10 w-full max-w-[720px] rounded-2xl border border-gray-border bg-white p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-2">
           <button
@@ -156,7 +139,7 @@ export function PlanTripRangePicker({
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <MonthGrid
+          <PlanTripRangeMonthGrid
             year={viewY}
             monthIndex0={viewM}
             title={monthTitle(viewY, viewM)}
@@ -165,7 +148,7 @@ export function PlanTripRangePicker({
             today={today}
             onDayClick={handleDayClick}
           />
-          <MonthGrid
+          <PlanTripRangeMonthGrid
             year={right.y}
             monthIndex0={right.m}
             title={monthTitle(right.y, right.m)}
@@ -179,158 +162,24 @@ export function PlanTripRangePicker({
         <div className="mt-6 flex justify-end gap-2 border-t border-gray-border pt-4">
           <button
             type="button"
-            className="rounded-xl px-4 py-2 text-sm font-medium text-dark-gray hover:bg-bubble-gray"
+            disabled={confirmBusy}
+            className="rounded-xl px-4 py-2 text-sm font-medium text-dark-gray hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onClose}
           >
             취소
           </button>
           <button
             type="button"
-            disabled={!rangeStart || !rangeEnd}
+            disabled={!rangeStart || !rangeEnd || confirmBusy}
             className="rounded-xl bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-            onClick={handleConfirm}
+            onClick={() => void handleConfirm()}
           >
-            확인
+            {confirmBusy ? "적용 중…" : "확인"}
           </button>
         </div>
       </div>
     </div>
   );
-}
 
-function MonthGrid({
-  year,
-  monthIndex0,
-  title,
-  rangeStart,
-  rangeEnd,
-  today,
-  onDayClick,
-}: {
-  year: number;
-  monthIndex0: number;
-  title: string;
-  rangeStart: Date | null;
-  rangeEnd: Date | null;
-  today: Date;
-  onDayClick: (d: Date) => void;
-}) {
-  const cells = useMemo(
-    () => buildMonthCells(year, monthIndex0),
-    [year, monthIndex0],
-  );
-
-  const spanSingleDay =
-    rangeStart &&
-    rangeEnd &&
-    isSameLocalDay(rangeStart, rangeEnd);
-
-  return (
-    <div>
-      <p className="mb-3 text-center text-sm font-semibold text-gray-900">
-        {title}
-      </p>
-      <div className="grid grid-cols-7 gap-px border border-gray-border bg-gray-border">
-        {WEEK_LABELS.map((w) => (
-          <div
-            key={w}
-            className="bg-white py-2 text-center text-xs font-medium text-dark-gray"
-          >
-            {w}
-          </div>
-        ))}
-        {cells.map((cell, i) => (
-          <div
-            key={i}
-            className={cn(
-              "aspect-square min-h-[36px] bg-white",
-              cell && inInclusiveRange(cell, rangeStart, rangeEnd) && "bg-light-gray",
-            )}
-          >
-            {cell ? (
-              <button
-                type="button"
-                onClick={() => onDayClick(cell)}
-                className={cn(
-                  "flex h-full w-full items-center justify-center text-sm text-gray-900 transition",
-                  isSameLocalDay(cell, today) &&
-                    "font-semibold ring-1 ring-inset ring-brand-green/50",
-                  spanSingleDay &&
-                    rangeStart &&
-                    isSameLocalDay(cell, rangeStart) &&
-                    "rounded-md bg-light-gray font-semibold",
-                  !spanSingleDay &&
-                    rangeStart &&
-                    rangeEnd &&
-                    isSameLocalDay(cell, rangeStart) &&
-                    "rounded-l-md bg-light-gray font-semibold",
-                  !spanSingleDay &&
-                    rangeStart &&
-                    rangeEnd &&
-                    isSameLocalDay(cell, rangeEnd) &&
-                    "rounded-r-md bg-light-gray font-semibold",
-                  rangeStart &&
-                    !rangeEnd &&
-                    isSameLocalDay(cell, rangeStart) &&
-                    "rounded-md bg-light-gray font-semibold",
-                )}
-              >
-                {cell.getDate()}
-              </button>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export type PlanTripRangeToolbarProps = {
-  onRangeApply: (start: Date, end: Date) => void;
-  /** 현재 적용된 기간 (표시용) */
-  rangeStart: Date;
-  rangeEnd: Date;
-};
-
-export function PlanTripRangeToolbar({
-  onRangeApply,
-  rangeStart,
-  rangeEnd,
-}: PlanTripRangeToolbarProps) {
-  const [open, setOpen] = useState(false);
-
-  const label = useMemo(() => {
-    const a = startOfLocalDay(rangeStart);
-    const b = startOfLocalDay(rangeEnd);
-    return `${a.getMonth() + 1}/${a.getDate()} – ${b.getMonth() + 1}/${b.getDate()}`;
-  }, [rangeStart, rangeEnd]);
-
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-border bg-white px-3 text-sm font-medium text-gray-900 shadow-sm transition hover:bg-bubble-gray"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <img
-          src="/icons/calendar-days.svg"
-          alt=""
-          className="h-[22px] w-[22px] shrink-0"
-        />
-        <span>여행 기간</span>
-        <span className="text-dark-gray">· {label}</span>
-      </button>
-
-      <PlanTripRangePicker
-        open={open}
-        onClose={() => setOpen(false)}
-        onConfirm={onRangeApply}
-        initialViewDate={rangeStart}
-        initialStart={rangeStart}
-        initialEnd={rangeEnd}
-      />
-    </div>
-  );
+  return createPortal(overlay, document.body);
 }

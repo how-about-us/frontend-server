@@ -50,6 +50,26 @@ export {
   updateRoom,
 } from "./core";
 
+export type { RoomSchedule, RoomScheduleCreateRequest } from "./schedules";
+
+export type {
+  RoomScheduleItem,
+  RoomScheduleItemCreateRequest,
+} from "./schedule-items";
+
+export {
+  createRoomSchedule,
+  deleteRoomSchedule,
+  getRoomSchedules,
+  seedRoomSchedules,
+  syncRoomSchedulesToDateRange,
+} from "./schedules";
+
+export {
+  createScheduleItem,
+  getScheduleItems,
+} from "./schedule-items";
+
 export {
   approveJoinRequest,
   getJoinRequests,

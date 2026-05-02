@@ -10,14 +10,17 @@ import {
   createBookmarkCategory,
   createRoomBookmark,
   createRoom,
+  createScheduleItem,
   deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
+  deleteRoomSchedule,
   getBookmarkCategories,
   getJoinRequests,
   getJoinStatus,
   getRoomBookmarks,
   getRoomMembers,
+  getRoomSchedules,
   patchRoomBookmarkCategory,
   getRooms,
   joinRoom,
@@ -27,12 +30,21 @@ import {
   rejectJoinRequest,
   RoomCreateRequest,
   RoomUpdateRequest,
+  seedRoomSchedules,
   transferHost,
   updateBookmarkCategory,
   updateRoom,
 } from "@/lib/api/rooms";
+import {
+  fetchScheduleItemsAsPlanPlaces,
+  isoStartForNewScheduleItem,
+} from "@/lib/plan/scheduleItemPlaces";
+import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
+import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
 export const ROOMS_QUERY_KEY = ["rooms"] as const;
+
+export { roomSchedulesQueryKey };
 
 export function useRoomsList() {
   return useQuery({
@@ -44,9 +56,86 @@ export function useRoomsList() {
 export function useCreateRoom() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: RoomCreateRequest) => createRoom(data),
-    onSuccess: () => {
+    mutationFn: async (data: RoomCreateRequest) => {
+      const room = await createRoom(data);
+      await seedRoomSchedules(room.id, data.startDate, data.endDate);
+      return room;
+    },
+    onSuccess: (room) => {
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
+      queryClient.invalidateQueries({
+        queryKey: roomSchedulesQueryKey(room.id),
+      });
+    },
+  });
+}
+
+export function useRoomSchedules(roomId: string | null) {
+  const id = roomId?.trim() ?? "";
+  return useQuery({
+    queryKey: roomSchedulesQueryKey(id || null),
+    queryFn: () => getRoomSchedules(id),
+    enabled: id.length > 0,
+  });
+}
+
+export function useDeleteRoomSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      scheduleId,
+    }: {
+      roomId: string;
+      scheduleId: number;
+    }) => deleteRoomSchedule(roomId, scheduleId),
+    onSuccess: (_, { roomId }) => {
+      queryClient.invalidateQueries({
+        queryKey: roomSchedulesQueryKey(roomId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["schedule-items", roomId.trim()],
+      });
+    },
+  });
+}
+
+export function useSchedulePlanPlaces(
+  roomId: string | null,
+  scheduleId: number | null,
+) {
+  const rid = roomId?.trim() ?? "";
+  const sid = scheduleId;
+  return useQuery({
+    queryKey: scheduleItemsQueryKey(rid || null, sid),
+    queryFn: () => fetchScheduleItemsAsPlanPlaces(rid, sid!),
+    enabled:
+      rid.length > 0 && typeof sid === "number" && Number.isFinite(sid),
+  });
+}
+
+export function useCreateScheduleItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      scheduleDateYmd: string;
+      googlePlaceId: string;
+      nextSlotIndex: number;
+    }) =>
+      createScheduleItem(vars.roomId, vars.scheduleId, {
+        googlePlaceId: vars.googlePlaceId,
+        startTime: isoStartForNewScheduleItem(
+          vars.scheduleDateYmd,
+          vars.nextSlotIndex,
+        ),
+        durationMinutes: 60,
+      }),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
+      });
     },
   });
 }

@@ -6,6 +6,54 @@ export function startOfLocalDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/** `YYYY-MM-DD`를 로컬 자정 기준 `Date`로 파싱합니다. */
+export function parseLocalYmd(s: string): Date {
+  const parts = s.split("-").map(Number);
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2];
+  if (
+    y === undefined ||
+    m === undefined ||
+    d === undefined ||
+    Number.isNaN(y) ||
+    Number.isNaN(m) ||
+    Number.isNaN(d)
+  ) {
+    return startOfLocalDay(new Date());
+  }
+  return new Date(y, m - 1, d);
+}
+
+export function formatDateYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * 방 생성 시 기간 문자열(포함) 각 날짜에 대해 `dayNumber`는 1부터 순번입니다.
+ */
+export function eachInclusiveTripDay(
+  startYmd: string,
+  endYmd: string,
+): { date: string; dayNumber: number }[] {
+  const a = parseLocalYmd(startYmd);
+  const b = parseLocalYmd(endYmd);
+  const lo = a <= b ? a : b;
+  const hi = a <= b ? b : a;
+  const out: { date: string; dayNumber: number }[] = [];
+  const c = new Date(lo);
+  let dayNumber = 1;
+  while (c <= hi) {
+    out.push({ date: formatDateYmd(c), dayNumber });
+    c.setDate(c.getDate() + 1);
+    dayNumber++;
+  }
+  return out;
+}
+
 export function isSameLocalDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

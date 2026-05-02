@@ -12,6 +12,8 @@ export type PlanPlaceCardProps = {
   orderIndex: number;
   isDragging: boolean;
   isDropTarget: boolean;
+  /** 서버 동기화 일정에서는 순서 변경 비활성화 */
+  dragDisabled?: boolean;
   onDragStart: (e: DragEvent) => void;
   onDragEnd: (e: DragEvent) => void;
   onDragOver: (e: DragEvent) => void;
@@ -24,6 +26,7 @@ export function PlanPlaceCard({
   orderIndex,
   isDragging,
   isDropTarget,
+  dragDisabled = false,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -35,14 +38,15 @@ export function PlanPlaceCard({
 
   return (
     <article
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+      draggable={!dragDisabled}
+      onDragStart={dragDisabled ? undefined : onDragStart}
+      onDragEnd={dragDisabled ? undefined : onDragEnd}
+      onDragOver={dragDisabled ? undefined : onDragOver}
+      onDragLeave={dragDisabled ? undefined : onDragLeave}
+      onDrop={dragDisabled ? undefined : onDrop}
       className={cn(
-        "relative flex w-[70%] h-40 cursor-grab select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm active:cursor-grabbing",
+        "relative flex w-[70%] h-40 select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
           "ring-2 ring-brand-green ring-offset-2 ring-offset-white",
