@@ -9,9 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import type { Client, StompSubscription } from "@stomp/stompjs";
-import { toast } from "sonner";
-import Image from "next/image";
 
+import {
+  bookmarkChangedMessage,
+  type RoomBookmarkChangedEvent,
+  RoomBroadcastBookmarkIcon,
+  RoomBroadcastProfileIcon,
+  showRoomBroadcastAlert,
+} from "@/components/stomp/RoomBroadcastAlert";
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -33,54 +38,61 @@ const StompContext = createContext<StompContextValue>({
   connected: false,
 });
 
-function PresenceToastIcon({ url }: { url: string | null }) {
-  if (!url) return null;
-  return (
-    <Image
-      src={url}
-      alt=""
-      width={24}
-      height={24}
-      className="h-6 w-6 rounded-full object-cover"
-    />
-  );
-}
-
 export function StompProvider({ children }: { children: ReactNode }) {
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
 
   const clientRef = useRef<Client | null>(null);
-  const subscriptionRef = useRef<StompSubscription | null>(null);
+  const presenceSubRef = useRef<StompSubscription | null>(null);
+  const bookmarksSubRef = useRef<StompSubscription | null>(null);
   const [contextValue, setContextValue] = useState<StompContextValue>({
     client: null,
     connected: false,
   });
 
-  const subscribeToPresence = (client: Client, roomId: string) => {
-    if (subscriptionRef.current) {
-      subscriptionRef.current.unsubscribe();
-      subscriptionRef.current = null;
-    }
+  const unsubscribeRoomTopics = () => {
+    presenceSubRef.current?.unsubscribe();
+    presenceSubRef.current = null;
+    bookmarksSubRef.current?.unsubscribe();
+    bookmarksSubRef.current = null;
+  };
 
-    subscriptionRef.current = client.subscribe(
+  const subscribeToRoomTopics = (client: Client, roomId: string) => {
+    unsubscribeRoomTopics();
+
+    presenceSubRef.current = client.subscribe(
       `/topic/rooms/${roomId}/presence`,
       (message) => {
         try {
           const event: RoomPresenceChangedEvent = JSON.parse(message.body);
-          const icon = <PresenceToastIcon url={event.profileImageUrl} />;
+          const icon = <RoomBroadcastProfileIcon url={event.profileImageUrl} />;
 
           if (event.type === "USER_CONNECTED") {
-            toast(`${event.nickname}님이 입장했습니다`, {
+            showRoomBroadcastAlert({
+              message: `${event.nickname}님이 입장했습니다`,
               icon,
-              duration: 3000,
             });
           } else {
-            toast(`${event.nickname}님이 퇴장했습니다`, {
+            showRoomBroadcastAlert({
+              message: `${event.nickname}님이 퇴장했습니다`,
               icon,
-              duration: 3000,
             });
           }
+        } catch {
+          // malformed message — ignore
+        }
+      },
+    );
+
+    bookmarksSubRef.current = client.subscribe(
+      `/topic/rooms/${roomId}/bookmarks`,
+      (message) => {
+        try {
+          const event: RoomBookmarkChangedEvent = JSON.parse(message.body);
+          showRoomBroadcastAlert({
+            message: bookmarkChangedMessage(event.type),
+            icon: <RoomBroadcastBookmarkIcon />,
+          });
         } catch {
           // malformed message — ignore
         }
@@ -92,8 +104,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       if (clientRef.current) {
-        subscriptionRef.current?.unsubscribe();
-        subscriptionRef.current = null;
+        unsubscribeRoomTopics();
         clientRef.current.deactivate();
         clientRef.current = null;
       }
@@ -108,7 +119,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
     client.onConnect = () => {
       setContextValue({ client, connected: true });
       if (currentRoomId) {
-        subscribeToPresence(client, currentRoomId);
+        subscribeToRoomTopics(client, currentRoomId);
       }
     };
 
@@ -123,8 +134,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
     client.activate();
 
     return () => {
-      subscriptionRef.current?.unsubscribe();
-      subscriptionRef.current = null;
+      unsubscribeRoomTopics();
       client.deactivate();
       clientRef.current = null;
     };
@@ -138,10 +148,9 @@ export function StompProvider({ children }: { children: ReactNode }) {
     if (!client?.connected) return;
 
     if (currentRoomId) {
-      subscribeToPresence(client, currentRoomId);
+      subscribeToRoomTopics(client, currentRoomId);
     } else {
-      subscriptionRef.current?.unsubscribe();
-      subscriptionRef.current = null;
+      unsubscribeRoomTopics();
     }
   }, [currentRoomId]);
 
