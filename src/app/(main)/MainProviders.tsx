@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { GoogleMapsProvider } from "@/components/googleMap";
+import { MainRoomRedirectGuard } from "@/components/layout/MainRoomRedirectGuard";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { SelectedPlaceProvider } from "@/contexts/SelectedPlaceContext";
@@ -17,7 +18,10 @@ export function MainProviders({ children }: { children: ReactNode }) {
       <SectionWidthProvider>
         <ChatProvider>
           <SelectedPlaceProvider>
-            <MapCenterProvider>{children}</MapCenterProvider>
+            <MapCenterProvider>
+              <MainRoomRedirectGuard />
+              {children}
+            </MapCenterProvider>
           </SelectedPlaceProvider>
         </ChatProvider>
       </SectionWidthProvider>
