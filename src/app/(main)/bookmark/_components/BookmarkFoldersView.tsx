@@ -1,13 +1,15 @@
 "use client";
 
-import { BookmarkPlus } from "lucide-react";
+import { BookmarkPlus, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
+  useDeleteBookmarkCategory,
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+import type { BookmarkFolder } from "@/types/bookmark";
 import { useBookmarkFolders } from "../context";
 import { bookmarkFolderPath } from "../routes";
 import { AddBookmarkModal } from "./AddBookmarkModal";
@@ -24,9 +26,32 @@ export function BookmarkFoldersView() {
   } = useBookmarkCategories(roomId);
   const { mutate: createCategory, isPending: isCreating } =
     useCreateBookmarkCategory();
+  const {
+    mutate: deleteCategory,
+    isPending: isDeleting,
+    variables: deleteVariables,
+  } = useDeleteBookmarkCategory();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKey, setModalKey] = useState(0);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const closeMenu = useCallback(() => setMenuOpenId(null), []);
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const el = menuRef.current;
+      if (el && !el.contains(e.target as Node)) closeMenu();
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+    };
+  }, [menuOpenId, closeMenu]);
 
   const openCreate = () => {
     setModalKey((k) => k + 1);
@@ -44,6 +69,25 @@ export function BookmarkFoldersView() {
       },
     );
   };
+
+  const handleDelete = (folder: BookmarkFolder) => {
+    if (!roomId) return;
+    const categoryId = Number.parseInt(folder.id, 10);
+    if (!Number.isFinite(categoryId)) return;
+
+    const ok = window.confirm(
+      `「${folder.title}」 카테고리를 삭제할까요? 소속 보관함 항목도 함께 삭제됩니다.`,
+    );
+    if (!ok) return;
+
+    closeMenu();
+    deleteCategory({ roomId, categoryId });
+  };
+
+  const isRowDeleting = (folderId: string) =>
+    isDeleting &&
+    deleteVariables != null &&
+    String(deleteVariables.categoryId) === folderId;
 
   if (!roomId) {
     return (
@@ -116,6 +160,40 @@ export function BookmarkFoldersView() {
                       </p>
                     </div>
                   </Link>
+                  <div
+                    className="relative shrink-0"
+                    ref={menuOpenId === folder.id ? menuRef : null}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMenuOpenId((id) =>
+                          id === folder.id ? null : folder.id,
+                        )
+                      }
+                      disabled={isRowDeleting(folder.id)}
+                      className="rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray disabled:opacity-50"
+                      aria-label="메뉴"
+                    >
+                      <MoreHorizontal className="size-5" />
+                    </button>
+                    {menuOpenId === folder.id && (
+                      <div
+                        className="absolute right-0 top-full z-20 mt-1 min-w-[120px] overflow-hidden rounded-xl border border-gray-border bg-white py-1 shadow-lg"
+                        role="menu"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="block w-full px-4 py-2 text-left text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
+                          disabled={isRowDeleting(folder.id)}
+                          onClick={() => handleDelete(folder)}
+                        >
+                          {isRowDeleting(folder.id) ? "삭제 중…" : "삭제"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </li>
             ))}

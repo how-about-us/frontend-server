@@ -313,3 +313,14 @@ export async function createBookmarkCategory(
   if (!res.ok) throw new Error(`보관함 카테고리 생성 실패: ${res.status}`);
   return res.json();
 }
+
+export async function deleteBookmarkCategory(
+  roomId: string,
+  categoryId: number,
+): Promise<void> {
+  const res = await apiFetch(
+    `${API_BASE}/rooms/${roomId}/bookmark-categories/${categoryId}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw new Error(`보관함 카테고리 삭제 실패: ${res.status}`);
+}
