@@ -9,6 +9,13 @@
   }
 }
 
+/* Sonner 기본 [data-icon]는 16×16(상태 SVG용). 아바타 등은 24×24로 맞춤 */
+[data-sonner-toast][data-styled="true"] [data-icon] {
+  width: 24px;
+  height: 24px;
+  justify-content: center;
+}
+
 gmp-place-autocomplete {
   width: 100%;
   background-color: #ffffff;

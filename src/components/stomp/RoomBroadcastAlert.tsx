@@ -37,13 +37,15 @@ export function showRoomBroadcastAlert({
 export function RoomBroadcastProfileIcon({ url }: { url: string | null }) {
   if (!url) return null;
   return (
-    <Image
-      src={url}
-      alt=""
-      width={24}
-      height={24}
-      className="h-6 w-6 rounded-full object-cover"
-    />
+    <span className="relative flex h-6 w-6 shrink-0 overflow-hidden rounded-full">
+      <Image
+        src={url}
+        alt=""
+        width={24}
+        height={24}
+        className="h-full w-full object-cover"
+      />
+    </span>
   );
 }
 
@@ -151,9 +153,9 @@ export async function buildBookmarkBroadcastMessage(
       bookmarkCategoriesQueryKey(rid),
     );
 
-  let categoryLabel = categoriesFromCache()?.find(
-    (c) => c.categoryId === event.categoryId,
-  )?.name?.trim();
+  let categoryLabel = categoriesFromCache()
+    ?.find((c) => c.categoryId === event.categoryId)
+    ?.name?.trim();
 
   if (!categoryLabel && event.type !== "CATEGORY_DELETED") {
     try {
@@ -172,11 +174,7 @@ export async function buildBookmarkBroadcastMessage(
       ? categoryLabel
       : `카테고리 #${event.categoryId}`;
 
-  const actor = await resolveActorNickname(
-    queryClient,
-    rid,
-    event.actorUserId,
-  );
+  const actor = await resolveActorNickname(queryClient, rid, event.actorUserId);
 
   return formatBookmarkBroadcastDetailMessage(event.type, actor, category);
 }
