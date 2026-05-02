@@ -1,8 +1,6 @@
 import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import { API_BASE } from "./config";
 import { apiFetch } from "./client";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
