@@ -23,6 +23,10 @@ export type RoomScheduleItemUpdateRequest = {
   durationMinutes: number;
 };
 
+export type ReorderScheduleItemRequest = {
+  newOrderIndex: number;
+};
+
 export async function getScheduleItems(
   roomId: string,
   scheduleId: number,
@@ -68,5 +72,18 @@ export async function deleteScheduleItem(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}`),
     { method: "DELETE" },
     { errorMessage: "일정 장소 삭제 실패" },
+  );
+}
+
+export async function reorderScheduleItem(
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+  body: ReorderScheduleItemRequest,
+): Promise<RoomScheduleItem[]> {
+  return requestJson(
+    apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/order`),
+    { method: "PATCH", ...jsonBody(body) },
+    { errorMessage: "일정 순서 변경 실패" },
   );
 }

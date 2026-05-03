@@ -12,6 +12,7 @@ import {
   createRoom,
   createScheduleItem,
   deleteScheduleItem,
+  reorderScheduleItem,
   updateScheduleItem,
   deleteRoomBookmark,
   deleteBookmarkCategory,
@@ -31,6 +32,7 @@ import {
   regenerateInviteCode,
   rejectJoinRequest,
   type RoomCreateRequest,
+  type ReorderScheduleItemRequest,
   type RoomScheduleItemUpdateRequest,
   type RoomUpdateRequest,
   seedRoomSchedules,
@@ -176,6 +178,29 @@ export function useDeleteScheduleItem() {
       scheduleId: number;
       itemId: number;
     }) => deleteScheduleItem(vars.roomId, vars.scheduleId, vars.itemId),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
+      });
+    },
+  });
+}
+
+export function useReorderScheduleItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      itemId: number;
+      body: ReorderScheduleItemRequest;
+    }) =>
+      reorderScheduleItem(
+        vars.roomId,
+        vars.scheduleId,
+        vars.itemId,
+        vars.body,
+      ),
     onSuccess: (_, v) => {
       queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),

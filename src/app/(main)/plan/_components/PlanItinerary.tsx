@@ -1,15 +1,27 @@
 "use client";
 
-import { Fragment, useCallback } from "react";
+import {
+  Fragment,
+  useCallback,
+  useState,
+  type DragEvent,
+} from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
-import { useCreateScheduleItem, useSchedulePlanPlaces } from "@/hooks/useRooms";
+import {
+  useCreateScheduleItem,
+  useReorderScheduleItem,
+  useSchedulePlanPlaces,
+} from "@/hooks/useRooms";
 import { useMapCenter } from "@/contexts/MapCenterContext";
+import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 
 import { PlanPlaceCard } from "./PlanPlaceCard";
 import { PlanTravelTime } from "./PlanTravelTime";
+
+const DND_INDEX_MIME = "application/x-plan-item-index";
 
 export type PlanItineraryProps = {
   roomId: string;
@@ -25,6 +37,11 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   } = useSchedulePlanPlaces(roomId, scheduleId);
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
+  const { mutateAsync: reorderMutate, isPending: isReordering } =
+    useReorderScheduleItem();
+
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
   const handlePickPrediction = useCallback(
     async (prediction: google.maps.places.AutocompletePrediction) => {
@@ -46,6 +63,85 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     },
     [createItem, places.length, roomId, scheduleId],
   );
+
+  const handleDragStart = useCallback(
+    (index: number) => (e: DragEvent<Element>) => {
+      if (typeof places[index]?.itemId !== "number") return;
+      setDragFromIndex(index);
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData(DND_INDEX_MIME, String(index));
+      e.dataTransfer.setData("text/plain", String(index));
+    },
+    [places],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDragFromIndex(null);
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (index: number) => (e: DragEvent<Element>) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropTargetIndex(index);
+    },
+    [],
+  );
+
+  const handleDragLeave = useCallback(
+    (index: number) => (e: DragEvent<Element>) => {
+      const next = e.relatedTarget as Node | null;
+      if (next && e.currentTarget.contains(next)) return;
+      setDropTargetIndex((t) => (t === index ? null : t));
+    },
+    [],
+  );
+
+  const handleDrop = useCallback(
+    (toIndex: number) => async (e: DragEvent<Element>) => {
+      e.preventDefault();
+      const raw =
+        e.dataTransfer.getData(DND_INDEX_MIME) ||
+        e.dataTransfer.getData("text/plain");
+      const fromIndex = parseInt(raw, 10);
+
+      setDropTargetIndex(null);
+      setDragFromIndex(null);
+
+      if (
+        !Number.isFinite(fromIndex) ||
+        fromIndex < 0 ||
+        fromIndex >= places.length ||
+        fromIndex === toIndex
+      ) {
+        return;
+      }
+
+      const itemId = places[fromIndex]?.itemId;
+      if (typeof itemId !== "number") return;
+
+      const newOrderIndex = newOrderIndexAfterMove(
+        fromIndex,
+        toIndex,
+        places.length,
+      );
+
+      try {
+        await reorderMutate({
+          roomId,
+          scheduleId,
+          itemId,
+          body: { newOrderIndex },
+        });
+      } catch {
+        toast.error("순서를 바꾸지 못했어요.");
+      }
+    },
+    [places, reorderMutate, roomId, scheduleId],
+  );
+
+  const dragLocked = isAdding || isReordering || places.length < 2;
 
   return (
     <div>
@@ -74,15 +170,21 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             <PlanPlaceCard
               place={place}
               orderIndex={index + 1}
-              dragDisabled
+              dragDisabled={
+                dragLocked || typeof place.itemId !== "number"
+              }
               scheduleTimeEdit={{ roomId, scheduleId, slotIndex: index }}
-              isDragging={false}
-              isDropTarget={false}
-              onDragStart={() => {}}
-              onDragEnd={() => {}}
-              onDragOver={() => {}}
-              onDragLeave={() => {}}
-              onDrop={() => {}}
+              isDragging={dragFromIndex === index}
+              isDropTarget={
+                dropTargetIndex === index &&
+                dragFromIndex !== null &&
+                dragFromIndex !== index
+              }
+              onDragStart={handleDragStart(index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver(index)}
+              onDragLeave={handleDragLeave(index)}
+              onDrop={handleDrop(index)}
             />
             {index < places.length - 1 ? (
               <PlanTravelTime

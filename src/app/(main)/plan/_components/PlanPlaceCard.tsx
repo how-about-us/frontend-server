@@ -29,11 +29,11 @@ export type PlanPlaceCardProps = {
     /** `slotStartTimeHm` 폴백용 0-based 인덱스 */
     slotIndex: number;
   };
-  onDragStart: (e: DragEvent) => void;
-  onDragEnd: (e: DragEvent) => void;
-  onDragOver: (e: DragEvent) => void;
-  onDragLeave: (e: DragEvent) => void;
-  onDrop: (e: DragEvent) => void;
+  onDragStart: (e: DragEvent<Element>) => void;
+  onDragEnd: (e: DragEvent<Element>) => void;
+  onDragOver: (e: DragEvent<Element>) => void;
+  onDragLeave: (e: DragEvent<Element>) => void;
+  onDrop: (e: DragEvent<Element>) => void;
 };
 
 export function PlanPlaceCard({
@@ -163,15 +163,17 @@ export function PlanPlaceCard({
           </p>
         ) : null}
         {scheduleTimeEdit && typeof place.itemId === "number" ? (
-          <PlanItemTimeForm
-            roomId={scheduleTimeEdit.roomId}
-            scheduleId={scheduleTimeEdit.scheduleId}
-            itemId={place.itemId}
-            startTime={
-              place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)
-            }
-            durationMinutes={place.durationMinutes ?? 0}
-          />
+          <div onMouseDown={(e) => e.stopPropagation()}>
+            <PlanItemTimeForm
+              roomId={scheduleTimeEdit.roomId}
+              scheduleId={scheduleTimeEdit.scheduleId}
+              itemId={place.itemId}
+              startTime={
+                place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)
+              }
+              durationMinutes={place.durationMinutes ?? 0}
+            />
+          </div>
         ) : null}
       </div>
 
