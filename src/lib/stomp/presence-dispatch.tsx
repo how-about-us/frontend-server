@@ -7,8 +7,25 @@ import {
   roomPresenceToastIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
+import { ROOMS_QUERY_KEY } from "@/hooks/useRooms";
 
 import type { RoomPresenceChangedEvent } from "./events";
+
+/** 명세 상 USER_CONNECTED · USER_DISCONNECTED 시 멤버/방/입장 요청 목록 활성 구독자 전부 재조회 */
+async function invalidatePresenceRelatedQueries(
+  queryClient: QueryClient,
+  roomId: string,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: ["room-members", roomId],
+    }),
+    queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY }),
+    queryClient.invalidateQueries({
+      queryKey: ["join-requests", roomId],
+    }),
+  ]);
+}
 
 /** presence STOMP 한 건 처리 — 토스트 표시까지 */
 export async function dispatchRoomPresenceToast(
@@ -55,5 +72,9 @@ export async function dispatchRoomPresenceToast(
       message: `${displayName}님이 퇴장했습니다`,
       icon,
     });
+  } else {
+    return;
   }
+
+  await invalidatePresenceRelatedQueries(queryClient, subscribedRoomId);
 }
