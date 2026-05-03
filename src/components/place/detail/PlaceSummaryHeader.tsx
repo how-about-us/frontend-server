@@ -6,6 +6,8 @@ type Props = {
   reviewSummary?: string | null;
   rating: number | null;
   userRatingCount?: number | null;
+  onAddToSchedule?: () => void;
+  addToScheduleDisabled?: boolean;
   onAddBookmark?: () => void;
   addBookmarkDisabled?: boolean;
 };
@@ -16,6 +18,8 @@ export function PlaceSummaryHeader({
   reviewSummary,
   rating,
   userRatingCount,
+  onAddToSchedule,
+  addToScheduleDisabled = false,
   onAddBookmark,
   addBookmarkDisabled = false,
 }: Props) {
@@ -65,7 +69,9 @@ export function PlaceSummaryHeader({
       <div className="mt-4 flex gap-2">
         <button
           type="button"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700"
+          onClick={onAddToSchedule}
+          disabled={addToScheduleDisabled || !onAddToSchedule}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Calendar className="h-4 w-4" strokeWidth={2} />
           일정에 추가

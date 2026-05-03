@@ -122,7 +122,7 @@ export function PlanPlaceCard({
       onDragLeave={dragDisabled ? undefined : onDragLeave}
       onDrop={dragDisabled ? undefined : onDrop}
       className={cn(
-        "relative flex min-h-40 w-[50%] select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        "flex w-full select-none gap-3 rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
@@ -130,8 +130,26 @@ export function PlanPlaceCard({
       )}
       aria-grabbed={isDragging}
     >
+      <div className="relative flex h-30 w-30 shrink-0 items-center justify-center self-start overflow-hidden rounded-xl bg-brand-green/30">
+        {photoLoading ? (
+          <Loader2
+            className="h-6 w-6 animate-spin text-brand-green"
+            aria-hidden
+          />
+        ) : resolvedPhotoUrl ? (
+          <Image
+            src={resolvedPhotoUrl}
+            alt={place.title}
+            fill
+            className="object-cover"
+            sizes="80px"
+            draggable={false}
+          />
+        ) : null}
+      </div>
+
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-start gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <span
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-red text-xs font-bold text-white"
             aria-label={`${orderIndex}번째 장소`}
@@ -158,7 +176,7 @@ export function PlanPlaceCard({
           ) : null}
         </div>
         {place.subtitle ? (
-          <p className="text-sm leading-relaxed text-dark-gray">
+          <p className="text-xs leading-relaxed text-dark-gray">
             {place.subtitle}
           </p>
         ) : null}
@@ -175,26 +193,6 @@ export function PlanPlaceCard({
             />
           </div>
         ) : null}
-      </div>
-
-      <div className="absolute bottom-0 left-[102%] top-0 w-[100%] shrink-0">
-        <div className="relative flex h-full min-h-40 items-center justify-center overflow-hidden rounded-xl bg-brand-green/30">
-          {photoLoading ? (
-            <Loader2
-              className="h-6 w-6 animate-spin text-brand-green"
-              aria-hidden
-            />
-          ) : resolvedPhotoUrl ? (
-            <Image
-              src={resolvedPhotoUrl}
-              alt={place.title}
-              fill
-              className="object-cover"
-              sizes="140px"
-              draggable={false}
-            />
-          ) : null}
-        </div>
       </div>
     </article>
   );

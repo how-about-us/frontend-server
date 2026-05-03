@@ -4,6 +4,7 @@ import { ArrowLeft, X } from "lucide-react";
 import { useState } from "react";
 import type { SearchResultCardProps } from "./SearchResultCard";
 import { AddToBookmarkModal } from "./AddToBookmarkModal";
+import { AddToScheduleModal } from "./AddToScheduleModal";
 import { TABS, type Tab } from "./detail/types";
 import { usePlaceDetailData } from "./detail/usePlaceDetailData";
 import { HeroSkeleton, HeroGrid } from "./detail/HeroSection";
@@ -30,6 +31,7 @@ export function PlaceDetailPanel({
 }: PlaceDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
 
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
@@ -85,6 +87,12 @@ export function PlaceDetailPanel({
           category={category}
           rating={rating}
           userRatingCount={userRatingCount}
+          onAddToSchedule={
+            googlePlaceId
+              ? () => setScheduleModalOpen(true)
+              : undefined
+          }
+          addToScheduleDisabled={!googlePlaceId}
           onAddBookmark={
             googlePlaceId
               ? () => setBookmarkModalOpen(true)
@@ -136,6 +144,13 @@ export function PlaceDetailPanel({
           />
         )}
       </div>
+
+      {scheduleModalOpen && googlePlaceId && (
+        <AddToScheduleModal
+          googlePlaceId={googlePlaceId}
+          onClose={() => setScheduleModalOpen(false)}
+        />
+      )}
 
       {bookmarkModalOpen && googlePlaceId && (
         <AddToBookmarkModal
