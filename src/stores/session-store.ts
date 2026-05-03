@@ -36,7 +36,14 @@ export const useSessionStore = create<SessionStore>()(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),
-      clearUser: () => set({ user: null }),
+      clearUser: () =>
+        set({
+          user: null,
+          currentRoomId: null,
+          currentRoomInviteCode: null,
+          currentRoomMeta: null,
+          pendingJoinRequestsCount: 0,
+        }),
       currentRoomId: null,
       setCurrentRoomId: (id) => set({ currentRoomId: id }),
       clearCurrentRoomId: () => set({ currentRoomId: null }),
@@ -55,6 +62,7 @@ export const useSessionStore = create<SessionStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
+        currentRoomId: state.currentRoomId,
       }),
     },
   ),

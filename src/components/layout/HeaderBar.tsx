@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 
-import { useEffectiveMainRoomId } from "@/hooks/useEffectiveMainRoomId";
 import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -19,18 +17,13 @@ function formatDateRange(startDate: string, endDate: string): string {
 }
 
 const HeaderBar = () => {
-  const effective = useEffectiveMainRoomId();
-  const params = useParams();
   const storedRoomId = useSessionStore((s) => s.currentRoomId);
   const { data, isPending } = useRoomsList();
 
-  if (!effective) return null;
+  const roomId =
+    typeof storedRoomId === "string" ? storedRoomId.trim() : undefined;
 
-  const paramRoomId =
-    typeof params.roomId === "string" ? params.roomId : undefined;
-  const roomId = paramRoomId ?? storedRoomId ?? undefined;
-
-  const currentRoom = roomId
+  const currentRoom = roomId?.length
     ? (data?.rooms ?? []).find((r) => r.id === roomId)
     : undefined;
 
@@ -62,10 +55,9 @@ const HeaderBar = () => {
                 …
               </span>
             ) : (
-              <span
-                className="inline-block min-h-[1.25rem] align-top"
-                aria-hidden
-              />
+              <span className="block text-sm leading-tight text-dark-gray">
+                여행 방을 선택해 주세요
+              </span>
             )}
           </div>
           <Image alt="logo" src="/icons/logo.svg" width={150} height={20} />

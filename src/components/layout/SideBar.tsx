@@ -22,7 +22,6 @@ function SideBar() {
   const chatNum = 100;
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
-  const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const pendingJoinRequestsCount = useSessionStore(
     (s) => s.pendingJoinRequestsCount,
   );
@@ -55,13 +54,11 @@ function SideBar() {
 
       <div className="flex flex-col items-center gap-2 px-1">
         {SIDEBAR_ITEMS.map((item) => {
-          const href =
+          const href = item.href;
+          const isActive =
             item.key === "plan"
-              ? currentRoomId
-                ? `/plan/${currentRoomId}`
-                : "/home"
-              : item.href;
-          const isActive = pathname.startsWith(item.href);
+              ? pathname === "/plan" || pathname.startsWith("/plan/")
+              : pathname.startsWith(item.href);
           const isSettings = item.key === "settings";
 
           return (

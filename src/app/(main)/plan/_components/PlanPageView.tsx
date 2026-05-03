@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useDeleteRoomSchedule, useRoomSchedules } from "@/hooks/useRooms";
@@ -32,18 +33,17 @@ function defaultTripRange(): { start: Date; end: Date } {
 
 const INITIAL_RANGE = defaultTripRange();
 
-interface Props {
-  /** 현재 방 ID — 향후 API 호출 시 queryKey 등에 사용 */
-  roomId: string;
-}
+export function PlanPageView() {
+  const storedId = useSessionStore((s) => s.currentRoomId);
+  const roomId =
+    typeof storedId === "string" && storedId.trim().length > 0
+      ? storedId.trim()
+      : "";
 
-export function PlanPageView({ roomId }: Props) {
-  const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
-  useEffect(() => {
-    setCurrentRoomId(roomId);
-  }, [roomId, setCurrentRoomId]);
+  const roomIdForQueries = roomId.length > 0 ? roomId : null;
 
-  const { data: schedules, isPending, isError } = useRoomSchedules(roomId);
+  const { data: schedules, isPending, isError } =
+    useRoomSchedules(roomIdForQueries);
   const { mutate: deleteSchedule, isPending: isDeletingSchedule } =
     useDeleteRoomSchedule();
 
@@ -93,6 +93,7 @@ export function PlanPageView({ roomId }: Props) {
 
   const handleDeleteScheduleDay = useCallback(
     (dayIndex: number) => {
+      if (!roomId.length) return;
       if (isDeletingSchedule) return;
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
@@ -108,10 +109,13 @@ export function PlanPageView({ roomId }: Props) {
     [deleteSchedule, isDeletingSchedule, roomId, sortedSchedules],
   );
 
-  const showInitialLoading = isPending && schedules === undefined;
+  const showInitialLoading = Boolean(
+    roomId.length > 0 && isPending && schedules === undefined,
+  );
 
   const handleRangeApply = useCallback(
     async (start: Date, end: Date) => {
+      if (!roomId.length) return;
       const s = startOfLocalDay(start);
       const e = startOfLocalDay(end);
       try {
@@ -126,7 +130,7 @@ export function PlanPageView({ roomId }: Props) {
         throw new Error("sync schedules failed");
       }
     },
-    [scheduleList, syncSchedulesToRange],
+    [roomId, scheduleList, syncSchedulesToRange],
   );
 
   const rangeToolbarProps = {
@@ -134,6 +138,28 @@ export function PlanPageView({ roomId }: Props) {
     rangeEnd: toolbarRangeEnd,
     onRangeApply: handleRangeApply,
   };
+
+  if (!roomId.length) {
+    return (
+      <div className="space-y-3 pl-6 pr-6">
+        <PlanTripRangeToolbar {...rangeToolbarProps} />
+        <PlanChatSectionWidth />
+        <p className="rounded-xl border border-gray-border bg-white px-4 py-6 text-center text-sm text-dark-gray">
+          선택된 여행 방이 없어요.
+          <br />
+          홈에서 방을 고른 뒤 다시 들어오거나, 카드에서 일정 보기를 눌러 주세요.
+        </p>
+        <div className="flex justify-center">
+          <Link
+            href="/home"
+            className="text-sm font-medium text-brand-green underline-offset-2 hover:underline"
+          >
+            홈으로
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (showInitialLoading) {
     return (

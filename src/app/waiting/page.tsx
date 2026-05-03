@@ -42,7 +42,7 @@ function WaitingContent() {
           } catch {
             // 메타 조회 실패해도 입장은 진행
           }
-          router.replace(`/plan/${data.id}`);
+          router.replace("/plan");
         }
       },
       onError: (err) => {

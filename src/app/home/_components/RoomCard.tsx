@@ -31,7 +31,7 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
       </div>
 
       <Link
-        href={`/plan/${room.id}`}
+        href="/plan"
         className="mt-2 block"
         onClick={() => setCurrentRoomId(room.id)}
       >

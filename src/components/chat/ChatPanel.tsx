@@ -1,11 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
-import { roomIdFromPlanPath } from "@/lib/main-room";
-import { useSessionStore } from "@/stores/session-store";
 import { useChatMessages } from "@/hooks/useChatMessages";
+import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInputBar } from "./ChatInputBar";
@@ -15,18 +13,10 @@ import {
   getPanelAnimate,
 } from "./chat.animations";
 
-/** 스토어의 currentRoomId가 없을 때 `/plan/{roomId}` 경로에서 roomId 보강 (persist 비대상 대응) */
-function useChatRoomId(): string | null {
-  const pathname = usePathname();
-  const storeRoomId = useSessionStore((s) => s.currentRoomId);
-  const pathRoomId = roomIdFromPlanPath(pathname);
-  return storeRoomId ?? pathRoomId;
-}
-
 export function ChatPanel() {
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const isMinimized = chatState === "minimized";
-  const roomId = useChatRoomId();
+  const roomId = useSessionStore((s) => s.currentRoomId);
   const { messages, sendMessage } = useChatMessages(roomId);
 
   return (

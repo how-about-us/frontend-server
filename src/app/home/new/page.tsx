@@ -37,7 +37,7 @@ export default function NewTripPage() {
         onSuccess: (room) => {
           setCurrentRoomId(room.id);
           setCurrentRoomInviteCode(room.inviteCode);
-          router.replace(`/plan/${room.id}`);
+          router.replace("/plan");
         },
       },
     );
