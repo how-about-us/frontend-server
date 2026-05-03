@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { StompProvider } from "@/contexts/StompContext";
 import { createQueryClient } from "@/lib/query/queryClient";
+import { useSessionStore } from "@/stores/session-store";
 
 /**
  * 전역 레이아웃용 Provider 순서 —
@@ -18,6 +19,11 @@ import { createQueryClient } from "@/lib/query/queryClient";
  */
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
+
+  /** `skipHydration` 세션 스토어 — 클라 마운트 후 한 번만 localStorage 병합 */
+  useEffect(() => {
+    void useSessionStore.persist?.rehydrate?.();
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

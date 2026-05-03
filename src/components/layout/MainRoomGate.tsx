@@ -19,42 +19,56 @@ function isLegacyPlanRoomPath(pathname: string): boolean {
 /**
  * 인증은 미들웨어(`AUTH_SESSION_COOKIE`)에서 처리합니다.
  * (main) 안에서는 선택된 방이 없으면 `/home`으로 보냅니다.
+ *
+ * 세션 병합은 루트 `AppRootProviders`의 `rehydrate()` 이후에만 판단합니다.
  */
 export function MainRoomGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
-  const [gateReady, setGateReady] = useState(() =>
-    typeof window !== "undefined"
-      ? useSessionStore.persist.hasHydrated()
-      : false,
-  );
+
+  const [persistResolved, setPersistResolved] = useState(false);
 
   useEffect(() => {
-    if (useSessionStore.persist.hasHydrated()) {
-      setGateReady(true);
+    const api = useSessionStore.persist;
+    if (!api?.onFinishHydration) {
+      setPersistResolved(true);
       return;
     }
-    return useSessionStore.persist.onFinishHydration(() => {
-      setGateReady(true);
+    if (api.hasHydrated()) {
+      setPersistResolved(true);
+      return;
+    }
+    return api.onFinishHydration(() => {
+      setPersistResolved(true);
     });
   }, []);
 
   const allowWithoutStoredRoom = isLegacyPlanRoomPath(pathname);
 
   useEffect(() => {
-    if (!gateReady) return;
+    if (!persistResolved) return;
     if (allowWithoutStoredRoom) return;
-    if (!hasTrimmedRoomId(currentRoomId)) {
+    const rid = useSessionStore.getState().currentRoomId;
+    if (!hasTrimmedRoomId(rid)) {
       router.replace("/home");
     }
-  }, [allowWithoutStoredRoom, currentRoomId, gateReady, router]);
+  }, [
+    persistResolved,
+    allowWithoutStoredRoom,
+    router,
+    pathname,
+    currentRoomId,
+  ]);
 
-  if (!gateReady) {
+  if (!persistResolved) {
     return null;
   }
 
-  if (!hasTrimmedRoomId(currentRoomId) && !allowWithoutStoredRoom) {
+  if (
+    !hasTrimmedRoomId(useSessionStore.getState().currentRoomId) &&
+    !allowWithoutStoredRoom
+  ) {
     return null;
   }
 

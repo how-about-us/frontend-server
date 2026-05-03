@@ -64,6 +64,8 @@ export const useSessionStore = create<SessionStore>()(
         user: state.user,
         currentRoomId: state.currentRoomId,
       }),
+      /** 자동 hydrate와 첫 렌더·Gate 타이밍 경쟁을 피함 — 클라에서만 `rehydrate()` 호출 */
+      skipHydration: true,
     },
   ),
 );
