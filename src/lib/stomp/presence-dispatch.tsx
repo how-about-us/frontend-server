@@ -7,7 +7,9 @@ import {
   roomPresenceToastIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
+import { getRoomMembers } from "@/lib/api/rooms";
 import { ROOMS_QUERY_KEY } from "@/hooks/useRooms";
+import { useRoomPresenceStore } from "@/stores/room-presence-store";
 
 import type { RoomPresenceChangedEvent } from "./events";
 
@@ -47,34 +49,61 @@ export async function dispatchRoomPresenceToast(
       ? event.userId
       : Number(event.userId);
 
-  let displayName = trimmed;
-  let profileUrl: string | null = payloadImg;
-
-  if (!displayName || profileUrl === null) {
-    const fromMembers = await resolveActorPresence(
-      queryClient,
-      subscribedRoomId,
-      Number.isFinite(uid) ? uid : 0,
-    );
-    if (!displayName) displayName = fromMembers.nickname;
-    if (profileUrl === null) profileUrl = fromMembers.profileImageUrl ?? null;
-  }
-
-  const icon = roomPresenceToastIcon(profileUrl);
+  const uidFinite = Number.isFinite(uid) ? uid : 0;
 
   if (event.type === "USER_CONNECTED") {
+    let displayName = trimmed;
+    let profileUrl: string | null = payloadImg;
+
+    if (!displayName || profileUrl === null) {
+      const fromMembers = await resolveActorPresence(
+        queryClient,
+        subscribedRoomId,
+        uidFinite,
+      );
+      if (!displayName) displayName = fromMembers.nickname;
+      if (profileUrl === null) profileUrl = fromMembers.profileImageUrl ?? null;
+    }
+
+    const icon = roomPresenceToastIcon(profileUrl);
+    useRoomPresenceStore.getState().setUserOnline(subscribedRoomId, uidFinite);
     showRoomBroadcastAlert({
-      message: `${displayName}님이 입장했습니다`,
+      message: `${displayName}님이 온라인 상태입니다.`,
       icon,
     });
-  } else if (event.type === "USER_DISCONNECTED") {
-    showRoomBroadcastAlert({
-      message: `${displayName}님이 퇴장했습니다`,
-      icon,
-    });
-  } else {
+    await invalidatePresenceRelatedQueries(queryClient, subscribedRoomId);
     return;
   }
 
-  await invalidatePresenceRelatedQueries(queryClient, subscribedRoomId);
+  if (event.type === "USER_DISCONNECTED") {
+    let fresh;
+    try {
+      fresh = await getRoomMembers(subscribedRoomId);
+    } catch {
+      await invalidatePresenceRelatedQueries(queryClient, subscribedRoomId);
+      return;
+    }
+
+    queryClient.setQueryData(["room-members", subscribedRoomId], fresh);
+    useRoomPresenceStore
+      .getState()
+      .setUserOffline(subscribedRoomId, uidFinite);
+
+    const row = fresh.members.find((m) => m.userId === uidFinite);
+    const displayName =
+      trimmed ||
+      row?.nickname?.trim() ||
+      (uidFinite > 0 ? `유저 #${uidFinite}` : "알 수 없는 사용자");
+    const profileUrl = payloadImg ?? row?.profileImageUrl ?? null;
+    const icon = roomPresenceToastIcon(profileUrl);
+    const stillMember = fresh.members.some((m) => m.userId === uidFinite);
+
+    showRoomBroadcastAlert({
+      message: stillMember
+        ? `${displayName}님은 오프라인 상태입니다`
+        : `${displayName}님은 방을 나갔습니다`,
+      icon,
+    });
+    await invalidatePresenceRelatedQueries(queryClient, subscribedRoomId);
+  }
 }

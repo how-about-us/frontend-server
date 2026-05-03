@@ -16,6 +16,7 @@ import type { Client } from "@stomp/stompjs";
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
+import { useRoomPresenceStore } from "@/stores/room-presence-store";
 import { useSessionStore } from "@/stores/session-store";
 
 interface StompContextValue {
@@ -45,26 +46,45 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const clientRef = useRef<Client | null>(null);
   const roomTopicsUnsubRef = useRef<(() => void) | null>(null);
+  const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const [contextValue, setContextValue] = useState<StompContextValue>({
     client: null,
     connected: false,
   });
 
-  const unsubscribeRoomTopics = useCallback(() => {
+  const detachRoomTopicsOnly = useCallback(() => {
     roomTopicsUnsubRef.current?.();
     roomTopicsUnsubRef.current = null;
   }, []);
 
+  const unsubscribeRoomTopics = useCallback(() => {
+    const rid = lastSubscribedRoomIdRef.current;
+    detachRoomTopicsOnly();
+    if (rid) {
+      useRoomPresenceStore.getState().resetRoom(rid);
+      lastSubscribedRoomIdRef.current = null;
+    }
+  }, [detachRoomTopicsOnly]);
+
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
-      unsubscribeRoomTopics();
+      const prevRoom = lastSubscribedRoomIdRef.current;
+      detachRoomTopicsOnly();
+      if (prevRoom && prevRoom !== roomId) {
+        useRoomPresenceStore.getState().resetRoom(prevRoom);
+      }
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
         roomId,
         queryClientRef,
       );
+      lastSubscribedRoomIdRef.current = roomId;
+      const uid = useSessionStore.getState().user?.id;
+      if (uid != null) {
+        useRoomPresenceStore.getState().setUserOnline(roomId, uid);
+      }
     },
-    [unsubscribeRoomTopics],
+    [detachRoomTopicsOnly],
   );
 
   /* STOMP 활성/비활성 시 컨텍스트와 동기화 — 동기 setState 패턴 허용 */
@@ -76,6 +96,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
         clientRef.current.deactivate();
         clientRef.current = null;
       }
+      useRoomPresenceStore.getState().clearAll();
       setContextValue({ client: null, connected: false });
       return;
     }
@@ -106,10 +127,20 @@ export function StompProvider({ children }: { children: ReactNode }) {
     };
 
     client.onDisconnect = () => {
+      const rid = currentRoomIdRef.current;
+      const uid = useSessionStore.getState().user?.id;
+      if (rid != null && uid != null) {
+        useRoomPresenceStore.getState().setUserOffline(rid, uid);
+      }
       setContextValue((prev) => ({ ...prev, connected: false }));
     };
 
     client.onStompError = () => {
+      const rid = currentRoomIdRef.current;
+      const uid = useSessionStore.getState().user?.id;
+      if (rid != null && uid != null) {
+        useRoomPresenceStore.getState().setUserOffline(rid, uid);
+      }
       setContextValue((prev) => ({ ...prev, connected: false }));
     };
 

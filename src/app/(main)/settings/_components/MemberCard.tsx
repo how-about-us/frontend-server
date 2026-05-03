@@ -12,6 +12,8 @@ export type MemberCardData = {
   profileImageUrl?: string | null;
   role: MemberRole;
   isCurrentUser?: boolean;
+  /** STOMP presence — 미지정 시 접속 상태 배지를 숨깁니다 */
+  connectionStatus?: "online" | "offline";
 };
 
 type Props = {
@@ -87,7 +89,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
             <span className="text-xs text-dark-gray">(나)</span>
           )}
         </div>
-        <div className="mt-0.5">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1">
           <span
             className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ${
               member.role === "HOST"
@@ -97,6 +99,16 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
           >
             {member.role}
           </span>
+          {member.connectionStatus === "online" && (
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-emerald-500/15 text-emerald-700">
+              온라인
+            </span>
+          )}
+          {member.connectionStatus === "offline" && (
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-gray-100 text-dark-gray">
+              오프라인
+            </span>
+          )}
         </div>
       </div>
 
