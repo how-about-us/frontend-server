@@ -4,7 +4,10 @@ import type { DragEvent } from "react";
 import Image from "next/image";
 
 import type { PlanPlace } from "@/mocks/plan";
+import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
+
+import { PlanItemTimeForm } from "./PlanItemTimeForm";
 
 export type PlanPlaceCardProps = {
   place: PlanPlace;
@@ -14,6 +17,13 @@ export type PlanPlaceCardProps = {
   isDropTarget: boolean;
   /** 서버 동기화 일정에서는 순서 변경 비활성화 */
   dragDisabled?: boolean;
+  /** `itemId`가 있을 때 카드 안에서 일정 시간 편집 */
+  scheduleTimeEdit?: {
+    roomId: string;
+    scheduleId: number;
+    /** `slotStartTimeHm` 폴백용 0-based 인덱스 */
+    slotIndex: number;
+  };
   onDragStart: (e: DragEvent) => void;
   onDragEnd: (e: DragEvent) => void;
   onDragOver: (e: DragEvent) => void;
@@ -27,6 +37,7 @@ export function PlanPlaceCard({
   isDragging,
   isDropTarget,
   dragDisabled = false,
+  scheduleTimeEdit,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -45,7 +56,7 @@ export function PlanPlaceCard({
       onDragLeave={dragDisabled ? undefined : onDragLeave}
       onDrop={dragDisabled ? undefined : onDrop}
       className={cn(
-        "relative flex w-[70%] h-40 select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        "relative flex min-h-40 w-[70%] select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
@@ -70,17 +81,30 @@ export function PlanPlaceCard({
             {place.subtitle}
           </p>
         ) : null}
+        {scheduleTimeEdit && typeof place.itemId === "number" ? (
+          <PlanItemTimeForm
+            roomId={scheduleTimeEdit.roomId}
+            scheduleId={scheduleTimeEdit.scheduleId}
+            itemId={place.itemId}
+            startTime={
+              place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)
+            }
+            durationMinutes={place.durationMinutes ?? 0}
+          />
+        ) : null}
       </div>
 
-      <div className="absolute top-0 rounded-xl overflow-hidden left-[102%] h-40 w-[164px] shrink-0 bg-light-gray">
-        <Image
-          src={imageSrc}
-          alt={place.title}
-          fill
-          className="object-cover"
-          sizes="140px"
-          draggable={false}
-        />
+      <div className="absolute bottom-0 left-[102%] top-0 w-[164px] shrink-0">
+        <div className="relative h-full min-h-40 overflow-hidden rounded-xl bg-light-gray">
+          <Image
+            src={imageSrc}
+            alt={place.title}
+            fill
+            className="object-cover"
+            sizes="140px"
+            draggable={false}
+          />
+        </div>
       </div>
     </article>
   );

@@ -55,6 +55,7 @@ export type { RoomSchedule, RoomScheduleCreateRequest } from "./schedules";
 export type {
   RoomScheduleItem,
   RoomScheduleItemCreateRequest,
+  RoomScheduleItemUpdateRequest,
 } from "./schedule-items";
 
 export {
@@ -68,6 +69,7 @@ export {
 export {
   createScheduleItem,
   getScheduleItems,
+  updateScheduleItem,
 } from "./schedule-items";
 
 export {

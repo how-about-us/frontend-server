@@ -11,6 +11,7 @@ import {
   createRoomBookmark,
   createRoom,
   createScheduleItem,
+  updateScheduleItem,
   deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
@@ -28,8 +29,9 @@ import {
   leaveRoom,
   regenerateInviteCode,
   rejectJoinRequest,
-  RoomCreateRequest,
-  RoomUpdateRequest,
+  type RoomCreateRequest,
+  type RoomScheduleItemUpdateRequest,
+  type RoomUpdateRequest,
   seedRoomSchedules,
   transferHost,
   updateBookmarkCategory,
@@ -37,7 +39,7 @@ import {
 } from "@/lib/api/rooms";
 import {
   fetchScheduleItemsAsPlanPlaces,
-  isoStartForNewScheduleItem,
+  slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
@@ -76,6 +78,9 @@ export function useRoomSchedules(roomId: string | null) {
     queryKey: roomSchedulesQueryKey(id || null),
     queryFn: () => getRoomSchedules(id),
     enabled: id.length > 0,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -111,6 +116,9 @@ export function useSchedulePlanPlaces(
     queryFn: () => fetchScheduleItemsAsPlanPlaces(rid, sid!),
     enabled:
       rid.length > 0 && typeof sid === "number" && Number.isFinite(sid),
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -120,18 +128,37 @@ export function useCreateScheduleItem() {
     mutationFn: (vars: {
       roomId: string;
       scheduleId: number;
-      scheduleDateYmd: string;
       googlePlaceId: string;
       nextSlotIndex: number;
     }) =>
       createScheduleItem(vars.roomId, vars.scheduleId, {
         googlePlaceId: vars.googlePlaceId,
-        startTime: isoStartForNewScheduleItem(
-          vars.scheduleDateYmd,
-          vars.nextSlotIndex,
-        ),
+        startTime: slotStartTimeHm(vars.nextSlotIndex),
         durationMinutes: 60,
       }),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
+      });
+    },
+  });
+}
+
+export function useUpdateScheduleItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      itemId: number;
+      body: RoomScheduleItemUpdateRequest;
+    }) =>
+      updateScheduleItem(
+        vars.roomId,
+        vars.scheduleId,
+        vars.itemId,
+        vars.body,
+      ),
     onSuccess: (_, v) => {
       queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),

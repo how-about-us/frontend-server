@@ -6,15 +6,18 @@ import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { dispatchRoomPresenceToast } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
-import { invalidateRoomSchedulesQueries } from "@/lib/stomp/schedules-dispatch";
+import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
+import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
+import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
 
 export type RoomTopicsUnsubscriber = () => void;
 
-/** 방 단위 presence·bookmarks·schedules 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 presence·bookmarks·schedules + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
   queryClientRef: MutableRefObject<QueryClient>,
+  currentUserId: number,
 ): RoomTopicsUnsubscriber {
   const presenceSub = client.subscribe(
     `/topic/rooms/${roomId}/presence`,
@@ -49,17 +52,25 @@ export function subscribeRoomStompTopics(
       void (async () => {
         const event = parseRoomScheduleMessage(message.body);
         if (!event) return;
-        await invalidateRoomSchedulesQueries(
+        await dispatchRoomScheduleEvent(
           queryClientRef.current,
-          event.roomId,
+          event,
+          currentUserId,
         );
       })();
     },
   );
 
+  const userErrorsSub = client.subscribe(`/user/queue/errors`, (message) => {
+    const payload = parseUserErrorMessage(message.body);
+    if (!payload) return;
+    dispatchUserErrorToast(payload);
+  });
+
   return () => {
     presenceSub.unsubscribe();
     bookmarksSub.unsubscribe();
     schedulesSub.unsubscribe();
+    userErrorsSub.unsubscribe();
   };
 }

@@ -16,15 +16,8 @@ import {
   rangeFromSchedules,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
-import {
-  countInclusiveLocalDays,
-  formatDateYmd,
-  mergePlanDaysWithPlaces,
-  startOfLocalDay,
-  subtractLocalDays,
-} from "@/lib/plan/tripRange";
+import { formatDateYmd, startOfLocalDay } from "@/lib/plan/tripRange";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import type { PlanDayData, PlanPlace } from "@/mocks/plan";
 
 import { PlanChatSectionWidth } from "./PlanChatSectionWidth";
 import { PlanDaySection } from "./PlanDaySection";
@@ -39,10 +32,6 @@ function defaultTripRange(): { start: Date; end: Date } {
 }
 
 const INITIAL_RANGE = defaultTripRange();
-const INITIAL_DAY_COUNT = countInclusiveLocalDays(
-  INITIAL_RANGE.start,
-  INITIAL_RANGE.end,
-);
 
 interface Props {
   /** 현재 방 ID — 향후 API 호출 시 queryKey 등에 사용 */
@@ -89,10 +78,8 @@ export function PlanPageView({ roomId }: Props) {
     },
   });
 
-  const [range, setRange] = useState(INITIAL_RANGE);
-  const [placesPerDay, setPlacesPerDay] = useState<PlanPlace[][]>(() =>
-    Array.from({ length: INITIAL_DAY_COUNT }, () => []),
-  );
+  /** 서버 일정이 없을 때만 기간 선택 UI용 (적용 시 POST로 일정 생성) */
+  const [draftRange, setDraftRange] = useState(INITIAL_RANGE);
 
   const scheduleList = useMemo(() => schedules ?? [], [schedules]);
   const serverDriven = scheduleList.length > 0;
@@ -106,48 +93,14 @@ export function PlanPageView({ roomId }: Props) {
     return rangeFromSchedules(scheduleList);
   }, [scheduleList]);
 
-  const toolbarRangeStart = scheduleDerivedRange?.start ?? range.start;
-  const toolbarRangeEnd = scheduleDerivedRange?.end ?? range.end;
+  const toolbarRangeStart = scheduleDerivedRange?.start ?? draftRange.start;
+  const toolbarRangeEnd = scheduleDerivedRange?.end ?? draftRange.end;
 
-  const paddedPlacesPerDay = useMemo(() => {
-    const n = serverDriven
-      ? scheduleList.length
-      : countInclusiveLocalDays(range.start, range.end);
-    return Array.from({ length: n }, (_, i) => placesPerDay[i] ?? []);
-  }, [
-    serverDriven,
-    scheduleList.length,
-    range.start,
-    range.end,
-    placesPerDay,
-  ]);
-
-  const planDays: PlanDayData[] = useMemo(() => {
-    if (scheduleList.length > 0) {
-      return mergeSchedulesWithPlaces(scheduleList);
-    }
-    return mergePlanDaysWithPlaces(
-      range.start,
-      range.end,
-      paddedPlacesPerDay,
-    );
-  }, [scheduleList, paddedPlacesPerDay, range.start, range.end]);
-
-  const updateDayPlaces = useCallback((dayIndex: number, next: PlanPlace[]) => {
-    setPlacesPerDay((rows) => {
-      const out = rows.slice();
-      out[dayIndex] = next;
-      return out;
-    });
-  }, []);
-
-  const handleDeleteDayLocal = useCallback((dayIndex: number) => {
-    setRange((r) => ({
-      start: r.start,
-      end: subtractLocalDays(r.end, 1),
-    }));
-    setPlacesPerDay((rows) => rows.filter((_, i) => i !== dayIndex));
-  }, []);
+  const planDays = useMemo(
+    () =>
+      scheduleList.length > 0 ? mergeSchedulesWithPlaces(scheduleList) : [],
+    [scheduleList],
+  );
 
   const handleDeleteScheduleDay = useCallback(
     (dayIndex: number) => {
@@ -172,26 +125,19 @@ export function PlanPageView({ roomId }: Props) {
     async (start: Date, end: Date) => {
       const s = startOfLocalDay(start);
       const e = startOfLocalDay(end);
-      if (scheduleList.length > 0) {
-        try {
-          await syncSchedulesToRange({
-            start: s,
-            end: e,
-            currentSchedules: scheduleList,
-          });
-        } catch {
-          toast.error("여행 기간을 서버에 반영하지 못했어요.");
-          throw new Error("sync schedules failed");
-        }
-        return;
+      try {
+        await syncSchedulesToRange({
+          start: s,
+          end: e,
+          currentSchedules: scheduleList,
+        });
+        setDraftRange({ start: s, end: e });
+      } catch {
+        toast.error("여행 기간을 서버에 반영하지 못했어요.");
+        throw new Error("sync schedules failed");
       }
-      setRange({ start: s, end: e });
-      setPlacesPerDay((prev) => {
-        const n = countInclusiveLocalDays(s, e);
-        return Array.from({ length: n }, (_, i) => prev[i] ?? []);
-      });
     },
-    [roomId, scheduleList, syncSchedulesToRange],
+    [scheduleList, syncSchedulesToRange],
   );
 
   const rangeToolbarProps = {
@@ -224,33 +170,30 @@ export function PlanPageView({ roomId }: Props) {
         </p>
       ) : null}
 
+      {!isError && planDays.length === 0 ? (
+        <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
+          아직 생성된 일정이 없어요. 위에서 여행 기간을 선택한 뒤 적용하면 서버에
+          일정이 만들어집니다.
+        </p>
+      ) : null}
+
       {planDays.map((day, dayIndex) => (
         <PlanDaySection
           key={day.id}
           title={day.dayLabel}
           subtitle={day.dateLabel}
           onRequestDeleteDay={
-            planDays.length > 1
-              ? serverDriven
-                ? () => handleDeleteScheduleDay(dayIndex)
-                : () => handleDeleteDayLocal(dayIndex)
+            planDays.length > 1 && sortedSchedules[dayIndex]
+              ? () => handleDeleteScheduleDay(dayIndex)
               : undefined
           }
         >
-          {serverDriven && sortedSchedules[dayIndex] ? (
+          {sortedSchedules[dayIndex] ? (
             <PlanItinerary
               roomId={roomId}
               scheduleId={sortedSchedules[dayIndex].scheduleId}
-              scheduleDateYmd={sortedSchedules[dayIndex].date}
             />
-          ) : (
-            <PlanItinerary
-              places={day.places}
-              onPlacesChange={(next: PlanPlace[]) =>
-                updateDayPlaces(dayIndex, next)
-              }
-            />
-          )}
+          ) : null}
         </PlanDaySection>
       ))}
     </div>

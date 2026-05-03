@@ -15,6 +15,7 @@ import type { Client } from "@stomp/stompjs";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
+import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { useSessionStore } from "@/stores/session-store";
 
 interface StompContextValue {
@@ -57,10 +58,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       unsubscribeRoomTopics();
+      const userId = useSessionStore.getState().user?.id ?? 0;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
         roomId,
         queryClientRef,
+        userId,
       );
     },
     [unsubscribeRoomTopics],
@@ -88,6 +91,15 @@ export function StompProvider({ children }: { children: ReactNode }) {
       const rid = currentRoomIdRef.current;
       if (rid) {
         subscribeToRoomTopics(client, rid);
+        // 재연결 구간에 missed된 이벤트 보완
+        void queryClientRef.current.invalidateQueries({
+          queryKey: roomSchedulesQueryKey(rid),
+          refetchType: "all",
+        });
+        void queryClientRef.current.invalidateQueries({
+          queryKey: ["schedule-items", rid],
+          refetchType: "all",
+        });
       }
     };
 

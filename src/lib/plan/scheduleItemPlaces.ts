@@ -2,17 +2,10 @@ import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import { getPlaceDetail, getPlacePhotoUrl } from "@/lib/api/places";
 import type { PlanPlace } from "@/mocks/plan";
 
-import { parseLocalYmd } from "@/lib/plan/tripRange";
-
-/** 새 항목 POST 시 `startTime` — 해당 일정 날짜 로컬 자정 기준 슬롯 시각 */
-export function isoStartForNewScheduleItem(
-  dateYmd: string,
-  itemIndex: number,
-): string {
-  const d = parseLocalYmd(dateYmd);
+/** 새 항목 POST 시 `startTime` — `HH:mm` (로컬 슬롯: 08:00부터 번호당 1시간, 최대 22:00) */
+export function slotStartTimeHm(itemIndex: number): string {
   const hour = Math.min(8 + itemIndex, 22);
-  d.setHours(hour, 0, 0, 0);
-  return d.toISOString();
+  return `${String(hour).padStart(2, "0")}:00`;
 }
 
 export async function fetchScheduleItemsAsPlanPlaces(
@@ -41,6 +34,8 @@ export async function fetchScheduleItemsAsPlanPlaces(
           title: detail.name,
           subtitle: detail.formattedAddress,
           imageUrl,
+          startTime: item.startTime,
+          durationMinutes: item.durationMinutes,
         };
         return place;
       } catch {
@@ -50,6 +45,8 @@ export async function fetchScheduleItemsAsPlanPlaces(
           googlePlaceId: item.googlePlaceId,
           title: "장소 정보를 불러올 수 없음",
           subtitle: item.googlePlaceId,
+          startTime: item.startTime,
+          durationMinutes: item.durationMinutes,
         };
         return place;
       }

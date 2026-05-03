@@ -8,6 +8,9 @@ export type PlanPlace = {
   /** 서버 일정 항목과 매핑 시 */
   itemId?: number;
   googlePlaceId?: string;
+  /** 서버 일정 항목 — PATCH 시 사용 (`HH:mm` 등 API 그대로) */
+  startTime?: string;
+  durationMinutes?: number;
 };
 
 /** 일차별 플랜 — `PlanPageView`가 일차별 장소 배열을 들고 `PlanItinerary`에 넘긴다 */
