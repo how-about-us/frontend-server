@@ -14,6 +14,7 @@ import {
   deleteScheduleItem,
   reorderScheduleItem,
   updateScheduleItem,
+  updateScheduleItemTravelMode,
   deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
@@ -34,6 +35,7 @@ import {
   type RoomCreateRequest,
   type ReorderScheduleItemRequest,
   type RoomScheduleItemUpdateRequest,
+  type UpdateScheduleItemTravelModeRequest,
   type RoomUpdateRequest,
   seedRoomSchedules,
   transferHost,
@@ -196,6 +198,29 @@ export function useReorderScheduleItem() {
       body: ReorderScheduleItemRequest;
     }) =>
       reorderScheduleItem(
+        vars.roomId,
+        vars.scheduleId,
+        vars.itemId,
+        vars.body,
+      ),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
+      });
+    },
+  });
+}
+
+export function useUpdateScheduleItemTravelMode() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      itemId: number;
+      body: UpdateScheduleItemTravelModeRequest;
+    }) =>
+      updateScheduleItemTravelMode(
         vars.roomId,
         vars.scheduleId,
         vars.itemId,

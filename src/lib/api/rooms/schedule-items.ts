@@ -27,6 +27,10 @@ export type ReorderScheduleItemRequest = {
   newOrderIndex: number;
 };
 
+export type UpdateScheduleItemTravelModeRequest = {
+  travelMode: string;
+};
+
 export async function getScheduleItems(
   roomId: string,
   scheduleId: number,
@@ -85,5 +89,20 @@ export async function reorderScheduleItem(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/order`),
     { method: "PATCH", ...jsonBody(body) },
     { errorMessage: "일정 순서 변경 실패" },
+  );
+}
+
+export async function updateScheduleItemTravelMode(
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+  body: UpdateScheduleItemTravelModeRequest,
+): Promise<RoomScheduleItem> {
+  return requestJson(
+    apiUrl(
+      `/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/travel-mode`,
+    ),
+    { method: "PATCH", ...jsonBody(body) },
+    { errorMessage: "이동 수단 변경 실패" },
   );
 }

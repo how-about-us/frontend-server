@@ -45,6 +45,7 @@ export async function fetchScheduleItemsAsPlanPlaces(
           photoName: firstPhoto?.trim() || undefined,
           startTime: item.startTime,
           durationMinutes: item.durationMinutes,
+          travelMode: item.travelMode,
         };
         return place;
       } catch {
@@ -56,6 +57,7 @@ export async function fetchScheduleItemsAsPlanPlaces(
           subtitle: item.googlePlaceId,
           startTime: item.startTime,
           durationMinutes: item.durationMinutes,
+          travelMode: item.travelMode,
         };
         return place;
       }

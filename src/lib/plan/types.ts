@@ -14,6 +14,8 @@ export type PlanPlace = {
   /** 서버 일정 항목 — PATCH 시 사용 (`HH:mm` 등 API 그대로) */
   startTime?: string;
   durationMinutes?: number;
+  /** 직전 장소에서 이 장소로 오는 구간의 이동 수단 (서버 `travelMode`) */
+  travelMode?: string;
 };
 
 /** 일차별 플랜 메타 — 섹션 헤더용 (`places`는 현재 빈 배열) */

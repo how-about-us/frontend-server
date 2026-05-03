@@ -57,6 +57,7 @@ export type {
   RoomScheduleItemCreateRequest,
   RoomScheduleItemUpdateRequest,
   ReorderScheduleItemRequest,
+  UpdateScheduleItemTravelModeRequest,
 } from "./schedule-items";
 
 export {
@@ -73,6 +74,7 @@ export {
   getScheduleItems,
   reorderScheduleItem,
   updateScheduleItem,
+  updateScheduleItemTravelMode,
 } from "./schedule-items";
 
 export {

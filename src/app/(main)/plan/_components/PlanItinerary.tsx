@@ -188,6 +188,10 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             />
             {index < places.length - 1 ? (
               <PlanTravelTime
+                roomId={roomId}
+                scheduleId={scheduleId}
+                destinationItemId={places[index + 1].itemId}
+                travelMode={places[index + 1].travelMode ?? "WALK"}
                 fromPlace={place}
                 toPlace={places[index + 1]}
               />
