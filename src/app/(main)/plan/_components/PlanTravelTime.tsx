@@ -87,13 +87,15 @@ export function PlanTravelTime({
   const effectiveMode =
     canonFromPayload ?? SCHEDULE_TRAVEL_MODES[0].value;
 
-  const { data: route, isPending, isError } = useScheduleItemRoute(
+  const { data: route, isPending, isError, isSuccess } = useScheduleItemRoute(
     roomId,
     scheduleId,
     segmentSourceItemId,
     effectiveMode,
     routeQueryEnabled,
   );
+
+  const routeUnavailable = isSuccess && route == null;
 
   const knownValues = new Set<string>(
     SCHEDULE_TRAVEL_MODES.map((m) => m.value),
@@ -123,6 +125,7 @@ export function PlanTravelTime({
       staleTime: Infinity,
       refetchOnMount: false,
       refetchOnWindowFocus: false,
+      retry: false,
     })),
   });
 
@@ -167,6 +170,8 @@ export function PlanTravelTime({
       </span>
     ) : isError ? (
       "이동 시간을 불러오지 못했어요"
+    ) : routeUnavailable ? (
+      "이 구간은 이동 안내를 제공하지 않아요"
     ) : (
       "다음 장소로 이동"
     );

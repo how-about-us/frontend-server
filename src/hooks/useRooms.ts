@@ -133,6 +133,7 @@ export function useScheduleItemRoute(
     staleTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    retry: false,
   });
 }
 
