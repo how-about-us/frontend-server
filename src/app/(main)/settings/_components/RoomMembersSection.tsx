@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -224,13 +222,6 @@ export function RoomMembersSection() {
             ))}
           </div>
         </section>
-      )}
-
-      {/* 멤버 없음 (방 미선택 등) */}
-      {!isMembersLoading && members.length === 0 && !currentRoomId && (
-        <p className="py-4 text-center text-sm text-dark-gray">
-          방을 선택하면 멤버 목록이 표시됩니다.
-        </p>
       )}
 
       {/* 하단 버튼 */}

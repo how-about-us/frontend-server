@@ -18,6 +18,7 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 const HeaderBar = () => {
   const storedRoomId = useSessionStore((s) => s.currentRoomId);
+  const roomMeta = useSessionStore((s) => s.currentRoomMeta);
   const { data, isPending } = useRoomsList();
 
   const roomId =
@@ -55,8 +56,8 @@ const HeaderBar = () => {
                 …
               </span>
             ) : (
-              <span className="block text-sm leading-tight text-dark-gray">
-                여행 방을 선택해 주세요
+              <span className="block text-sm font-semibold leading-tight text-dark-gray">
+                {roomMeta?.title ?? "방 정보 없음"}
               </span>
             )}
           </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -138,28 +137,6 @@ export function PlanPageView() {
     rangeEnd: toolbarRangeEnd,
     onRangeApply: handleRangeApply,
   };
-
-  if (!roomId.length) {
-    return (
-      <div className="space-y-3 pl-6 pr-6">
-        <PlanTripRangeToolbar {...rangeToolbarProps} />
-        <PlanChatSectionWidth />
-        <p className="rounded-xl border border-gray-border bg-white px-4 py-6 text-center text-sm text-dark-gray">
-          선택된 여행 방이 없어요.
-          <br />
-          홈에서 방을 고른 뒤 다시 들어오거나, 카드에서 일정 보기를 눌러 주세요.
-        </p>
-        <div className="flex justify-center">
-          <Link
-            href="/home"
-            className="text-sm font-medium text-brand-green underline-offset-2 hover:underline"
-          >
-            홈으로
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   if (showInitialLoading) {
     return (

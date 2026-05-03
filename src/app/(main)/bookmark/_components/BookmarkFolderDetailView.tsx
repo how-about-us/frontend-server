@@ -55,16 +55,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     placeQueries.some((q) => q.isPending || q.isFetching);
 
   if (!roomId) {
-    return (
-      <>
-        <BookmarkFolderDetailHeader folder={folder} />
-        <div className={`${SCROLLBAR} px-6 py-10`}>
-          <p className="text-center text-sm text-dark-gray">
-            방을 선택한 뒤 보관함을 열어 주세요.
-          </p>
-        </div>
-      </>
-    );
+    return null;
   }
 
   if (categoryIdOk == null) {

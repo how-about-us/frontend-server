@@ -127,11 +127,7 @@ export function BookmarkFoldersView() {
     isRowDeleting(folderId) || isRowUpdating(folderId);
 
   if (!roomId) {
-    return (
-      <div className="px-6 py-10 text-center text-sm text-dark-gray">
-        보관함을 보려면 먼저 방을 선택해 주세요.
-      </div>
-    );
+    return null;
   }
 
   if (isPending) {

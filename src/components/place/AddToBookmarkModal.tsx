@@ -62,6 +62,10 @@ export function AddToBookmarkModal({
     );
   };
 
+  if (!roomId) {
+    return null;
+  }
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
@@ -90,17 +94,11 @@ export function AddToBookmarkModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          {!roomId && (
-            <p className="text-center text-sm text-dark-gray">
-              방을 선택한 뒤 다시 시도해 주세요.
-            </p>
-          )}
-
-          {roomId && categoriesLoading && (
+          {categoriesLoading && (
             <p className="text-center text-sm text-dark-gray">불러오는 중…</p>
           )}
 
-          {roomId && categoriesError && (
+          {categoriesError && (
             <div className="space-y-2 text-center">
               <p className="text-sm text-brand-red">
                 {categoriesErr instanceof Error
@@ -117,13 +115,13 @@ export function AddToBookmarkModal({
             </div>
           )}
 
-          {roomId && categories && categories.length === 0 && (
+          {categories && categories.length === 0 && (
             <p className="text-center text-sm text-dark-gray">
               북마크 카테고리가 없습니다. 보관함 탭에서 먼저 만들어 주세요.
             </p>
           )}
 
-          {roomId && categories && categories.length > 0 && (
+          {categories && categories.length > 0 && (
             <ul className="space-y-2">
               {categories.map((c) => (
                 <li key={c.categoryId}>
