@@ -5,9 +5,7 @@ export type RoomScheduleEventType =
   | "SCHEDULE_ITEM_UPDATED"
   | "SCHEDULE_ITEM_DELETED"
   | "SCHEDULE_ITEMS_REORDERED"
-  | "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED"
-  /** 레거시/호환용 */
-  | "TRAVEL_MODE_UPDATED";
+  | "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED";
 
 /** `/topic/rooms/{roomId}/schedules` 브로드캐스트 본문 */
 export type RoomScheduleChangedEvent = {
@@ -26,7 +24,6 @@ const KNOWN_TYPES = new Set<string>([
   "SCHEDULE_ITEM_DELETED",
   "SCHEDULE_ITEMS_REORDERED",
   "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED",
-  "TRAVEL_MODE_UPDATED",
 ]);
 
 export function parseRoomScheduleMessage(
@@ -44,6 +41,14 @@ export function parseRoomScheduleMessage(
       !KNOWN_TYPES.has(type)
     ) {
       return null;
+    }
+    if (type === "SCHEDULE_ITEM_DELETED") {
+      if (
+        typeof raw.itemId !== "number" ||
+        !Number.isFinite(raw.itemId)
+      ) {
+        return null;
+      }
     }
     return raw as RoomScheduleChangedEvent;
   } catch {

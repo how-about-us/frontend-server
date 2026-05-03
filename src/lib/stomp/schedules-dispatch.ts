@@ -4,9 +4,47 @@ import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
 
+function removeRouteQueriesForSchedule(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): void {
+  queryClient.removeQueries({
+    predicate: (q) => {
+      const key = q.queryKey;
+      if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
+        return false;
+      }
+      if (String(key[1] ?? "").trim() !== roomId) return false;
+      return key[2] === scheduleId;
+    },
+  });
+}
+
+function removeRouteQueriesForDeletedItemSource(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+): void {
+  queryClient.removeQueries({
+    predicate: (q) => {
+      const key = q.queryKey;
+      if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
+        return false;
+      }
+      if (String(key[1] ?? "").trim() !== roomId) return false;
+      if (key[2] !== scheduleId) return false;
+      return key[3] === itemId;
+    },
+  });
+}
+
 /**
- * schedules 토픽 STOMP 처리 — 브로드캐스트만으로 목록·길찾기 캐시 갱신(뮤테이션 onSuccess 무효화 없음 전제).
- * 일정 행렬이 줄어든 경우 해당 scheduleId 항목 쿼리는 제거합니다.
+ * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
+ * — `room-schedules`: 일차(스케줄) 목록
+ * — `schedule-items`: 일차별 장소 목록
+ * — `schedule-item-route`: 장소 간 길찾기
  */
 export async function dispatchRoomScheduleEvent(
   queryClient: QueryClient,
@@ -14,52 +52,51 @@ export async function dispatchRoomScheduleEvent(
 ): Promise<void> {
   const rid = String(event.roomId ?? "").trim();
   if (!rid) return;
+  const sid = event.scheduleId;
 
-  if (event.type === "SCHEDULE_DELETED") {
-    queryClient.removeQueries({
-      predicate: (q) => {
-        const key = q.queryKey;
-        if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
-          return false;
-        }
-        if (String(key[1] ?? "").trim() !== rid) return false;
-        return key[2] === event.scheduleId;
-      },
-    });
+  switch (event.type) {
+    case "SCHEDULE_CREATED":
+      await queryClient.invalidateQueries({
+        queryKey: roomSchedulesQueryKey(rid),
+        refetchType: "active",
+      });
+      return;
+
+    case "SCHEDULE_DELETED":
+      removeRouteQueriesForSchedule(queryClient, rid, sid);
+      queryClient.removeQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: roomSchedulesQueryKey(rid),
+        refetchType: "active",
+      });
+      return;
+
+    case "SCHEDULE_ITEM_DELETED":
+      removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, event.itemId);
+      await queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+        refetchType: "active",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["schedule-item-route", rid],
+        refetchType: "active",
+      });
+      return;
+
+    case "SCHEDULE_ITEM_CREATED":
+    case "SCHEDULE_ITEM_UPDATED":
+    case "SCHEDULE_ITEMS_REORDERED":
+    case "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED":
+      await queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+        refetchType: "active",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["schedule-item-route", rid],
+        refetchType: "active",
+      });
+      return;
   }
-
-  if (event.type === "SCHEDULE_ITEM_DELETED") {
-    queryClient.removeQueries({
-      predicate: (q) => {
-        const key = q.queryKey;
-        if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
-          return false;
-        }
-        if (String(key[1] ?? "").trim() !== rid) return false;
-        if (key[2] !== event.scheduleId) return false;
-        return key[3] === event.itemId;
-      },
-    });
-  }
-
-  await queryClient.invalidateQueries({
-    queryKey: ["schedule-item-route", rid],
-    refetchType: "active",
-  });
-
-  if (event.type === "SCHEDULE_DELETED") {
-    queryClient.removeQueries({
-      queryKey: scheduleItemsQueryKey(rid, event.scheduleId),
-    });
-  }
-
-  await queryClient.invalidateQueries({
-    queryKey: roomSchedulesQueryKey(rid),
-    refetchType: "all",
-  });
-
-  await queryClient.invalidateQueries({
-    queryKey: ["schedule-items", rid],
-    refetchType: "all",
-  });
 }

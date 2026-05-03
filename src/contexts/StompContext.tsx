@@ -92,11 +92,11 @@ export function StompProvider({ children }: { children: ReactNode }) {
         // 재연결 구간에 missed된 이벤트 보완
         void queryClientRef.current.invalidateQueries({
           queryKey: roomSchedulesQueryKey(rid),
-          refetchType: "all",
+          refetchType: "active",
         });
         void queryClientRef.current.invalidateQueries({
           queryKey: ["schedule-items", rid],
-          refetchType: "all",
+          refetchType: "active",
         });
         void queryClientRef.current.invalidateQueries({
           queryKey: ["schedule-item-route", rid],
