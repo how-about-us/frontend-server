@@ -1,11 +1,12 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { getPlacePhotoUrl } from "@/lib/api/places";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
@@ -48,10 +49,48 @@ export function PlanPlaceCard({
   onDragLeave,
   onDrop,
 }: PlanPlaceCardProps) {
-  const photoUrl =
+  const fallbackPhotoUrl =
     typeof place.imageUrl === "string" && place.imageUrl.trim().length > 0
       ? place.imageUrl.trim()
       : null;
+  const photoName =
+    typeof place.photoName === "string" && place.photoName.trim().length > 0
+      ? place.photoName.trim()
+      : null;
+
+  const [resolvedPhotoUrl, setResolvedPhotoUrl] = useState<string | null>(() =>
+    !photoName ? fallbackPhotoUrl : null,
+  );
+  const [photoLoading, setPhotoLoading] = useState(Boolean(photoName));
+
+  useEffect(() => {
+    if (!photoName) {
+      setResolvedPhotoUrl(fallbackPhotoUrl);
+      setPhotoLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setPhotoLoading(true);
+    setResolvedPhotoUrl(null);
+
+    void getPlacePhotoUrl(photoName)
+      .then((url) => {
+        if (cancelled) return;
+        const t = url?.trim();
+        setResolvedPhotoUrl(t || fallbackPhotoUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedPhotoUrl(fallbackPhotoUrl);
+      })
+      .finally(() => {
+        if (!cancelled) setPhotoLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [photoName, fallbackPhotoUrl]);
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();
@@ -83,7 +122,7 @@ export function PlanPlaceCard({
       onDragLeave={dragDisabled ? undefined : onDragLeave}
       onDrop={dragDisabled ? undefined : onDrop}
       className={cn(
-        "relative flex min-h-40 w-[70%] select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        "relative flex min-h-40 w-[50%] select-none rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
@@ -136,11 +175,16 @@ export function PlanPlaceCard({
         ) : null}
       </div>
 
-      <div className="absolute bottom-0 left-[102%] top-0 w-[164px] shrink-0">
-        <div className="relative h-full min-h-40 overflow-hidden rounded-xl bg-light-gray">
-          {photoUrl ? (
+      <div className="absolute bottom-0 left-[102%] top-0 w-[100%] shrink-0">
+        <div className="relative flex h-full min-h-40 items-center justify-center overflow-hidden rounded-xl bg-brand-green/30">
+          {photoLoading ? (
+            <Loader2
+              className="h-6 w-6 animate-spin text-brand-green"
+              aria-hidden
+            />
+          ) : resolvedPhotoUrl ? (
             <Image
-              src={photoUrl}
+              src={resolvedPhotoUrl}
               alt={place.title}
               fill
               className="object-cover"
