@@ -207,8 +207,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 segmentSourceItemId={place.itemId}
                 destinationItemId={places[index + 1].itemId!}
                 travelMode={places[index + 1].travelMode ?? "WALKING"}
-                fromPlace={place}
-                toPlace={places[index + 1]}
                 routeQueryEnabled={
                   !isPending &&
                   !isFetching &&
