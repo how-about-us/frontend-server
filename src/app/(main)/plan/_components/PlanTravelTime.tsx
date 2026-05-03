@@ -2,13 +2,14 @@
 
 import { ArrowDown } from "lucide-react";
 
-import type { PlanPlace } from "@/mocks/plan";
+import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
 export type PlanTravelTimeProps = {
   fromPlace: PlanPlace;
   toPlace: PlanPlace;
-  minutes: number;
+  /** 소요 시간(분). 없으면 시간 숫자는 표시하지 않습니다. */
+  minutes?: number;
   className?: string;
 };
 
@@ -18,7 +19,10 @@ export function PlanTravelTime({
   minutes,
   className,
 }: PlanTravelTimeProps) {
-  const label = `${fromPlace.title}에서 ${toPlace.title}까지 약 ${minutes}분`;
+  const label =
+    minutes != null
+      ? `${fromPlace.title}에서 ${toPlace.title}까지 약 ${minutes}분`
+      : `${fromPlace.title}에서 ${toPlace.title}까지 이동`;
 
   return (
     <div
@@ -40,7 +44,11 @@ export function PlanTravelTime({
           <span className="mx-1 text-light-gray">→</span>
           <span className="font-medium text-gray-900">{toPlace.title}</span>
         </p>
-        <p className="text-xs text-dark-gray/90">약 {minutes}분</p>
+        {minutes != null ? (
+          <p className="text-xs text-dark-gray/90">약 {minutes}분</p>
+        ) : (
+          <p className="text-xs text-dark-gray/90">다음 장소로 이동</p>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import type { RoomSchedule } from "@/lib/api/rooms/schedules";
-import type { PlanDayData } from "@/mocks/plan";
+import type { PlanDayData } from "@/lib/plan/types";
 
 import {
   formatKoreanDateLabel,

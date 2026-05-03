@@ -1,4 +1,4 @@
-/** 플랜 경로의 장소 한 곳 — 이동 시간은 배열 순서와 별도 lookup으로 계산 */
+/** 플랜 화면에서 쓰는 장소 한 건 — 서버 일정 항목과 매핑 가능 */
 export type PlanPlace = {
   id: string;
   title: string;
@@ -13,7 +13,7 @@ export type PlanPlace = {
   durationMinutes?: number;
 };
 
-/** 일차별 플랜 — `PlanPageView`가 일차별 장소 배열을 들고 `PlanItinerary`에 넘긴다 */
+/** 일차별 플랜 메타 — 섹션 헤더용 (`places`는 현재 빈 배열) */
 export type PlanDayData = {
   id: string;
   dayLabel: string;

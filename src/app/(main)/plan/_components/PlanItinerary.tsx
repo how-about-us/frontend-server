@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 import { useCreateScheduleItem, useSchedulePlanPlaces } from "@/hooks/useRooms";
 import { useMapCenter } from "@/contexts/MapCenterContext";
-import { getMockTravelMinutes } from "@/lib/plan/mockTravelDuration";
 
 import { PlanPlaceCard } from "./PlanPlaceCard";
 import { PlanTravelTime } from "./PlanTravelTime";
@@ -89,7 +88,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               <PlanTravelTime
                 fromPlace={place}
                 toPlace={places[index + 1]}
-                minutes={getMockTravelMinutes(place.id, places[index + 1].id)}
               />
             ) : null}
           </Fragment>

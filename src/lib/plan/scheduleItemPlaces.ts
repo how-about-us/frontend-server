@@ -1,6 +1,6 @@
 import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import { getPlaceDetail, getPlacePhotoUrl } from "@/lib/api/places";
-import type { PlanPlace } from "@/mocks/plan";
+import type { PlanPlace } from "@/lib/plan/types";
 
 /** 새 항목 POST 시 `startTime` — `HH:mm` (로컬 슬롯: 08:00부터 번호당 1시간, 최대 22:00) */
 export function slotStartTimeHm(itemIndex: number): string {

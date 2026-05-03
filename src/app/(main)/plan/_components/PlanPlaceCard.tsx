@@ -7,7 +7,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
-import type { PlanPlace } from "@/mocks/plan";
+import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
 
@@ -48,8 +48,10 @@ export function PlanPlaceCard({
   onDragLeave,
   onDrop,
 }: PlanPlaceCardProps) {
-  const imageSrc =
-    place.imageUrl ?? `https://picsum.photos/seed/plan-${place.id}/320/240`;
+  const photoUrl =
+    typeof place.imageUrl === "string" && place.imageUrl.trim().length > 0
+      ? place.imageUrl.trim()
+      : null;
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();
@@ -136,14 +138,16 @@ export function PlanPlaceCard({
 
       <div className="absolute bottom-0 left-[102%] top-0 w-[164px] shrink-0">
         <div className="relative h-full min-h-40 overflow-hidden rounded-xl bg-light-gray">
-          <Image
-            src={imageSrc}
-            alt={place.title}
-            fill
-            className="object-cover"
-            sizes="140px"
-            draggable={false}
-          />
+          {photoUrl ? (
+            <Image
+              src={photoUrl}
+              alt={place.title}
+              fill
+              className="object-cover"
+              sizes="140px"
+              draggable={false}
+            />
+          ) : null}
         </div>
       </div>
     </article>
