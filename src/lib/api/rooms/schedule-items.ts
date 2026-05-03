@@ -1,4 +1,4 @@
-import { apiUrl, jsonBody, requestJson } from "@/lib/api/http";
+import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
 
 export type RoomScheduleItem = {
   itemId: number;
@@ -55,6 +55,18 @@ export async function updateScheduleItem(
   return requestJson(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}`),
     { method: "PATCH", ...jsonBody(body) },
-    { errorMessage: "일정 시간 수정 실패" },
+    { errorMessage: "체류 시간 수정 실패" },
+  );
+}
+
+export async function deleteScheduleItem(
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+): Promise<void> {
+  return requestVoid(
+    apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}`),
+    { method: "DELETE" },
+    { errorMessage: "일정 장소 삭제 실패" },
   );
 }

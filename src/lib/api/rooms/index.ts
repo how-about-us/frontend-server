@@ -68,6 +68,7 @@ export {
 
 export {
   createScheduleItem,
+  deleteScheduleItem,
   getScheduleItems,
   updateScheduleItem,
 } from "./schedule-items";

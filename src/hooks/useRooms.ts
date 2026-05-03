@@ -11,6 +11,7 @@ import {
   createRoomBookmark,
   createRoom,
   createScheduleItem,
+  deleteScheduleItem,
   updateScheduleItem,
   deleteRoomBookmark,
   deleteBookmarkCategory,
@@ -159,6 +160,22 @@ export function useUpdateScheduleItem() {
         vars.itemId,
         vars.body,
       ),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
+      });
+    },
+  });
+}
+
+export function useDeleteScheduleItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      itemId: number;
+    }) => deleteScheduleItem(vars.roomId, vars.scheduleId, vars.itemId),
     onSuccess: (_, v) => {
       queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),

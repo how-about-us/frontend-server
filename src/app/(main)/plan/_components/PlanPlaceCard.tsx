@@ -1,8 +1,12 @@
 "use client";
 
 import type { DragEvent } from "react";
+import { useCallback } from "react";
 import Image from "next/image";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
+import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import type { PlanPlace } from "@/mocks/plan";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
@@ -47,6 +51,27 @@ export function PlanPlaceCard({
   const imageSrc =
     place.imageUrl ?? `https://picsum.photos/seed/plan-${place.id}/320/240`;
 
+  const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
+    useDeleteScheduleItem();
+
+  const canManageServerItem =
+    Boolean(scheduleTimeEdit) && typeof place.itemId === "number";
+
+  const handleDeleteScheduleItem = useCallback(async () => {
+    if (!scheduleTimeEdit || typeof place.itemId !== "number") return;
+    if (!confirm("이 장소를 일정에서 삭제할까요?")) return;
+    try {
+      await removeScheduleItemMutate({
+        roomId: scheduleTimeEdit.roomId,
+        scheduleId: scheduleTimeEdit.scheduleId,
+        itemId: place.itemId,
+      });
+      toast.success("일정에서 삭제했어요.");
+    } catch {
+      toast.error("삭제하지 못했어요.");
+    }
+  }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
+
   return (
     <article
       draggable={!dragDisabled}
@@ -75,6 +100,21 @@ export function PlanPlaceCard({
           <h3 className="min-w-0 flex-1 pt-0.5 text-base font-semibold leading-snug text-gray-900">
             {place.title}
           </h3>
+          {canManageServerItem ? (
+            <button
+              type="button"
+              className="-mr-1 -mt-0.5 shrink-0 rounded-lg p-1.5 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="일정에서 삭제"
+              disabled={isDeletingItem}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteScheduleItem();
+              }}
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </button>
+          ) : null}
         </div>
         {place.subtitle ? (
           <p className="text-sm leading-relaxed text-dark-gray">

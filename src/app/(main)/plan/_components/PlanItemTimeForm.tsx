@@ -50,9 +50,9 @@ export function PlanItemTimeForm({
         itemId,
         body: { startTime: timeHm, durationMinutes: dm },
       });
-      toast.success("일정 시간을 저장했어요.");
+      toast.success("체류 시간을 저장했어요.");
     } catch {
-      toast.error("일정 시간을 저장하지 못했어요.");
+      toast.error("체류 시간을 저장하지 못했어요.");
     }
   }
 
@@ -62,7 +62,7 @@ export function PlanItemTimeForm({
 
   return (
     <div className="flex w-full flex-col gap-2 border-t border-gray-border/70 pt-3 mt-1">
-      <p className="text-xs font-medium text-dark-gray">일정 시간</p>
+      <p className="text-xs font-medium text-dark-gray">체류 시간</p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
           <span className="text-[11px] text-dark-gray">시작</span>
