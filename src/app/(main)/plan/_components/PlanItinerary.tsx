@@ -3,6 +3,7 @@
 import {
   Fragment,
   useCallback,
+  useMemo,
   useState,
   type DragEvent,
 } from "react";
@@ -33,8 +34,19 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const {
     data: places = [],
     isPending,
+    isFetching,
     isError,
   } = useSchedulePlanPlaces(roomId, scheduleId);
+
+  const existingItemIds = useMemo(
+    () =>
+      new Set(
+        places
+          .map((p) => p.itemId)
+          .filter((id): id is number => typeof id === "number"),
+      ),
+    [places],
+  );
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
   const { mutateAsync: reorderMutate, isPending: isReordering } =
@@ -186,14 +198,23 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               onDragLeave={handleDragLeave(index)}
               onDrop={handleDrop(index)}
             />
-            {index < places.length - 1 ? (
+            {index < places.length - 1 &&
+            typeof place.itemId === "number" &&
+            typeof places[index + 1]?.itemId === "number" ? (
               <PlanTravelTime
                 roomId={roomId}
                 scheduleId={scheduleId}
-                destinationItemId={places[index + 1].itemId}
-                travelMode={places[index + 1].travelMode ?? "WALK"}
+                segmentSourceItemId={place.itemId}
+                destinationItemId={places[index + 1].itemId!}
+                travelMode={places[index + 1].travelMode ?? "WALKING"}
                 fromPlace={place}
                 toPlace={places[index + 1]}
+                routeQueryEnabled={
+                  !isPending &&
+                  !isFetching &&
+                  existingItemIds.has(place.itemId) &&
+                  existingItemIds.has(places[index + 1].itemId!)
+                }
               />
             ) : null}
           </Fragment>

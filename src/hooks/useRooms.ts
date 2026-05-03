@@ -25,6 +25,7 @@ import {
   getRoomBookmarks,
   getRoomMembers,
   getRoomSchedules,
+  getScheduleItemRoute,
   patchRoomBookmarkCategory,
   getRooms,
   joinRoom,
@@ -35,7 +36,7 @@ import {
   type RoomCreateRequest,
   type ReorderScheduleItemRequest,
   type RoomScheduleItemUpdateRequest,
-  type UpdateScheduleItemTravelModeRequest,
+  type UpdateTravelModeRequest,
   type RoomUpdateRequest,
   seedRoomSchedules,
   transferHost,
@@ -47,6 +48,7 @@ import {
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
+import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
 export const ROOMS_QUERY_KEY = ["rooms"] as const;
@@ -85,12 +87,56 @@ export function useRoomSchedules(roomId: string | null) {
     enabled: id.length > 0,
     staleTime: Infinity,
     refetchOnMount: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useScheduleItemRoute(
+  roomId: string | null,
+  scheduleId: number | null,
+  segmentSourceItemId: number | null,
+  /** 서버 허용 enum — 항상 넣어 DB 레거시값과 무관하게 조회 */
+  travelModeQuery: string | null,
+  /** 일정 장소 목록상 구간 소스 아이디가 존재·목록 안정 후에만 true */
+  routeQueryEnabled = true,
+) {
+  const rid = roomId?.trim() ?? "";
+  const sid = scheduleId;
+  const sidOk = typeof sid === "number" && Number.isFinite(sid);
+  const itemOk =
+    typeof segmentSourceItemId === "number" &&
+    Number.isFinite(segmentSourceItemId);
+
+  const tm =
+    typeof travelModeQuery === "string" && travelModeQuery.trim().length > 0
+      ? travelModeQuery.trim()
+      : null;
+
+  const enabled =
+    routeQueryEnabled &&
+    rid.length > 0 &&
+    sidOk &&
+    itemOk &&
+    tm != null &&
+    tm.length > 0;
+
+  return useQuery({
+    queryKey: scheduleItemRouteQueryKey(
+      rid || null,
+      enabled ? sid : null,
+      enabled ? segmentSourceItemId : null,
+      tm,
+    ),
+    queryFn: () =>
+      getScheduleItemRoute(rid, sid!, segmentSourceItemId!, tm),
+    enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
 export function useDeleteRoomSchedule() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       roomId,
@@ -99,14 +145,6 @@ export function useDeleteRoomSchedule() {
       roomId: string;
       scheduleId: number;
     }) => deleteRoomSchedule(roomId, scheduleId),
-    onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(roomId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["schedule-items", roomId.trim()],
-      });
-    },
   });
 }
 
@@ -123,12 +161,11 @@ export function useSchedulePlanPlaces(
       rid.length > 0 && typeof sid === "number" && Number.isFinite(sid),
     staleTime: Infinity,
     refetchOnMount: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 
 export function useCreateScheduleItem() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -141,16 +178,10 @@ export function useCreateScheduleItem() {
         startTime: slotStartTimeHm(vars.nextSlotIndex),
         durationMinutes: 60,
       }),
-    onSuccess: (_, v) => {
-      queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
-      });
-    },
   });
 }
 
 export function useUpdateScheduleItem() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -164,32 +195,20 @@ export function useUpdateScheduleItem() {
         vars.itemId,
         vars.body,
       ),
-    onSuccess: (_, v) => {
-      queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
-      });
-    },
   });
 }
 
 export function useDeleteScheduleItem() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
       scheduleId: number;
       itemId: number;
     }) => deleteScheduleItem(vars.roomId, vars.scheduleId, vars.itemId),
-    onSuccess: (_, v) => {
-      queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
-      });
-    },
   });
 }
 
 export function useReorderScheduleItem() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -203,22 +222,16 @@ export function useReorderScheduleItem() {
         vars.itemId,
         vars.body,
       ),
-    onSuccess: (_, v) => {
-      queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
-      });
-    },
   });
 }
 
 export function useUpdateScheduleItemTravelMode() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
       scheduleId: number;
       itemId: number;
-      body: UpdateScheduleItemTravelModeRequest;
+      body: UpdateTravelModeRequest;
     }) =>
       updateScheduleItemTravelMode(
         vars.roomId,
@@ -226,11 +239,6 @@ export function useUpdateScheduleItemTravelMode() {
         vars.itemId,
         vars.body,
       ),
-    onSuccess: (_, v) => {
-      queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(v.roomId.trim(), v.scheduleId),
-      });
-    },
   });
 }
 

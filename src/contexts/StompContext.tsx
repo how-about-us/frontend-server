@@ -58,12 +58,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       unsubscribeRoomTopics();
-      const userId = useSessionStore.getState().user?.id ?? 0;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
         roomId,
         queryClientRef,
-        userId,
       );
     },
     [unsubscribeRoomTopics],
@@ -99,6 +97,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
         void queryClientRef.current.invalidateQueries({
           queryKey: ["schedule-items", rid],
           refetchType: "all",
+        });
+        void queryClientRef.current.invalidateQueries({
+          queryKey: ["schedule-item-route", rid],
+          refetchType: "active",
         });
       }
     };

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api/client";
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
 
 export type RoomScheduleItem = {
@@ -27,9 +28,45 @@ export type ReorderScheduleItemRequest = {
   newOrderIndex: number;
 };
 
-export type UpdateScheduleItemTravelModeRequest = {
+export type UpdateTravelModeRequest = {
+  /** `DRIVING` | `WALKING` | `BICYCLING` | `TRANSIT` */
   travelMode: string;
 };
+
+/** @deprecated 명세 이름은 {@link UpdateTravelModeRequest} */
+export type UpdateScheduleItemTravelModeRequest = UpdateTravelModeRequest;
+
+/** GET …/route — 현재 항목 → 다음 항목 구간 */
+export type ScheduleItemRouteResponse = {
+  distanceMeters: number;
+  durationSeconds: number;
+  travelMode: string;
+};
+
+export async function getScheduleItemRoute(
+  roomId: string,
+  scheduleId: number,
+  /** 구간 시작(현재) 일정 항목 ID — 명세상 ‘현재 항목에서 다음 항목으로’ */
+  itemId: number,
+  travelMode?: string | null,
+): Promise<ScheduleItemRouteResponse | null> {
+  const params = new URLSearchParams();
+  const tm =
+    typeof travelMode === "string" && travelMode.trim().length > 0
+      ? travelMode.trim()
+      : null;
+  if (tm) params.set("travelMode", tm);
+  const qs = params.toString();
+  const path = `/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/route${qs ? `?${qs}` : ""}`;
+  const res = await apiFetch(apiUrl(path), undefined);
+  if (!res.ok) {
+    throw new Error(`이동 정보 조회 실패: ${res.status}`);
+  }
+  if (res.status === 204) {
+    return null;
+  }
+  return res.json() as Promise<ScheduleItemRouteResponse>;
+}
 
 export async function getScheduleItems(
   roomId: string,
@@ -96,7 +133,7 @@ export async function updateScheduleItemTravelMode(
   roomId: string,
   scheduleId: number,
   itemId: number,
-  body: UpdateScheduleItemTravelModeRequest,
+  body: UpdateTravelModeRequest,
 ): Promise<RoomScheduleItem> {
   return requestJson(
     apiUrl(

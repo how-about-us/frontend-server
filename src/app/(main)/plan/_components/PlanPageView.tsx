@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +17,6 @@ import {
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
 import { formatDateYmd, startOfLocalDay } from "@/lib/plan/tripRange";
-import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 
 import { PlanChatSectionWidth } from "./PlanChatSectionWidth";
 import { PlanDaySection } from "./PlanDaySection";
@@ -44,7 +43,6 @@ export function PlanPageView({ roomId }: Props) {
     setCurrentRoomId(roomId);
   }, [roomId, setCurrentRoomId]);
 
-  const queryClient = useQueryClient();
   const { data: schedules, isPending, isError } = useRoomSchedules(roomId);
   const { mutate: deleteSchedule, isPending: isDeletingSchedule } =
     useDeleteRoomSchedule();
@@ -68,21 +66,12 @@ export function PlanPageView({ roomId }: Props) {
         currentSchedules,
       );
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(roomId.trim()),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["schedule-items", roomId.trim()],
-      });
-    },
   });
 
   /** 서버 일정이 없을 때만 기간 선택 UI용 (적용 시 POST로 일정 생성) */
   const [draftRange, setDraftRange] = useState(INITIAL_RANGE);
 
   const scheduleList = useMemo(() => schedules ?? [], [schedules]);
-  const serverDriven = scheduleList.length > 0;
   const sortedSchedules = useMemo(
     () => sortRoomSchedules(scheduleList),
     [scheduleList],

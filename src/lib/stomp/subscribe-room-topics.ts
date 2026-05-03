@@ -17,7 +17,6 @@ export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
   queryClientRef: MutableRefObject<QueryClient>,
-  currentUserId: number,
 ): RoomTopicsUnsubscriber {
   const presenceSub = client.subscribe(
     `/topic/rooms/${roomId}/presence`,
@@ -52,11 +51,7 @@ export function subscribeRoomStompTopics(
       void (async () => {
         const event = parseRoomScheduleMessage(message.body);
         if (!event) return;
-        await dispatchRoomScheduleEvent(
-          queryClientRef.current,
-          event,
-          currentUserId,
-        );
+        await dispatchRoomScheduleEvent(queryClientRef.current, event);
       })();
     },
   );
