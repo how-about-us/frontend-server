@@ -28,11 +28,19 @@ export type ReorderScheduleItemRequest = {
   newOrderIndex: number;
 };
 
-/** GET …/route — 현재 항목 → 다음 항목 구간 */
-export type ScheduleItemRouteResponse = {
+/** GET …/route — 현재 항목 → 다음 항목 구간 단일 레그 */
+export type ScheduleItemRouteLeg = {
   distanceMeters: number;
   durationSeconds: number;
   travelMode: string;
+};
+
+/**
+ * travelMode 미지정 조회 시 본문에 수단별 배열을 함께 줄 수 있습니다.
+ */
+export type ScheduleItemRouteResponse = ScheduleItemRouteLeg & {
+  routes?: ScheduleItemRouteLeg[];
+  modeRoutes?: ScheduleItemRouteLeg[];
 };
 
 export async function getScheduleItemRoute(

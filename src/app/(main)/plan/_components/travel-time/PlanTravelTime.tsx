@@ -13,6 +13,7 @@ import {
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
+import { buildScheduleItemRouteSummariesByMode } from "@/lib/plan/scheduleItemRouteModes";
 import { cn } from "@/lib/utils";
 
 import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
@@ -54,6 +55,9 @@ export function PlanTravelTime({
 }: PlanTravelTimeProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [directionsHidden, setDirectionsHidden] = useState(false);
+  /** false: 헤더·요약 줄은 서버 응답 `travelMode` 기준 → true 드롭다운 선택에 맞춤 */
+  const [commitSummaryToUserChoice, setCommitSummaryToUserChoice] =
+    useState(false);
 
   const fpTrim = scheduleFingerprint.trim();
 
@@ -105,6 +109,10 @@ export function PlanTravelTime({
     fpTrim,
   ]);
 
+  useEffect(() => {
+    setCommitSummaryToUserChoice(false);
+  }, [roomId, scheduleId, segmentSourceItemId, fpTrim]);
+
   const modeRaw = typeof travelMode === "string" ? travelMode.trim() : "";
   const canonFromPayload = canonicalScheduleTravelMode(
     modeRaw.length > 0 ? modeRaw : undefined,
@@ -132,18 +140,20 @@ export function PlanTravelTime({
 
   const handleTravelModeChange = useCallback(
     (next: ScheduleTravelModeValue) => {
-      if (next === selectedMode) return;
-      setSelectedMode(next);
-      setMenuOpen(false);
-      if (fpTrim.length > 0) {
-        writeTravelModeToLocalStorage(
-          roomId,
-          scheduleId,
-          segmentSourceItemId,
-          fpTrim,
-          next,
-        );
+      setCommitSummaryToUserChoice(true);
+      if (next !== selectedMode) {
+        setSelectedMode(next);
+        if (fpTrim.length > 0) {
+          writeTravelModeToLocalStorage(
+            roomId,
+            scheduleId,
+            segmentSourceItemId,
+            fpTrim,
+            next,
+          );
+        }
       }
+      setMenuOpen(false);
     },
     [
       selectedMode,
@@ -154,10 +164,48 @@ export function PlanTravelTime({
     ],
   );
 
-  const displayRoute = useMemo(
-    () => (routePayloadOk(route) ? route : undefined),
+  const activeSummaryTravelMode = useMemo((): ScheduleTravelModeValue => {
+    if (!commitSummaryToUserChoice && routePayloadOk(route)) {
+      const tm =
+        typeof route.travelMode === "string" ? route.travelMode.trim() : "";
+      return (
+        (tm.length > 0 ? canonicalScheduleTravelMode(tm) : null) ?? selectedMode
+      );
+    }
+    return selectedMode;
+  }, [
+    commitSummaryToUserChoice,
+    route,
+    selectedMode,
+  ]);
+
+  const modeRouteSummaries = useMemo(
+    () => buildScheduleItemRouteSummariesByMode(route ?? undefined),
     [route],
   );
+
+  const displayRoute = useMemo(() => {
+    const mode = activeSummaryTravelMode;
+    const sel = modeRouteSummaries[mode];
+    if (
+      sel != null &&
+      sel.durationSeconds >= 0 &&
+      sel.distanceMeters >= 0
+    ) {
+      return {
+        travelMode: mode,
+        durationSeconds: sel.durationSeconds,
+        distanceMeters: sel.distanceMeters,
+      } satisfies ScheduleItemRouteResponse;
+    }
+    if (routePayloadOk(route)) {
+      const rc = canonicalScheduleTravelMode(
+        typeof route.travelMode === "string" ? route.travelMode.trim() : "",
+      );
+      if (rc === mode) return route;
+    }
+    return undefined;
+  }, [modeRouteSummaries, route, activeSummaryTravelMode]);
 
   const primarySettled = !isPending && !isFetching;
 
@@ -174,8 +222,7 @@ export function PlanTravelTime({
     primarySettled &&
     !summaryIsError;
 
-  const summaryMode =
-    displayRoute?.travelMode?.trim() || selectedMode;
+  const summaryMode = activeSummaryTravelMode;
 
   if (directionsHidden) {
     return (
@@ -206,7 +253,7 @@ export function PlanTravelTime({
             isFetching: summaryFetching,
           }}
           routeUnavailable={summaryUnavailable}
-          modeRouteQueries={[]}
+          modeRouteSummaries={modeRouteSummaries}
           effectiveMode={selectedMode}
           showUnknownOption={showUnknownOption}
           modeRaw={modeRaw}

@@ -57,6 +57,7 @@ export type {
   RoomScheduleItemCreateRequest,
   RoomScheduleItemUpdateRequest,
   ReorderScheduleItemRequest,
+  ScheduleItemRouteLeg,
   ScheduleItemRouteResponse,
 } from "./schedule-items";
 

@@ -1,6 +1,5 @@
 "use client";
 
-import type { UseQueryResult } from "@tanstack/react-query";
 import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +8,7 @@ import {
   formatRouteDistance,
   formatRouteDuration,
 } from "@/lib/plan/routeFormat";
+import type { ScheduleItemRouteSummary } from "@/lib/plan/scheduleItemRouteModes";
 import {
   SCHEDULE_TRAVEL_MODES,
   canonicalScheduleTravelMode,
@@ -24,16 +24,18 @@ export type TravelDirectionsCardProps = {
   menuOpen: boolean;
   onToggleMenu: () => void;
   setMenuOpen: (open: boolean) => void;
+  /** 헤더 글리프·요약 줄에 쓰이는 수단(처음엔 서버 `travelMode`, 드롭다운 선택 후엔 그 선택) */
   summaryMode: string;
   route: ScheduleItemRouteResponse | null | undefined;
-  routeQuery: Pick<
-    UseQueryResult<ScheduleItemRouteResponse | null, Error>,
-    "isPending" | "isError" | "isFetching"
-  >;
+  routeQuery: {
+    isPending: boolean;
+    isError: boolean;
+    isFetching: boolean;
+  };
   routeUnavailable: boolean;
-  /** 이전에는 수단별 조회 결과를 넘겼음. 경로 GET은 브로드캐스트·초기 조회만 하므로 비워 둠 */
-  modeRouteQueries?: Array<
-    UseQueryResult<ScheduleItemRouteResponse | null, Error>
+  /** GET …/route 한 번에 받은 수단별 요약(수단별 추가 쿼리 없음) */
+  modeRouteSummaries?: Partial<
+    Record<ScheduleTravelModeValue, ScheduleItemRouteSummary>
   >;
   effectiveMode: ScheduleTravelModeValue;
   showUnknownOption: boolean;
@@ -50,25 +52,16 @@ export function TravelDirectionsCard({
   route,
   routeQuery,
   routeUnavailable,
-  modeRouteQueries = [],
+  modeRouteSummaries = {},
   effectiveMode,
   showUnknownOption,
   modeRaw,
   onSelectTravelMode,
   onHideDirections,
 }: TravelDirectionsCardProps) {
-  const routeTravelRaw =
-    route != null &&
-    typeof route.travelMode === "string" &&
-    route.travelMode.trim().length > 0
-      ? route.travelMode.trim()
-      : null;
-
-  /** /route 200 본문이 있으면 요약·글리프 모두 응답 `travelMode` 기준 */
+  /** 부모 기준 현재 헤더·요약 줄에 해당하는 표준 코드(처음에는 서버, 선택 후 사용자) */
   const headerTravelMode =
-    routeTravelRaw != null
-      ? canonicalScheduleTravelMode(routeTravelRaw) ?? routeTravelRaw
-      : summaryMode;
+    canonicalScheduleTravelMode(summaryMode) ?? summaryMode;
 
   const summaryLine = (
     <TravelRouteSummaryLine
@@ -107,18 +100,18 @@ export function TravelDirectionsCard({
             이동 수단
           </p>
           <ul className="flex flex-col gap-1" role="listbox">
-            {SCHEDULE_TRAVEL_MODES.map(({ value }, i) => {
-              const q = modeRouteQueries[i];
+            {SCHEDULE_TRAVEL_MODES.map(({ value }) => {
+              const rowSummary = modeRouteSummaries[value];
               const row =
-                q?.data &&
-                q.data.durationSeconds >= 0 &&
-                q.data.distanceMeters >= 0 ? (
+                rowSummary &&
+                rowSummary.durationSeconds >= 0 &&
+                rowSummary.distanceMeters >= 0 ? (
                   <>
-                    {formatRouteDuration(q.data.durationSeconds)}
+                    {formatRouteDuration(rowSummary.durationSeconds)}
                     <span className="mx-1 text-light-gray">·</span>
-                    {formatRouteDistance(q.data.distanceMeters)}
+                    {formatRouteDistance(rowSummary.distanceMeters)}
                   </>
-                ) : q?.isPending ? (
+                ) : routeQuery.isPending || routeQuery.isFetching ? (
                   <span className="inline-flex items-center gap-1 text-dark-gray">
                     <Loader2 className="h-3 w-3 animate-spin" />
                   </span>
@@ -138,10 +131,6 @@ export function TravelDirectionsCard({
                         "bg-brand-green/10 ring-1 ring-brand-green/25",
                     )}
                     onClick={() => {
-                      if (selected) {
-                        setMenuOpen(false);
-                        return;
-                      }
                       void onSelectTravelMode(value);
                     }}
                   >
