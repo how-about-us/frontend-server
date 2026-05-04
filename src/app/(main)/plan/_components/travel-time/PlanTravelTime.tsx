@@ -18,9 +18,9 @@ import {
 import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { cn } from "@/lib/utils";
 
-import { PlanTravelTimeCollapsed } from "./plan-travel-time/PlanTravelTimeCollapsed";
-import { TravelDirectionsCard } from "./plan-travel-time/TravelDirectionsCard";
-import { TravelRouteRail } from "./plan-travel-time/TravelRouteRail";
+import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
+import { TravelDirectionsCard } from "./TravelDirectionsCard";
+import { TravelRouteRail } from "./TravelRouteRail";
 
 function routePayloadOk(
   r: ScheduleItemRouteResponse | null | undefined,

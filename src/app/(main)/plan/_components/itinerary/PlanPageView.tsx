@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useDeleteRoomSchedule, useRoomSchedules } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import {
   syncRoomSchedulesToDateRange,
@@ -18,10 +19,10 @@ import {
 } from "@/lib/plan/scheduleMerge";
 import { formatDateYmd, startOfLocalDay } from "@/lib/plan/tripRange";
 
-import { PlanChatSectionWidth } from "./PlanChatSectionWidth";
+import { PlanChatSectionWidth } from "../chat/PlanChatSectionWidth";
+import { PlanTripRangeToolbar } from "../trip-range/PlanTripRangeToolbar";
 import { PlanDaySection } from "./PlanDaySection";
 import { PlanItinerary } from "./PlanItinerary";
-import { PlanTripRangeToolbar } from "./PlanTripRangeToolbar";
 
 function defaultTripRange(): { start: Date; end: Date } {
   const t = startOfLocalDay(new Date());
@@ -75,6 +76,21 @@ export function PlanPageView() {
     () => sortRoomSchedules(scheduleList),
     [scheduleList],
   );
+
+  const scheduleExpansionSyncKey = useMemo(
+    () => sortedSchedules.map((s) => s.scheduleId).join(","),
+    [sortedSchedules],
+  );
+
+  useLayoutEffect(() => {
+    const ids =
+      scheduleExpansionSyncKey.length > 0 ?
+        scheduleExpansionSyncKey.split(",").map(Number).filter(Number.isFinite)
+      : [];
+    usePlanItineraryExpandedStore
+      .getState()
+      .syncScheduleExpansionState(ids);
+  }, [scheduleExpansionSyncKey]);
 
   const scheduleDerivedRange = useMemo(() => {
     if (!scheduleList.length) return null;
@@ -174,6 +190,7 @@ export function PlanPageView() {
           key={day.id}
           title={day.dayLabel}
           subtitle={day.dateLabel}
+          itineraryScheduleId={sortedSchedules[dayIndex]?.scheduleId ?? null}
           onRequestDeleteDay={
             planDays.length > 1 && sortedSchedules[dayIndex]
               ? () => handleDeleteScheduleDay(dayIndex)

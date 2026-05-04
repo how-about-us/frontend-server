@@ -16,11 +16,11 @@ import {
   useReorderScheduleItem,
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
-import { useMapCenter } from "@/contexts/MapCenterContext";
+import { useMapCenterStore } from "@/stores/map-center-store";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 
+import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { PlanPlaceCard } from "./PlanPlaceCard";
-import { PlanTravelTime } from "./PlanTravelTime";
 
 const DND_INDEX_MIME = "application/x-plan-item-index";
 
@@ -30,7 +30,7 @@ export type PlanItineraryProps = {
 };
 
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
-  const { mapCenter } = useMapCenter();
+  const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const {
     data: places = [],
     isPending,

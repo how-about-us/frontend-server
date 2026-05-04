@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
 import { useCallback, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -8,8 +9,13 @@ import type { ReactNode } from "react";
 export type PlanDaySectionProps = {
   title: string;
   subtitle?: string;
-  /** 접힌 상태로 마운트할지 (기본: 펼침) */
+  /** 접힌 상태로 마운트할지 (기본: 펼침) — 일정 스케줄 ID 동기화 시에는 `PlanPageView` 기본값과 같이 동작함 */
   defaultExpanded?: boolean;
+  /**
+   * 플랜 우측 맵 오버레이와 동일한 펼침 상태(`usePlanItineraryExpandedStore`)를 공유함.
+   * 생략 시 로컬 `useState`만 사용합니다.
+   */
+  itineraryScheduleId?: number | null;
   children?: ReactNode;
   /** 호출되면 헤더 우측에 메뉴(⋯)가 표시되고, 메뉴에서 일차 삭제 가능 */
   onRequestDeleteDay?: () => void;
@@ -62,12 +68,52 @@ export function PlanDaySection({
   title,
   subtitle,
   defaultExpanded = true,
+  itineraryScheduleId,
   children,
   onRequestDeleteDay,
 }: PlanDaySectionProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
   const panelId = useId();
-  const toggle = useCallback(() => setExpanded((v) => !v), []);
+
+  const trackedSid =
+    typeof itineraryScheduleId === "number" &&
+    Number.isFinite(itineraryScheduleId) ?
+      itineraryScheduleId
+    : undefined;
+
+  const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
+
+  /** 객체를 반환하면 매번 새 참조 → useSyncExternalStore 무한 렌더 — 불리언만 선택 */
+  const hasKeyInStore = usePlanItineraryExpandedStore(
+    (s) =>
+      trackedSid !== undefined &&
+      Object.prototype.hasOwnProperty.call(
+        s.expandedByScheduleId,
+        trackedSid,
+      ),
+  );
+
+  const storedExpanded = usePlanItineraryExpandedStore((s) =>
+    trackedSid !== undefined ?
+      Boolean(s.expandedByScheduleId[trackedSid])
+    : false,
+  );
+
+  const expanded =
+    trackedSid === undefined ? localExpanded
+    : !hasKeyInStore ? defaultExpanded
+    : storedExpanded;
+
+  const setScheduleExpanded = usePlanItineraryExpandedStore(
+    (s) => s.setScheduleExpanded,
+  );
+
+  const toggle = useCallback(() => {
+    if (trackedSid !== undefined) {
+      setScheduleExpanded(trackedSid, !expanded);
+    } else {
+      setLocalExpanded((v) => !v);
+    }
+  }, [trackedSid, expanded, setScheduleExpanded]);
 
   return (
     <section

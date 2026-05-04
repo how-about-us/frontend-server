@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
+import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
 function removeRouteQueriesForSchedule(
   queryClient: QueryClient,
@@ -46,6 +47,8 @@ function removeRouteQueriesForDeletedItemSource(
  * — `schedule-items`: 일차별 장소 목록
  * — `schedule-item-route`: 장소 간 길찾기(순서·장소·이동수단 변경 등에만 무효화;
  *   `SCHEDULE_ITEM_UPDATED`는 체류·시작시간 등만 바뀔 때 오므로 경로 캐시는 건드리지 않음)
+ * — 맵 polyline(`plan-itinerary-map-path`): STOMP에서 `SCHEDULE_ITEM_CREATED`·`SCHEDULE_ITEM_DELETED` 일 때만
+ *   에폭 증가로 클라이언트 Directions 재조회를 유도함(`SCHEDULE_ITEMS_REORDERED` 제외)
  */
 export async function dispatchRoomScheduleEvent(
   queryClient: QueryClient,
@@ -75,6 +78,7 @@ export async function dispatchRoomScheduleEvent(
       return;
 
     case "SCHEDULE_ITEM_DELETED":
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
       removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, event.itemId);
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),
@@ -88,7 +92,30 @@ export async function dispatchRoomScheduleEvent(
       return;
 
     case "SCHEDULE_ITEM_CREATED":
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+      await queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+        refetchType: "active",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["schedule-item-route", rid],
+        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
+        refetchType: "all",
+      });
+      return;
+
     case "SCHEDULE_ITEMS_REORDERED":
+      await queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+        refetchType: "active",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["schedule-item-route", rid],
+        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
+        refetchType: "all",
+      });
+      return;
+
     case "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED":
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),

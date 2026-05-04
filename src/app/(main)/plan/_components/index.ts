@@ -1,14 +1,29 @@
-export { PlanChatSectionWidth } from "./PlanChatSectionWidth";
-export { PlanPageView } from "./PlanPageView";
-export { PlanItinerary, type PlanItineraryProps } from "./PlanItinerary";
+export { PlanChatSectionWidth } from "./chat/PlanChatSectionWidth";
+export { PlanPageView } from "./itinerary/PlanPageView";
+
+export {
+  PlanItinerary,
+  type PlanItineraryProps,
+} from "./itinerary/PlanItinerary";
+
 export {
   PlanTripRangePicker,
   type PlanTripRangePickerProps,
-} from "./PlanTripRangePicker";
+} from "./trip-range/PlanTripRangePicker";
 export {
   PlanTripRangeToolbar,
   type PlanTripRangeToolbarProps,
-} from "./PlanTripRangeToolbar";
-export { PlanPlaceCard, type PlanPlaceCardProps } from "./PlanPlaceCard";
-export { PlanTravelTime, type PlanTravelTimeProps } from "./PlanTravelTime";
-export { PlanDaySection, type PlanDaySectionProps } from "./PlanDaySection";
+} from "./trip-range/PlanTripRangeToolbar";
+
+export {
+  PlanPlaceCard,
+  type PlanPlaceCardProps,
+} from "./itinerary/PlanPlaceCard";
+export {
+  PlanTravelTime,
+  type PlanTravelTimeProps,
+} from "./travel-time/PlanTravelTime";
+export {
+  PlanDaySection,
+  type PlanDaySectionProps,
+} from "./itinerary/PlanDaySection";

@@ -6,13 +6,13 @@ import { AlertCircle, Loader2, Search } from "lucide-react";
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useMapCenter } from "@/contexts/MapCenterContext";
+import { useMapCenterStore } from "@/stores/map-center-store";
 import { usePlacesSearch } from "@/hooks/usePlacesSearch";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 
 export default function SearchPage() {
   const { setSelectedPlace } = useSelectedPlace();
-  const { mapCenter } = useMapCenter();
+  const mapCenter = useMapCenterStore((s) => s.mapCenter);
 
   const [query, setQuery] = useState("");
   // 검색 버튼을 누른 시점의 좌표만 사용 — 지도 이동으로 재요청되지 않음

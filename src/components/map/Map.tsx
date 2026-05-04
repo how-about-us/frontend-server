@@ -10,12 +10,17 @@ import {
 
 import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useMapCenter } from "@/contexts/MapCenterContext";
+import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
-import { type OpenValue, type PriceValue, type RatingValue } from "./map-filters";
+import {
+  type OpenValue,
+  type PriceValue,
+  type RatingValue,
+} from "./map-filters";
 import { MapPinIcon } from "@/components/icons";
 import MapFilter from "./MapFilter";
+import { PlanItineraryMapRoutes } from "./PlanItineraryMapRoutes";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
@@ -36,7 +41,11 @@ function SelectedPlaceController() {
 
 // ─── 방 destination 기준 초기 중심 설정 ──────────────────────────────────────
 
-function DestinationController({ destination }: { destination: string | null }) {
+function DestinationController({
+  destination,
+}: {
+  destination: string | null;
+}) {
   const map = useMap();
   const geocodingLib = useMapsLibrary("geocoding");
   const geocodedRef = useRef<string | null>(null);
@@ -64,7 +73,7 @@ function DestinationController({ destination }: { destination: string | null }) 
 
 export default function Map() {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
-  const { setMapCenter } = useMapCenter();
+  const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
   const [price, setPrice] = useState<PriceValue>("all");
   const [rating, setRating] = useState<RatingValue>("all");
   const [openNow, setOpenNow] = useState<OpenValue>("all");
@@ -74,8 +83,9 @@ export default function Map() {
   const destination =
     roomsData?.rooms.find((r) => r.id === currentRoomId)?.destination ?? null;
 
-  const searchMarker: SearchResultCardProps | null =
-    selectedPlace?.location ? selectedPlace : null;
+  const searchMarker: SearchResultCardProps | null = selectedPlace?.location
+    ? selectedPlace
+    : null;
 
   return (
     <div className="relative h-full w-full">
@@ -97,6 +107,9 @@ export default function Map() {
       >
         <SelectedPlaceController />
         <DestinationController destination={destination} />
+
+        {/* 펼쳐진 일차 일정 순서 장소 간 경로(Place ID Directions) */}
+        <PlanItineraryMapRoutes />
 
         {/* 검색으로 선택된 장소 마커 */}
         {searchMarker?.location && (
