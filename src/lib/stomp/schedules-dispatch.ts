@@ -44,7 +44,8 @@ function removeRouteQueriesForDeletedItemSource(
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
  * — `room-schedules`: 일차(스케줄) 목록
  * — `schedule-items`: 일차별 장소 목록
- * — `schedule-item-route`: 장소 간 길찾기
+ * — `schedule-item-route`: 장소 간 길찾기(순서·장소·이동수단 변경 등에만 무효화;
+ *   `SCHEDULE_ITEM_UPDATED`는 체류·시작시간 등만 바뀔 때 오므로 경로 캐시는 건드리지 않음)
  */
 export async function dispatchRoomScheduleEvent(
   queryClient: QueryClient,
@@ -87,7 +88,6 @@ export async function dispatchRoomScheduleEvent(
       return;
 
     case "SCHEDULE_ITEM_CREATED":
-    case "SCHEDULE_ITEM_UPDATED":
     case "SCHEDULE_ITEMS_REORDERED":
     case "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED":
       await queryClient.invalidateQueries({
@@ -96,7 +96,15 @@ export async function dispatchRoomScheduleEvent(
       });
       await queryClient.invalidateQueries({
         queryKey: ["schedule-item-route", rid],
+        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
         refetchType: "all",
+      });
+      return;
+
+    case "SCHEDULE_ITEM_UPDATED":
+      await queryClient.invalidateQueries({
+        queryKey: scheduleItemsQueryKey(rid, sid),
+        refetchType: "active",
       });
       return;
   }
