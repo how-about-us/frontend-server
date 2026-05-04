@@ -1,21 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
+import { useScheduleItemRoute } from "@/hooks/useRooms";
 import {
-  getScheduleItemRoutePersisted,
   readTravelModeFromLocalStorage,
   writeTravelModeToLocalStorage,
 } from "@/lib/plan/planTravelLocalStorage";
-import { useScheduleItemRoute } from "@/hooks/useRooms";
 import {
   SCHEDULE_TRAVEL_MODES,
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
-import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { cn } from "@/lib/utils";
 
 import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
@@ -37,7 +34,7 @@ export type PlanTravelTimeProps = {
   scheduleId: number;
   /** 현재 항목 → 다음 항목 구간의 시작 일정 항목 ID (`GET …/route` 에 사용) */
   segmentSourceItemId: number;
-  /** 현재 일정의 `itemId` 순서 지문(localStorage·쿼리 키). 추가/삭제/리오더 시 바뀌면 캐시 무효. */
+  /** 일정 `itemId` 순서 지문 — 로컬 이동 수단 선택(LS) 일치용. 경로 API 쿼리 키에는 사용하지 않음 */
   scheduleFingerprint: string;
   /** 일정 항목에 붙어 있으면 초기 이동 수단 추정값(표시용). 선택은 서버 저장 없음, LS에만 저장 */
   travelMode?: string;
@@ -122,9 +119,7 @@ export function PlanTravelTime({
     roomId,
     scheduleId,
     segmentSourceItemId,
-    selectedMode,
     routeQueryEnabled,
-    fpTrim,
   );
 
   const knownValues = new Set<string>(
@@ -134,36 +129,6 @@ export function PlanTravelTime({
     modeRaw.length > 0 &&
     canonFromPayload === null &&
     !knownValues.has(modeRaw.toUpperCase());
-
-  const modeRouteQueries = useQueries({
-    queries: SCHEDULE_TRAVEL_MODES.map(({ value }) => ({
-      queryKey: scheduleItemRouteQueryKey(
-        roomId,
-        scheduleId,
-        segmentSourceItemId,
-        value,
-        fpTrim.length > 0 ? fpTrim : null,
-      ),
-      queryFn: () =>
-        getScheduleItemRoutePersisted(
-          roomId,
-          scheduleId,
-          segmentSourceItemId,
-          value,
-          fpTrim,
-        ),
-      enabled:
-        routeQueryEnabled &&
-        !directionsHidden &&
-        roomId.trim().length > 0 &&
-        typeof scheduleId === "number" &&
-        typeof segmentSourceItemId === "number",
-      staleTime: Infinity,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: false,
-    })),
-  });
 
   const handleTravelModeChange = useCallback(
     (next: ScheduleTravelModeValue) => {
@@ -189,59 +154,28 @@ export function PlanTravelTime({
     ],
   );
 
-  const displayRoute = useMemo(() => {
-    if (routePayloadOk(route)) return route;
-
-    const values = SCHEDULE_TRAVEL_MODES.map((m) => m.value);
-    const pref = values.indexOf(selectedMode);
-    const order =
-      pref >= 0
-        ? [pref, ...values.map((_, i) => i).filter((i) => i !== pref)]
-        : values.map((_, i) => i);
-
-    for (const i of order) {
-      const d = modeRouteQueries[i]?.data;
-      if (routePayloadOk(d)) return d;
-    }
-    return undefined;
-  }, [
-    route,
-    selectedMode,
-    modeRouteQueries[0]?.data,
-    modeRouteQueries[1]?.data,
-    modeRouteQueries[2]?.data,
-    modeRouteQueries[3]?.data,
-  ]);
+  const displayRoute = useMemo(
+    () => (routePayloadOk(route) ? route : undefined),
+    [route],
+  );
 
   const primarySettled = !isPending && !isFetching;
-  const modesSettled = modeRouteQueries.every(
-    (q) => !q.isPending && !q.isFetching,
-  );
-  const allRouteQueriesSettled = primarySettled && modesSettled;
 
-  const summaryFetching =
-    !displayRoute &&
-    (isFetching || modeRouteQueries.some((q) => q.isFetching));
+  const summaryFetching = !displayRoute && isFetching;
 
   const summaryPending =
-    !displayRoute &&
-    !summaryFetching &&
-    (isPending || modeRouteQueries.some((q) => q.isPending));
+    !displayRoute && !summaryFetching && isPending;
 
   const summaryIsError =
-    !displayRoute &&
-    allRouteQueriesSettled &&
-    (isError || modeRouteQueries.some((q) => q.isError));
+    !displayRoute && primarySettled && isError;
 
   const summaryUnavailable =
     !displayRoute &&
-    allRouteQueriesSettled &&
+    primarySettled &&
     !summaryIsError;
 
   const summaryMode =
-    displayRoute?.travelMode?.trim() ||
-    route?.travelMode?.trim() ||
-    selectedMode;
+    displayRoute?.travelMode?.trim() || selectedMode;
 
   if (directionsHidden) {
     return (
@@ -272,7 +206,7 @@ export function PlanTravelTime({
             isFetching: summaryFetching,
           }}
           routeUnavailable={summaryUnavailable}
-          modeRouteQueries={modeRouteQueries}
+          modeRouteQueries={[]}
           effectiveMode={selectedMode}
           showUnknownOption={showUnknownOption}
           modeRaw={modeRaw}

@@ -31,7 +31,8 @@ export type TravelDirectionsCardProps = {
     "isPending" | "isError" | "isFetching"
   >;
   routeUnavailable: boolean;
-  modeRouteQueries: Array<
+  /** 이전에는 수단별 조회 결과를 넘겼음. 경로 GET은 브로드캐스트·초기 조회만 하므로 비워 둠 */
+  modeRouteQueries?: Array<
     UseQueryResult<ScheduleItemRouteResponse | null, Error>
   >;
   effectiveMode: ScheduleTravelModeValue;
@@ -49,7 +50,7 @@ export function TravelDirectionsCard({
   route,
   routeQuery,
   routeUnavailable,
-  modeRouteQueries,
+  modeRouteQueries = [],
   effectiveMode,
   showUnknownOption,
   modeRaw,

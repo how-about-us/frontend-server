@@ -5,13 +5,13 @@ import { useChat } from "@/contexts/ChatContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
-import { ChatMessageList } from "./ChatMessageList";
-import { ChatInputBar } from "./ChatInputBar";
+import { ChatMessageList } from "../messages/ChatMessageList";
+import { ChatInputBar } from "../input/ChatInputBar";
 import {
   panelVariants,
   panelTransition,
   getPanelAnimate,
-} from "./chat.animations";
+} from "../lib/chat.animations";
 
 export function ChatPanel() {
   const { chatState, openChat, minimizeChat, closeChat } = useChat();

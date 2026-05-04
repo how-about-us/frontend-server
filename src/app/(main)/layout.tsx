@@ -1,7 +1,7 @@
 import { HeaderBar, LeftSection, SideBar } from "@/components/layout";
 import { JoinRequestsPoller } from "@/components/layout/JoinRequestsPoller";
 import { MainRoomGate } from "@/components/layout/MainRoomGate";
-import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatPanel } from "@/components/chat";
 import { MapWithDetailPanel } from "@/components/map";
 import { MainProviders } from "./MainProviders";
 

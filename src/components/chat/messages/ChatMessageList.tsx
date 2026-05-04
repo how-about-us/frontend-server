@@ -1,6 +1,8 @@
+"use client";
+
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/types/chat";
-import { groupConsecutiveMessages } from "./chat.utils";
+import { groupConsecutiveMessages } from "../lib/chat.utils";
 import {
   OtherMessageGroup,
   MyMessageGroup,

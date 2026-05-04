@@ -18,6 +18,7 @@ import {
   deleteBookmarkCategory,
   deleteRoom,
   deleteRoomSchedule,
+  getScheduleItemRoute,
   getBookmarkCategories,
   getJoinRequests,
   getJoinStatus,
@@ -45,7 +46,6 @@ import {
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import { getScheduleItemRoutePersisted } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
@@ -93,12 +93,8 @@ export function useScheduleItemRoute(
   roomId: string | null,
   scheduleId: number | null,
   segmentSourceItemId: number | null,
-  /** 서버 허용 enum — 항상 넣어 DB 레거시값과 무관하게 조회 */
-  travelModeQuery: string | null,
   /** 일정 장소 목록상 구간 소스 아이디가 존재·목록 안정 후에만 true */
   routeQueryEnabled = true,
-  /** `itemId` 순서 지문 — 비어 있으면 LS·지문 기반 쿼리 키 생략 */
-  scheduleFingerprint = "",
 ) {
   const rid = roomId?.trim() ?? "";
   const sid = scheduleId;
@@ -107,38 +103,16 @@ export function useScheduleItemRoute(
     typeof segmentSourceItemId === "number" &&
     Number.isFinite(segmentSourceItemId);
 
-  const tm =
-    typeof travelModeQuery === "string" && travelModeQuery.trim().length > 0
-      ? travelModeQuery.trim()
-      : null;
-
-  const fp =
-    typeof scheduleFingerprint === "string" ? scheduleFingerprint.trim() : "";
-
-  const enabled =
-    routeQueryEnabled &&
-    rid.length > 0 &&
-    sidOk &&
-    itemOk &&
-    tm != null &&
-    tm.length > 0;
+  const enabled = routeQueryEnabled && rid.length > 0 && sidOk && itemOk;
 
   return useQuery({
     queryKey: scheduleItemRouteQueryKey(
       rid || null,
       enabled ? sid : null,
       enabled ? segmentSourceItemId : null,
-      tm,
-      fp.length > 0 ? fp : null,
     ),
     queryFn: () =>
-      getScheduleItemRoutePersisted(
-        rid,
-        sid!,
-        segmentSourceItemId!,
-        tm!,
-        fp,
-      ),
+      getScheduleItemRoute(rid, sid!, segmentSourceItemId!, null),
     enabled,
     staleTime: Infinity,
     refetchOnMount: false,
