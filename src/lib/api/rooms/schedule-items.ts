@@ -28,14 +28,6 @@ export type ReorderScheduleItemRequest = {
   newOrderIndex: number;
 };
 
-export type UpdateTravelModeRequest = {
-  /** `DRIVING` | `WALKING` | `BICYCLING` | `TRANSIT` */
-  travelMode: string;
-};
-
-/** @deprecated 명세 이름은 {@link UpdateTravelModeRequest} */
-export type UpdateScheduleItemTravelModeRequest = UpdateTravelModeRequest;
-
 /** GET …/route — 현재 항목 → 다음 항목 구간 */
 export type ScheduleItemRouteResponse = {
   distanceMeters: number;
@@ -127,20 +119,5 @@ export async function reorderScheduleItem(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/order`),
     { method: "PATCH", ...jsonBody(body) },
     { errorMessage: "일정 순서 변경 실패" },
-  );
-}
-
-export async function updateScheduleItemTravelMode(
-  roomId: string,
-  scheduleId: number,
-  itemId: number,
-  body: UpdateTravelModeRequest,
-): Promise<RoomScheduleItem> {
-  return requestJson(
-    apiUrl(
-      `/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/travel-mode`,
-    ),
-    { method: "PATCH", ...jsonBody(body) },
-    { errorMessage: "이동 수단 변경 실패" },
   );
 }

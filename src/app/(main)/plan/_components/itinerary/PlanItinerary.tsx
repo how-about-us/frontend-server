@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useRooms";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { PlanPlaceCard } from "./PlanPlaceCard";
@@ -34,6 +35,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const {
     data: places = [],
     isPending,
+    isFetching: isFetchingPlaces,
     isError,
   } = useSchedulePlanPlaces(roomId, scheduleId);
 
@@ -152,6 +154,16 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [places, reorderMutate, roomId, scheduleId],
   );
 
+  const scheduleFingerprint = useMemo(
+    () =>
+      schedulePlacesFingerprint(
+        places
+          .map((p) => p.itemId)
+          .filter((id): id is number => typeof id === "number"),
+      ),
+    [places],
+  );
+
   const dragLocked = isAdding || isReordering || places.length < 2;
 
   return (
@@ -197,7 +209,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               onDragLeave={handleDragLeave(index)}
               onDrop={handleDrop(index)}
             />
-            {/* 장소 목록 백그라운드 갱신 중에도 구간 GET을 끄지 않음 — 무효화된 경로가 재요청되도록 */}
+            {/* LS·경로 일치: 장소 목록이 refetch 중일 때 구간 요청 안 함(`scheduleFingerprint`가 최신 순서와 맞도록) */}
             {index < places.length - 1 &&
             typeof place.itemId === "number" &&
             typeof places[index + 1]?.itemId === "number" ? (
@@ -205,9 +217,11 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 roomId={roomId}
                 scheduleId={scheduleId}
                 segmentSourceItemId={place.itemId}
+                scheduleFingerprint={scheduleFingerprint}
                 travelMode={place.travelMode ?? "WALKING"}
                 routeQueryEnabled={
                   !isPending &&
+                  !isFetchingPlaces &&
                   existingItemIds.has(place.itemId) &&
                   existingItemIds.has(places[index + 1].itemId!)
                 }

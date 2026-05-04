@@ -1,7 +1,7 @@
 "use client";
 
 import { Polyline } from "@vis.gl/react-google-maps";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type JSX } from "react";
 
 import {
@@ -60,6 +60,17 @@ function flattenSegmentsFromPlaces([
   return segments;
 }
 
+/** `plan-itinerary-map-path` 캐시 Record 키 — 쿼리 키에는 넣지 않고 응답 매핑에만 사용합니다. */
+function segmentPathRecordKey(seg: SegmentDescriptor): string {
+  return [
+    seg.scheduleId,
+    seg.segmentSourceItemId,
+    seg.originPlaceId,
+    seg.destPlaceId,
+    seg.travelModeCanon,
+  ].join("\u0001");
+}
+
 /**
  * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만, 일정 순서 장소 간 경로(polyline).
  * 구간 장소 목록은 `schedule-items` 쿼리와 동기화되고, 브로드캐스트 기반 재요청은
@@ -92,6 +103,8 @@ export function PlanItineraryMapRoutes() {
     [expandedScheduleIds],
   );
 
+  const queryClient = useQueryClient();
+
   const placesQueries = useQueries({
     queries: orderedScheduleIdsForQueries.map((scheduleId) => ({
       queryKey: scheduleItemsQueryKey(rid || null, scheduleId),
@@ -114,43 +127,66 @@ export function PlanItineraryMapRoutes() {
     buckets,
   ]);
 
-  const pathsResults = useQueries({
-    queries: segments.map((seg) => ({
-      queryKey: [
-        "plan-itinerary-map-path",
-        rid,
-        seg.scheduleId,
-        seg.segmentSourceItemId,
-        seg.originPlaceId,
-        seg.destPlaceId,
-        seg.travelModeCanon,
-        directionsEpoch,
-      ] as const,
-      queryFn: () =>
-        fetchPlanSegmentPathLatLng(
-          seg.originPlaceId,
-          seg.destPlaceId,
-          seg.travelModeCanon,
+  const pathsBundleQuery = useQuery({
+    queryKey: [
+      "plan-itinerary-map-path",
+      rid,
+      orderedScheduleIdsForQueries,
+      directionsEpoch,
+    ] as const,
+    queryFn: async (): Promise<
+      Record<string, google.maps.LatLngLiteral[]>
+    > => {
+      const roomKey = rid.length > 0 ? rid : null;
+      const placesBuckets = await Promise.all(
+        orderedScheduleIdsForQueries.map((scheduleId) =>
+          queryClient.fetchQuery({
+            queryKey: scheduleItemsQueryKey(roomKey, scheduleId),
+            queryFn: () =>
+              rid.length === 0
+                ? Promise.resolve([])
+                : fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
+            staleTime: Infinity,
+          }),
         ),
-      enabled: rid.length > 0 && segments.length > 0,
-      staleTime: Infinity,
-      refetchOnMount: false,
-      refetchOnWindowFocus: false,
-      retry: false,
-    })),
+      );
+      const segs = flattenSegmentsFromPlaces([
+        orderedScheduleIdsForQueries,
+        placesBuckets,
+      ]);
+      const out: Record<string, google.maps.LatLngLiteral[]> = {};
+      await Promise.all(
+        segs.map(async (seg) => {
+          const k = segmentPathRecordKey(seg);
+          out[k] = await fetchPlanSegmentPathLatLng(
+            seg.originPlaceId,
+            seg.destPlaceId,
+            seg.travelModeCanon,
+          );
+        }),
+      );
+      return out;
+    },
+    enabled: rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
+  const pathByKey = pathsBundleQuery.data;
+
   const polylines: Array<JSX.Element> = [];
-  segments.forEach((seg, idx) => {
-    const pts = pathsResults[idx]?.data;
+  segments.forEach((seg) => {
+    const pts = pathByKey?.[segmentPathRecordKey(seg)];
     if (!pts?.length) return;
 
     polylines.push(
       <Polyline
-        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${seg.originPlaceId}-${seg.destPlaceId}-${seg.travelModeCanon}-${directionsEpoch}`}
+        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}`}
         strokeColor="#f12d33"
         strokeOpacity={0.92}
-        strokeWeight={8}
+        strokeWeight={14}
         path={pts}
       />,
     );

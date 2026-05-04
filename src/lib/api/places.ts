@@ -52,6 +52,10 @@ export type PlacePhotoResponse = {
   photoUrl: string;
 };
 
+/** In-flight + settled memo: 일정 리오더처럼 같은 place·photo 가 반복될 때 API 재호출 방지 */
+const placeDetailPromisesById = new Map<string, Promise<PlaceDetail>>();
+const placePhotoUrlPromisesByName = new Map<string, Promise<string>>();
+
 // ─── API functions ─────────────────────────────────────────────────────────
 
 export async function searchPlaces(params: {
@@ -73,9 +77,7 @@ export async function searchPlaces(params: {
   return res.json();
 }
 
-export async function getPlaceDetail(
-  googlePlaceId: string,
-): Promise<PlaceDetail> {
+async function requestPlaceDetail(googlePlaceId: string): Promise<PlaceDetail> {
   const res = await apiFetch(
     `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}`,
   );
@@ -83,7 +85,24 @@ export async function getPlaceDetail(
   return res.json();
 }
 
-export async function getPlacePhotoUrl(photoName: string): Promise<string> {
+export async function getPlaceDetail(
+  googlePlaceId: string,
+): Promise<PlaceDetail> {
+  const cacheKey =
+    typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  const hit =
+    cacheKey.length > 0 ? placeDetailPromisesById.get(cacheKey) : undefined;
+  if (hit) return hit;
+
+  const p = requestPlaceDetail(googlePlaceId).catch((err) => {
+    if (cacheKey.length > 0) placeDetailPromisesById.delete(cacheKey);
+    throw err;
+  });
+  if (cacheKey.length > 0) placeDetailPromisesById.set(cacheKey, p);
+  return p;
+}
+
+async function requestPlacePhotoUrl(photoName: string): Promise<string> {
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("photoName", photoName);
 
@@ -91,6 +110,20 @@ export async function getPlacePhotoUrl(photoName: string): Promise<string> {
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
   return data.photoUrl;
+}
+
+export async function getPlacePhotoUrl(photoName: string): Promise<string> {
+  const cacheKey = typeof photoName === "string" ? photoName.trim() : "";
+  const hit =
+    cacheKey.length > 0 ? placePhotoUrlPromisesByName.get(cacheKey) : undefined;
+  if (hit) return hit;
+
+  const p = requestPlacePhotoUrl(photoName).catch((err) => {
+    if (cacheKey.length > 0) placePhotoUrlPromisesByName.delete(cacheKey);
+    throw err;
+  });
+  if (cacheKey.length > 0) placePhotoUrlPromisesByName.set(cacheKey, p);
+  return p;
 }
 
 /** Loads place detail and first photo for list/search card display (e.g. bookmarks). */

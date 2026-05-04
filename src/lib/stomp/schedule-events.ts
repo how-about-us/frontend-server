@@ -4,8 +4,7 @@ export type RoomScheduleEventType =
   | "SCHEDULE_ITEM_CREATED"
   | "SCHEDULE_ITEM_UPDATED"
   | "SCHEDULE_ITEM_DELETED"
-  | "SCHEDULE_ITEMS_REORDERED"
-  | "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED";
+  | "SCHEDULE_ITEMS_REORDERED";
 
 /** `/topic/rooms/{roomId}/schedules` 브로드캐스트 본문 */
 export type RoomScheduleChangedEvent = {
@@ -23,7 +22,6 @@ const KNOWN_TYPES = new Set<string>([
   "SCHEDULE_ITEM_UPDATED",
   "SCHEDULE_ITEM_DELETED",
   "SCHEDULE_ITEMS_REORDERED",
-  "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED",
 ]);
 
 export function parseRoomScheduleMessage(

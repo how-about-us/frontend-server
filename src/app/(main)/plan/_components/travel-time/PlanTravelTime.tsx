@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
-import { getScheduleItemRoute } from "@/lib/api/rooms";
 import {
-  useScheduleItemRoute,
-  useUpdateScheduleItemTravelMode,
-} from "@/hooks/useRooms";
+  getScheduleItemRoutePersisted,
+  readTravelModeFromLocalStorage,
+  writeTravelModeToLocalStorage,
+} from "@/lib/plan/planTravelLocalStorage";
+import { useScheduleItemRoute } from "@/hooks/useRooms";
 import {
   SCHEDULE_TRAVEL_MODES,
   canonicalScheduleTravelMode,
@@ -35,10 +35,12 @@ function routePayloadOk(
 export type PlanTravelTimeProps = {
   roomId: string;
   scheduleId: number;
-  /** GET route·PATCH travel-mode 명세: 현재 일정 항목 → 다음 항목 구간의 시작 일정 항목 ID */
+  /** 현재 항목 → 다음 항목 구간의 시작 일정 항목 ID (`GET …/route` 에 사용) */
   segmentSourceItemId: number;
-  /** 구간 시작 일정 항목의 `travelMode`(다음 장소까지 이동 수단) */
-  travelMode: string;
+  /** 현재 일정의 `itemId` 순서 지문(localStorage·쿼리 키). 추가/삭제/리오더 시 바뀌면 캐시 무효. */
+  scheduleFingerprint: string;
+  /** 일정 항목에 붙어 있으면 초기 이동 수단 추정값(표시용). 선택은 서버 저장 없음, LS에만 저장 */
+  travelMode?: string;
   /** 일정 항목 목록이 준비·갱신 완료되고 종점 둘 다 목록에 있을 때만 route GET 허용 */
   routeQueryEnabled?: boolean;
   className?: string;
@@ -48,6 +50,7 @@ export function PlanTravelTime({
   roomId,
   scheduleId,
   segmentSourceItemId,
+  scheduleFingerprint,
   travelMode,
   routeQueryEnabled = true,
   className,
@@ -55,15 +58,60 @@ export function PlanTravelTime({
   const [menuOpen, setMenuOpen] = useState(false);
   const [directionsHidden, setDirectionsHidden] = useState(false);
 
-  const { mutateAsync: patchTravelMode, isPending: isPatchPending } =
-    useUpdateScheduleItemTravelMode();
+  const fpTrim = scheduleFingerprint.trim();
+
+  const [selectedMode, setSelectedMode] =
+    useState<ScheduleTravelModeValue>(() => {
+      if (fpTrim.length > 0) {
+        const fromLs = readTravelModeFromLocalStorage(
+          roomId,
+          scheduleId,
+          segmentSourceItemId,
+          fpTrim,
+        );
+        if (fromLs) return fromLs;
+      }
+      return (
+        canonicalScheduleTravelMode(
+          typeof travelMode === "string" && travelMode.trim()
+            ? travelMode.trim()
+            : undefined,
+        ) ?? SCHEDULE_TRAVEL_MODES[0].value
+      );
+    });
+
+  useEffect(() => {
+    if (fpTrim.length > 0) {
+      const fromLs = readTravelModeFromLocalStorage(
+        roomId,
+        scheduleId,
+        segmentSourceItemId,
+        fpTrim,
+      );
+      if (fromLs != null) {
+        setSelectedMode(fromLs);
+        return;
+      }
+    }
+    setSelectedMode(
+      canonicalScheduleTravelMode(
+        typeof travelMode === "string" && travelMode.trim()
+          ? travelMode.trim()
+          : undefined,
+      ) ?? SCHEDULE_TRAVEL_MODES[0].value,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `travelMode` 제외: 지문·구간이 같으면 LS·현재 선택을 유지
+  }, [
+    roomId,
+    scheduleId,
+    segmentSourceItemId,
+    fpTrim,
+  ]);
 
   const modeRaw = typeof travelMode === "string" ? travelMode.trim() : "";
   const canonFromPayload = canonicalScheduleTravelMode(
     modeRaw.length > 0 ? modeRaw : undefined,
   );
-  const effectiveMode =
-    canonFromPayload ?? SCHEDULE_TRAVEL_MODES[0].value;
 
   const {
     data: route,
@@ -74,8 +122,9 @@ export function PlanTravelTime({
     roomId,
     scheduleId,
     segmentSourceItemId,
-    effectiveMode,
+    selectedMode,
     routeQueryEnabled,
+    fpTrim,
   );
 
   const knownValues = new Set<string>(
@@ -93,9 +142,16 @@ export function PlanTravelTime({
         scheduleId,
         segmentSourceItemId,
         value,
+        fpTrim.length > 0 ? fpTrim : null,
       ),
       queryFn: () =>
-        getScheduleItemRoute(roomId, scheduleId, segmentSourceItemId, value),
+        getScheduleItemRoutePersisted(
+          roomId,
+          scheduleId,
+          segmentSourceItemId,
+          value,
+          fpTrim,
+        ),
       enabled:
         routeQueryEnabled &&
         !directionsHidden &&
@@ -110,27 +166,26 @@ export function PlanTravelTime({
   });
 
   const handleTravelModeChange = useCallback(
-    async (next: ScheduleTravelModeValue) => {
-      if (next === effectiveMode || isPatchPending) return;
-      try {
-        await patchTravelMode({
+    (next: ScheduleTravelModeValue) => {
+      if (next === selectedMode) return;
+      setSelectedMode(next);
+      setMenuOpen(false);
+      if (fpTrim.length > 0) {
+        writeTravelModeToLocalStorage(
           roomId,
           scheduleId,
-          itemId: segmentSourceItemId,
-          body: { travelMode: next },
-        });
-        setMenuOpen(false);
-      } catch {
-        toast.error("이동 수단을 바꾸지 못했어요.");
+          segmentSourceItemId,
+          fpTrim,
+          next,
+        );
       }
     },
     [
-      segmentSourceItemId,
-      effectiveMode,
-      isPatchPending,
-      patchTravelMode,
+      selectedMode,
       roomId,
       scheduleId,
+      segmentSourceItemId,
+      fpTrim,
     ],
   );
 
@@ -138,7 +193,7 @@ export function PlanTravelTime({
     if (routePayloadOk(route)) return route;
 
     const values = SCHEDULE_TRAVEL_MODES.map((m) => m.value);
-    const pref = values.indexOf(effectiveMode);
+    const pref = values.indexOf(selectedMode);
     const order =
       pref >= 0
         ? [pref, ...values.map((_, i) => i).filter((i) => i !== pref)]
@@ -151,7 +206,7 @@ export function PlanTravelTime({
     return undefined;
   }, [
     route,
-    effectiveMode,
+    selectedMode,
     modeRouteQueries[0]?.data,
     modeRouteQueries[1]?.data,
     modeRouteQueries[2]?.data,
@@ -186,7 +241,7 @@ export function PlanTravelTime({
   const summaryMode =
     displayRoute?.travelMode?.trim() ||
     route?.travelMode?.trim() ||
-    effectiveMode;
+    selectedMode;
 
   if (directionsHidden) {
     return (
@@ -218,8 +273,7 @@ export function PlanTravelTime({
           }}
           routeUnavailable={summaryUnavailable}
           modeRouteQueries={modeRouteQueries}
-          effectiveMode={effectiveMode}
-          isPatchPending={isPatchPending}
+          effectiveMode={selectedMode}
           showUnknownOption={showUnknownOption}
           modeRaw={modeRaw}
           onSelectTravelMode={handleTravelModeChange}

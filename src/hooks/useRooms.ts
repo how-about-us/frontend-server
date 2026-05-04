@@ -14,7 +14,6 @@ import {
   deleteScheduleItem,
   reorderScheduleItem,
   updateScheduleItem,
-  updateScheduleItemTravelMode,
   deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
@@ -25,7 +24,6 @@ import {
   getRoomBookmarks,
   getRoomMembers,
   getRoomSchedules,
-  getScheduleItemRoute,
   patchRoomBookmarkCategory,
   getRooms,
   joinRoom,
@@ -36,7 +34,6 @@ import {
   type RoomCreateRequest,
   type ReorderScheduleItemRequest,
   type RoomScheduleItemUpdateRequest,
-  type UpdateTravelModeRequest,
   type RoomUpdateRequest,
   seedRoomSchedules,
   transferHost,
@@ -48,6 +45,7 @@ import {
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
+import { getScheduleItemRoutePersisted } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
@@ -99,6 +97,8 @@ export function useScheduleItemRoute(
   travelModeQuery: string | null,
   /** 일정 장소 목록상 구간 소스 아이디가 존재·목록 안정 후에만 true */
   routeQueryEnabled = true,
+  /** `itemId` 순서 지문 — 비어 있으면 LS·지문 기반 쿼리 키 생략 */
+  scheduleFingerprint = "",
 ) {
   const rid = roomId?.trim() ?? "";
   const sid = scheduleId;
@@ -111,6 +111,9 @@ export function useScheduleItemRoute(
     typeof travelModeQuery === "string" && travelModeQuery.trim().length > 0
       ? travelModeQuery.trim()
       : null;
+
+  const fp =
+    typeof scheduleFingerprint === "string" ? scheduleFingerprint.trim() : "";
 
   const enabled =
     routeQueryEnabled &&
@@ -126,9 +129,16 @@ export function useScheduleItemRoute(
       enabled ? sid : null,
       enabled ? segmentSourceItemId : null,
       tm,
+      fp.length > 0 ? fp : null,
     ),
     queryFn: () =>
-      getScheduleItemRoute(rid, sid!, segmentSourceItemId!, tm),
+      getScheduleItemRoutePersisted(
+        rid,
+        sid!,
+        segmentSourceItemId!,
+        tm!,
+        fp,
+      ),
     enabled,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -218,23 +228,6 @@ export function useReorderScheduleItem() {
       body: ReorderScheduleItemRequest;
     }) =>
       reorderScheduleItem(
-        vars.roomId,
-        vars.scheduleId,
-        vars.itemId,
-        vars.body,
-      ),
-  });
-}
-
-export function useUpdateScheduleItemTravelMode() {
-  return useMutation({
-    mutationFn: (vars: {
-      roomId: string;
-      scheduleId: number;
-      itemId: number;
-      body: UpdateTravelModeRequest;
-    }) =>
-      updateScheduleItemTravelMode(
         vars.roomId,
         vars.scheduleId,
         vars.itemId,

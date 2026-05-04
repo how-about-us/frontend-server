@@ -35,7 +35,6 @@ export type TravelDirectionsCardProps = {
     UseQueryResult<ScheduleItemRouteResponse | null, Error>
   >;
   effectiveMode: ScheduleTravelModeValue;
-  isPatchPending: boolean;
   showUnknownOption: boolean;
   modeRaw: string;
   onSelectTravelMode: (next: ScheduleTravelModeValue) => void;
@@ -52,7 +51,6 @@ export function TravelDirectionsCard({
   routeUnavailable,
   modeRouteQueries,
   effectiveMode,
-  isPatchPending,
   showUnknownOption,
   modeRaw,
   onSelectTravelMode,
@@ -133,7 +131,6 @@ export function TravelDirectionsCard({
                     type="button"
                     role="option"
                     aria-selected={selected}
-                    disabled={isPatchPending && !selected}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs hover:bg-gray-border/30 disabled:opacity-50",
                       selected &&
@@ -166,7 +163,6 @@ export function TravelDirectionsCard({
               <li>
                 <button
                   type="button"
-                  disabled={isPatchPending}
                   className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs hover:bg-gray-border/30 disabled:opacity-50"
                   onClick={() => {
                     const c = canonicalScheduleTravelMode(modeRaw);
