@@ -35,11 +35,9 @@ function routePayloadOk(
 export type PlanTravelTimeProps = {
   roomId: string;
   scheduleId: number;
-  /** GET route 명세: 현재 일정 항목 → 다음 항목 구간 */
+  /** GET route·PATCH travel-mode 명세: 현재 일정 항목 → 다음 항목 구간의 시작 일정 항목 ID */
   segmentSourceItemId: number;
-  /** PATCH `UpdateTravelModeRequest` — 명세상 `itemId`는 「다음 장소」일정 항목(toPlace) ID */
-  destinationItemId: number;
-  /** 장소 카드에 표시되는 구간 기본 이동 수단(일정 항목 travelMode) */
+  /** 구간 시작 일정 항목의 `travelMode`(다음 장소까지 이동 수단) */
   travelMode: string;
   /** 일정 항목 목록이 준비·갱신 완료되고 종점 둘 다 목록에 있을 때만 route GET 허용 */
   routeQueryEnabled?: boolean;
@@ -50,7 +48,6 @@ export function PlanTravelTime({
   roomId,
   scheduleId,
   segmentSourceItemId,
-  destinationItemId,
   travelMode,
   routeQueryEnabled = true,
   className,
@@ -119,7 +116,7 @@ export function PlanTravelTime({
         await patchTravelMode({
           roomId,
           scheduleId,
-          itemId: destinationItemId,
+          itemId: segmentSourceItemId,
           body: { travelMode: next },
         });
         setMenuOpen(false);
@@ -128,7 +125,7 @@ export function PlanTravelTime({
       }
     },
     [
-      destinationItemId,
+      segmentSourceItemId,
       effectiveMode,
       isPatchPending,
       patchTravelMode,
