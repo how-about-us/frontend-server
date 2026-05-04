@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
 import {
   useScheduleItemRoute,
@@ -20,6 +21,16 @@ import { cn } from "@/lib/utils";
 import { PlanTravelTimeCollapsed } from "./plan-travel-time/PlanTravelTimeCollapsed";
 import { TravelDirectionsCard } from "./plan-travel-time/TravelDirectionsCard";
 import { TravelRouteRail } from "./plan-travel-time/TravelRouteRail";
+
+function routePayloadOk(
+  r: ScheduleItemRouteResponse | null | undefined,
+): r is ScheduleItemRouteResponse {
+  return (
+    r != null &&
+    r.durationSeconds >= 0 &&
+    r.distanceMeters >= 0
+  );
+}
 
 export type PlanTravelTimeProps = {
   roomId: string;
@@ -57,15 +68,18 @@ export function PlanTravelTime({
   const effectiveMode =
     canonFromPayload ?? SCHEDULE_TRAVEL_MODES[0].value;
 
-  const { data: route, isPending, isError, isSuccess } = useScheduleItemRoute(
+  const {
+    data: route,
+    isPending,
+    isError,
+    isFetching,
+  } = useScheduleItemRoute(
     roomId,
     scheduleId,
     segmentSourceItemId,
     effectiveMode,
     routeQueryEnabled,
   );
-
-  const routeUnavailable = isSuccess && route == null;
 
   const knownValues = new Set<string>(
     SCHEDULE_TRAVEL_MODES.map((m) => m.value),
@@ -87,7 +101,6 @@ export function PlanTravelTime({
         getScheduleItemRoute(roomId, scheduleId, segmentSourceItemId, value),
       enabled:
         routeQueryEnabled &&
-        menuOpen &&
         !directionsHidden &&
         roomId.trim().length > 0 &&
         typeof scheduleId === "number" &&
@@ -124,7 +137,59 @@ export function PlanTravelTime({
     ],
   );
 
-  const summaryMode = route?.travelMode?.trim() || effectiveMode;
+  const displayRoute = useMemo(() => {
+    if (routePayloadOk(route)) return route;
+
+    const values = SCHEDULE_TRAVEL_MODES.map((m) => m.value);
+    const pref = values.indexOf(effectiveMode);
+    const order =
+      pref >= 0
+        ? [pref, ...values.map((_, i) => i).filter((i) => i !== pref)]
+        : values.map((_, i) => i);
+
+    for (const i of order) {
+      const d = modeRouteQueries[i]?.data;
+      if (routePayloadOk(d)) return d;
+    }
+    return undefined;
+  }, [
+    route,
+    effectiveMode,
+    modeRouteQueries[0]?.data,
+    modeRouteQueries[1]?.data,
+    modeRouteQueries[2]?.data,
+    modeRouteQueries[3]?.data,
+  ]);
+
+  const primarySettled = !isPending && !isFetching;
+  const modesSettled = modeRouteQueries.every(
+    (q) => !q.isPending && !q.isFetching,
+  );
+  const allRouteQueriesSettled = primarySettled && modesSettled;
+
+  const summaryFetching =
+    !displayRoute &&
+    (isFetching || modeRouteQueries.some((q) => q.isFetching));
+
+  const summaryPending =
+    !displayRoute &&
+    !summaryFetching &&
+    (isPending || modeRouteQueries.some((q) => q.isPending));
+
+  const summaryIsError =
+    !displayRoute &&
+    allRouteQueriesSettled &&
+    (isError || modeRouteQueries.some((q) => q.isError));
+
+  const summaryUnavailable =
+    !displayRoute &&
+    allRouteQueriesSettled &&
+    !summaryIsError;
+
+  const summaryMode =
+    displayRoute?.travelMode?.trim() ||
+    route?.travelMode?.trim() ||
+    effectiveMode;
 
   if (directionsHidden) {
     return (
@@ -148,9 +213,13 @@ export function PlanTravelTime({
           onToggleMenu={() => setMenuOpen((o) => !o)}
           setMenuOpen={setMenuOpen}
           summaryMode={summaryMode}
-          route={route}
-          routeQuery={{ isPending, isError }}
-          routeUnavailable={routeUnavailable}
+          route={displayRoute}
+          routeQuery={{
+            isPending: summaryPending,
+            isError: summaryIsError,
+            isFetching: summaryFetching,
+          }}
+          routeUnavailable={summaryUnavailable}
           modeRouteQueries={modeRouteQueries}
           effectiveMode={effectiveMode}
           isPatchPending={isPatchPending}

@@ -28,7 +28,7 @@ export type TravelDirectionsCardProps = {
   route: ScheduleItemRouteResponse | null | undefined;
   routeQuery: Pick<
     UseQueryResult<ScheduleItemRouteResponse | null, Error>,
-    "isPending" | "isError"
+    "isPending" | "isError" | "isFetching"
   >;
   routeUnavailable: boolean;
   modeRouteQueries: Array<
@@ -58,10 +58,24 @@ export function TravelDirectionsCard({
   onSelectTravelMode,
   onHideDirections,
 }: TravelDirectionsCardProps) {
+  const routeTravelRaw =
+    route != null &&
+    typeof route.travelMode === "string" &&
+    route.travelMode.trim().length > 0
+      ? route.travelMode.trim()
+      : null;
+
+  /** /route 200 본문이 있으면 요약·글리프 모두 응답 `travelMode` 기준 */
+  const headerTravelMode =
+    routeTravelRaw != null
+      ? canonicalScheduleTravelMode(routeTravelRaw) ?? routeTravelRaw
+      : summaryMode;
+
   const summaryLine = (
     <TravelRouteSummaryLine
       route={route}
       isPending={routeQuery.isPending}
+      isFetching={routeQuery.isFetching}
       isError={routeQuery.isError}
       routeUnavailable={routeUnavailable}
     />
@@ -75,7 +89,7 @@ export function TravelDirectionsCard({
         aria-expanded={menuOpen}
         onClick={onToggleMenu}
       >
-        <TravelModeGlyph mode={summaryMode} />
+        <TravelModeGlyph mode={headerTravelMode} />
         <span className="min-w-0 flex-1 text-xs font-medium text-gray-900">
           {summaryLine}
         </span>

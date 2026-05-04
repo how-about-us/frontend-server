@@ -34,7 +34,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const {
     data: places = [],
     isPending,
-    isFetching,
     isError,
   } = useSchedulePlanPlaces(roomId, scheduleId);
 
@@ -198,6 +197,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               onDragLeave={handleDragLeave(index)}
               onDrop={handleDrop(index)}
             />
+            {/* 장소 목록 백그라운드 갱신 중에도 구간 GET을 끄지 않음 — 무효화된 경로가 재요청되도록 */}
             {index < places.length - 1 &&
             typeof place.itemId === "number" &&
             typeof places[index + 1]?.itemId === "number" ? (
@@ -209,7 +209,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 travelMode={places[index + 1].travelMode ?? "WALKING"}
                 routeQueryEnabled={
                   !isPending &&
-                  !isFetching &&
                   existingItemIds.has(place.itemId) &&
                   existingItemIds.has(places[index + 1].itemId!)
                 }

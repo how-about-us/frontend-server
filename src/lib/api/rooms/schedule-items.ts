@@ -59,14 +59,8 @@ export async function getScheduleItemRoute(
   const qs = params.toString();
   const path = `/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/route${qs ? `?${qs}` : ""}`;
   const res = await apiFetch(apiUrl(path), undefined);
+  // 경로 안내 없음: 서버는 204 No Content (본문 없음)
   if (res.status === 204) {
-    return null;
-  }
-  /**
-   * 외부 경로 API가 구간·수단 조합 미제공 시 백엔드가 502 등으로 감싸 오는 경우가 있어,
-   * 앱에서는 ‘안내 데이터 없음’으로 취급한다(네트워크 탭에는 응답이 그대로 남음).
-   */
-  if (res.status === 502 || res.status === 503 || res.status === 504) {
     return null;
   }
   if (!res.ok) {

@@ -6,6 +6,8 @@ import { formatRouteDistance, formatRouteDuration } from "@/lib/plan/routeFormat
 type TravelRouteSummaryLineProps = {
   route: ScheduleItemRouteResponse | null | undefined;
   isPending: boolean;
+  /** 재검증·무효화 후 재요청 중 — 이전 캐시 값 대신 로딩 표시 */
+  isFetching: boolean;
   isError: boolean;
   routeUnavailable: boolean;
 };
@@ -13,9 +15,18 @@ type TravelRouteSummaryLineProps = {
 export function TravelRouteSummaryLine({
   route,
   isPending,
+  isFetching,
   isError,
   routeUnavailable,
 }: TravelRouteSummaryLineProps) {
+  if (isFetching) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-green" />
+        불러오는 중…
+      </span>
+    );
+  }
   if (
     route &&
     route.durationSeconds >= 0 &&

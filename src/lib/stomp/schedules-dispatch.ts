@@ -81,7 +81,8 @@ export async function dispatchRoomScheduleEvent(
       });
       await queryClient.invalidateQueries({
         queryKey: ["schedule-item-route", rid],
-        refetchType: "active",
+        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
+        refetchType: "all",
       });
       return;
 
@@ -95,7 +96,7 @@ export async function dispatchRoomScheduleEvent(
       });
       await queryClient.invalidateQueries({
         queryKey: ["schedule-item-route", rid],
-        refetchType: "active",
+        refetchType: "all",
       });
       return;
   }
