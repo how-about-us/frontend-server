@@ -19,6 +19,7 @@ import {
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
+import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
 
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { PlanPlaceCard } from "./PlanPlaceCard";
@@ -218,7 +219,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 scheduleId={scheduleId}
                 segmentSourceItemId={place.itemId}
                 scheduleFingerprint={scheduleFingerprint}
-                travelMode={place.travelMode ?? "WALKING"}
+                travelMode={place.travelMode ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE}
                 routeQueryEnabled={
                   !isPending &&
                   !isFetchingPlaces &&

@@ -19,19 +19,13 @@ export function TravelRouteSummaryLine({
   isError,
   routeUnavailable,
 }: TravelRouteSummaryLineProps) {
-  if (isFetching) {
-    return (
-      <span className="inline-flex items-center gap-1.5">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-green" />
-        불러오는 중…
-      </span>
-    );
-  }
-  if (
-    route &&
+  const routeOk =
+    route != null &&
     route.durationSeconds >= 0 &&
-    route.distanceMeters >= 0
-  ) {
+    route.distanceMeters >= 0;
+
+  /** 표시할 수 있는 값이 있으면 다른 쿼리의 `isFetching` 에 가리지 않음 */
+  if (routeOk) {
     return (
       <>
         {formatRouteDuration(route.durationSeconds)}
@@ -40,6 +34,16 @@ export function TravelRouteSummaryLine({
       </>
     );
   }
+
+  if (isFetching) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-green" />
+        불러오는 중…
+      </span>
+    );
+  }
+
   if (isPending) {
     return (
       <span className="inline-flex items-center gap-1.5">

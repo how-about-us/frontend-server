@@ -33,10 +33,11 @@ export type TravelDirectionsCardProps = {
     isFetching: boolean;
   };
   routeUnavailable: boolean;
-  /** GET …/route 한 번에 받은 수단별 요약(수단별 추가 쿼리 없음) */
+  /** 수단별 `GET …/route` 결과 합본(DRIVING=초기·나머지=메뉴 오픈 시 패치·캐시 재사용) */
   modeRouteSummaries?: Partial<
     Record<ScheduleTravelModeValue, ScheduleItemRouteSummary>
   >;
+  modeRouteRowLoading?: Partial<Record<ScheduleTravelModeValue, boolean>>;
   effectiveMode: ScheduleTravelModeValue;
   showUnknownOption: boolean;
   modeRaw: string;
@@ -53,6 +54,7 @@ export function TravelDirectionsCard({
   routeQuery,
   routeUnavailable,
   modeRouteSummaries = {},
+  modeRouteRowLoading = {},
   effectiveMode,
   showUnknownOption,
   modeRaw,
@@ -111,7 +113,7 @@ export function TravelDirectionsCard({
                     <span className="mx-1 text-light-gray">·</span>
                     {formatRouteDistance(rowSummary.distanceMeters)}
                   </>
-                ) : routeQuery.isPending || routeQuery.isFetching ? (
+                ) : modeRouteRowLoading[value] ? (
                   <span className="inline-flex items-center gap-1 text-dark-gray">
                     <Loader2 className="h-3 w-3 animate-spin" />
                   </span>

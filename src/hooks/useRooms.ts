@@ -18,7 +18,6 @@ import {
   deleteBookmarkCategory,
   deleteRoom,
   deleteRoomSchedule,
-  getScheduleItemRoute,
   getBookmarkCategories,
   getJoinRequests,
   getJoinStatus,
@@ -46,8 +45,9 @@ import {
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
+import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
 export const ROOMS_QUERY_KEY = ["rooms"] as const;
 
@@ -93,31 +93,23 @@ export function useScheduleItemRoute(
   roomId: string | null,
   scheduleId: number | null,
   segmentSourceItemId: number | null,
+  travelMode: ScheduleTravelModeValue,
   /** 일정 장소 목록상 구간 소스 아이디가 존재·목록 안정 후에만 true */
   routeQueryEnabled = true,
+  /** 빈 문자열이면 LS 미사용 — `scheduleFingerprint` 지문 필요 */
+  scheduleFingerprint = "",
 ) {
   const rid = roomId?.trim() ?? "";
-  const sid = scheduleId;
-  const sidOk = typeof sid === "number" && Number.isFinite(sid);
-  const itemOk =
-    typeof segmentSourceItemId === "number" &&
-    Number.isFinite(segmentSourceItemId);
-
-  const enabled = routeQueryEnabled && rid.length > 0 && sidOk && itemOk;
 
   return useQuery({
-    queryKey: scheduleItemRouteQueryKey(
-      rid || null,
-      enabled ? sid : null,
-      enabled ? segmentSourceItemId : null,
+    ...persistedScheduleItemRouteQueryOptions(
+      rid,
+      scheduleId,
+      segmentSourceItemId,
+      travelMode,
+      scheduleFingerprint,
+      { segmentReady: Boolean(routeQueryEnabled) },
     ),
-    queryFn: () =>
-      getScheduleItemRoute(rid, sid!, segmentSourceItemId!, null),
-    enabled,
-    staleTime: Infinity,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: false,
   });
 }
 

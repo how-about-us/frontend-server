@@ -9,6 +9,20 @@ export const SCHEDULE_TRAVEL_MODES = [
 export type ScheduleTravelModeValue =
   (typeof SCHEDULE_TRAVEL_MODES)[number]["value"];
 
+/** 구간 `GET …/route` 최초 요청에만 사용(쿼리스트링 `travelMode`) */
+export const SCHEDULE_ROUTE_PRIMARY_FETCH_MODE: ScheduleTravelModeValue =
+  "DRIVING";
+
+/**
+ * 메뉴를 열었을 때 지연 패치하는 수단들(최초 `DRIVING` 제외).
+ * API 스키마: `DRIVING` | `WALKING` | `BICYCLING` | `TRANSIT`
+ */
+export const SCHEDULE_ROUTE_DEFERRED_FETCH_MODES = [
+  "WALKING",
+  "BICYCLING",
+  "TRANSIT",
+] as const satisfies readonly ScheduleTravelModeValue[];
+
 const API_VALUES = new Set<string>(
   SCHEDULE_TRAVEL_MODES.map((m) => m.value),
 );
