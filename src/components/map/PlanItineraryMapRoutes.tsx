@@ -14,7 +14,10 @@ import {
 import { fetchPlanSegmentPathLatLng } from "@/lib/maps/planItineraryDirectionsPath";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
-import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
+import {
+  planMapSegmentEpochStoreKey,
+  usePlanMapDirectionsEpochStore,
+} from "@/stores/plan-map-directions-epoch-store";
 import { useSessionStore } from "@/stores/session-store";
 
 type SegmentDescriptor = {
@@ -73,8 +76,9 @@ function segmentPathRecordKey(seg: SegmentDescriptor): string {
 
 /**
  * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만, 일정 순서 장소 간 경로(polyline).
- * 구간 장소 목록은 `schedule-items` 쿼리와 동기화되고, 브로드캐스트 기반 재요청은
- * `{@link usePlanMapDirectionsEpochStore}.bumpForDirections` 에 담긴 에폭(`SCHEDULE_ITEM_CREATED`·`SCHEDULE_ITEM_DELETED`)으로만 명시적으로 트리거합니다.
+ * 구간 장소 목록은 `schedule-items` 쿼리와 동기화되고, STOMP 일정 이벤트는
+ * `{@link usePlanMapDirectionsEpochStore}.bumpSegments`(구간별) 또는
+ * `bumpForDirections`(방 전체 폴백)로 Directions 재조회를 트리거합니다.
  */
 export function PlanItineraryMapRoutes() {
   const roomIdRaw = useSessionStore((s) => s.currentRoomId);
@@ -96,6 +100,9 @@ export function PlanItineraryMapRoutes() {
 
   const directionsEpoch = usePlanMapDirectionsEpochStore((s) =>
     rid.length > 0 ? (s.epochByRoomId[rid] ?? 0) : 0,
+  );
+  const epochBySegmentKey = usePlanMapDirectionsEpochStore(
+    (s) => s.epochBySegmentKey,
   );
 
   const orderedScheduleIdsForQueries = useMemo(
@@ -127,12 +134,28 @@ export function PlanItineraryMapRoutes() {
     buckets,
   ]);
 
+  const segmentEpochSignature = useMemo(() => {
+    if (rid.length === 0 || segments.length === 0) return "";
+    return [...segments]
+      .map((seg) => {
+        const k = planMapSegmentEpochStoreKey(
+          rid,
+          seg.scheduleId,
+          seg.segmentSourceItemId,
+        );
+        return `${k}\u0001${epochBySegmentKey[k] ?? 0}`;
+      })
+      .sort()
+      .join("|");
+  }, [rid, segments, epochBySegmentKey]);
+
   const pathsBundleQuery = useQuery({
     queryKey: [
       "plan-itinerary-map-path",
       rid,
       orderedScheduleIdsForQueries,
       directionsEpoch,
+      segmentEpochSignature,
     ] as const,
     queryFn: async (): Promise<
       Record<string, google.maps.LatLngLiteral[]>
@@ -181,9 +204,16 @@ export function PlanItineraryMapRoutes() {
     const pts = pathByKey?.[segmentPathRecordKey(seg)];
     if (!pts?.length) return;
 
+    const segEpochKey = planMapSegmentEpochStoreKey(
+      rid,
+      seg.scheduleId,
+      seg.segmentSourceItemId,
+    );
+    const segEpoch = epochBySegmentKey[segEpochKey] ?? 0;
+
     polylines.push(
       <Polyline
-        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}`}
+        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}-${segEpoch}`}
         strokeColor="#f12d33"
         strokeOpacity={0.92}
         strokeWeight={14}

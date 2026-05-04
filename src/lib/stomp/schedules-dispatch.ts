@@ -1,5 +1,14 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import {
+  collectSegmentSourcesForCreate,
+  collectSegmentSourcesForDelete,
+  collectSegmentSourcesForReorder,
+  invalidateScheduleItemRouteForSources,
+  invalidateScheduleItemRouteForWholeSchedule,
+  readOrderedItemIdsFromScheduleItemsCache,
+} from "@/lib/plan/scheduleStompRouteScope";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
@@ -41,14 +50,38 @@ function removeRouteQueriesForDeletedItemSource(
   });
 }
 
+async function refetchScheduleItemsPlaces(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): Promise<void> {
+  await queryClient.fetchQuery({
+    queryKey: scheduleItemsQueryKey(roomId, scheduleId),
+    queryFn: () => fetchScheduleItemsAsPlanPlaces(roomId, scheduleId),
+  });
+}
+
+function bumpMapForRouteSources(
+  roomId: string,
+  scheduleId: number,
+  sourceItemIds: number[],
+): void {
+  if (sourceItemIds.length === 0) return;
+  usePlanMapDirectionsEpochStore.getState().bumpSegments(
+    roomId,
+    sourceItemIds.map((segmentSourceItemId) => ({
+      scheduleId,
+      segmentSourceItemId,
+    })),
+  );
+}
+
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
  * — `room-schedules`: 일차(스케줄) 목록
  * — `schedule-items`: 일차별 장소 목록
- * — `schedule-item-route`: 장소 간 길찾기(순서·장소 변경 등에만 무효화;
- *   `SCHEDULE_ITEM_UPDATED`는 체류·시작시간 등만 바뀔 때 오므로 경로 캐시는 건드리지 않음)
- * — 맵 polyline(`plan-itinerary-map-path`): STOMP에서 `SCHEDULE_ITEM_CREATED`·`SCHEDULE_ITEM_DELETED` 일 때만
- *   에폭 증가로 클라이언트 Directions 재조회를 유도함(`SCHEDULE_ITEMS_REORDERED` 제외)
+ * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
+ * — 맵 polyline: 구간별 에폭(`bumpSegments`); 폴백 시 방 단위(`bumpForDirections`)
  */
 export async function dispatchRoomScheduleEvent(
   queryClient: QueryClient,
@@ -57,6 +90,7 @@ export async function dispatchRoomScheduleEvent(
   const rid = String(event.roomId ?? "").trim();
   if (!rid) return;
   const sid = event.scheduleId;
+  const epochStore = usePlanMapDirectionsEpochStore.getState();
 
   switch (event.type) {
     case "SCHEDULE_CREATED":
@@ -77,44 +111,88 @@ export async function dispatchRoomScheduleEvent(
       });
       return;
 
-    case "SCHEDULE_ITEM_DELETED":
-      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    case "SCHEDULE_ITEM_DELETED": {
+      const oldIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
       removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, event.itemId);
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),
         refetchType: "active",
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["schedule-item-route", rid],
-        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
-        refetchType: "all",
-      });
-      return;
+      await refetchScheduleItemsPlaces(queryClient, rid, sid);
 
-    case "SCHEDULE_ITEM_CREATED":
-      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+      const { sources, useFallback } = collectSegmentSourcesForDelete(
+        oldIds,
+        event.itemId,
+      );
+      if (useFallback) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+        epochStore.bumpForDirections(rid);
+      } else {
+        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
+        bumpMapForRouteSources(rid, sid, sources);
+      }
+      return;
+    }
+
+    case "SCHEDULE_ITEM_CREATED": {
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),
         refetchType: "active",
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["schedule-item-route", rid],
-        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
-        refetchType: "all",
-      });
+      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      const newIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const { sources, useFallback } = collectSegmentSourcesForCreate(
+        newIds,
+        event.itemId,
+      );
+      if (useFallback) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+        epochStore.bumpForDirections(rid);
+      } else {
+        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
+        bumpMapForRouteSources(rid, sid, sources);
+      }
       return;
+    }
 
-    case "SCHEDULE_ITEMS_REORDERED":
+    case "SCHEDULE_ITEMS_REORDERED": {
+      const oldIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),
         refetchType: "active",
       });
-      await queryClient.invalidateQueries({
-        queryKey: ["schedule-item-route", rid],
-        /** 구간 GET은 일정 목록 페치와 겹칠 수 있어 비활성 옵저버까지 재요청 */
-        refetchType: "all",
-      });
+      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      const newIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const { sources, useFallback } = collectSegmentSourcesForReorder(
+        oldIds,
+        newIds,
+        event.itemId,
+      );
+      if (useFallback) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+        epochStore.bumpForDirections(rid);
+      } else {
+        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
+        bumpMapForRouteSources(rid, sid, sources);
+      }
       return;
+    }
 
     case "SCHEDULE_ITEM_UPDATED":
       await queryClient.invalidateQueries({

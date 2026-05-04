@@ -40,7 +40,11 @@ export function parseRoomScheduleMessage(
     ) {
       return null;
     }
-    if (type === "SCHEDULE_ITEM_DELETED") {
+    if (
+      type === "SCHEDULE_ITEM_DELETED" ||
+      type === "SCHEDULE_ITEM_CREATED" ||
+      type === "SCHEDULE_ITEMS_REORDERED"
+    ) {
       if (
         typeof raw.itemId !== "number" ||
         !Number.isFinite(raw.itemId)
