@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
-import { useRoomPresenceStore } from "@/stores/room-presence-store";
 import { useSessionStore } from "@/stores/session-store";
 import { AddMemberPanel } from "./AddMemberPanel";
 import { MemberCard } from "./MemberCard";
@@ -50,14 +49,6 @@ export function RoomMembersSection() {
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
   const members = membersData?.members ?? [];
-
-  const onlineMap = useRoomPresenceStore((s) =>
-    currentRoomId ? s.onlineByRoom[currentRoomId] : undefined,
-  );
-
-  function connectionStatusFor(userId: number): "online" | "offline" {
-    return onlineMap?.[userId] ? "online" : "offline";
-  }
 
   const me = members.find((m) => m.userId === user?.id);
   const others = members.filter((m) => m.userId !== user?.id);
@@ -164,7 +155,7 @@ export function RoomMembersSection() {
                 profileImageUrl: me.profileImageUrl,
                 role: me.role,
                 isCurrentUser: true,
-                connectionStatus: connectionStatusFor(me.userId),
+                connectionStatus: me.isOnline ? "online" : "offline",
               }}
               isViewerHost={isHost}
               onKick={() => {}}
@@ -198,7 +189,7 @@ export function RoomMembersSection() {
                       profileImageUrl: member.profileImageUrl,
                       role: member.role,
                       isCurrentUser: false,
-                      connectionStatus: connectionStatusFor(member.userId),
+                      connectionStatus: member.isOnline ? "online" : "offline",
                     }}
                     isViewerHost={isHost}
                     onKick={() => {

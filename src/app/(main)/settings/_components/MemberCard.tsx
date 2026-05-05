@@ -12,7 +12,7 @@ export type MemberCardData = {
   profileImageUrl?: string | null;
   role: MemberRole;
   isCurrentUser?: boolean;
-  /** STOMP presence — 미지정 시 접속 상태 배지를 숨깁니다 */
+  /** GET /rooms/.../members 의 `isOnline` — 미지정 시 접속 상태 배지를 숨깁니다 */
   connectionStatus?: "online" | "offline";
 };
 

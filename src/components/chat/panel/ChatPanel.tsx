@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/contexts/ChatContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
-import { useRoomPresenceStore } from "@/stores/room-presence-store";
+import { useRoomMembers } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "../messages/ChatMessageList";
@@ -21,9 +21,9 @@ export function ChatPanel() {
   const isMinimized = chatState === "minimized";
   const roomId = useSessionStore((s) => s.currentRoomId);
   const sessionRoomTitle = useSessionStore((s) => s.currentRoomMeta?.title);
-  const onlineCount = useRoomPresenceStore((s) =>
-    roomId ? Object.keys(s.onlineByRoom[roomId] ?? {}).length : 0,
-  );
+  const { data: membersData } = useRoomMembers(roomId);
+  const onlineCount =
+    membersData?.members.filter((m) => m.isOnline).length ?? 0;
   const { messages, sendMessage } = useChatMessages(roomId);
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";

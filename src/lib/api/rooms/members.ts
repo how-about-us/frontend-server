@@ -11,7 +11,12 @@ function normalizeMemberListPayload(
     members: members.map((m) => {
       const picked = pickProfileImageUrl(m as unknown as Record<string, unknown>);
       const url = picked ?? m.profileImageUrl ?? null;
-      return { ...m, profileImageUrl: url } satisfies RoomMember;
+      const raw = m as RoomMember & { isOnline?: boolean };
+      return {
+        ...m,
+        profileImageUrl: url,
+        isOnline: Boolean(raw.isOnline),
+      } satisfies RoomMember;
     }),
   };
 }

@@ -69,6 +69,7 @@ export type RoomMember = {
   profileImageUrl: string | null;
   role: "HOST" | "MEMBER";
   joinedAt: string;
+  isOnline: boolean;
 };
 
 export type RoomMemberListResponse = {

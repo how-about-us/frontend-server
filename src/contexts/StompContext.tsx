@@ -20,7 +20,6 @@ import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import { useRoomPresenceStore } from "@/stores/room-presence-store";
 import { useSessionStore } from "@/stores/session-store";
 
 interface StompContextValue {
@@ -73,12 +72,8 @@ export function StompProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unsubscribeRoomTopics = useCallback(() => {
-    const rid = lastSubscribedRoomIdRef.current;
     detachRoomTopicsOnly();
-    if (rid) {
-      useRoomPresenceStore.getState().resetRoom(rid);
-      lastSubscribedRoomIdRef.current = null;
-    }
+    lastSubscribedRoomIdRef.current = null;
   }, [detachRoomTopicsOnly]);
 
   const handleForcedRoomExit = useCallback(
@@ -115,11 +110,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
-      const prevRoom = lastSubscribedRoomIdRef.current;
       detachRoomTopicsOnly();
-      if (prevRoom && prevRoom !== rid) {
-        useRoomPresenceStore.getState().resetRoom(prevRoom);
-      }
       forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
@@ -128,10 +119,6 @@ export function StompProvider({ children }: { children: ReactNode }) {
         { notifyForcedRoomExit },
       );
       lastSubscribedRoomIdRef.current = rid;
-      const uid = useSessionStore.getState().user?.id;
-      if (uid != null) {
-        useRoomPresenceStore.getState().setUserOnline(rid, uid);
-      }
     },
     [detachRoomTopicsOnly, notifyForcedRoomExit],
   );
@@ -146,9 +133,6 @@ export function StompProvider({ children }: { children: ReactNode }) {
         userRoomsQueueUnsubRef.current = null;
         clientRef.current.deactivate();
         clientRef.current = null;
-      }
-      if (!user) {
-        useRoomPresenceStore.getState().clearAll();
       }
       setContextValue({ client: null, connected: false });
       return;
@@ -173,6 +157,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
         subscribeToRoomTopics(client, rid);
         // 재연결 구간에 missed된 이벤트 보완
         void queryClientRef.current.invalidateQueries({
+          queryKey: ["room-members", rid],
+          refetchType: "active",
+        });
+        void queryClientRef.current.invalidateQueries({
           queryKey: roomSchedulesQueryKey(rid),
           refetchType: "active",
         });
@@ -188,20 +176,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
     };
 
     client.onDisconnect = () => {
-      const rid = currentRoomIdRef.current;
-      const uid = useSessionStore.getState().user?.id;
-      if (rid != null && uid != null) {
-        useRoomPresenceStore.getState().setUserOffline(rid, uid);
-      }
       setContextValue((prev) => ({ ...prev, connected: false }));
     };
 
     client.onStompError = () => {
-      const rid = currentRoomIdRef.current;
-      const uid = useSessionStore.getState().user?.id;
-      if (rid != null && uid != null) {
-        useRoomPresenceStore.getState().setUserOffline(rid, uid);
-      }
       setContextValue((prev) => ({ ...prev, connected: false }));
     };
 

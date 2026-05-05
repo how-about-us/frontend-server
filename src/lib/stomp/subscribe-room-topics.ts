@@ -50,9 +50,14 @@ export function subscribeRoomStompTopics(
   const presenceSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/presence`,
     (message) => {
-      const event = parseRoomPresenceMessage(message.body);
-      if (!event) return;
-      dispatchRoomPresence(subscribedRoomId, event);
+      void (async () => {
+        const event = parseRoomPresenceMessage(message.body);
+        if (!event) return;
+        await dispatchRoomPresence(
+          queryClientRef.current,
+          subscribedRoomId,
+        );
+      })();
     },
   );
 
