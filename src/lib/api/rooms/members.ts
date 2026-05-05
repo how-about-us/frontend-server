@@ -1,12 +1,30 @@
+import { pickProfileImageUrl } from "@/lib/api/profileImage";
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
-import type { RoomMemberListResponse } from "./types";
+import type { RoomMember, RoomMemberListResponse } from "./types";
+
+function normalizeMemberListPayload(
+  res: RoomMemberListResponse,
+): RoomMemberListResponse {
+  const members = res.members ?? [];
+  return {
+    ...res,
+    members: members.map((m) => {
+      const picked = pickProfileImageUrl(m as unknown as Record<string, unknown>);
+      const url = picked ?? m.profileImageUrl ?? null;
+      return { ...m, profileImageUrl: url } satisfies RoomMember;
+    }),
+  };
+}
 
 export async function getRoomMembers(
   roomId: string,
 ): Promise<RoomMemberListResponse> {
-  return requestJson(apiUrl(`/rooms/${roomId}/members`), undefined, {
-    errorMessage: "멤버 목록 조회 실패",
-  });
+  const res = await requestJson<RoomMemberListResponse>(
+    apiUrl(`/rooms/${roomId}/members`),
+    undefined,
+    { errorMessage: "멤버 목록 조회 실패" },
+  );
+  return normalizeMemberListPayload(res);
 }
 
 export async function transferHost(
