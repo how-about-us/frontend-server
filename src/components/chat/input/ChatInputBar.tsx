@@ -44,7 +44,9 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
   }
 
   function handleSend() {
-    const trimmed = message.trim();
+    // IME 조합 후 React state 반영 타이밍과 맞추려면 DOM 값이 더 정확할 수 있음
+    const raw = inputRef.current?.value ?? message;
+    const trimmed = raw.trim();
     if (!trimmed) return;
     onSend(trimmed);
     setMessage("");
@@ -52,10 +54,14 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key !== "Enter" || e.shiftKey) return;
+
+    // 한글 등 IME: Enter로 조합 확정 중일 때는 전송하지 않음 — 마지막 글자 중복 등 방지
+    const ne = e.nativeEvent;
+    if (ne.isComposing || ne.keyCode === 229 || e.key === "Process") return;
+
+    e.preventDefault();
+    handleSend();
   }
 
   return (
