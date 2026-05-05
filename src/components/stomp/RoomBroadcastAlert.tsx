@@ -169,25 +169,6 @@ export async function resolveActorNickname(
   return userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
 }
 
-/** 닉네임·프로필 이미지 — 브로드캐스트 payload가 비어도 멤버 목록으로 보강 */
-export async function resolveActorPresence(
-  queryClient: QueryClient,
-  roomId: string,
-  userId: number,
-): Promise<{ nickname: string; profileImageUrl: string | null }> {
-  const fallbackNick = userId > 0 ? `유저 #${userId}` : "알 수 없는 사용자";
-  const members = await fetchRoomMembersList(queryClient, roomId);
-  if (!members?.length) {
-    return { nickname: fallbackNick, profileImageUrl: null };
-  }
-  const row = members.find((m) => m.userId === userId);
-  const nick = row?.nickname?.trim();
-  return {
-    nickname: nick && nick.length > 0 ? nick : fallbackNick,
-    profileImageUrl: row?.profileImageUrl ?? null,
-  };
-}
-
 /**
  * payload에 닉네임/카테고리명이 없을 때 React Query 캐시·필요 시 GET으로 보강해 토스트 문구 생성.
  * CATEGORY_DELETED는 무효화 전 캐시에 남아 있던 이름을 우선 사용합니다.

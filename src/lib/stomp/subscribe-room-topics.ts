@@ -4,6 +4,8 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
+import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
+import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import { dispatchRoomPresenceToast } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
@@ -12,20 +14,33 @@ import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
 
 export type RoomTopicsUnsubscriber = () => void;
 
-/** 방 단위 presence·bookmarks·schedules + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 members·presence·bookmarks·schedules + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
   queryClientRef: MutableRefObject<QueryClient>,
 ): RoomTopicsUnsubscriber {
+  const membersSub = client.subscribe(
+    `/topic/rooms/${roomId}/members`,
+    (message) => {
+      void (async () => {
+        const event = parseRoomMemberMessage(message.body);
+        if (!event) return;
+        await dispatchRoomMemberEvent(
+          queryClientRef.current,
+          roomId,
+          event,
+        );
+      })();
+    },
+  );
+
   const presenceSub = client.subscribe(
     `/topic/rooms/${roomId}/presence`,
     (message) => {
-      void (async () => {
-        const event = parseRoomPresenceMessage(message.body);
-        if (!event) return;
-        await dispatchRoomPresenceToast(queryClientRef.current, roomId, event);
-      })();
+      const event = parseRoomPresenceMessage(message.body);
+      if (!event) return;
+      dispatchRoomPresenceToast(queryClientRef.current, roomId, event);
     },
   );
 
@@ -63,6 +78,7 @@ export function subscribeRoomStompTopics(
   });
 
   return () => {
+    membersSub.unsubscribe();
     presenceSub.unsubscribe();
     bookmarksSub.unsubscribe();
     schedulesSub.unsubscribe();
