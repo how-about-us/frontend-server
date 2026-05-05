@@ -9,9 +9,11 @@ import { useDeleteRoom } from "@/hooks/useRooms";
 type Props = {
   room: RoomListItem;
   onClose: () => void;
+  /** 삭제 API 성공 직후, `onClose` 호출 전에 실행 */
+  onDeleted?: () => void;
 };
 
-export function DeleteConfirmModal({ room, onClose }: Props) {
+export function DeleteConfirmModal({ room, onClose, onDeleted }: Props) {
   const { mutate: deleteRoom, isPending } = useDeleteRoom();
 
   useEffect(() => {
@@ -23,7 +25,12 @@ export function DeleteConfirmModal({ room, onClose }: Props) {
   }, [onClose]);
 
   function handleDelete() {
-    deleteRoom(room.id, { onSuccess: onClose });
+    deleteRoom(room.id, {
+      onSuccess: () => {
+        onDeleted?.();
+        onClose();
+      },
+    });
   }
 
   return (

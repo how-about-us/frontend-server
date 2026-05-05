@@ -11,7 +11,9 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import type { Client } from "@stomp/stompjs";
+import { toast } from "sonner";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
@@ -29,7 +31,10 @@ const StompContext = createContext<StompContextValue>({
   connected: false,
 });
 
+const FORCED_ROOM_EXIT_TOAST_MS = 4500;
+
 export function StompProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const queryClient = useQueryClient();
@@ -66,25 +71,47 @@ export function StompProvider({ children }: { children: ReactNode }) {
     }
   }, [detachRoomTopicsOnly]);
 
+  const handleForcedRoomExit = useCallback(
+    (reason: "kicked" | "room_deleted") => {
+      const message =
+        reason === "kicked"
+          ? "방장에 의해 강제 퇴장 당했습니다"
+          : "방장에 의해 방이 삭제되었습니다";
+      toast(message, { duration: FORCED_ROOM_EXIT_TOAST_MS });
+
+      unsubscribeRoomTopics();
+
+      const session = useSessionStore.getState();
+      session.clearCurrentRoomId();
+      session.clearCurrentRoomInviteCode();
+      session.clearCurrentRoomMeta();
+
+      router.replace("/home");
+    },
+    [router, unsubscribeRoomTopics],
+  );
+
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
+      const rid = roomId.trim();
       const prevRoom = lastSubscribedRoomIdRef.current;
       detachRoomTopicsOnly();
-      if (prevRoom && prevRoom !== roomId) {
+      if (prevRoom && prevRoom !== rid) {
         useRoomPresenceStore.getState().resetRoom(prevRoom);
       }
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
-        roomId,
+        rid,
         queryClientRef,
+        { onForcedRoomExit: handleForcedRoomExit },
       );
-      lastSubscribedRoomIdRef.current = roomId;
+      lastSubscribedRoomIdRef.current = rid;
       const uid = useSessionStore.getState().user?.id;
       if (uid != null) {
-        useRoomPresenceStore.getState().setUserOnline(roomId, uid);
+        useRoomPresenceStore.getState().setUserOnline(rid, uid);
       }
     },
-    [detachRoomTopicsOnly],
+    [detachRoomTopicsOnly, handleForcedRoomExit],
   );
 
   /* STOMP 활성/비활성 시 컨텍스트와 동기화 — 동기 setState 패턴 허용 */

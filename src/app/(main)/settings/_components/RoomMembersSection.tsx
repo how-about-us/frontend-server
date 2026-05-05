@@ -2,16 +2,31 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
+import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
+import type { RoomMember } from "@/lib/api/rooms";
+import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
 import { useRoomPresenceStore } from "@/stores/room-presence-store";
 import { useSessionStore } from "@/stores/session-store";
-import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
-import { MemberCard } from "./MemberCard";
 import { AddMemberPanel } from "./AddMemberPanel";
+import { MemberCard } from "./MemberCard";
+
+/** 방장 나가기 시 위임 대상: 멤버 목록에서 나를 제외한 첫 멤버(목록상 바로 아래에 가까운 순) */
+function pickNextHost(
+  members: RoomMember[],
+  hostUserId: number,
+): { userId: number; nickname: string } | null {
+  const others = members.filter((m) => m.userId !== hostUserId);
+  if (others.length === 0) return null;
+  const m = others[0];
+  return { userId: m.userId, nickname: m.nickname };
+}
 
 export function RoomMembersSection() {
   const router = useRouter();
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
@@ -20,6 +35,7 @@ export function RoomMembersSection() {
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
   const clearCurrentRoomInviteCode = useSessionStore((s) => s.clearCurrentRoomInviteCode);
+  const clearCurrentRoomMeta = useSessionStore((s) => s.clearCurrentRoomMeta);
   const inviteCode = useSessionStore((s) => s.currentRoomInviteCode);
 
   const { data: roomsData } = useRoomsList();
@@ -27,8 +43,9 @@ export function RoomMembersSection() {
   const isHost = currentRoom?.role === "HOST";
 
   const { mutate: kick, isPending: isKicking } = useKickMember();
-  const { mutate: leave, isPending: isLeaving } = useLeaveRoom();
-  const { mutate: transfer, isPending: isTransferring } = useTransferHost();
+  const { mutateAsync: leaveAsync, isPending: isLeaving } = useLeaveRoom();
+  const { mutate: transfer, mutateAsync: transferAsync, isPending: isTransferring } =
+    useTransferHost();
 
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
@@ -44,20 +61,50 @@ export function RoomMembersSection() {
 
   const me = members.find((m) => m.userId === user?.id);
   const others = members.filter((m) => m.userId !== user?.id);
+  const nextHost =
+    user && isHost && !isMembersLoading ? pickNextHost(members, user.id) : null;
+  const hostCannotLeaveAlone = Boolean(
+    isHost && user && !isMembersLoading && others.length === 0,
+  );
 
-  function handleLeaveRoom() {
-    if (!currentRoomId) return;
-    leave(currentRoomId, {
-      onSuccess: () => {
-        clearCurrentRoomId();
-        clearCurrentRoomInviteCode();
-        router.replace("/home");
-      },
-    });
+  function finishLeaveSession() {
+    clearCurrentRoomId();
+    clearCurrentRoomInviteCode();
+    clearCurrentRoomMeta();
+    router.replace("/home");
+  }
+
+  async function handleLeaveRoom() {
+    if (!currentRoomId || !user) return;
+    if (isHost && hostCannotLeaveAlone) {
+      toast.error(
+        "다른 멤버가 없어 방장을 넘길 수 없습니다. 여행 삭제를 이용해 주세요.",
+      );
+      return;
+    }
+    try {
+      if (isHost) {
+        const picked = pickNextHost(members, user.id);
+        if (picked == null) {
+          toast.error(
+            "방장을 넘길 멤버가 없습니다. 여행 삭제를 이용해 주세요.",
+          );
+          return;
+        }
+        await transferAsync({
+          roomId: currentRoomId,
+          targetUserId: picked.userId,
+        });
+      }
+      await leaveAsync(currentRoomId);
+      finishLeaveSession();
+    } catch {
+      // useHttpError / 글로벌 처리 또는 서버 메시지
+    }
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="relative flex flex-col gap-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
@@ -236,14 +283,26 @@ export function RoomMembersSection() {
       )}
 
       {/* 하단 버튼 */}
-      <div className="flex gap-2 border-t border-gray-border pt-4">
+      <div className="flex flex-col gap-2 border-t border-gray-border pt-4">
         {!showLeaveConfirm ? (
-          <button
-            onClick={() => setShowLeaveConfirm(true)}
-            className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red"
-          >
-            방 나가기
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {isHost && currentRoom && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red transition-colors hover:bg-brand-red/5"
+              >
+                여행 삭제
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowLeaveConfirm(true)}
+              className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red"
+            >
+              방 나가기
+            </button>
+          </div>
         ) : (
           <div className="rounded-xl border border-brand-red/30 bg-brand-red/5 p-4">
             <p className="mb-3 text-sm font-medium text-gray-800">
@@ -251,30 +310,55 @@ export function RoomMembersSection() {
             </p>
             <p className="mb-4 text-xs leading-5 text-dark-gray">
               방을 나가면 현재 여행 플랜에 접근할 수 없게 됩니다.
-              {isHost && (
+              {isHost && !hostCannotLeaveAlone && nextHost && (
                 <span className="mt-1 block font-medium text-brand-red">
-                  HOST가 나가면 다른 멤버에게 권한이 이전됩니다.
+                  방장 권한이{" "}
+                  <span className="font-semibold">{nextHost.nickname}</span>님에게
+                  넘어간 뒤 나가요.
+                </span>
+              )}
+              {isHost && hostCannotLeaveAlone && (
+                <span className="mt-1 block font-medium text-brand-red">
+                  다른 멤버가 없으면 나갈 수 없습니다. 여행 삭제를 이용해 주세요.
                 </span>
               )}
             </p>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setShowLeaveConfirm(false)}
-                className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700"
+                disabled={isLeaving || isTransferring}
+                className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700 disabled:opacity-50"
               >
                 취소
               </button>
               <button
-                onClick={handleLeaveRoom}
-                disabled={isLeaving}
+                type="button"
+                onClick={() => {
+                  void handleLeaveRoom();
+                }}
+                disabled={
+                  isLeaving ||
+                  isTransferring ||
+                  hostCannotLeaveAlone ||
+                  (isHost && isMembersLoading)
+                }
                 className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {isLeaving ? "처리 중…" : "나가기"}
+                {isLeaving || isTransferring ? "처리 중…" : "나가기"}
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {showDeleteConfirm && currentRoom && (
+        <DeleteConfirmModal
+          room={currentRoom}
+          onClose={() => setShowDeleteConfirm(false)}
+          onDeleted={finishLeaveSession}
+        />
+      )}
     </div>
   );
 }
