@@ -22,9 +22,7 @@ export function JoinRequestsPoller() {
 
   const isOnSettings = pathname.startsWith("/settings");
 
-  const { data: requestsData } = useJoinRequests(
-    hostRoom && !isOnSettings ? hostRoom.id : null,
-  );
+  const { data: requestsData } = useJoinRequests(hostRoom?.id ?? null);
 
   useEffect(() => {
     if (isOnSettings) return;

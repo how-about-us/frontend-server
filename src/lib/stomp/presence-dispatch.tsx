@@ -14,13 +14,7 @@ import {
   resolvePresenceProfileImageUrl,
 } from "./room-member-display";
 
-function invalidateJoinRequests(queryClient: QueryClient, roomId: string): void {
-  void queryClient.invalidateQueries({
-    queryKey: ["join-requests", roomId],
-  });
-}
-
-/** presence STOMP 한 건 — 온·오프라인·토스트 + join-requests 무효화(가입 요청은 아직 폴링·추후 전용 브로드캐스트 예정) */
+/** presence STOMP 한 건 — 온·오프라인·토스트 */
 export function dispatchRoomPresenceToast(
   queryClient: QueryClient,
   subscribedRoomId: string,
@@ -53,7 +47,6 @@ export function dispatchRoomPresenceToast(
       message: `${displayName}님이 온라인 상태입니다.`,
       icon,
     });
-    invalidateJoinRequests(queryClient, subscribedRoomId);
     return;
   }
 
@@ -65,6 +58,5 @@ export function dispatchRoomPresenceToast(
       message: `${displayName}님은 오프라인 상태입니다`,
       icon,
     });
-    invalidateJoinRequests(queryClient, subscribedRoomId);
   }
 }

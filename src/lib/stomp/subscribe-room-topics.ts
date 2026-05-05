@@ -12,17 +12,18 @@ import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
 import { parseRoomLifecycleMessage } from "@/lib/stomp/room-lifecycle-events";
 import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
 import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
-import { parseUserRoomActionMessage } from "@/lib/stomp/user-room-action-events";
+import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 
 export type RoomTopicsUnsubscriber = () => void;
 
-export type ForcedRoomExitReason = "kicked" | "room_deleted";
-
 export type SubscribeRoomStompTopicsOptions = {
-  onForcedRoomExit: (reason: ForcedRoomExitReason) => void;
+  notifyForcedRoomExit: (
+    reason: ForcedRoomExitReason,
+    eventRoomId: string,
+  ) => void;
 };
 
-/** 방 단위 members·presence·bookmarks·schedules·lifecycle + 개인 큐(`/user/queue/errors`, `/user/queue/rooms`) 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 members·presence·bookmarks·schedules·lifecycle + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
@@ -30,17 +31,6 @@ export function subscribeRoomStompTopics(
   options: SubscribeRoomStompTopicsOptions,
 ): RoomTopicsUnsubscriber {
   const subscribedRoomId = roomId.trim();
-  let exitHandled = false;
-
-  const tryForcedExit = (
-    reason: ForcedRoomExitReason,
-    eventRoomId: string,
-  ): void => {
-    if (eventRoomId.trim() !== subscribedRoomId) return;
-    if (exitHandled) return;
-    exitHandled = true;
-    options.onForcedRoomExit(reason);
-  };
 
   const membersSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/members`,
@@ -104,18 +94,10 @@ export function subscribeRoomStompTopics(
     (message) => {
       const payload = parseRoomLifecycleMessage(message.body);
       if (!payload) return;
-      tryForcedExit("room_deleted", payload.roomId);
+      if (payload.roomId.trim() !== subscribedRoomId) return;
+      options.notifyForcedRoomExit("room_deleted", payload.roomId);
     },
   );
-
-  const userRoomsSub = client.subscribe(`/user/queue/rooms`, (message) => {
-    const payload = parseUserRoomActionMessage(message.body);
-    if (!payload) return;
-    tryForcedExit(
-      payload.actionType === "KICKED" ? "kicked" : "room_deleted",
-      payload.roomId,
-    );
-  });
 
   return () => {
     membersSub.unsubscribe();
@@ -124,6 +106,5 @@ export function subscribeRoomStompTopics(
     schedulesSub.unsubscribe();
     userErrorsSub.unsubscribe();
     lifecycleSub.unsubscribe();
-    userRoomsSub.unsubscribe();
   };
 }

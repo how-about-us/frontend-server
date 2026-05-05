@@ -259,7 +259,6 @@ export function useJoinRequests(roomId: string | null) {
     queryKey: ["join-requests", roomId],
     queryFn: () => getJoinRequests(roomId!),
     enabled: !!roomId,
-    refetchInterval: 8000,
   });
 }
 

@@ -11,12 +11,14 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { Client } from "@stomp/stompjs";
 import { toast } from "sonner";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
+import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
+import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { useRoomPresenceStore } from "@/stores/room-presence-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -33,8 +35,14 @@ const StompContext = createContext<StompContextValue>({
 
 const FORCED_ROOM_EXIT_TOAST_MS = 4500;
 
+/** 승인 대기·초대 코드 처리 구간은 HTTP만 사용하고 WebSocket은 열지 않음 */
+function pathSuspendsStomp(pathname: string): boolean {
+  return pathname === "/waiting" || pathname.startsWith("/join/");
+}
+
 export function StompProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useSessionStore((s) => s.user);
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const queryClient = useQueryClient();
@@ -51,7 +59,9 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const clientRef = useRef<Client | null>(null);
   const roomTopicsUnsubRef = useRef<(() => void) | null>(null);
+  const userRoomsQueueUnsubRef = useRef<(() => void) | null>(null);
   const lastSubscribedRoomIdRef = useRef<string | null>(null);
+  const forcedExitConsumedRef = useRef(false);
   const [contextValue, setContextValue] = useState<StompContextValue>({
     client: null,
     connected: false,
@@ -91,6 +101,17 @@ export function StompProvider({ children }: { children: ReactNode }) {
     [router, unsubscribeRoomTopics],
   );
 
+  const notifyForcedRoomExit = useCallback(
+    (reason: ForcedRoomExitReason, eventRoomId: string) => {
+      const cur = currentRoomIdRef.current?.trim() ?? null;
+      if (!cur || eventRoomId.trim() !== cur) return;
+      if (forcedExitConsumedRef.current) return;
+      forcedExitConsumedRef.current = true;
+      handleForcedRoomExit(reason);
+    },
+    [handleForcedRoomExit],
+  );
+
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
@@ -99,11 +120,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
       if (prevRoom && prevRoom !== rid) {
         useRoomPresenceStore.getState().resetRoom(prevRoom);
       }
+      forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
         rid,
         queryClientRef,
-        { onForcedRoomExit: handleForcedRoomExit },
+        { notifyForcedRoomExit },
       );
       lastSubscribedRoomIdRef.current = rid;
       const uid = useSessionStore.getState().user?.id;
@@ -111,19 +133,23 @@ export function StompProvider({ children }: { children: ReactNode }) {
         useRoomPresenceStore.getState().setUserOnline(rid, uid);
       }
     },
-    [detachRoomTopicsOnly, handleForcedRoomExit],
+    [detachRoomTopicsOnly, notifyForcedRoomExit],
   );
 
   /* STOMP 활성/비활성 시 컨텍스트와 동기화 — 동기 setState 패턴 허용 */
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!user) {
+    if (!user || pathSuspendsStomp(pathname)) {
       if (clientRef.current) {
         unsubscribeRoomTopics();
+        userRoomsQueueUnsubRef.current?.();
+        userRoomsQueueUnsubRef.current = null;
         clientRef.current.deactivate();
         clientRef.current = null;
       }
-      useRoomPresenceStore.getState().clearAll();
+      if (!user) {
+        useRoomPresenceStore.getState().clearAll();
+      }
       setContextValue({ client: null, connected: false });
       return;
     }
@@ -134,6 +160,14 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
     client.onConnect = () => {
       setContextValue({ client, connected: true });
+      forcedExitConsumedRef.current = false;
+      userRoomsQueueUnsubRef.current?.();
+      userRoomsQueueUnsubRef.current = subscribeUserRoomsQueue(client, {
+        queryClientRef,
+        getCurrentRoomId: () => currentRoomIdRef.current?.trim() ?? null,
+        notifyForcedRoomExit,
+      });
+
       const rid = currentRoomIdRef.current;
       if (rid) {
         subscribeToRoomTopics(client, rid);
@@ -175,10 +209,18 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
     return () => {
       unsubscribeRoomTopics();
+      userRoomsQueueUnsubRef.current?.();
+      userRoomsQueueUnsubRef.current = null;
       client.deactivate();
       clientRef.current = null;
     };
-  }, [subscribeToRoomTopics, unsubscribeRoomTopics, user]);
+  }, [
+    notifyForcedRoomExit,
+    pathname,
+    subscribeToRoomTopics,
+    unsubscribeRoomTopics,
+    user,
+  ]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
