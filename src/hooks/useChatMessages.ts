@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { StompSubscription } from "@stomp/stompjs";
 import type { ChatMessage, ServerChatMessage } from "@/types/chat";
 import { useStompContext } from "@/contexts/StompContext";
+import { setRoomMemberChatListener } from "@/lib/stomp/members-dispatch";
 import { useSessionStore } from "@/stores/session-store";
 import { getRoomMembers, getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
@@ -70,11 +71,13 @@ export function useChatMessages(roomId: string | null) {
       }
 
       if (messagesResult.status === "fulfilled") {
-        setMessages(
-          messagesResult.value.map((m) =>
-            toUiMessage(m, userId, memberMapRef.current),
-          ),
+        const fromRest = messagesResult.value.map((m) =>
+          toUiMessage(m, userId, memberMapRef.current),
         );
+        setMessages((prev) => {
+          const systemDuringFetch = prev.filter((m) => m.type === "system");
+          return [...fromRest, ...systemDuringFetch];
+        });
       }
     });
 
@@ -82,6 +85,28 @@ export function useChatMessages(roomId: string | null) {
       cancelled = true;
     };
   }, [roomId, userId]);
+
+  /** members 토픽 브로드캐스트 → 채팅 시스템 메시지 (subscribeRoomStompTopics 단일 구독 경로) */
+  useEffect(() => {
+    if (!roomId) return;
+
+    setRoomMemberChatListener(roomId, (line) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: line.id,
+          type: "system",
+          text: line.text,
+          time: formatTime(line.createdAt) || undefined,
+          sender: `system:${line.id}`,
+        },
+      ]);
+    });
+
+    return () => {
+      setRoomMemberChatListener(roomId, null);
+    };
+  }, [roomId]);
 
   // WebSocket 구독 — 새 메시지 실시간 수신 (REST 실패와 무관하게 동작)
   useEffect(() => {

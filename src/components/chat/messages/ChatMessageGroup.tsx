@@ -67,8 +67,11 @@ export function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
 
 export function SystemMessage({ message }: { message: ChatMessage }) {
   return (
-    <div className="flex justify-center">
-      <div className="my-3 rounded-xl bg-bubble-gray px-4 py-1 text-sm leading-relaxed text-muted-brown">
+    <div className="flex justify-center px-2">
+      <div
+        className="my-1.5 max-w-[min(100%,20rem)] rounded-full bg-black/45 px-4 py-2 text-center text-sm leading-relaxed text-white"
+        style={{ whiteSpace: "pre-line" }}
+      >
         {message.text}
       </div>
     </div>

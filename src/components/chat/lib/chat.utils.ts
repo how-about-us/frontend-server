@@ -7,6 +7,15 @@ export function groupConsecutiveMessages(
   let current: ChatMessage[] = [];
 
   for (const msg of messages) {
+    if (msg.type === "system") {
+      if (current.length) {
+        groups.push(current);
+        current = [];
+      }
+      groups.push([msg]);
+      continue;
+    }
+
     const prev = current[current.length - 1];
     if (prev && prev.type === msg.type && prev.sender === msg.sender) {
       current.push(msg);

@@ -6,7 +6,7 @@ import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
-import { dispatchRoomPresenceToast } from "@/lib/stomp/presence-dispatch";
+import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
 import { parseRoomLifecycleMessage } from "@/lib/stomp/room-lifecycle-events";
@@ -52,7 +52,7 @@ export function subscribeRoomStompTopics(
     (message) => {
       const event = parseRoomPresenceMessage(message.body);
       if (!event) return;
-      dispatchRoomPresenceToast(queryClientRef.current, subscribedRoomId, event);
+      dispatchRoomPresence(subscribedRoomId, event);
     },
   );
 

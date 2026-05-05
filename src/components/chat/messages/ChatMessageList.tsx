@@ -24,7 +24,7 @@ export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
         {groups.map((group, i) => {
           const type = group[0].type;
           if (type === "system")
-            return <SystemMessage key={i} message={group[0]} />;
+            return <SystemMessage key={group[0].id} message={group[0]} />;
           if (type === "mine")
             return <MyMessageGroup key={i} messages={group} />;
           if (type === "ai")
