@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 import { useSessionStore } from "@/stores/session-store";
+import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
 
 const SIDEBAR_ITEMS = [
   { key: "search", href: "/search", icon: "/icons/search.svg" },
@@ -12,14 +13,7 @@ const SIDEBAR_ITEMS = [
   { key: "settings", href: "/settings", icon: "/icons/user-cog.svg" },
 ] as const;
 
-const getChatNum = (chatNum: number) => {
-  if (chatNum === 0) return;
-  else if (chatNum > 99) return "99+";
-  else return chatNum;
-};
-
 function SideBar() {
-  const chatNum = 100;
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
   const pendingJoinRequestsCount = useSessionStore(
@@ -36,7 +30,7 @@ function SideBar() {
       {/* chat - 최상단, brand-red rounded-r 사각형 */}
       <button
         onClick={openChat}
-        className={`flex w-20 items-center justify-center rounded-br-2xl py-2 transition hover:opacity-80 ${
+        className={`relative flex w-20 items-center justify-center rounded-br-2xl py-2 transition hover:opacity-80 ${
           isChatActive ? "bg-brand-red/80" : "bg-brand-red"
         }`}
         aria-label="sidebar-chat"
@@ -47,9 +41,7 @@ function SideBar() {
           className="h-9 w-9 brightness-0 invert"
         />
 
-        <span className="absolute text-white text-xs font-bold">
-          {getChatNum(chatNum)}
-        </span>
+        <SidebarChatUnreadBadge />
       </button>
 
       <div className="flex flex-col items-center gap-2 px-1">

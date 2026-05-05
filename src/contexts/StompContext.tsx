@@ -21,15 +21,24 @@ import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue"
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { useSessionStore } from "@/stores/session-store";
+import { useChatUnreadStore } from "@/stores/chat-unread-store";
+import type { ServerChatMessage } from "@/types/chat";
 
-interface StompContextValue {
+interface StompConnectionState {
   client: Client | null;
   connected: boolean;
+}
+
+interface StompContextValue extends StompConnectionState {
+  setRoomChatMessageHandler: (
+    fn: ((msg: ServerChatMessage) => void) | null,
+  ) => void;
 }
 
 const StompContext = createContext<StompContextValue>({
   client: null,
   connected: false,
+  setRoomChatMessageHandler: () => {},
 });
 
 const FORCED_ROOM_EXIT_TOAST_MS = 4500;
@@ -61,7 +70,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const userRoomsQueueUnsubRef = useRef<(() => void) | null>(null);
   const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
-  const [contextValue, setContextValue] = useState<StompContextValue>({
+  const [connectionState, setConnectionState] = useState<StompConnectionState>({
     client: null,
     connected: false,
   });
@@ -74,6 +83,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const unsubscribeRoomTopics = useCallback(() => {
     detachRoomTopicsOnly();
     lastSubscribedRoomIdRef.current = null;
+    useChatUnreadStore.getState().resetChatCnt();
   }, [detachRoomTopicsOnly]);
 
   const handleForcedRoomExit = useCallback(
@@ -107,20 +117,36 @@ export function StompProvider({ children }: { children: ReactNode }) {
     [handleForcedRoomExit],
   );
 
+  const roomChatMessageHandlerRef = useRef<
+    ((msg: ServerChatMessage) => void) | null
+  >(null);
+
+  const onRoomChatMessage = useCallback((msg: ServerChatMessage) => {
+    roomChatMessageHandlerRef.current?.(msg);
+  }, []);
+
+  const setRoomChatMessageHandler = useCallback(
+    (fn: ((msg: ServerChatMessage) => void) | null) => {
+      roomChatMessageHandlerRef.current = fn;
+    },
+    [],
+  );
+
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
+      useChatUnreadStore.getState().resetChatCnt();
       detachRoomTopicsOnly();
       forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
         client,
         rid,
         queryClientRef,
-        { notifyForcedRoomExit },
+        { notifyForcedRoomExit, onRoomChatMessage },
       );
       lastSubscribedRoomIdRef.current = rid;
     },
-    [detachRoomTopicsOnly, notifyForcedRoomExit],
+    [detachRoomTopicsOnly, notifyForcedRoomExit, onRoomChatMessage],
   );
 
   /* STOMP 활성/비활성 시 컨텍스트와 동기화 — 동기 setState 패턴 허용 */
@@ -134,16 +160,16 @@ export function StompProvider({ children }: { children: ReactNode }) {
         clientRef.current.deactivate();
         clientRef.current = null;
       }
-      setContextValue({ client: null, connected: false });
+      setConnectionState({ client: null, connected: false });
       return;
     }
 
     const client = createStompClient(getStompBrokerURL());
     clientRef.current = client;
-    setContextValue({ client, connected: false });
+    setConnectionState({ client, connected: false });
 
     client.onConnect = () => {
-      setContextValue({ client, connected: true });
+      setConnectionState({ client, connected: true });
       forcedExitConsumedRef.current = false;
       userRoomsQueueUnsubRef.current?.();
       userRoomsQueueUnsubRef.current = subscribeUserRoomsQueue(client, {
@@ -176,11 +202,11 @@ export function StompProvider({ children }: { children: ReactNode }) {
     };
 
     client.onDisconnect = () => {
-      setContextValue((prev) => ({ ...prev, connected: false }));
+      setConnectionState((prev) => ({ ...prev, connected: false }));
     };
 
     client.onStompError = () => {
-      setContextValue((prev) => ({ ...prev, connected: false }));
+      setConnectionState((prev) => ({ ...prev, connected: false }));
     };
 
     client.activate();
@@ -213,7 +239,13 @@ export function StompProvider({ children }: { children: ReactNode }) {
   }, [currentRoomId, subscribeToRoomTopics, unsubscribeRoomTopics]);
 
   return (
-    <StompContext.Provider value={contextValue}>
+    <StompContext.Provider
+      value={{
+        client: connectionState.client,
+        connected: connectionState.connected,
+        setRoomChatMessageHandler,
+      }}
+    >
       {children}
     </StompContext.Provider>
   );

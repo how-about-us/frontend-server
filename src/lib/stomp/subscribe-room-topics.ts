@@ -2,6 +2,8 @@ import type { Client } from "@stomp/stompjs";
 import type { MutableRefObject } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 
+import type { ServerChatMessage } from "@/types/chat";
+import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
@@ -21,9 +23,10 @@ export type SubscribeRoomStompTopicsOptions = {
     reason: ForcedRoomExitReason,
     eventRoomId: string,
   ) => void;
+  onRoomChatMessage?: (msg: ServerChatMessage) => void;
 };
 
-/** 방 단위 members·presence·bookmarks·schedules·lifecycle + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 members·presence·bookmarks·schedules·lifecycle + messages + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
@@ -104,6 +107,19 @@ export function subscribeRoomStompTopics(
     },
   );
 
+  const messagesSub = client.subscribe(
+    `/topic/rooms/${subscribedRoomId}/messages`,
+    (message) => {
+      try {
+        const msg = JSON.parse(message.body) as ServerChatMessage;
+        useChatUnreadStore.getState().incrementFromMessage(msg);
+        options.onRoomChatMessage?.(msg);
+      } catch {
+        // malformed payload — ignore
+      }
+    },
+  );
+
   return () => {
     membersSub.unsubscribe();
     presenceSub.unsubscribe();
@@ -111,5 +127,6 @@ export function subscribeRoomStompTopics(
     schedulesSub.unsubscribe();
     userErrorsSub.unsubscribe();
     lifecycleSub.unsubscribe();
+    messagesSub.unsubscribe();
   };
 }

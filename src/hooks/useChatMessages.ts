@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { StompSubscription } from "@stomp/stompjs";
 import type {
   ChatMessage,
   ServerChatMessage,
@@ -86,11 +85,10 @@ function toUiMessage(
 }
 
 export function useChatMessages(roomId: string | null) {
-  const { client, connected } = useStompContext();
+  const { client, connected, setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const memberMapRef = useRef<MemberMap>(new Map());
-  const subscriptionRef = useRef<StompSubscription | null>(null);
 
   // 방 입장 시 멤버 목록 + 이전 메시지 내역 로드 (각각 독립적으로 처리)
   useEffect(() => {
@@ -134,32 +132,21 @@ export function useChatMessages(roomId: string | null) {
     };
   }, [roomId, userId]);
 
-  // WebSocket 구독 — 새 메시지 실시간 수신 (REST 실패와 무관하게 동작)
   useEffect(() => {
-    if (!client || !connected || !roomId) return;
+    if (!roomId) {
+      setRoomChatMessageHandler(null);
+      return;
+    }
 
-    subscriptionRef.current?.unsubscribe();
-
-    subscriptionRef.current = client.subscribe(
-      `/topic/rooms/${roomId}/messages`,
-      (stompMsg) => {
-        try {
-          const msg: ServerChatMessage = JSON.parse(stompMsg.body);
-          setMessages((prev) => [
-            ...prev,
-            toUiMessage(msg, userId, memberMapRef.current),
-          ]);
-        } catch {
-          // malformed message — ignore
-        }
-      },
-    );
-
-    return () => {
-      subscriptionRef.current?.unsubscribe();
-      subscriptionRef.current = null;
+    const handler = (msg: ServerChatMessage) => {
+      setMessages((prev) => [
+        ...prev,
+        toUiMessage(msg, userId, memberMapRef.current),
+      ]);
     };
-  }, [client, connected, roomId, userId]);
+    setRoomChatMessageHandler(handler);
+    return () => setRoomChatMessageHandler(null);
+  }, [roomId, userId, setRoomChatMessageHandler]);
 
   const sendMessage = useCallback(
     (content: string) => {

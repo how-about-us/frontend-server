@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
+import { useChatUnreadStore } from "@/stores/chat-unread-store";
+
 export type ChatState = "closed" | "minimized" | "maximized";
 
 type ChatContextType = {
@@ -25,9 +27,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     <ChatContext.Provider
       value={{
         chatState,
-        openChat: () => setChatState("maximized"),
-        minimizeChat: () => setChatState("minimized"),
-        closeChat: () => setChatState("closed"),
+        openChat: () => {
+          useChatUnreadStore.getState().resetChatCnt();
+          useChatUnreadStore.getState().setPanelOpen(true);
+          setChatState("maximized");
+        },
+        minimizeChat: () => {
+          useChatUnreadStore.getState().setPanelOpen(true);
+          setChatState("minimized");
+        },
+        closeChat: () => {
+          useChatUnreadStore.getState().setPanelOpen(false);
+          setChatState("closed");
+        },
       }}
     >
       {children}
