@@ -1,5 +1,7 @@
 // ─── Request / Response types ───────────────────────────────────────────────
 
+import type { ServerChatMessageType } from "@/types/chat";
+
 export type RoomCreateRequest = {
   title: string;
   destination: string;
@@ -89,10 +91,11 @@ export type RoomMessage = {
   id: string;
   roomId: string;
   senderId: number;
-  messageType: "CHAT" | "AI";
+  messageType: ServerChatMessageType;
   content: string;
   metadata?: Record<string, string>;
   createdAt: string;
+  clientMessageId?: string;
 };
 
 // ─── Bookmark categories ───────────────────────────────────────────────────

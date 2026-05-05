@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StompSubscription } from "@stomp/stompjs";
-import type { ChatMessage, ServerChatMessage } from "@/types/chat";
+import type {
+  ChatMessage,
+  ServerChatMessage,
+  ServerChatMessageType,
+} from "@/types/chat";
 import { useStompContext } from "@/contexts/StompContext";
 import { setRoomMemberChatListener } from "@/lib/stomp/members-dispatch";
 import { useSessionStore } from "@/stores/session-store";
@@ -21,19 +25,64 @@ function formatTime(isoString: string): string {
   }
 }
 
+function normalizeMessageKind(raw: ServerChatMessageType | unknown): string {
+  if (raw == null) return "CHAT";
+  if (typeof raw !== "string") return "CHAT";
+  const t = raw.trim();
+  if (!t) return "CHAT";
+  return t.toUpperCase();
+}
+
 function toUiMessage(
   msg: ServerChatMessage,
   currentUserId: number | undefined,
   memberMap: MemberMap,
 ): ChatMessage {
-  const member = memberMap.get(msg.senderId);
+  const kind = normalizeMessageKind(msg.messageType);
+  const time = formatTime(msg.createdAt) || undefined;
+
+  if (kind === "SYSTEM" || kind === "PLACE_SHARE") {
+    return {
+      id: msg.id,
+      type: "system",
+      text: msg.content,
+      time,
+      sender: `system:${msg.id}`,
+    };
+  }
+
+  if (
+    kind === "AI_REQUEST" ||
+    kind === "AI_RESPONSE" ||
+    kind === "AI"
+  ) {
+    return {
+      id: msg.id,
+      type: "ai",
+      text: msg.content,
+      time,
+      sender: "WOORI",
+    };
+  }
+
+  if (kind === "CHAT") {
+    const member = memberMap.get(msg.senderId);
+    return {
+      id: msg.id,
+      type: msg.senderId === currentUserId ? "mine" : "other",
+      sender: member?.nickname,
+      avatar: member?.profileImageUrl ?? undefined,
+      text: msg.content,
+      time,
+    };
+  }
+
   return {
     id: msg.id,
-    type: msg.senderId === currentUserId ? "mine" : "other",
-    sender: member?.nickname,
-    avatar: member?.profileImageUrl ?? undefined,
+    type: "system",
     text: msg.content,
-    time: formatTime(msg.createdAt) || undefined,
+    time,
+    sender: `system:${msg.id}`,
   };
 }
 
