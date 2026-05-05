@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { StompProvider } from "@/contexts/StompContext";
+import { syncSessionUserFromServer } from "@/lib/auth/session-sync";
 import { createQueryClient } from "@/lib/query/queryClient";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -20,9 +21,12 @@ import { useSessionStore } from "@/stores/session-store";
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
 
-  /** `skipHydration` 세션 스토어 — 클라 마운트 후 한 번만 localStorage 병합 */
+  /** `skipHydration` 세션 스토어 — 클라 마운트 후 localStorage 병합 후 서버 `users/me`와 동기화 */
   useEffect(() => {
-    void useSessionStore.persist?.rehydrate?.();
+    void (async () => {
+      await useSessionStore.persist?.rehydrate?.();
+      await syncSessionUserFromServer();
+    })();
   }, []);
 
   useEffect(() => {

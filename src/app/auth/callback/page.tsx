@@ -3,8 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 
-import { exchangeGoogleCode, getMe } from "@/lib/api/auth";
+import { exchangeGoogleCode } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { fetchSessionUserWithRetry } from "@/lib/auth/session-sync";
 import { useSessionStore } from "@/stores/session-store";
 
 function AuthCallbackContent() {
@@ -34,12 +35,14 @@ function AuthCallbackContent() {
           const secure = location.protocol === "https:" ? "; Secure" : "";
           document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 
-          try {
-            const me = await getMe();
-            setUser(me);
-          } catch {
-            // 사용자 정보 조회 실패해도 로그인은 계속 진행
+          const me = await fetchSessionUserWithRetry();
+          if (!me) {
+            document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax${secure}`;
+            useSessionStore.getState().clearUser();
+            router.replace("/login?error=OAuthCallback");
+            return;
           }
+          setUser(me);
 
           const pendingInviteCode = sessionStorage.getItem("pendingInviteCode");
           if (pendingInviteCode) {
