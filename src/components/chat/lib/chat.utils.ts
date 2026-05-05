@@ -17,7 +17,16 @@ export function groupConsecutiveMessages(
     }
 
     const prev = current[current.length - 1];
-    if (prev && prev.type === msg.type && prev.sender === msg.sender) {
+    const sameSenderGroup =
+      prev &&
+      prev.type === msg.type &&
+      ((msg.type === "mine" || msg.type === "other") &&
+      prev.senderUserId != null &&
+      msg.senderUserId != null
+        ? prev.senderUserId === msg.senderUserId
+        : prev.sender === msg.sender);
+
+    if (sameSenderGroup) {
       current.push(msg);
     } else {
       if (current.length) groups.push(current);

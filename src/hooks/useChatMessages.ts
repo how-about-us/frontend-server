@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import type {
   ChatMessage,
   ServerChatMessage,
@@ -6,8 +11,9 @@ import type {
 } from "@/types/chat";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
-import { getRoomMembers, getRoomMessages } from "@/lib/api/rooms";
+import { getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
+import { useRoomMembers } from "@/hooks/useRooms";
 
 type MemberMap = Map<number, Pick<RoomMember, "nickname" | "profileImageUrl">>;
 
@@ -69,6 +75,7 @@ function toUiMessage(
       id: msg.id,
       type: msg.senderId === currentUserId ? "mine" : "other",
       sender: member?.nickname,
+      senderUserId: msg.senderId,
       avatar: member?.profileImageUrl ?? undefined,
       text: msg.content,
       time,
@@ -87,44 +94,45 @@ function toUiMessage(
 export function useChatMessages(roomId: string | null) {
   const { client, connected, setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const memberMapRef = useRef<MemberMap>(new Map());
+  const { data: membersData } = useRoomMembers(roomId);
+  const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
 
-  // 방 입장 시 멤버 목록 + 이전 메시지 내역 로드 (각각 독립적으로 처리)
+  const memberMap = useMemo(() => {
+    const members = membersData?.members;
+    if (!members?.length) {
+      return new Map<number, Pick<RoomMember, "nickname" | "profileImageUrl">>();
+    }
+    return new Map(
+      members.map((m) => [
+        m.userId,
+        { nickname: m.nickname, profileImageUrl: m.profileImageUrl },
+      ]),
+    );
+  }, [membersData?.members]);
+
+  const messages = useMemo(
+    () => rawMessages.map((m) => toUiMessage(m, userId, memberMap)),
+    [rawMessages, userId, memberMap],
+  );
+
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId) {
+      setRawMessages([]);
+      return;
+    }
 
-    setMessages([]);
-    memberMapRef.current = new Map();
-
+    setRawMessages([]);
     let cancelled = false;
 
-    // 멤버 목록과 메시지 내역을 독립적으로 로드 — 하나가 실패해도 다른 하나에 영향 없음
-    Promise.allSettled([
-      getRoomMembers(roomId),
-      getRoomMessages(roomId),
-    ]).then(([membersResult, messagesResult]) => {
+    getRoomMessages(roomId).then((history) => {
       if (cancelled) return;
-
-      if (membersResult.status === "fulfilled") {
-        const map: MemberMap = new Map(
-          membersResult.value.members.map((m) => [
-            m.userId,
-            { nickname: m.nickname, profileImageUrl: m.profileImageUrl },
-          ]),
-        );
-        memberMapRef.current = map;
-      }
-
-      if (messagesResult.status === "fulfilled") {
-        const fromRest = messagesResult.value.map((m) =>
-          toUiMessage(m, userId, memberMapRef.current),
-        );
-        setMessages((prev) => {
-          const systemDuringFetch = prev.filter((m) => m.type === "system");
-          return [...fromRest, ...systemDuringFetch];
+      setRawMessages((prev) => {
+        const systemDuringFetch = prev.filter((m) => {
+          const k = normalizeMessageKind(m.messageType);
+          return k === "SYSTEM" || k === "PLACE_SHARE";
         });
-      }
+        return [...history, ...systemDuringFetch];
+      });
     });
 
     return () => {
@@ -139,14 +147,11 @@ export function useChatMessages(roomId: string | null) {
     }
 
     const handler = (msg: ServerChatMessage) => {
-      setMessages((prev) => [
-        ...prev,
-        toUiMessage(msg, userId, memberMapRef.current),
-      ]);
+      setRawMessages((prev) => [...prev, msg]);
     };
     setRoomChatMessageHandler(handler);
     return () => setRoomChatMessageHandler(null);
-  }, [roomId, userId, setRoomChatMessageHandler]);
+  }, [roomId, setRoomChatMessageHandler]);
 
   const sendMessage = useCallback(
     (content: string) => {

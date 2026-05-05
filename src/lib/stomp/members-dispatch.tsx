@@ -18,7 +18,11 @@ async function invalidateMembershipRelatedQueries(
   ]);
 }
 
-/** members STOMP 한 건 — 멤버·방 목록 쿼리만 갱신 (채팅 시스템 메시지는 `/messages` 스트림만 사용) */
+/**
+ * members STOMP 한 건 — `room-members` 무효화로 GET /rooms/{roomId}/members 가 다시 채워지고,
+ * 채팅 UI는 그 쿼리 캐시의 userId와 메시지 senderId만 매핑해 발신자를 표시합니다.
+ * (시스템/AI 말풍선은 messageType 분기 유지)
+ */
 export async function dispatchRoomMemberEvent(
   queryClient: QueryClient,
   subscribedRoomId: string,

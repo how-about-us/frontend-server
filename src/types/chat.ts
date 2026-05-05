@@ -8,6 +8,8 @@ export interface ChatMessage {
   time?: string;
   /** CHAT 타입일 때만 아바타·발신자 표시에 사용 */
   avatar?: string;
+  /** CHAT(mine/other) 연속 말풍선 그룹핑 — 닉네임 캐시 갱신과 무관하게 senderId 기준 */
+  senderUserId?: number;
 }
 
 /** `/topic/rooms/{roomId}/messages` · GET /messages 응답 — 일반 말풍선은 CHAT 만 */
