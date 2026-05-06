@@ -1,9 +1,8 @@
 "use client";
 
-import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
-import { ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
-import { useCallback, useId, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { useCallback, useId, useState } from "react";
 import type { ReactNode } from "react";
 
 export type PlanDaySectionProps = {
@@ -17,52 +16,12 @@ export type PlanDaySectionProps = {
    */
   itineraryScheduleId?: number | null;
   children?: ReactNode;
-  /** 호출되면 헤더 우측에 메뉴(⋯)가 표시되고, 메뉴에서 일차 삭제 가능 */
-  onRequestDeleteDay?: () => void;
+  /**
+   * 일차(schedule) 단위 삭제 — schedule-item(장소) 삭제와 구분됩니다.
+   * 지정 시 헤더 우측에 휴지통 아이콘이 표시됩니다.
+   */
+  onRequestDeleteSchedule?: () => void;
 };
-
-function PlanDaySectionMenu({ onDelete }: { onDelete: () => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useOnClickOutside(ref, () => setOpen(false));
-
-  return (
-    <div ref={ref} className="relative shrink-0 self-center">
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-        className="rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray/60"
-      >
-        <MoreHorizontal className="h-5 w-5" aria-hidden />
-        <span className="sr-only">일차 메뉴</span>
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-20 mt-1 min-w-[128px] overflow-hidden rounded-xl border border-gray-border bg-white py-1 shadow-lg"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-              setOpen(false);
-            }}
-            className="w-full px-3 py-2 text-left text-sm text-gray-900 transition-colors hover:bg-bubble-gray/60"
-          >
-            일차 삭제
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function PlanDaySection({
   title,
@@ -70,7 +29,7 @@ export function PlanDaySection({
   defaultExpanded = true,
   itineraryScheduleId,
   children,
-  onRequestDeleteDay,
+  onRequestDeleteSchedule,
 }: PlanDaySectionProps) {
   const panelId = useId();
 
@@ -145,8 +104,18 @@ export function PlanDaySection({
             )}
           </span>
         </button>
-        {onRequestDeleteDay ? (
-          <PlanDaySectionMenu onDelete={onRequestDeleteDay} />
+        {onRequestDeleteSchedule ? (
+          <button
+            type="button"
+            aria-label="일차 삭제"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestDeleteSchedule();
+            }}
+            className="shrink-0 self-center rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray/60"
+          >
+            <Trash2 className="h-5 w-5" aria-hidden />
+          </button>
         ) : null}
       </div>
       <div

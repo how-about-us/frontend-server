@@ -10,6 +10,7 @@ import {
   createBookmarkCategory,
   createRoomBookmark,
   createRoom,
+  createRoomSchedule,
   createScheduleItem,
   deleteScheduleItem,
   reorderScheduleItem,
@@ -32,6 +33,7 @@ import {
   regenerateInviteCode,
   rejectJoinRequest,
   type RoomCreateRequest,
+  type RoomScheduleCreateRequest,
   type ReorderScheduleItemRequest,
   type RoomScheduleItemUpdateRequest,
   type RoomUpdateRequest,
@@ -39,11 +41,15 @@ import {
   transferHost,
   updateBookmarkCategory,
   updateRoom,
+  type RoomDetail,
+  type RoomListResponse,
+  type RoomSchedule,
 } from "@/lib/api/rooms";
 import {
   fetchScheduleItemsAsPlanPlaces,
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
+import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
@@ -122,6 +128,34 @@ export function useDeleteRoomSchedule() {
       roomId: string;
       scheduleId: number;
     }) => deleteRoomSchedule(roomId, scheduleId),
+  });
+}
+
+/**
+ * 일차(schedule) 생성 — 액터는 POST 응답으로 목록 캐시를 즉시 머지하고,
+ * 다른 클라이언트는 STOMP `SCHEDULE_CREATED`로 갱신합니다.
+ */
+export function useCreateRoomSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      body,
+    }: {
+      roomId: string;
+      body: RoomScheduleCreateRequest;
+    }) => createRoomSchedule(roomId, body),
+    onSuccess: (created, { roomId }) => {
+      const id = roomId.trim();
+      if (!id.length) return;
+      queryClient.setQueryData<RoomSchedule[]>(
+        roomSchedulesQueryKey(id),
+        (prev) => {
+          const list = prev ? [...prev, created] : [created];
+          return sortRoomSchedules(list);
+        },
+      );
+    },
   });
 }
 
@@ -212,8 +246,35 @@ export function useUpdateRoom() {
       roomId: string;
       data: RoomUpdateRequest;
     }) => updateRoom(roomId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
+    onSuccess: (updated, { roomId }) => {
+      queryClient.setQueryData<RoomListResponse>(ROOMS_QUERY_KEY, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          rooms: prev.rooms.map((r) =>
+            r.id === roomId ?
+              {
+                ...r,
+                title: updated.title,
+                destination: updated.destination,
+                startDate: updated.startDate,
+                endDate: updated.endDate,
+              }
+            : r,
+          ),
+        };
+      });
+      queryClient.setQueryData<RoomDetail>(["room-detail", roomId], (prev) =>
+        prev && prev.id === roomId ?
+          {
+            ...prev,
+            title: updated.title,
+            destination: updated.destination,
+            startDate: updated.startDate,
+            endDate: updated.endDate,
+          }
+        : prev,
+      );
     },
   });
 }

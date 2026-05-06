@@ -9,6 +9,8 @@ import {
   invalidateScheduleItemRouteForWholeSchedule,
   readOrderedItemIdsFromScheduleItemsCache,
 } from "@/lib/plan/scheduleStompRouteScope";
+import type { RoomSchedule } from "@/lib/api/rooms";
+import type { PlanPlace } from "@/lib/plan/types";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
@@ -78,8 +80,9 @@ function bumpMapForRouteSources(
 
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
- * — `room-schedules`: 일차(스케줄) 목록
- * — `schedule-items`: 일차별 장소 목록
+ * — `room-schedules`: 일차(스케줄) 목록(타 클라이언트·STOMP 유실 시에만 refetch; 액터는 POST로 이미 머지된 경우 생략)
+ * — 일정 생성 시 `schedule-items`: 빈 일차는 `[]`로 시드해 불필요한 GET 방지
+ * — `schedule-items`: 그 외 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
  * — 맵 polyline: 구간별 에폭(`bumpSegments`); 폴백 시 방 단위(`bumpForDirections`)
  */
@@ -93,12 +96,23 @@ export async function dispatchRoomScheduleEvent(
   const epochStore = usePlanMapDirectionsEpochStore.getState();
 
   switch (event.type) {
-    case "SCHEDULE_CREATED":
-      await queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(rid),
-        refetchType: "active",
-      });
+    case "SCHEDULE_CREATED": {
+      queryClient.setQueryData<PlanPlace[]>(
+        scheduleItemsQueryKey(rid, sid),
+        [],
+      );
+      const existing = queryClient.getQueryData<RoomSchedule[]>(
+        roomSchedulesQueryKey(rid),
+      );
+      const alreadyHas = existing?.some((s) => s.scheduleId === sid) ?? false;
+      if (!alreadyHas) {
+        await queryClient.invalidateQueries({
+          queryKey: roomSchedulesQueryKey(rid),
+          refetchType: "active",
+        });
+      }
       return;
+    }
 
     case "SCHEDULE_DELETED":
       removeRouteQueriesForSchedule(queryClient, rid, sid);

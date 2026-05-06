@@ -1,46 +1,42 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 
-import { useDeleteRoomSchedule, useRoomSchedules } from "@/hooks/useRooms";
+import {
+  useCreateRoomSchedule,
+  useDeleteRoomSchedule,
+  useRoomSchedules,
+  useRoomsList,
+} from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import {
-  syncRoomSchedulesToDateRange,
-  type RoomSchedule,
-} from "@/lib/api/rooms";
-import {
   mergeSchedulesWithPlaces,
-  rangeFromSchedules,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
-import { formatDateYmd, startOfLocalDay } from "@/lib/plan/tripRange";
+import {
+  nextUnusedTripSchedulePayload,
+  tripYmdBoundsFromRoomSources,
+} from "@/lib/plan/tripRange";
 
 import { PlanChatSectionWidth } from "../chat/PlanChatSectionWidth";
-import { PlanTripRangeToolbar } from "../trip-range/PlanTripRangeToolbar";
 import { PlanDaySection } from "./PlanDaySection";
 import { PlanItinerary } from "./PlanItinerary";
 
-function defaultTripRange(): { start: Date; end: Date } {
-  const t = startOfLocalDay(new Date());
-  const e = new Date(t);
-  e.setDate(e.getDate() + 2);
-  return { start: t, end: e };
-}
-
-const INITIAL_RANGE = defaultTripRange();
-
 export function PlanPageView() {
   const storedId = useSessionStore((s) => s.currentRoomId);
+  const roomMeta = useSessionStore((s) => s.currentRoomMeta);
   const roomId =
     typeof storedId === "string" && storedId.trim().length > 0
       ? storedId.trim()
       : "";
 
   const roomIdForQueries = roomId.length > 0 ? roomId : null;
+
+  const { data: roomsData } = useRoomsList();
 
   const {
     data: schedules,
@@ -49,36 +45,29 @@ export function PlanPageView() {
   } = useRoomSchedules(roomIdForQueries);
   const { mutate: deleteSchedule, isPending: isDeletingSchedule } =
     useDeleteRoomSchedule();
-
-  const { mutateAsync: syncSchedulesToRange } = useMutation({
-    mutationFn: async ({
-      start,
-      end,
-      currentSchedules,
-    }: {
-      start: Date;
-      end: Date;
-      currentSchedules: RoomSchedule[];
-    }) => {
-      const s = startOfLocalDay(start);
-      const e = startOfLocalDay(end);
-      await syncRoomSchedulesToDateRange(
-        roomId,
-        formatDateYmd(s),
-        formatDateYmd(e),
-        currentSchedules,
-      );
-    },
-  });
-
-  /** 서버 일정이 없을 때만 기간 선택 UI용 (적용 시 POST로 일정 생성) */
-  const [draftRange, setDraftRange] = useState(INITIAL_RANGE);
+  const { mutateAsync: createScheduleAsync, isPending: isCreatingSchedule } =
+    useCreateRoomSchedule();
 
   const scheduleList = useMemo(() => schedules ?? [], [schedules]);
   const sortedSchedules = useMemo(
     () => sortRoomSchedules(scheduleList),
     [scheduleList],
   );
+
+  const tripRange = useMemo(
+    () => tripYmdBoundsFromRoomSources(roomId, roomsData?.rooms, roomMeta),
+    [roomId, roomsData?.rooms, roomMeta],
+  );
+
+  const nextScheduleBody = useMemo(() => {
+    const { startYmd, endYmd } = tripRange;
+    if (!startYmd || !endYmd) return null;
+    return nextUnusedTripSchedulePayload(
+      startYmd,
+      endYmd,
+      sortedSchedules.map((s) => s.date),
+    );
+  }, [tripRange, sortedSchedules]);
 
   const scheduleExpansionSyncKey = useMemo(
     () => sortedSchedules.map((s) => s.scheduleId).join(","),
@@ -96,24 +85,20 @@ export function PlanPageView() {
     usePlanItineraryExpandedStore.getState().syncScheduleExpansionState(ids);
   }, [scheduleExpansionSyncKey]);
 
-  const scheduleDerivedRange = useMemo(() => {
-    if (!scheduleList.length) return null;
-    return rangeFromSchedules(scheduleList);
-  }, [scheduleList]);
-
-  const toolbarRangeStart = scheduleDerivedRange?.start ?? draftRange.start;
-  const toolbarRangeEnd = scheduleDerivedRange?.end ?? draftRange.end;
-
   const planDays = useMemo(
     () =>
       scheduleList.length > 0 ? mergeSchedulesWithPlaces(scheduleList) : [],
     [scheduleList],
   );
 
+  const lastDayIndex =
+    sortedSchedules.length > 0 ? sortedSchedules.length - 1 : -1;
+
   const handleDeleteScheduleDay = useCallback(
     (dayIndex: number) => {
       if (!roomId.length) return;
       if (isDeletingSchedule) return;
+      if (dayIndex !== lastDayIndex) return;
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
       deleteSchedule(
@@ -125,43 +110,72 @@ export function PlanPageView() {
         },
       );
     },
-    [deleteSchedule, isDeletingSchedule, roomId, sortedSchedules],
+    [
+      deleteSchedule,
+      isDeletingSchedule,
+      lastDayIndex,
+      roomId,
+      sortedSchedules,
+    ],
   );
+
+  const handleAddSchedule = useCallback(() => {
+    if (!roomId.length) return;
+    if (isCreatingSchedule) return;
+    const { startYmd, endYmd } = tripRange;
+    if (!startYmd || !endYmd) {
+      toast.error("여행 기간을 불러오지 못했어요.");
+      return;
+    }
+    const body = nextScheduleBody;
+    if (!body) {
+      toast.error(
+        "여행 기간 안에 더 추가할 일차가 없어요. 설정에서 여행 기간을 늘린 뒤 다시 시도해 주세요.",
+      );
+      return;
+    }
+    void createScheduleAsync({ roomId, body }).catch(() => {
+      toast.error("일차를 추가하지 못했어요.");
+    });
+  }, [
+    createScheduleAsync,
+    isCreatingSchedule,
+    nextScheduleBody,
+    roomId,
+    tripRange.endYmd,
+    tripRange.startYmd,
+  ]);
 
   const showInitialLoading = Boolean(
     roomId.length > 0 && isPending && schedules === undefined,
   );
 
-  const handleRangeApply = useCallback(
-    async (start: Date, end: Date) => {
-      if (!roomId.length) return;
-      const s = startOfLocalDay(start);
-      const e = startOfLocalDay(end);
-      try {
-        await syncSchedulesToRange({
-          start: s,
-          end: e,
-          currentSchedules: scheduleList,
-        });
-        setDraftRange({ start: s, end: e });
-      } catch {
-        toast.error("여행 기간을 서버에 반영하지 못했어요.");
-        throw new Error("sync schedules failed");
-      }
-    },
-    [roomId, scheduleList, syncSchedulesToRange],
-  );
+  const hasTripBounds = Boolean(tripRange.startYmd && tripRange.endYmd);
+  const canAddSchedule =
+    roomId.length > 0 &&
+    hasTripBounds &&
+    Boolean(nextScheduleBody) &&
+    !isCreatingSchedule &&
+    !showInitialLoading;
 
-  const rangeToolbarProps = {
-    rangeStart: toolbarRangeStart,
-    rangeEnd: toolbarRangeEnd,
-    onRangeApply: handleRangeApply,
-  };
+  const scheduleToolbar = (
+    <div className="flex justify-end">
+      <button
+        type="button"
+        onClick={handleAddSchedule}
+        disabled={!canAddSchedule}
+        aria-label="일차 추가"
+        className="inline-flex items-center justify-center rounded-xl border border-gray-border bg-white p-2.5 text-gray-900 shadow-sm transition-colors hover:bg-bubble-gray/60 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Plus className="h-5 w-5" aria-hidden />
+      </button>
+    </div>
+  );
 
   if (showInitialLoading) {
     return (
       <div className="space-y-3 pl-6 pr-6">
-        <PlanTripRangeToolbar {...rangeToolbarProps} />
+        {scheduleToolbar}
         <PlanChatSectionWidth />
         <p className="py-8 text-center text-sm text-dark-gray">
           일정을 불러오는 중…
@@ -172,7 +186,7 @@ export function PlanPageView() {
 
   return (
     <div className="space-y-3 pl-6 pr-6">
-      <PlanTripRangeToolbar {...rangeToolbarProps} />
+      {scheduleToolbar}
 
       <PlanChatSectionWidth />
 
@@ -184,8 +198,8 @@ export function PlanPageView() {
 
       {!isError && planDays.length === 0 ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
-          아직 생성된 일정이 없어요. 위에서 여행 기간을 선택한 뒤 적용하면
-          서버에 일정이 만들어집니다.
+          아직 생성된 일정이 없어요. 우측 상단의 더하기(+) 버튼으로 일차를
+          추가해 보세요.
         </p>
       ) : null}
 
@@ -195,10 +209,10 @@ export function PlanPageView() {
           title={day.dayLabel}
           subtitle={day.dateLabel}
           itineraryScheduleId={sortedSchedules[dayIndex]?.scheduleId ?? null}
-          onRequestDeleteDay={
-            planDays.length > 1 && sortedSchedules[dayIndex]
-              ? () => handleDeleteScheduleDay(dayIndex)
-              : undefined
+          onRequestDeleteSchedule={
+            sortedSchedules[dayIndex] && dayIndex === lastDayIndex ?
+              () => handleDeleteScheduleDay(dayIndex)
+            : undefined
           }
         >
           {sortedSchedules[dayIndex] ? (

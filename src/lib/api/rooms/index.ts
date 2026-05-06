@@ -66,7 +66,6 @@ export {
   deleteRoomSchedule,
   getRoomSchedules,
   seedRoomSchedules,
-  syncRoomSchedulesToDateRange,
 } from "./schedules";
 
 export {

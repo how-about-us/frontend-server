@@ -44,35 +44,6 @@ export async function deleteRoomSchedule(
   );
 }
 
-/** 선택한 기간(포함)과 서버 일정을 비교해 범위 밖은 삭제, 없는 날은 생성합니다. */
-export async function syncRoomSchedulesToDateRange(
-  roomId: string,
-  startYmd: string,
-  endYmd: string,
-  currentSchedules: RoomSchedule[],
-): Promise<void> {
-  const desiredDays = eachInclusiveTripDay(startYmd, endYmd);
-  const desiredDateSet = new Set(desiredDays.map((d) => d.date));
-
-  const toDelete = currentSchedules.filter((s) => !desiredDateSet.has(s.date));
-  await Promise.all(
-    toDelete.map((s) => deleteRoomSchedule(roomId, s.scheduleId)),
-  );
-
-  const survivingDates = new Set(
-    currentSchedules
-      .filter((s) => desiredDateSet.has(s.date))
-      .map((s) => s.date),
-  );
-
-  const toCreate = desiredDays.filter(({ date }) => !survivingDates.has(date));
-  await Promise.all(
-    toCreate.map(({ date, dayNumber }) =>
-      createRoomSchedule(roomId, { dayNumber, date }),
-    ),
-  );
-}
-
 /** 방 기간(포함)마다 `POST /rooms/{roomId}/schedules`를 호출해 서버 일정을 초기화합니다. */
 export async function seedRoomSchedules(
   roomId: string,
