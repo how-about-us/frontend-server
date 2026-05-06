@@ -1,13 +1,6 @@
 import { create } from "zustand";
 import type { ServerChatMessage } from "@/types/chat";
-
-function normalizeMessageKind(raw: unknown): string {
-  if (raw == null) return "CHAT";
-  if (typeof raw !== "string") return "CHAT";
-  const t = raw.trim();
-  if (!t) return "CHAT";
-  return t.toUpperCase();
-}
+import { normalizeMessageKind } from "@/lib/chat/messageKind";
 
 interface ChatUnreadStore {
   chatCnt: number;

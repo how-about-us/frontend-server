@@ -17,9 +17,9 @@ export interface ChatMessage {
   sender?: string;
   text: string;
   time?: string;
-  /** CHAT 타입일 때만 아바타·발신자 표시에 사용 */
+  /** CHAT · 장소 공유 카드에서 아바타·발신자 표시에 사용 */
   avatar?: string;
-  /** CHAT(mine/other) 연속 말풍선 그룹핑 — 닉네임 캐시 갱신과 무관하게 senderId 기준 */
+  /** CHAT(mine/other) 그룹핑 · 장소 공유 좌우 정렬 — senderId 기준 */
   senderUserId?: number;
   /** PLACE_SHARE 타입일 때만 사용 — OG 카드 렌더 및 클릭 시 지도/디테일 패널 연동 */
   place?: PlaceShareData;

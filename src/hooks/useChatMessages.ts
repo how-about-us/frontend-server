@@ -1,14 +1,11 @@
+import { useEffect, useState, useMemo } from "react";
+import type { ChatMessage, PlaceShareData, ServerChatMessage } from "@/types/chat";
+import { pickProfileImageUrl } from "@/lib/api/profileImage";
+import { normalizeMessageKind } from "@/lib/chat/messageKind";
 import {
-  useEffect,
-  useState,
-  useMemo,
-} from "react";
-import type {
-  ChatMessage,
-  PlaceShareData,
-  ServerChatMessage,
-  ServerChatMessageType,
-} from "@/types/chat";
+  normalizeServerChatMessage,
+  parseFiniteNumber,
+} from "@/lib/chat/normalizeServerChatMessage";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
 import { getRoomMessages } from "@/lib/api/rooms";
@@ -28,14 +25,6 @@ function formatTime(isoString: string): string {
   } catch {
     return "";
   }
-}
-
-function normalizeMessageKind(raw: ServerChatMessageType | unknown): string {
-  if (raw == null) return "CHAT";
-  if (typeof raw !== "string") return "CHAT";
-  const t = raw.trim();
-  if (!t) return "CHAT";
-  return t.toUpperCase();
 }
 
 /** Record<string,string> 기반 metadata 를 PlaceShareData 로 안전 파싱 */
@@ -72,13 +61,32 @@ function toUiMessage(
 
   if (kind === "PLACE_SHARE") {
     const place = parsePlaceShareMetadata(msg.metadata);
+    const senderUserId = parseFiniteNumber(msg.senderId) ?? msg.senderId;
+    const member = memberMap.get(senderUserId);
+    const meta = msg.metadata;
+    const metaNick =
+      typeof meta?.nickname === "string"
+        ? meta.nickname.trim()
+        : typeof meta?.senderNickname === "string"
+          ? meta.senderNickname.trim()
+          : "";
+    const metaAvatar =
+      meta != null
+        ? pickProfileImageUrl(meta as unknown as Record<string, unknown>)
+        : null;
+    const displayNick =
+      member?.nickname?.trim() ||
+      (metaNick.length > 0 ? metaNick : undefined);
+
     if (place) {
       return {
         id: msg.id,
         type: "place",
         text: msg.content || "장소 공유",
         time,
-        sender: `place:${msg.id}`,
+        sender: displayNick,
+        senderUserId,
+        avatar: member?.profileImageUrl ?? metaAvatar ?? undefined,
         place,
       };
     }
@@ -112,13 +120,33 @@ function toUiMessage(
   }
 
   if (kind === "CHAT") {
-    const member = memberMap.get(msg.senderId);
+    const senderUserId = parseFiniteNumber(msg.senderId) ?? msg.senderId;
+    const member = memberMap.get(senderUserId);
+    const meta = msg.metadata;
+    const metaNick =
+      typeof meta?.nickname === "string"
+        ? meta.nickname.trim()
+        : typeof meta?.senderNickname === "string"
+          ? meta.senderNickname.trim()
+          : "";
+    const metaAvatar =
+      meta != null
+        ? pickProfileImageUrl(meta as unknown as Record<string, unknown>)
+        : null;
+
+    const uid = parseFiniteNumber(currentUserId);
+    const isMine = uid !== undefined && senderUserId === uid;
+
+    const displayNick =
+      member?.nickname?.trim() ||
+      (metaNick.length > 0 ? metaNick : undefined);
+
     return {
       id: msg.id,
-      type: msg.senderId === currentUserId ? "mine" : "other",
-      sender: member?.nickname,
-      senderUserId: msg.senderId,
-      avatar: member?.profileImageUrl ?? undefined,
+      type: isMine ? "mine" : "other",
+      sender: displayNick,
+      senderUserId,
+      avatar: member?.profileImageUrl ?? metaAvatar ?? undefined,
       text: msg.content,
       time,
     };
@@ -143,13 +171,19 @@ export function useChatMessages(roomId: string | null) {
   const memberMap = useMemo(() => {
     const members = membersData?.members;
     if (!members?.length) {
-      return new Map<number, Pick<RoomMember, "nickname" | "profileImageUrl">>();
+      return new Map<
+        number,
+        Pick<RoomMember, "nickname" | "profileImageUrl">
+      >();
     }
     return new Map(
-      members.map((m) => [
-        m.userId,
-        { nickname: m.nickname, profileImageUrl: m.profileImageUrl },
-      ]),
+      members.map((m) => {
+        const uid = parseFiniteNumber(m.userId) ?? m.userId;
+        return [
+          uid,
+          { nickname: m.nickname, profileImageUrl: m.profileImageUrl },
+        ] as const;
+      }),
     );
   }, [membersData?.members]);
 
@@ -169,12 +203,15 @@ export function useChatMessages(roomId: string | null) {
 
     getRoomMessages(roomId).then((history) => {
       if (cancelled) return;
+      const normalizedHistory = history.map(
+        (row) => normalizeServerChatMessage(row) ?? row,
+      );
       setRawMessages((prev) => {
         const systemDuringFetch = prev.filter((m) => {
           const k = normalizeMessageKind(m.messageType);
           return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
         });
-        return [...history, ...systemDuringFetch];
+        return [...normalizedHistory, ...systemDuringFetch];
       });
     });
 

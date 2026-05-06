@@ -2,32 +2,156 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import type {
+  RoomListResponse,
+  RoomMember,
+  RoomMemberListResponse,
+} from "@/lib/api/rooms";
 import { ROOMS_QUERY_KEY } from "@/hooks/useRooms";
+import { useSessionStore } from "@/stores/session-store";
 
 import type { RoomMemberPayload } from "./member-events";
 
-async function invalidateMembershipRelatedQueries(
+function patchRoomsRoleForHostDelegation(
   queryClient: QueryClient,
   roomId: string,
-): Promise<void> {
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: ["room-members", roomId],
-    }),
-    queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY }),
-  ]);
+  previousHostUserId: number,
+  newHostUserId: number,
+): void {
+  const me = useSessionStore.getState().user?.id;
+  if (me == null) return;
+
+  queryClient.setQueryData<RoomListResponse>(ROOMS_QUERY_KEY, (prev) => {
+    if (!prev?.rooms?.length) return prev;
+    return {
+      ...prev,
+      rooms: prev.rooms.map((r) => {
+        if (r.id !== roomId) return r;
+        if (me === previousHostUserId) return { ...r, role: "MEMBER" };
+        if (me === newHostUserId) return { ...r, role: "HOST" };
+        return r;
+      }),
+    };
+  });
 }
 
 /**
- * members STOMP 한 건 — `room-members` 무효화로 GET /rooms/{roomId}/members 가 다시 채워지고,
- * 채팅 UI는 그 쿼리 캐시의 userId와 메시지 senderId만 매핑해 발신자를 표시합니다.
- * (시스템/AI 말풍선은 messageType 분기 유지)
+ * members STOMP 한 건 — `metadata`만으로 `room-members`·방 목록(role) 캐시를 직접 갱신합니다.
+ * 채팅 UI는 room-members 캐시의 userId와 메시지 senderId 매핑으로 발신자를 표시합니다.
  */
-export async function dispatchRoomMemberEvent(
+export function dispatchRoomMemberEvent(
   queryClient: QueryClient,
   subscribedRoomId: string,
   event: RoomMemberPayload,
-): Promise<void> {
+): void {
   const rid = String(event.roomId ?? "").trim() || subscribedRoomId;
-  await invalidateMembershipRelatedQueries(queryClient, rid);
+  if (!rid) return;
+
+  switch (event.type) {
+    case "MEMBER_JOINED": {
+      const d = event.detail;
+      if (!d) return;
+
+      queryClient.setQueryData<RoomMemberListResponse>(
+        ["room-members", rid],
+        (prev) => {
+          const members = prev?.members ?? [];
+          const idx = members.findIndex((m) => m.userId === d.userId);
+          const joinedAt =
+            event.createdAt.trim().length > 0
+              ? event.createdAt
+              : new Date().toISOString();
+
+          if (idx >= 0) {
+            const next = [...members];
+            const cur = next[idx]!;
+            next[idx] = {
+              ...cur,
+              nickname: d.nickname,
+              profileImageUrl: d.profileImageUrl,
+            };
+            return prev ? { ...prev, members: next } : { members: next };
+          }
+
+          const newMember: RoomMember = {
+            userId: d.userId,
+            nickname: d.nickname,
+            profileImageUrl: d.profileImageUrl,
+            role: "MEMBER",
+            joinedAt,
+            isOnline: true,
+          };
+          return {
+            members: [...members, newMember],
+          };
+        },
+      );
+      break;
+    }
+
+    case "MEMBER_LEFT":
+    case "MEMBER_KICKED": {
+      const d = event.detail;
+      if (!d) return;
+
+      queryClient.setQueryData<RoomMemberListResponse>(
+        ["room-members", rid],
+        (prev) => {
+          if (!prev?.members?.length) return prev;
+          return {
+            ...prev,
+            members: prev.members.filter((m) => m.userId !== d.userId),
+          };
+        },
+      );
+      break;
+    }
+
+    case "HOST_DELEGATED": {
+      const d = event.detail;
+      if (!d) return;
+
+      queryClient.setQueryData<RoomMemberListResponse>(
+        ["room-members", rid],
+        (prev) => {
+          if (!prev?.members?.length) return prev;
+          const members = prev.members.map((m) => {
+            if (m.userId === d.previousHostUserId) {
+              return {
+                ...m,
+                role: "MEMBER" as const,
+                nickname:
+                  d.previousHostNickname.trim().length > 0
+                    ? d.previousHostNickname
+                    : m.nickname,
+              };
+            }
+            if (m.userId === d.newHostUserId) {
+              return {
+                ...m,
+                role: "HOST" as const,
+                nickname:
+                  d.newHostNickname.trim().length > 0
+                    ? d.newHostNickname
+                    : m.nickname,
+              };
+            }
+            return m;
+          });
+          return { ...prev, members };
+        },
+      );
+
+      patchRoomsRoleForHostDelegation(
+        queryClient,
+        rid,
+        d.previousHostUserId,
+        d.newHostUserId,
+      );
+      break;
+    }
+
+    default:
+      break;
+  }
 }

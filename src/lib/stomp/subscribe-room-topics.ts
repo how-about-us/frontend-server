@@ -3,6 +3,7 @@ import type { MutableRefObject } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { ServerChatMessage } from "@/types/chat";
+import { normalizeServerChatMessage } from "@/lib/chat/normalizeServerChatMessage";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
@@ -38,15 +39,9 @@ export function subscribeRoomStompTopics(
   const membersSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/members`,
     (message) => {
-      void (async () => {
-        const event = parseRoomMemberMessage(message.body);
-        if (!event) return;
-        await dispatchRoomMemberEvent(
-          queryClientRef.current,
-          subscribedRoomId,
-          event,
-        );
-      })();
+      const event = parseRoomMemberMessage(message.body);
+      if (!event) return;
+      dispatchRoomMemberEvent(queryClientRef.current, subscribedRoomId, event);
     },
   );
 
@@ -56,10 +51,7 @@ export function subscribeRoomStompTopics(
       void (async () => {
         const event = parseRoomPresenceMessage(message.body);
         if (!event) return;
-        await dispatchRoomPresence(
-          queryClientRef.current,
-          subscribedRoomId,
-        );
+        await dispatchRoomPresence(queryClientRef.current, subscribedRoomId);
       })();
     },
   );
@@ -111,7 +103,9 @@ export function subscribeRoomStompTopics(
     `/topic/rooms/${subscribedRoomId}/messages`,
     (message) => {
       try {
-        const msg = JSON.parse(message.body) as ServerChatMessage;
+        const parsed: unknown = JSON.parse(message.body);
+        const msg = normalizeServerChatMessage(parsed);
+        if (!msg) return;
         useChatUnreadStore.getState().incrementFromMessage(msg);
         options.onRoomChatMessage?.(msg);
       } catch {
