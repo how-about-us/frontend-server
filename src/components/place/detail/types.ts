@@ -10,6 +10,9 @@ export type PlaceReview = {
 };
 
 export type PlaceDetailResult = {
+  name: string;
+  primaryTypeDisplayName: string;
+  rating: number | null;
   photoUrls: string[];
   /** 첫 번째 사진 리소스 이름 — 채팅 장소 공유(STOMP) 페이로드용 */
   photoName: string;

@@ -6,9 +6,9 @@ import {
   Map as GoogleMap,
   useMap,
   useMapsLibrary,
+  type MapMouseEvent,
 } from "@vis.gl/react-google-maps";
 
-import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -28,13 +28,17 @@ const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
 function SelectedPlaceController() {
   const map = useMap();
-  const { selectedPlace } = useSelectedPlace();
+  const { selectedPlace, skipMapRecenterRef } = useSelectedPlace();
 
   useEffect(() => {
     if (!map || !selectedPlace?.location) return;
+    if (skipMapRecenterRef.current) {
+      skipMapRecenterRef.current = false;
+      return;
+    }
     map.panTo(selectedPlace.location);
     map.setZoom(16);
-  }, [map, selectedPlace?.location?.lat, selectedPlace?.location?.lng]);
+  }, [map, selectedPlace?.location, skipMapRecenterRef]);
 
   return null;
 }
@@ -83,9 +87,25 @@ export default function Map() {
   const destination =
     roomsData?.rooms.find((r) => r.id === currentRoomId)?.destination ?? null;
 
-  const searchMarker: SearchResultCardProps | null = selectedPlace?.location
-    ? selectedPlace
-    : null;
+  const handleMapClick = (ev: MapMouseEvent) => {
+    const placeId = ev.detail.placeId?.trim() ?? "";
+    if (placeId.length > 0) {
+      ev.stop();
+      const latLng = ev.detail.latLng;
+      setSelectedPlace(
+        {
+          name: "장소",
+          category: "",
+          rating: null,
+          googlePlaceId: placeId,
+          ...(latLng ? { location: latLng } : {}),
+        },
+        { skipMapRecenter: true },
+      );
+      return;
+    }
+    setSelectedPlace(null);
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -99,8 +119,8 @@ export default function Map() {
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
-        clickableIcons={false}
-        onClick={() => setSelectedPlace(null)}
+        clickableIcons
+        onClick={handleMapClick}
         onCameraChanged={(ev) =>
           setMapCenter({ lat: ev.detail.center.lat, lng: ev.detail.center.lng })
         }
@@ -111,20 +131,21 @@ export default function Map() {
         {/* 펼쳐진 일차 일정 순서 장소 간 경로(Place ID Directions) */}
         <PlanItineraryMapRoutes />
 
-        {/* 검색으로 선택된 장소 마커 */}
-        {searchMarker?.location && (
+        {/* 선택된 장소 마커(검색·지도 POI 등) */}
+        {selectedPlace?.location && (
           <AdvancedMarker
-            position={searchMarker.location}
+            position={selectedPlace.location}
             onClick={(e) => e.stop()}
           >
-            <div className="flex flex-col items-center drop-shadow-lg">
-              <div className="mb-1 max-w-[120px] truncate rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-brand-green shadow-sm ring-1 ring-brand-green/20">
-                {searchMarker.name}
-              </div>
-              <span className="scale-110 text-brand-green">
-                <MapPinIcon size={44} />
-              </span>
-            </div>
+            <span
+              className={`block scale-110 drop-shadow-lg ${
+                selectedPlace.fromBookmark
+                  ? "text-brand-green"
+                  : "text-brand-red"
+              }`}
+            >
+              <MapPinIcon size={44} />
+            </span>
           </AdvancedMarker>
         )}
       </GoogleMap>

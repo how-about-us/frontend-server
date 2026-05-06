@@ -126,8 +126,9 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
               roomId={roomId}
               currentCategoryId={categoryIdOk}
               onOpenDetail={() => {
-                const { id: _id, ...card } = row;
-                setSelectedPlace(card);
+                const { id, ...card } = row;
+                void id;
+                setSelectedPlace({ ...card, fromBookmark: true });
               }}
             />
           ))

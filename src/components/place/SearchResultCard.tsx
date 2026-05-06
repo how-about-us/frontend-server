@@ -22,6 +22,8 @@ export type SearchResultCardProps = {
   googlePlaceId?: string;
   /** Coordinates – present for real API results, used to pan the map */
   location?: { lat: number; lng: number };
+  /** 북마크 목록에서 연 경우 지도 핀 색(북마크 제외 개인 핀은 brand-red) */
+  fromBookmark?: boolean;
 };
 
 export function SearchResultCard({

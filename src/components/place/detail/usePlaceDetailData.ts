@@ -19,6 +19,9 @@ export function usePlaceDetailData(googlePlaceId?: string) {
         )
       ).filter((u): u is string => u !== null);
       return {
+        name: detail.name,
+        primaryTypeDisplayName: detail.primaryTypeDisplayName,
+        rating: detail.rating,
         photoUrls,
         photoName: detail.photoNames[0] ?? "",
         formattedAddress: detail.formattedAddress,

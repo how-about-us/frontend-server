@@ -45,6 +45,17 @@ export function PlaceDetailPanel({
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
 
+  const displayName =
+    (detailData?.name && detailData.name.trim().length > 0
+      ? detailData.name
+      : name) || name;
+  const displayCategory =
+    (detailData?.primaryTypeDisplayName &&
+    detailData.primaryTypeDisplayName.trim().length > 0
+      ? detailData.primaryTypeDisplayName
+      : category) || category;
+  const displayRating = detailData?.rating ?? rating;
+
   const handleSendToChat = useCallback(() => {
     if (!googlePlaceId?.trim()) {
       toast.error("장소 정보를 확인할 수 없어요.");
@@ -61,12 +72,12 @@ export function PlaceDetailPanel({
     }
     sendPlaceMessage({
       googlePlaceId: googlePlaceId.trim(),
-      name,
+      name: displayName,
       formattedAddress: address ?? detailData?.formattedAddress ?? "",
       latitude: loc.lat,
       longitude: loc.lng,
       photoName: detailData?.photoName ?? "",
-      rating: rating ?? 0,
+      rating: displayRating ?? 0,
     });
     toast.success("장소를 채팅으로 보냈어요");
     openChat();
@@ -76,11 +87,11 @@ export function PlaceDetailPanel({
     detailData?.formattedAddress,
     detailData?.location,
     detailData?.photoName,
+    displayName,
+    displayRating,
     googlePlaceId,
     location,
-    name,
     openChat,
-    rating,
     sendPlaceMessage,
   ]);
 
@@ -92,6 +103,7 @@ export function PlaceDetailPanel({
   const userRatingCount = detailData?.userRatingCount ?? propUserRatingCount;
   const reviewSummary = detailData?.reviewSummary ?? propReviewSummary;
   const reviews = detailData?.reviews ?? [];
+  const displayAddress = address ?? detailData?.formattedAddress;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-white">
@@ -103,7 +115,11 @@ export function PlaceDetailPanel({
         {isDetailLoading && googlePlaceId ? (
           <HeroSkeleton />
         ) : (
-          <HeroGrid photoUrls={photoUrls} fallbackImage={image} name={name} />
+          <HeroGrid
+            photoUrls={photoUrls}
+            fallbackImage={image}
+            name={displayName}
+          />
         )}
 
         <button
@@ -131,9 +147,9 @@ export function PlaceDetailPanel({
       {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] [scrollbar-color:rgba(0,0,0,0.15)_transparent] [&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/[0.15] [&::-webkit-scrollbar-track]:border-l [&::-webkit-scrollbar-track]:border-gray-200 [&::-webkit-scrollbar-track]:bg-transparent">
         <PlaceSummaryHeader
-          name={name}
-          category={category}
-          rating={rating}
+          name={displayName}
+          category={displayCategory}
+          rating={displayRating}
           userRatingCount={userRatingCount}
           onSendToChat={googlePlaceId ? handleSendToChat : undefined}
           sendToChatDisabled={
@@ -175,7 +191,7 @@ export function PlaceDetailPanel({
         {activeTab === "홈" && (
           <HomeTab
             isOpen={openNow}
-            address={address}
+            address={displayAddress}
             phone={phone}
             hours={hours}
             website={website}
@@ -184,7 +200,7 @@ export function PlaceDetailPanel({
         )}
         {activeTab === "리뷰" && (
           <ReviewsTab
-            rating={rating}
+            rating={displayRating}
             userRatingCount={userRatingCount}
             reviews={reviews}
           />
