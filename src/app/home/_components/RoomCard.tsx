@@ -1,8 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
 import { RoomListItem } from "@/lib/api/rooms";
+import {
+  usePlacePhotoUrlQuery,
+  useRoomCoverPhotoName,
+} from "@/hooks/useRoomCoverPhoto";
 import { getRoomGradient } from "@/stores/rooms-store";
 import { useSessionStore } from "@/stores/session-store";
 import { RoomCardMenu } from "./RoomCardMenu";
@@ -17,14 +22,28 @@ type Props = {
 export function RoomCard({ room, onEdit, onDelete }: Props) {
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const gradient = getRoomGradient(room.id);
+
+  const { data: coverPhotoName } = useRoomCoverPhotoName(room);
+  const { data: coverPhotoUrl } = usePlacePhotoUrlQuery(coverPhotoName);
+
   const dateStr = formatDateRange(room.startDate, room.endDate);
 
   return (
     <div className="group">
       <div className="relative">
         <div
-          className={`aspect-[4/3] w-full overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}
-        />
+          className={`relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}
+        >
+          {coverPhotoUrl ? (
+            <Image
+              src={coverPhotoUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 280px"
+            />
+          ) : null}
+        </div>
         <div className="absolute right-2 top-2">
           <RoomCardMenu room={room} onEdit={onEdit} onDelete={onDelete} />
         </div>

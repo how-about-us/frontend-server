@@ -1,16 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { StompProvider } from "@/contexts/StompContext";
 import { syncSessionUserFromServer } from "@/lib/auth/session-sync";
+import {
+  ROOM_COVER_PERSIST_STORAGE_KEY,
+  dehydrateRoomCoverOnly,
+} from "@/lib/query/roomCover";
 import { createQueryClient } from "@/lib/query/queryClient";
 import { useSessionStore } from "@/stores/session-store";
+
+const ROOM_COVER_PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14;
 
 /**
  * 전역 레이아웃용 Provider 순서 —
@@ -20,6 +27,22 @@ import { useSessionStore } from "@/stores/session-store";
  */
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
+
+  const persistOptions = useMemo(
+    () =>
+      ({
+        persister: createSyncStoragePersister({
+          storage: typeof window !== "undefined" ? window.localStorage : null,
+          key: ROOM_COVER_PERSIST_STORAGE_KEY,
+          throttleTime: 1000,
+        }),
+        maxAge: ROOM_COVER_PERSIST_MAX_AGE_MS,
+        dehydrateOptions: {
+          shouldDehydrateQuery: dehydrateRoomCoverOnly,
+        },
+      }) as const,
+    [],
+  );
 
   /** `skipHydration` 세션 스토어 — 클라 마운트 후 localStorage 병합 후 서버 `users/me`와 동기화 */
   useEffect(() => {
@@ -48,7 +71,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <StompProvider>
         <GoogleMapsProvider>
           {children}
@@ -56,6 +79,6 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
         </GoogleMapsProvider>
       </StompProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

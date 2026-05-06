@@ -9,6 +9,10 @@ type Prediction = google.maps.places.AutocompletePrediction;
 type Props = {
   value: string;
   onChange: (value: string) => void;
+  /** Autocomplete에서 항목을 고르면 `place_id` 포함. 타이핑·지우기 시 `null`. */
+  onResolvedPlace?: (
+    place: { description: string; placeId: string } | null,
+  ) => void;
   placeholder?: string;
   autoFocus?: boolean;
 };
@@ -20,6 +24,7 @@ type Props = {
 export function DestinationSearchInput({
   value,
   onChange,
+  onResolvedPlace,
   placeholder = "예: 도쿄, 파리, 제주도",
   autoFocus = false,
 }: Props) {
@@ -98,6 +103,7 @@ export function DestinationSearchInput({
     setInputValue(v);
     setCommitted(false);
     onChange("");
+    onResolvedPlace?.(null);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchPredictions(v), 250);
@@ -108,6 +114,7 @@ export function DestinationSearchInput({
     setInputValue(label);
     onChange(label);
     setCommitted(true);
+    onResolvedPlace?.({ description: label, placeId: prediction.place_id });
     setPredictions([]);
     setIsOpen(false);
     setActiveIndex(-1);
@@ -117,6 +124,7 @@ export function DestinationSearchInput({
     setInputValue("");
     onChange("");
     setCommitted(false);
+    onResolvedPlace?.(null);
     setPredictions([]);
     setIsOpen(false);
     inputRef.current?.focus();

@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Calendar, X } from "lucide-react";
 
 import { RoomListItem } from "@/lib/api/rooms";
+import {
+  resolveCoverPhotoNameFromPlaceId,
+  resolveCoverPhotoNameFromSearch,
+} from "@/hooks/useRoomCoverPhoto";
 import { useUpdateRoom } from "@/hooks/useRooms";
+import { roomCoverPhotoNameKey } from "@/lib/query/roomCover";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
 type Props = {
@@ -13,10 +19,13 @@ type Props = {
 };
 
 export function EditRoomModal({ room, onClose }: Props) {
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState(room.title);
   const [destination, setDestination] = useState(room.destination);
   const [startDate, setStartDate] = useState(room.startDate ?? "");
   const [endDate, setEndDate] = useState(room.endDate ?? "");
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [isResolvingCover, setIsResolvingCover] = useState(false);
 
   const { mutate: updateRoom, isPending, error } = useUpdateRoom();
 
@@ -28,21 +37,67 @@ export function EditRoomModal({ room, onClose }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const canSave = title.trim() && destination.trim() && !isPending;
+  const canSave =
+    title.trim() && destination.trim() && !isPending && !isResolvingCover;
 
-  function handleSave() {
+  async function handleSave() {
     if (!canSave) return;
+
+    const destTrimmed = destination.trim();
+    const prevDestTrimmed =
+      typeof room.destination === "string" ? room.destination.trim() : "";
+    const destChanged = destTrimmed !== prevDestTrimmed;
+
+    setIsResolvingCover(true);
+    let photoForCache: string | null | undefined;
+    try {
+      if (selectedPlaceId) {
+        const fromPlace = await resolveCoverPhotoNameFromPlaceId(
+          selectedPlaceId,
+        );
+        photoForCache =
+          fromPlace ??
+          (await resolveCoverPhotoNameFromSearch(destTrimmed));
+      } else if (destChanged) {
+        photoForCache = await resolveCoverPhotoNameFromSearch(destTrimmed);
+      }
+    } finally {
+      setIsResolvingCover(false);
+    }
+
     updateRoom(
       {
         roomId: room.id,
         data: {
           title: title.trim(),
-          destination: destination.trim(),
+          destination: destTrimmed,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
         },
       },
-      { onSuccess: onClose },
+      {
+        onSuccess: (updated) => {
+          const finalDest =
+            typeof updated.destination === "string"
+              ? updated.destination.trim()
+              : destTrimmed;
+
+          if (destChanged && prevDestTrimmed.length > 0) {
+            queryClient.removeQueries({
+              queryKey: roomCoverPhotoNameKey(room.id, prevDestTrimmed),
+            });
+          }
+
+          if (photoForCache !== undefined) {
+            queryClient.setQueryData(
+              roomCoverPhotoNameKey(room.id, finalDest),
+              photoForCache,
+            );
+          }
+
+          onClose();
+        },
+      },
     );
   }
 
@@ -83,6 +138,9 @@ export function EditRoomModal({ room, onClose }: Props) {
             <DestinationSearchInput
               value={destination}
               onChange={setDestination}
+              onResolvedPlace={(place) =>
+                setSelectedPlaceId(place?.placeId ?? null)
+              }
             />
           </div>
 
@@ -132,7 +190,7 @@ export function EditRoomModal({ room, onClose }: Props) {
             disabled={!canSave}
             className="flex-1 rounded-full bg-brand-red py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {isPending ? "저장 중…" : "저장하기"}
+            {isPending || isResolvingCover ? "저장 중…" : "저장하기"}
           </button>
         </div>
       </div>

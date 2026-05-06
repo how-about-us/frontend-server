@@ -48,6 +48,11 @@ function pathSuspendsStomp(pathname: string): boolean {
   return pathname === "/waiting" || pathname.startsWith("/join/");
 }
 
+/** 룸 목록·새 여행 등 — `currentRoomId` 가 있어도 방별 토픽은 구독하지 않음 (`/user/queue/rooms` 는 유지) */
+function pathDefersRoomStompRoomTopics(pathname: string): boolean {
+  return pathname === "/home" || pathname.startsWith("/home/");
+}
+
 export function StompProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -84,6 +89,11 @@ export function StompProvider({ children }: { children: ReactNode }) {
     detachRoomTopicsOnly();
     lastSubscribedRoomIdRef.current = null;
     useChatUnreadStore.getState().resetChatCnt();
+  }, [detachRoomTopicsOnly]);
+
+  const pauseRoomStompRoomTopics = useCallback(() => {
+    detachRoomTopicsOnly();
+    lastSubscribedRoomIdRef.current = null;
   }, [detachRoomTopicsOnly]);
 
   const handleForcedRoomExit = useCallback(
@@ -178,8 +188,8 @@ export function StompProvider({ children }: { children: ReactNode }) {
         notifyForcedRoomExit,
       });
 
-      const rid = currentRoomIdRef.current;
-      if (rid) {
+      const rid = currentRoomIdRef.current?.trim() ?? "";
+      if (rid && !pathDefersRoomStompRoomTopics(pathname)) {
         subscribeToRoomTopics(client, rid);
         // 재연결 구간에 missed된 이벤트 보완
         void queryClientRef.current.invalidateQueries({
@@ -231,12 +241,23 @@ export function StompProvider({ children }: { children: ReactNode }) {
     const client = clientRef.current;
     if (!client?.connected) return;
 
+    if (pathDefersRoomStompRoomTopics(pathname)) {
+      pauseRoomStompRoomTopics();
+      return;
+    }
+
     if (currentRoomId) {
       subscribeToRoomTopics(client, currentRoomId);
     } else {
       unsubscribeRoomTopics();
     }
-  }, [currentRoomId, subscribeToRoomTopics, unsubscribeRoomTopics]);
+  }, [
+    currentRoomId,
+    pathname,
+    pauseRoomStompRoomTopics,
+    subscribeToRoomTopics,
+    unsubscribeRoomTopics,
+  ]);
 
   return (
     <StompContext.Provider
