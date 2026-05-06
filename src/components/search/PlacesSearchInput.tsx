@@ -23,6 +23,8 @@ type MenuGeometry = {
 type Props = {
   coords: { lat: number; lng: number } | null;
   onSearch: (query: string) => void;
+  /** URL `q` — 칩·공유 링크 등에서 오는 검색어와 입력창 동기화 */
+  urlQuery?: string;
   /** 드롭다운에서 항목 선택 시 (플랜 장소 추가 등). 설정 시 `place_id`로 처리 가능 */
   onPickPrediction?: (prediction: Prediction) => void;
   /** true면 검색 버튼 숨김 — 자동완성 선택만 사용 */
@@ -33,6 +35,7 @@ type Props = {
 export function PlacesSearchInput({
   coords,
   onSearch,
+  urlQuery = "",
   onPickPrediction,
   pickOnly = false,
   disabled = false,
@@ -74,6 +77,10 @@ export function PlacesSearchInput({
     if (!placesLib) return;
     serviceRef.current = new placesLib.AutocompleteService();
   }, [placesLib]);
+
+  useEffect(() => {
+    setInputValue(urlQuery);
+  }, [urlQuery]);
 
   /* eslint-disable react-hooks/set-state-in-effect -- 포털 드롭다운 위치는 입력창 DOM 측정 직후에만 갱신 */
   useLayoutEffect(() => {

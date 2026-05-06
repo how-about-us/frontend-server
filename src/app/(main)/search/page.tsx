@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { useSessionStore } from "@/stores/session-store";
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const qParam = searchParams.get("q")?.trim() ?? "";
   const isShareMode = searchParams.get("share") === "chat";
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const hasRoom =
@@ -38,9 +39,27 @@ export default function SearchPage() {
     lng: number;
   } | null>(null);
 
+  useLayoutEffect(() => {
+    if (!qParam) {
+      setQuery("");
+      setSearchCoords(null);
+      return;
+    }
+    setQuery(qParam);
+    const { mapCenter: c } = useMapCenterStore.getState();
+    setSearchCoords({ lat: c.lat, lng: c.lng });
+  }, [qParam]);
+
   function handleSearch(q: string) {
-    setQuery(q);
-    setSearchCoords({ lat: mapCenter.lat, lng: mapCenter.lng });
+    const trimmed = q.trim();
+    setQuery(trimmed);
+    const { mapCenter: c } = useMapCenterStore.getState();
+    setSearchCoords({ lat: c.lat, lng: c.lng });
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (trimmed) params.set("q", trimmed);
+    else params.delete("q");
+    router.replace(`/search?${params.toString()}`, { scroll: false });
   }
 
   const {
@@ -85,7 +104,11 @@ export default function SearchPage() {
 
       {/* 검색 입력 */}
       <div className="shrink-0 border-b border-gray-border pl-4 pr-3 pb-4">
-        <PlacesSearchInput coords={mapCenter} onSearch={handleSearch} />
+        <PlacesSearchInput
+          coords={mapCenter}
+          urlQuery={qParam}
+          onSearch={handleSearch}
+        />
       </div>
       {shareModeActive && (
         <div className="flex shrink-0 items-center gap-2 border-b border-gray-border bg-brand-green/10 px-4 py-2 text-[13px] text-brand-green">

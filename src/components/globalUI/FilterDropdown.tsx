@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+import { cn } from "@/lib/utils";
 import { useRef, useState } from "react";
 
 export type FilterOption<T extends string> = { label: string; value: T };
@@ -29,15 +30,19 @@ export function FilterDropdown<T extends string>({
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition ${
+        className={cn(
+          "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition",
           isActive
-            ? "bg-blue-600 text-white"
-            : "bg-white text-black hover:bg-gray-50"
-        }`}
+            ? "bg-brand-green text-white"
+            : "bg-white text-black hover:bg-gray-50",
+        )}
       >
         <span>{isActive ? selectedLabel : label}</span>
         <svg
-          className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
+          className={cn(
+            "h-3 w-3 transition-transform",
+            open && "rotate-180",
+          )}
           viewBox="0 0 12 12"
           fill="none"
           stroke="currentColor"
@@ -58,11 +63,12 @@ export function FilterDropdown<T extends string>({
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className={`w-full px-3 py-2 text-left text-xs transition hover:bg-gray-50 ${
+              className={cn(
+                "w-full px-3 py-2 text-left text-xs transition hover:bg-gray-50",
                 value === opt.value
-                  ? "font-semibold text-blue-600"
-                  : "text-black"
-              }`}
+                  ? "font-semibold text-brand-green"
+                  : "text-black",
+              )}
             >
               {opt.label}
             </button>

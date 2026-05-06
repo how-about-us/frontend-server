@@ -13,14 +13,11 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
-import {
-  type OpenValue,
-  type PriceValue,
-  type RatingValue,
-} from "./map-filters";
 import { MapPinIcon } from "@/components/icons";
-import MapFilter from "./MapFilter";
+import { MapDiscoverToolbar } from "./MapDiscoverToolbar";
+import { MapDiscoverPlaces } from "./MapDiscoverPlaces";
 import { PlanItineraryMapRoutes } from "./PlanItineraryMapRoutes";
+import type { OpenValue, RatingValue } from "./map-filters";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
@@ -78,7 +75,9 @@ function DestinationController({
 export default function Map() {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
-  const [price, setPrice] = useState<PriceValue>("all");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
   const [rating, setRating] = useState<RatingValue>("all");
   const [openNow, setOpenNow] = useState<OpenValue>("all");
 
@@ -119,7 +118,7 @@ export default function Map() {
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
-        clickableIcons
+        clickableIcons={selectedCategoryId == null}
         onClick={handleMapClick}
         onCameraChanged={(ev) =>
           setMapCenter({ lat: ev.detail.center.lat, lng: ev.detail.center.lng })
@@ -130,6 +129,12 @@ export default function Map() {
 
         {/* 펼쳐진 일차 일정 순서 장소 간 경로(Place ID Directions) */}
         <PlanItineraryMapRoutes />
+
+        <MapDiscoverPlaces
+          selectedCategoryId={selectedCategoryId}
+          rating={rating}
+          openNow={openNow}
+        />
 
         {/* 선택된 장소 마커(검색·지도 POI 등) */}
         {selectedPlace?.location && (
@@ -150,11 +155,11 @@ export default function Map() {
         )}
       </GoogleMap>
 
-      <MapFilter
-        price={price}
+      <MapDiscoverToolbar
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={setSelectedCategoryId}
         rating={rating}
         openNow={openNow}
-        setPrice={setPrice}
         setRating={setRating}
         setOpenNow={setOpenNow}
       />
