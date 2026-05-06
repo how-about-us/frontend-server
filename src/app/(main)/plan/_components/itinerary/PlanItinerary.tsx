@@ -34,11 +34,13 @@ export type PlanItineraryProps = {
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const {
-    data: places = [],
-    isPending,
+    data: placesData,
+    isLoading,
     isFetching: isFetchingPlaces,
     isError,
   } = useSchedulePlanPlaces(roomId, scheduleId);
+
+  const places = placesData ?? [];
 
   const existingItemIds = useMemo(
     () =>
@@ -169,7 +171,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
   return (
     <div>
-      {isPending ? (
+      {isLoading ? (
         <div className="flex items-center justify-center gap-2 py-8 text-dark-gray">
           <Loader2 className="h-5 w-5 animate-spin text-brand-green" />
           <span className="text-sm">장소 목록을 불러오는 중…</span>
@@ -182,7 +184,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         </p>
       ) : null}
 
-      {!isPending && places.length === 0 ? (
+      {!isLoading && places.length === 0 ? (
         <p className="py-4 text-center text-sm text-dark-gray">
           아직 등록된 장소가 없습니다. 검색으로 장소를 추가해 보세요.
         </p>
@@ -221,7 +223,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 scheduleFingerprint={scheduleFingerprint}
                 travelMode={place.travelMode ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE}
                 routeQueryEnabled={
-                  !isPending &&
+                  placesData !== undefined &&
                   !isFetchingPlaces &&
                   existingItemIds.has(place.itemId) &&
                   existingItemIds.has(places[index + 1].itemId!)

@@ -1,17 +1,21 @@
 "use client";
 
-import { Polyline } from "@vis.gl/react-google-maps";
+/// <reference types="google.maps" />
+
+import { AdvancedMarker, Polyline } from "@vis.gl/react-google-maps";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type JSX } from "react";
 
+import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { fetchPlanItineraryMapPathsBundle } from "@/lib/maps/fetchPlanItineraryMapPathsBundle";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
+import { PLAN_ITINERARY_ROUTE_ARROW_ICONS } from "@/lib/maps/planItineraryRoutePolylineIcons";
+import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import {
-  fetchScheduleItemsAsPlanPlaces,
-} from "@/lib/plan/scheduleItemPlaces";
-import type { PlanPlace } from "@/lib/plan/types";
-import {
-  canonicalScheduleTravelMode,
-} from "@/lib/plan/scheduleTravelMode";
-import { fetchPlanSegmentPathLatLng } from "@/lib/maps/planItineraryDirectionsPath";
+  flattenPlanItinerarySegmentsFromPlaces,
+  planItinerarySegmentPathRecordKey,
+} from "@/lib/plan/planItineraryMapSegments";
+import { planItineraryMapPathQueryKey } from "@/lib/queryKeys/planItineraryMapPath";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import {
@@ -20,69 +24,21 @@ import {
 } from "@/stores/plan-map-directions-epoch-store";
 import { useSessionStore } from "@/stores/session-store";
 
-type SegmentDescriptor = {
-  scheduleId: number;
-  segmentSourceItemId: number;
-  originPlaceId: string;
-  destPlaceId: string;
-  travelModeCanon: string;
-};
-
-function flattenSegmentsFromPlaces([
-  expandedScheduleIds,
-  placesBuckets,
-]: [number[], PlanPlace[][]]): SegmentDescriptor[] {
-  const segments: SegmentDescriptor[] = [];
-
-  expandedScheduleIds.forEach((scheduleId, idx) => {
-    const places = placesBuckets[idx];
-    if (!places?.length) return;
-    for (let i = 0; i < places.length - 1; i += 1) {
-      const a = places[i]!;
-      const b = places[i + 1]!;
-      const o = typeof a.googlePlaceId === "string" ? a.googlePlaceId.trim() : "";
-      const d = typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
-      if (
-        typeof a.itemId !== "number" ||
-        !o.length ||
-        !d.length
-      ) {
-        continue;
-      }
-      segments.push({
-        scheduleId,
-        segmentSourceItemId: a.itemId,
-        originPlaceId: o,
-        destPlaceId: d,
-        travelModeCanon:
-          canonicalScheduleTravelMode(a.travelMode) ?? "WALKING",
-      });
-    }
-  });
-
-  return segments;
-}
-
-/** `plan-itinerary-map-path` 캐시 Record 키 — 쿼리 키에는 넣지 않고 응답 매핑에만 사용합니다. */
-function segmentPathRecordKey(seg: SegmentDescriptor): string {
-  return [
-    seg.scheduleId,
-    seg.segmentSourceItemId,
-    seg.originPlaceId,
-    seg.destPlaceId,
-    seg.travelModeCanon,
-  ].join("\u0001");
-}
-
 /**
- * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만, 일정 순서 장소 간 경로(polyline).
- * 구간 장소 목록은 `schedule-items` 쿼리와 동기화되고, STOMP 일정 이벤트는
- * `{@link usePlanMapDirectionsEpochStore}.bumpSegments`(구간별) 또는
- * `bumpForDirections`(방 전체 폴백)로 Directions 재조회를 트리거합니다.
+ * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만,
+ * 일정 순서 장소 간 경로(polyline)·정류장 마커를 표시합니다.
+ * STOMP 에폭은 {@link usePlanMapDirectionsEpochStore} 참고.
  */
 export function PlanItineraryMapRoutes() {
   const roomIdRaw = useSessionStore((s) => s.currentRoomId);
   const rid = typeof roomIdRaw === "string" ? roomIdRaw.trim() : "";
+
+  const { selectedPlace, setSelectedPlace } = useSelectedPlace();
+  const selectedNorm =
+    selectedPlace?.googlePlaceId &&
+    selectedPlace.googlePlaceId.trim().length > 0
+      ? normalizeGooglePlaceResourceId(selectedPlace.googlePlaceId.trim())
+      : null;
 
   const expandedByScheduleId = usePlanItineraryExpandedStore(
     (s) => s.expandedByScheduleId,
@@ -92,8 +48,7 @@ export function PlanItineraryMapRoutes() {
       Object.keys(expandedByScheduleId)
         .map((k) => Number(k))
         .filter(
-          (id) =>
-            Number.isFinite(id) && expandedByScheduleId[id] === true,
+          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
         ),
     [expandedByScheduleId],
   );
@@ -129,10 +84,10 @@ export function PlanItineraryMapRoutes() {
   const buckets = orderedScheduleIdsForQueries.map(
     (_, idx) => placesQueries[idx]?.data ?? [],
   );
-  const segments = flattenSegmentsFromPlaces([
+  const segments = flattenPlanItinerarySegmentsFromPlaces(
     orderedScheduleIdsForQueries,
     buckets,
-  ]);
+  );
 
   const segmentEpochSignature = useMemo(() => {
     if (rid.length === 0 || segments.length === 0) return "";
@@ -150,46 +105,14 @@ export function PlanItineraryMapRoutes() {
   }, [rid, segments, epochBySegmentKey]);
 
   const pathsBundleQuery = useQuery({
-    queryKey: [
-      "plan-itinerary-map-path",
+    queryKey: planItineraryMapPathQueryKey(
       rid,
       orderedScheduleIdsForQueries,
       directionsEpoch,
       segmentEpochSignature,
-    ] as const,
-    queryFn: async (): Promise<
-      Record<string, google.maps.LatLngLiteral[]>
-    > => {
-      const roomKey = rid.length > 0 ? rid : null;
-      const placesBuckets = await Promise.all(
-        orderedScheduleIdsForQueries.map((scheduleId) =>
-          queryClient.fetchQuery({
-            queryKey: scheduleItemsQueryKey(roomKey, scheduleId),
-            queryFn: () =>
-              rid.length === 0
-                ? Promise.resolve([])
-                : fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
-            staleTime: Infinity,
-          }),
-        ),
-      );
-      const segs = flattenSegmentsFromPlaces([
-        orderedScheduleIdsForQueries,
-        placesBuckets,
-      ]);
-      const out: Record<string, google.maps.LatLngLiteral[]> = {};
-      await Promise.all(
-        segs.map(async (seg) => {
-          const k = segmentPathRecordKey(seg);
-          out[k] = await fetchPlanSegmentPathLatLng(
-            seg.originPlaceId,
-            seg.destPlaceId,
-            seg.travelModeCanon,
-          );
-        }),
-      );
-      return out;
-    },
+    ),
+    queryFn: () =>
+      fetchPlanItineraryMapPathsBundle(queryClient, rid, orderedScheduleIdsForQueries),
     enabled: rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -200,8 +123,8 @@ export function PlanItineraryMapRoutes() {
   const pathByKey = pathsBundleQuery.data;
 
   const polylines: Array<JSX.Element> = [];
-  segments.forEach((seg) => {
-    const pts = pathByKey?.[segmentPathRecordKey(seg)];
+  segments.forEach((seg, segIdx) => {
+    const pts = pathByKey?.[planItinerarySegmentPathRecordKey(seg)];
     if (!pts?.length) return;
 
     const segEpochKey = planMapSegmentEpochStoreKey(
@@ -214,13 +137,62 @@ export function PlanItineraryMapRoutes() {
     polylines.push(
       <Polyline
         key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}-${segEpoch}`}
+        zIndex={40 + segIdx}
         strokeColor="#f12d33"
-        strokeOpacity={0.92}
-        strokeWeight={14}
+        strokeOpacity={0.8}
+        strokeWeight={8}
         path={pts}
+        icons={PLAN_ITINERARY_ROUTE_ARROW_ICONS}
       />,
     );
   });
 
-  return <>{polylines}</>;
+  const stopMarkers: Array<JSX.Element> = [];
+  orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
+    const places = buckets[bucketIdx] ?? [];
+    places.forEach((place, orderIdx) => {
+      const loc = place.location;
+      const gid =
+        typeof place.googlePlaceId === "string"
+          ? place.googlePlaceId.trim()
+          : "";
+      if (!loc || typeof place.itemId !== "number" || !gid.length) return;
+
+      const legacyId = normalizeGooglePlaceResourceId(gid);
+      if (selectedNorm != null && legacyId === selectedNorm) return;
+
+      stopMarkers.push(
+        <AdvancedMarker
+          key={`plan-stop-${scheduleId}-${place.itemId}`}
+          position={loc}
+          title={place.title}
+          onClick={(e) => {
+            e.stop();
+            setSelectedPlace(
+              {
+                name: place.title,
+                category: "",
+                rating: null,
+                googlePlaceId: legacyId,
+                location: loc,
+                address: place.subtitle,
+              },
+              { skipMapRecenter: true },
+            );
+          }}
+        >
+          <div className="flex size-7 cursor-pointer select-none items-center justify-center rounded-full border-2 border-brand-red bg-white text-xs font-semibold text-brand-red shadow-md ring-2 ring-white/80">
+            {orderIdx + 1}
+          </div>
+        </AdvancedMarker>,
+      );
+    });
+  });
+
+  return (
+    <>
+      {polylines}
+      {stopMarkers}
+    </>
+  );
 }

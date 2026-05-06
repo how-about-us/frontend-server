@@ -40,6 +40,7 @@ export async function fetchScheduleItemsAsPlanPlaces(
           id: `item-${item.itemId}`,
           itemId: item.itemId,
           googlePlaceId: item.googlePlaceId,
+          location: detail.location,
           title: detail.name,
           subtitle: detail.formattedAddress,
           photoName: firstPhoto?.trim() || undefined,

@@ -22,6 +22,31 @@ function toGmTravelMode(
 }
 
 /**
+ * Directions `overview_path` 가 출발/도착과 반대일 때 뒤집습니다.
+ * 폴리라인·화살표가 일정 순서(작은 번호 → 큰 번호) 방향을 가리키게 합니다.
+ */
+export function orientPathSmallerStopToLarger(
+  pts: google.maps.LatLngLiteral[],
+  origin: google.maps.LatLngLiteral,
+  dest: google.maps.LatLngLiteral,
+): google.maps.LatLngLiteral[] {
+  if (pts.length < 2) return pts;
+  const d2 = (p: google.maps.LatLngLiteral, q: google.maps.LatLngLiteral) => {
+    const dx = p.lat - q.lat;
+    const dy = p.lng - q.lng;
+    return dx * dx + dy * dy;
+  };
+  const first = pts[0]!;
+  const last = pts[pts.length - 1]!;
+  const forwardFit = d2(first, origin) + d2(last, dest);
+  const backwardFit = d2(first, dest) + d2(last, origin);
+  if (backwardFit < forwardFit) {
+    return [...pts].reverse();
+  }
+  return pts;
+}
+
+/**
  * 일정 두 장소(Place ID) 구간 경로 좌표 — Maps JS DirectionsService.
  */
 export async function fetchPlanSegmentPathLatLng(

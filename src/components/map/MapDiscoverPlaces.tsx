@@ -9,6 +9,7 @@ import {
 
 import { MapPinIcon } from "@/components/icons";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
 
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
@@ -24,11 +25,6 @@ const NEARBY_FIELDS: string[] = [
   "regularOpeningHours",
   "primaryTypeDisplayName",
 ];
-
-export function normalizeResourcePlaceId(id: string): string {
-  const prefix = "places/";
-  return id.startsWith(prefix) ? id.slice(prefix.length) : id;
-}
 
 function matchesRatingFilter(
   filter: RatingValue,
@@ -65,7 +61,7 @@ function DiscoverMarkerPin({
     typeof useSelectedPlace
   >["setSelectedPlace"];
 }) {
-  const legacyId = normalizeResourcePlaceId(m.id);
+  const legacyId = normalizeGooglePlaceResourceId(m.id);
   if (selectedNormalized && legacyId === selectedNormalized) return null;
 
   return (
@@ -90,7 +86,7 @@ function DiscoverMarkerPin({
         );
       }}
     >
-      <span className="block scale-90 text-[#4B5563] drop-shadow-md">
+      <span className="block scale-90 text-brand-red drop-shadow-md">
         <MapPinIcon size={36} />
       </span>
     </AdvancedMarker>
@@ -232,7 +228,7 @@ export function MapDiscoverPlaces({
   }, [selectedCategoryId, rating, openNow, scheduleSearch]);
 
   const selectedNormalized = selectedPlace?.googlePlaceId
-    ? normalizeResourcePlaceId(selectedPlace.googlePlaceId)
+    ? normalizeGooglePlaceResourceId(selectedPlace.googlePlaceId)
     : null;
 
   const categoryLabel =
