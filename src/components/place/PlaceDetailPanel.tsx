@@ -1,7 +1,12 @@
 "use client";
 
 import { ArrowLeft, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
+
+import { useChat } from "@/contexts/ChatContext";
+import { useChatActions } from "@/hooks/useChatActions";
+
 import type { SearchResultCardProps } from "./SearchResultCard";
 import { AddToBookmarkModal } from "./AddToBookmarkModal";
 import { AddToScheduleModal } from "./AddToScheduleModal";
@@ -26,6 +31,7 @@ export function PlaceDetailPanel({
   isOpen: propIsOpen,
   image,
   address,
+  location,
   googlePlaceId,
   onClose,
 }: PlaceDetailPanelProps) {
@@ -33,8 +39,50 @@ export function PlaceDetailPanel({
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
 
+  const { sendPlaceMessage, canSend } = useChatActions();
+  const { openChat } = useChat();
+
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
+
+  const handleSendToChat = useCallback(() => {
+    if (!googlePlaceId?.trim()) {
+      toast.error("장소 정보를 확인할 수 없어요.");
+      return;
+    }
+    if (!canSend) {
+      toast.error("채팅 연결을 확인해주세요.");
+      return;
+    }
+    const loc = location ?? detailData?.location;
+    if (!loc) {
+      toast.error("위치 정보가 없어 채팅으로 보낼 수 없어요.");
+      return;
+    }
+    sendPlaceMessage({
+      googlePlaceId: googlePlaceId.trim(),
+      name,
+      formattedAddress: address ?? detailData?.formattedAddress ?? "",
+      latitude: loc.lat,
+      longitude: loc.lng,
+      photoName: detailData?.photoName ?? "",
+      rating: rating ?? 0,
+    });
+    toast.success("장소를 채팅으로 보냈어요");
+    openChat();
+  }, [
+    address,
+    canSend,
+    detailData?.formattedAddress,
+    detailData?.location,
+    detailData?.photoName,
+    googlePlaceId,
+    location,
+    name,
+    openChat,
+    rating,
+    sendPlaceMessage,
+  ]);
 
   const phone = detailData?.phone;
   const website = detailData?.websiteUri;
@@ -87,6 +135,11 @@ export function PlaceDetailPanel({
           category={category}
           rating={rating}
           userRatingCount={userRatingCount}
+          onSendToChat={googlePlaceId ? handleSendToChat : undefined}
+          sendToChatDisabled={
+            !googlePlaceId ||
+            (!location && !detailData?.location && isDetailLoading)
+          }
           onAddToSchedule={
             googlePlaceId
               ? () => setScheduleModalOpen(true)
