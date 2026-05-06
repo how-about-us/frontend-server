@@ -9,6 +9,8 @@ import type { SearchResultCardProps } from "@/components/place/SearchResultCard"
 export type PlaceSearchResult = SearchResultCardProps & {
   googlePlaceId: string;
   location: { lat: number; lng: number };
+  /** 채팅으로 공유 시 STOMP payload 에 그대로 전달되는 원본 photoName */
+  photoName: string;
 };
 
 async function fetchPlacesWithPhotos(
@@ -44,6 +46,7 @@ async function fetchPlacesWithPhotos(
         isOpen: item.openNow,
         image: imageUrl,
         location: item.location,
+        photoName: item.photoName ?? "",
       };
       return result;
     }),

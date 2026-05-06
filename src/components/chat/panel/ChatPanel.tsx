@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
@@ -17,6 +18,7 @@ import {
 } from "../lib/chat.animations";
 
 export function ChatPanel() {
+  const router = useRouter();
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const isMinimized = chatState === "minimized";
   const roomId = useSessionStore((s) => s.currentRoomId);
@@ -24,7 +26,7 @@ export function ChatPanel() {
   const { data: membersData } = useRoomMembers(roomId);
   const onlineCount =
     membersData?.members.filter((m) => m.isOnline).length ?? 0;
-  const { messages, sendMessage } = useChatMessages(roomId);
+  const { messages, sendChatMessage, sendAiMessage } = useChatMessages(roomId);
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
   const { data: roomDetail } = useQuery({
@@ -37,6 +39,12 @@ export function ChatPanel() {
     sessionRoomTitle?.trim() ||
     roomDetail?.title?.trim() ||
     "채팅";
+
+  function handlePlusClick() {
+    if (!rid) return;
+    router.push("/search?share=chat");
+    minimizeChat();
+  }
 
   return (
     <AnimatePresence>
@@ -65,7 +73,13 @@ export function ChatPanel() {
           />
           <div className="h-px bg-black/[0.08]" />
           <ChatMessageList messages={messages} />
-          <ChatInputBar isMinimized={isMinimized} onSend={sendMessage} />
+          <ChatInputBar
+            isMinimized={isMinimized}
+            onSendChat={sendChatMessage}
+            onSendAi={sendAiMessage}
+            onPlusClick={handlePlusClick}
+            plusDisabled={!rid}
+          />
         </motion.div>
       )}
     </AnimatePresence>

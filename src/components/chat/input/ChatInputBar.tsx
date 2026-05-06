@@ -8,10 +8,19 @@ const AI_PREFIX = "@AI";
 
 interface ChatInputBarProps {
   isMinimized: boolean;
-  onSend: (content: string) => void;
+  onSendChat: (content: string) => void;
+  onSendAi: (content: string) => void;
+  onPlusClick?: () => void;
+  plusDisabled?: boolean;
 }
 
-export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
+export function ChatInputBar({
+  isMinimized,
+  onSendChat,
+  onSendAi,
+  onPlusClick,
+  plusDisabled = false,
+}: ChatInputBarProps) {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -46,9 +55,20 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
   function handleSend() {
     // IME 조합 후 React state 반영 타이밍과 맞추려면 DOM 값이 더 정확할 수 있음
     const raw = inputRef.current?.value ?? message;
-    const trimmed = raw.trim();
-    if (!trimmed) return;
-    onSend(trimmed);
+
+    if (aiEnabled) {
+      const stripped = raw.startsWith(AI_PREFIX)
+        ? raw.slice(AI_PREFIX.length)
+        : raw;
+      const trimmed = stripped.trim();
+      if (!trimmed) return;
+      onSendAi(trimmed);
+    } else {
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      onSendChat(trimmed);
+    }
+
     setMessage("");
     setAiEnabled(false);
   }
@@ -63,6 +83,14 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
     e.preventDefault();
     handleSend();
   }
+
+  // 버튼 활성 상태(빨간 아이콘) 판단 — @AI prefix 제외한 실제 텍스트 기준
+  const effectiveText = aiEnabled
+    ? message.startsWith(AI_PREFIX)
+      ? message.slice(AI_PREFIX.length)
+      : message
+    : message;
+  const hasContent = effectiveText.trim().length > 0;
 
   return (
     <div
@@ -96,7 +124,12 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
       </div>
       <div className="flex shrink-0 items-center justify-between px-1 pb-2 pt-1">
         <div className="flex items-center gap-1">
-          <button className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-light-gray">
+          <button
+            onClick={onPlusClick}
+            disabled={plusDisabled || !onPlusClick}
+            aria-label="장소 보내기"
+            className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40"
+          >
             <Plus className="h-5 w-5 text-dark-gray" />
           </button>
           <button
@@ -116,7 +149,7 @@ export function ChatInputBar({ isMinimized, onSend }: ChatInputBarProps) {
           className="flex items-center gap-2 px-2 py-2 transition hover:opacity-80"
         >
           <ChatEnterIcon
-            className={message.trim() ? "text-brand-red" : "text-light-gray"}
+            className={hasContent ? "text-brand-red" : "text-light-gray"}
           />
         </button>
       </div>

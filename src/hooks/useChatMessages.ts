@@ -1,11 +1,11 @@
 import {
   useEffect,
   useState,
-  useCallback,
   useMemo,
 } from "react";
 import type {
   ChatMessage,
+  PlaceShareData,
   ServerChatMessage,
   ServerChatMessageType,
 } from "@/types/chat";
@@ -14,6 +14,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
+import { useChatActions } from "@/hooks/useChatActions";
 
 type MemberMap = Map<number, Pick<RoomMember, "nickname" | "profileImageUrl">>;
 
@@ -37,6 +38,30 @@ function normalizeMessageKind(raw: ServerChatMessageType | unknown): string {
   return t.toUpperCase();
 }
 
+/** Record<string,string> 기반 metadata 를 PlaceShareData 로 안전 파싱 */
+function parsePlaceShareMetadata(
+  metadata: Record<string, string> | undefined,
+): PlaceShareData | null {
+  if (!metadata) return null;
+  const lat = Number(metadata.latitude);
+  const lng = Number(metadata.longitude);
+  const rating = Number(metadata.rating);
+  const googlePlaceId = metadata.googlePlaceId ?? "";
+  const name = metadata.name ?? "";
+  if (!googlePlaceId || !name || Number.isNaN(lat) || Number.isNaN(lng)) {
+    return null;
+  }
+  return {
+    googlePlaceId,
+    name,
+    formattedAddress: metadata.formattedAddress ?? "",
+    latitude: lat,
+    longitude: lng,
+    photoName: metadata.photoName ?? "",
+    rating: Number.isNaN(rating) ? 0 : rating,
+  };
+}
+
 function toUiMessage(
   msg: ServerChatMessage,
   currentUserId: number | undefined,
@@ -45,7 +70,28 @@ function toUiMessage(
   const kind = normalizeMessageKind(msg.messageType);
   const time = formatTime(msg.createdAt) || undefined;
 
-  if (kind === "SYSTEM" || kind === "PLACE_SHARE") {
+  if (kind === "PLACE_SHARE") {
+    const place = parsePlaceShareMetadata(msg.metadata);
+    if (place) {
+      return {
+        id: msg.id,
+        type: "place",
+        text: msg.content || "장소 공유",
+        time,
+        sender: `place:${msg.id}`,
+        place,
+      };
+    }
+    return {
+      id: msg.id,
+      type: "system",
+      text: msg.content || "장소 공유",
+      time,
+      sender: `system:${msg.id}`,
+    };
+  }
+
+  if (kind === "SYSTEM" || kind === "AI_REQUEST") {
     return {
       id: msg.id,
       type: "system",
@@ -55,11 +101,7 @@ function toUiMessage(
     };
   }
 
-  if (
-    kind === "AI_REQUEST" ||
-    kind === "AI_RESPONSE" ||
-    kind === "AI"
-  ) {
+  if (kind === "AI_RESPONSE" || kind === "AI") {
     return {
       id: msg.id,
       type: "ai",
@@ -92,10 +134,11 @@ function toUiMessage(
 }
 
 export function useChatMessages(roomId: string | null) {
-  const { client, connected, setRoomChatMessageHandler } = useStompContext();
+  const { setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
   const { data: membersData } = useRoomMembers(roomId);
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
+  const { sendChatMessage, sendAiMessage, sendPlaceMessage } = useChatActions();
 
   const memberMap = useMemo(() => {
     const members = membersData?.members;
@@ -129,7 +172,7 @@ export function useChatMessages(roomId: string | null) {
       setRawMessages((prev) => {
         const systemDuringFetch = prev.filter((m) => {
           const k = normalizeMessageKind(m.messageType);
-          return k === "SYSTEM" || k === "PLACE_SHARE";
+          return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
         });
         return [...history, ...systemDuringFetch];
       });
@@ -153,19 +196,10 @@ export function useChatMessages(roomId: string | null) {
     return () => setRoomChatMessageHandler(null);
   }, [roomId, setRoomChatMessageHandler]);
 
-  const sendMessage = useCallback(
-    (content: string) => {
-      if (!client || !connected || !roomId || !content.trim()) return;
-      client.publish({
-        destination: `/app/rooms/${roomId}/messages/chat`,
-        body: JSON.stringify({
-          clientMessageId: crypto.randomUUID(),
-          content: content.trim(),
-        }),
-      });
-    },
-    [client, connected, roomId],
-  );
-
-  return { messages, sendMessage };
+  return {
+    messages,
+    sendChatMessage,
+    sendAiMessage,
+    sendPlaceMessage,
+  };
 }

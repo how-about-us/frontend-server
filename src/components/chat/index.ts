@@ -20,4 +20,5 @@ export {
   SystemMessage,
   AiMessageGroup,
 } from "./messages/ChatMessageGroup";
+export { PlaceShareCard } from "./messages/PlaceShareCard";
 export { ChatInputBar } from "./input/ChatInputBar";

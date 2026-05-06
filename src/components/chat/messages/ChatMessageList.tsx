@@ -9,6 +9,7 @@ import {
   SystemMessage,
   AiMessageGroup,
 } from "./ChatMessageGroup";
+import { PlaceShareCard } from "./PlaceShareCard";
 
 export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
   const groups = groupConsecutiveMessages(messages);
@@ -25,6 +26,8 @@ export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
           const type = group[0].type;
           if (type === "system")
             return <SystemMessage key={group[0].id} message={group[0]} />;
+          if (type === "place")
+            return <PlaceShareCard key={group[0].id} message={group[0]} />;
           if (type === "mine")
             return <MyMessageGroup key={i} messages={group} />;
           if (type === "ai")
