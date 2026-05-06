@@ -48,7 +48,9 @@ export function PlacesSearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownListRef = useRef<HTMLUListElement>(null);
-  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(
+    null,
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateMenuGeometry = useCallback(() => {
@@ -226,7 +228,10 @@ export function PlacesSearchInput({
         );
       }
       parts.push(
-        <span key={`match-${match.offset}`} className="font-semibold text-brand-green">
+        <span
+          key={`match-${match.offset}`}
+          className="font-semibold text-brand-green"
+        >
           {main_text.slice(match.offset, match.offset + match.length)}
         </span>,
       );
@@ -294,8 +299,8 @@ export function PlacesSearchInput({
 
   return (
     <div ref={containerRef} className="relative">
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <div className="relative flex flex-1 items-center">
+      <form onSubmit={handleSubmit} className="flex items-center gap-1">
+        <div className="w-full relative left-1 flex px-1 items-center">
           <Search className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray" />
           <input
             ref={inputRef}
@@ -324,7 +329,7 @@ export function PlacesSearchInput({
           <button
             type="submit"
             disabled={!inputValue.trim() || disabled}
-            className="shrink-0 rounded-lg bg-brand-green px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="shrink-0 rounded-lg bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             검색
           </button>

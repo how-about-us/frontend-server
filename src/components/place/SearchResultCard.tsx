@@ -40,7 +40,7 @@ export function SearchResultCard({
   return (
     <article
       className={cn(
-        "flex items-start gap-3 border-b border-gray-border bg-white px-4 py-3.5 transition-colors hover:bg-gray-50 active:bg-gray-100",
+        "flex items-center gap-3 border-b border-gray-border bg-white px-4 py-2 transition-colors hover:bg-gray-50 active:bg-gray-100",
         className,
       )}
       onClick={onClick}
@@ -62,7 +62,7 @@ export function SearchResultCard({
         </div>
 
         {/* 별점 + 리뷰 수 + 영업 상태 */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5">
           <Star className="h-3 w-3 fill-[#FDC700] text-[#FDC700]" />
           <span className="text-[11px] font-medium leading-relaxed text-[#364153]">
             {rating != null ? rating.toFixed(1) : "-"}

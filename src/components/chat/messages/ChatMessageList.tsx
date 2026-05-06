@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/types/chat";
+import { cn } from "@/lib/utils";
 import { groupConsecutiveMessages } from "../lib/chat.utils";
 import {
   OtherMessageGroup,
@@ -11,7 +12,13 @@ import {
 } from "./ChatMessageGroup";
 import { PlaceShareCard } from "./PlaceShareCard";
 
-export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
+export function ChatMessageList({
+  messages,
+  isMinimized = false,
+}: {
+  messages: ChatMessage[];
+  isMinimized?: boolean;
+}) {
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -20,19 +27,54 @@ export function ChatMessageList({ messages }: { messages: ChatMessage[] }) {
   }, [messages]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2 [scrollbar-color:rgba(0,0,0,0.2)_transparent]">
-      <div className="flex flex-col gap-3">
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2 [scrollbar-color:rgba(0,0,0,0.2)_transparent]",
+        isMinimized && "px-2 py-1.5",
+      )}
+    >
+      <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
         {groups.map((group, i) => {
           const type = group[0].type;
           if (type === "system")
-            return <SystemMessage key={group[0].id} message={group[0]} />;
+            return (
+              <SystemMessage
+                key={group[0].id}
+                message={group[0]}
+                isMinimized={isMinimized}
+              />
+            );
           if (type === "place")
-            return <PlaceShareCard key={group[0].id} message={group[0]} />;
+            return (
+              <PlaceShareCard
+                key={group[0].id}
+                message={group[0]}
+                isMinimized={isMinimized}
+              />
+            );
           if (type === "mine")
-            return <MyMessageGroup key={i} messages={group} />;
+            return (
+              <MyMessageGroup
+                key={i}
+                messages={group}
+                isMinimized={isMinimized}
+              />
+            );
           if (type === "ai")
-            return <AiMessageGroup key={i} messages={group} />;
-          return <OtherMessageGroup key={i} messages={group} />;
+            return (
+              <AiMessageGroup
+                key={i}
+                messages={group}
+                isMinimized={isMinimized}
+              />
+            );
+          return (
+            <OtherMessageGroup
+              key={i}
+              messages={group}
+              isMinimized={isMinimized}
+            />
+          );
         })}
       </div>
       <div ref={bottomRef} />

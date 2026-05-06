@@ -1,13 +1,19 @@
 import type { ChatMessage } from "@/types/chat";
-import { chatMessageChrome } from "@/components/chat/lib/chatMessageChrome";
-import { chatTypography } from "@/components/chat/lib/chatTypography";
+import { getChatPanelLook } from "@/components/chat/lib/chatPanelLook";
+import type { ChatMessageTextTypography } from "@/components/chat/lib/chatTypography";
 import { cn } from "@/lib/utils";
 
-function BubbleMessageText({ msg }: { msg: ChatMessage }) {
+function BubbleMessageText({
+  msg,
+  typo,
+}: {
+  msg: ChatMessage;
+  typo: ChatMessageTextTypography;
+}) {
   if (!msg.isAiRequest) return msg.text;
   return (
     <>
-      <span className={chatTypography.aiRequestBubblePrefix}>@AI</span>
+      <span className={typo.aiRequestBubblePrefix}>@AI</span>
       {msg.text ? (
         <>
           {" "}
@@ -20,22 +26,31 @@ function BubbleMessageText({ msg }: { msg: ChatMessage }) {
 
 function GroupTimeStamp({
   time,
+  typo,
   className,
 }: {
   time: string;
+  typo: ChatMessageTextTypography;
   className?: string;
 }) {
-  return <span className={cn(chatTypography.metaMuted, className)}>{time}</span>;
+  return <span className={cn(typo.metaMuted, className)}>{time}</span>;
 }
 
-export function OtherMessageGroup({ messages }: { messages: ChatMessage[] }) {
+export function OtherMessageGroup({
+  messages,
+  isMinimized = false,
+}: {
+  messages: ChatMessage[];
+  isMinimized?: boolean;
+}) {
+  const { typo, chrome } = getChatPanelLook(isMinimized);
   const first = messages[0];
   const groupTime = messages.findLast((m) => m.time)?.time;
 
   return (
     <div className="flex gap-2">
       <div className="flex flex-col items-center gap-1">
-        <div className={cn(chatMessageChrome.avatarSm, "bg-light-gray")}>
+        <div className={cn(chrome.avatarSm, "bg-light-gray")}>
           {first.avatar && (
             <img
               src={first.avatar}
@@ -44,7 +59,7 @@ export function OtherMessageGroup({ messages }: { messages: ChatMessage[] }) {
             />
           )}
         </div>
-        <span className={chatTypography.metaMuted}>{first.sender}</span>
+        <span className={typo.metaMuted}>{first.sender}</span>
       </div>
       <div className="min-w-0">
         <div className="flex flex-col gap-1">
@@ -52,22 +67,31 @@ export function OtherMessageGroup({ messages }: { messages: ChatMessage[] }) {
             <div
               key={msg.id}
               className={cn(
-                chatMessageChrome.bubbleBase,
-                chatMessageChrome.otherBubble,
-                chatTypography.bubble,
+                chrome.bubbleBase,
+                chrome.otherBubble,
+                typo.bubble,
               )}
             >
-              <BubbleMessageText msg={msg} />
+              <BubbleMessageText msg={msg} typo={typo} />
             </div>
           ))}
         </div>
-        {groupTime && <GroupTimeStamp time={groupTime} />}
+        {groupTime && (
+          <GroupTimeStamp time={groupTime} typo={typo} />
+        )}
       </div>
     </div>
   );
 }
 
-export function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
+export function MyMessageGroup({
+  messages,
+  isMinimized = false,
+}: {
+  messages: ChatMessage[];
+  isMinimized?: boolean;
+}) {
+  const { typo, chrome } = getChatPanelLook(isMinimized);
   const groupTime = messages.findLast((m) => m.time)?.time;
 
   return (
@@ -76,24 +100,34 @@ export function MyMessageGroup({ messages }: { messages: ChatMessage[] }) {
         <div
           key={msg.id}
           className={cn(
-            chatMessageChrome.bubbleBase,
-            chatMessageChrome.mineBubble,
-            chatTypography.bubble,
+            chrome.bubbleBase,
+            chrome.mineBubble,
+            typo.bubble,
           )}
         >
-          <BubbleMessageText msg={msg} />
+          <BubbleMessageText msg={msg} typo={typo} />
         </div>
       ))}
-      {groupTime && <GroupTimeStamp time={groupTime} />}
+      {groupTime && (
+        <GroupTimeStamp time={groupTime} typo={typo} />
+      )}
     </div>
   );
 }
 
-export function SystemMessage({ message }: { message: ChatMessage }) {
+export function SystemMessage({
+  message,
+  isMinimized = false,
+}: {
+  message: ChatMessage;
+  isMinimized?: boolean;
+}) {
+  const { typo, chrome } = getChatPanelLook(isMinimized);
+
   return (
     <div className="flex justify-center px-2">
       <div
-        className={cn(chatMessageChrome.systemPill, chatTypography.systemBody)}
+        className={cn(chrome.systemPill, typo.systemBody)}
         style={{ whiteSpace: "pre-line" }}
       >
         {message.text}
@@ -102,25 +136,32 @@ export function SystemMessage({ message }: { message: ChatMessage }) {
   );
 }
 
-export function AiMessageGroup({ messages }: { messages: ChatMessage[] }) {
+export function AiMessageGroup({
+  messages,
+  isMinimized = false,
+}: {
+  messages: ChatMessage[];
+  isMinimized?: boolean;
+}) {
+  const { typo, chrome } = getChatPanelLook(isMinimized);
   const groupTime = messages.findLast((m) => m.time)?.time;
 
   return (
     <div className="flex gap-2">
       <div className="flex shrink-0 flex-col items-center gap-0.5">
         <div
-          className={cn(chatMessageChrome.avatarSm, "bg-transparent")}
+          className={cn(chrome.avatarSm, "bg-transparent")}
           role="img"
           aria-label="WOORI"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- public 정적 SVG */}
           <img
-            src={chatMessageChrome.wooriIconSrc}
+            src={chrome.wooriIconSrc}
             alt="WOORI"
             className="h-full w-full object-contain"
           />
         </div>
-        <span className={chatTypography.wooriSenderLabel}>WOORI</span>
+        <span className={typo.wooriSenderLabel}>WOORI</span>
       </div>
 
       <div className="min-w-0">
@@ -129,9 +170,9 @@ export function AiMessageGroup({ messages }: { messages: ChatMessage[] }) {
             <div
               key={msg.id}
               className={cn(
-                chatMessageChrome.bubbleBase,
-                chatMessageChrome.aiBubble,
-                chatTypography.bubble,
+                chrome.bubbleBase,
+                chrome.aiBubble,
+                typo.bubble,
               )}
               style={{ whiteSpace: "pre-line" }}
             >
@@ -141,7 +182,11 @@ export function AiMessageGroup({ messages }: { messages: ChatMessage[] }) {
         </div>
 
         {groupTime && (
-          <GroupTimeStamp time={groupTime} className="mt-0.5 block" />
+          <GroupTimeStamp
+            time={groupTime}
+            typo={typo}
+            className="mt-0.5 block"
+          />
         )}
       </div>
     </div>

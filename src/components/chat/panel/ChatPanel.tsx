@@ -72,7 +72,7 @@ export function ChatPanel() {
             onClose={closeChat}
           />
           <div className="h-px bg-black/[0.08]" />
-          <ChatMessageList messages={messages} />
+          <ChatMessageList messages={messages} isMinimized={isMinimized} />
           <ChatInputBar
             isMinimized={isMinimized}
             onSendChat={sendChatMessage}

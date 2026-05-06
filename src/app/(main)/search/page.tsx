@@ -9,7 +9,10 @@ import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import { usePlacesSearch, type PlaceSearchResult } from "@/hooks/usePlacesSearch";
+import {
+  usePlacesSearch,
+  type PlaceSearchResult,
+} from "@/hooks/usePlacesSearch";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 import { useChatActions } from "@/hooks/useChatActions";
 import { useChat } from "@/contexts/ChatContext";
@@ -40,7 +43,12 @@ export default function SearchPage() {
     setSearchCoords({ lat: mapCenter.lat, lng: mapCenter.lng });
   }
 
-  const { data: results, isLoading, isError, error } = usePlacesSearch(
+  const {
+    data: results,
+    isLoading,
+    isError,
+    error,
+  } = usePlacesSearch(
     query,
     searchCoords?.lat ?? null,
     searchCoords?.lng ?? null,
@@ -75,6 +83,10 @@ export default function SearchPage() {
     <div className="flex h-full min-h-0 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
 
+      {/* 검색 입력 */}
+      <div className="shrink-0 border-b border-gray-border pl-4 pr-3 pb-4">
+        <PlacesSearchInput coords={mapCenter} onSearch={handleSearch} />
+      </div>
       {shareModeActive && (
         <div className="flex shrink-0 items-center gap-2 border-b border-gray-border bg-brand-green/10 px-4 py-2 text-[13px] text-brand-green">
           <Send className="h-3.5 w-3.5" />
@@ -88,11 +100,6 @@ export default function SearchPage() {
           </button>
         </div>
       )}
-
-      {/* 검색 입력 */}
-      <div className="shrink-0 border-b border-gray-border px-4 pb-4 pt-3">
-        <PlacesSearchInput coords={mapCenter} onSearch={handleSearch} />
-      </div>
 
       {/* 결과 */}
       <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent]">
@@ -126,7 +133,8 @@ export default function SearchPage() {
           </div>
         )}
 
-        {results && results.length > 0 &&
+        {results &&
+          results.length > 0 &&
           results.map((result, i) => (
             <SearchResultCard
               key={result.googlePlaceId ?? i}

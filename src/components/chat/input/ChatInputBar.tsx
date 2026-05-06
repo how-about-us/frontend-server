@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { ChatEnterIcon } from "@/components/icons";
-import { chatTypography } from "@/components/chat/lib/chatTypography";
+import { chatTypography, resolveChatMessageTypography } from "@/components/chat/lib/chatTypography";
 import { cn } from "@/lib/utils";
 
 /** UI 오버레이 전용 — 실제 textarea value 에는 넣지 않음 */
@@ -74,6 +74,7 @@ export function ChatInputBar({
   }
 
   const hasContent = message.trim().length > 0;
+  const typo = resolveChatMessageTypography(isMinimized);
 
   return (
     <div
@@ -85,7 +86,7 @@ export function ChatInputBar({
           <span
             className={cn(
               "pointer-events-none absolute left-0 top-3",
-              chatTypography.inputAiLabel,
+              typo.inputAiLabel,
             )}
             style={{ paddingLeft: chatTypography.aiOverlayInset }}
           >
@@ -100,7 +101,7 @@ export function ChatInputBar({
           placeholder="메시지를 입력하세요."
           className={cn(
             "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:rgba(0,0,0,0.2)_transparent]",
-            chatTypography.input,
+            typo.input,
           )}
           style={
             aiEnabled
@@ -109,15 +110,28 @@ export function ChatInputBar({
           }
         />
       </div>
-      <div className="flex shrink-0 items-center justify-between px-1 pb-2 pt-1">
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-between px-1 pb-2",
+          isMinimized ? "pt-0.5" : "pt-1",
+        )}
+      >
         <div className="flex items-center gap-1">
           <button
             onClick={onPlusClick}
             disabled={plusDisabled || !onPlusClick}
             aria-label="장소 보내기"
-            className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40"
+            className={cn(
+              "flex items-center justify-center rounded-full transition hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
+              isMinimized ? "h-8 w-8" : "h-9 w-9",
+            )}
           >
-            <Plus className="h-5 w-5 text-dark-gray" />
+            <Plus
+              className={cn(
+                "text-dark-gray",
+                isMinimized ? "h-4 w-4" : "h-5 w-5",
+              )}
+            />
           </button>
           <button
             onClick={toggleAi}
@@ -127,8 +141,13 @@ export function ChatInputBar({
                 : "bg-light-gray text-black/40"
             }`}
           >
-            <span className={chatTypography.input}>{AI_LABEL}</span>
-            {aiEnabled && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+            <span className={typo.input}>{AI_LABEL}</span>
+            {aiEnabled && (
+              <Check
+                className={cn(isMinimized ? "h-3 w-3" : "h-3.5 w-3.5")}
+                strokeWidth={3}
+              />
+            )}
           </button>
         </div>
         <button
