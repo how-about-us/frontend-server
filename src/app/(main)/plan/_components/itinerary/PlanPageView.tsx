@@ -42,8 +42,11 @@ export function PlanPageView() {
 
   const roomIdForQueries = roomId.length > 0 ? roomId : null;
 
-  const { data: schedules, isPending, isError } =
-    useRoomSchedules(roomIdForQueries);
+  const {
+    data: schedules,
+    isPending,
+    isError,
+  } = useRoomSchedules(roomIdForQueries);
   const { mutate: deleteSchedule, isPending: isDeletingSchedule } =
     useDeleteRoomSchedule();
 
@@ -84,12 +87,13 @@ export function PlanPageView() {
 
   useLayoutEffect(() => {
     const ids =
-      scheduleExpansionSyncKey.length > 0 ?
-        scheduleExpansionSyncKey.split(",").map(Number).filter(Number.isFinite)
-      : [];
-    usePlanItineraryExpandedStore
-      .getState()
-      .syncScheduleExpansionState(ids);
+      scheduleExpansionSyncKey.length > 0
+        ? scheduleExpansionSyncKey
+            .split(",")
+            .map(Number)
+            .filter(Number.isFinite)
+        : [];
+    usePlanItineraryExpandedStore.getState().syncScheduleExpansionState(ids);
   }, [scheduleExpansionSyncKey]);
 
   const scheduleDerivedRange = useMemo(() => {
@@ -180,8 +184,8 @@ export function PlanPageView() {
 
       {!isError && planDays.length === 0 ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
-          아직 생성된 일정이 없어요. 위에서 여행 기간을 선택한 뒤 적용하면 서버에
-          일정이 만들어집니다.
+          아직 생성된 일정이 없어요. 위에서 여행 기간을 선택한 뒤 적용하면
+          서버에 일정이 만들어집니다.
         </p>
       ) : null}
 

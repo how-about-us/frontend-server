@@ -196,9 +196,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             <PlanPlaceCard
               place={place}
               orderIndex={index + 1}
-              dragDisabled={
-                dragLocked || typeof place.itemId !== "number"
-              }
+              dragDisabled={dragLocked || typeof place.itemId !== "number"}
               scheduleTimeEdit={{ roomId, scheduleId, slotIndex: index }}
               isDragging={dragFromIndex === index}
               isDropTarget={
@@ -221,7 +219,9 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 scheduleId={scheduleId}
                 segmentSourceItemId={place.itemId}
                 scheduleFingerprint={scheduleFingerprint}
-                travelMode={place.travelMode ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE}
+                travelMode={
+                  place.travelMode ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE
+                }
                 routeQueryEnabled={
                   placesData !== undefined &&
                   !isFetchingPlaces &&
@@ -234,7 +234,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
+      <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4 pb-40">
         <p className="text-xs font-medium text-dark-gray">장소 추가</p>
         <PlacesSearchInput
           coords={mapCenter}
