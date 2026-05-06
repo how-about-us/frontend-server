@@ -99,7 +99,7 @@ function toUiMessage(
     };
   }
 
-  if (kind === "SYSTEM" || kind === "AI_REQUEST") {
+  if (kind === "SYSTEM") {
     return {
       id: msg.id,
       type: "system",
@@ -119,7 +119,7 @@ function toUiMessage(
     };
   }
 
-  if (kind === "CHAT") {
+  if (kind === "CHAT" || kind === "AI_REQUEST") {
     const senderUserId = parseFiniteNumber(msg.senderId) ?? msg.senderId;
     const member = memberMap.get(senderUserId);
     const meta = msg.metadata;
@@ -149,6 +149,7 @@ function toUiMessage(
       avatar: member?.profileImageUrl ?? metaAvatar ?? undefined,
       text: msg.content,
       time,
+      ...(kind === "AI_REQUEST" ? { isAiRequest: true as const } : {}),
     };
   }
 

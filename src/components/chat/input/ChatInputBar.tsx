@@ -3,8 +3,11 @@
 import { useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { ChatEnterIcon } from "@/components/icons";
+import { chatTypography } from "@/components/chat/lib/chatTypography";
+import { cn } from "@/lib/utils";
 
-const AI_PREFIX = "@AI";
+/** UI 오버레이 전용 — 실제 textarea value 에는 넣지 않음 */
+const AI_LABEL = "@AI";
 
 interface ChatInputBarProps {
   isMinimized: boolean;
@@ -29,45 +32,31 @@ export function ChatInputBar({
     setAiEnabled((prev) => {
       const next = !prev;
       if (next) {
-        setMessage(AI_PREFIX);
         setTimeout(() => {
           const el = inputRef.current;
           if (el) {
             el.focus();
-            el.setSelectionRange(AI_PREFIX.length, AI_PREFIX.length);
+            const end = el.value.length;
+            el.setSelectionRange(end, end);
           }
         });
-      } else {
-        setMessage((m) =>
-          m.startsWith(AI_PREFIX) ? m.slice(AI_PREFIX.length) : m,
-        );
       }
       return next;
     });
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const val = e.target.value;
-    if (aiEnabled && !val.startsWith(AI_PREFIX)) setAiEnabled(false);
-    setMessage(val);
+    setMessage(e.target.value);
   }
 
   function handleSend() {
     // IME 조합 후 React state 반영 타이밍과 맞추려면 DOM 값이 더 정확할 수 있음
     const raw = inputRef.current?.value ?? message;
+    const trimmed = raw.trim();
+    if (!trimmed) return;
 
-    if (aiEnabled) {
-      const stripped = raw.startsWith(AI_PREFIX)
-        ? raw.slice(AI_PREFIX.length)
-        : raw;
-      const trimmed = stripped.trim();
-      if (!trimmed) return;
-      onSendAi(trimmed);
-    } else {
-      const trimmed = raw.trim();
-      if (!trimmed) return;
-      onSendChat(trimmed);
-    }
+    if (aiEnabled) onSendAi(trimmed);
+    else onSendChat(trimmed);
 
     setMessage("");
     setAiEnabled(false);
@@ -84,13 +73,7 @@ export function ChatInputBar({
     handleSend();
   }
 
-  // 버튼 활성 상태(빨간 아이콘) 판단 — @AI prefix 제외한 실제 텍스트 기준
-  const effectiveText = aiEnabled
-    ? message.startsWith(AI_PREFIX)
-      ? message.slice(AI_PREFIX.length)
-      : message
-    : message;
-  const hasContent = effectiveText.trim().length > 0;
+  const hasContent = message.trim().length > 0;
 
   return (
     <div
@@ -99,8 +82,14 @@ export function ChatInputBar({
     >
       <div className="relative min-h-0 flex-1 px-4 pb-1 pt-3">
         {aiEnabled && (
-          <span className="pointer-events-none absolute top-3 text-sm text-blue-500">
-            @AI
+          <span
+            className={cn(
+              "pointer-events-none absolute left-0 top-3",
+              chatTypography.inputAiLabel,
+            )}
+            style={{ paddingLeft: chatTypography.aiOverlayInset }}
+          >
+            {AI_LABEL}
           </span>
         )}
         <textarea
@@ -109,15 +98,13 @@ export function ChatInputBar({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요."
-          className={`h-full w-full resize-none bg-transparent text-sm leading-relaxed text-black outline-none placeholder:text-black/40 [scrollbar-color:rgba(0,0,0,0.2)_transparent] ${
-            aiEnabled ? "text-transparent caret-black" : ""
-          }`}
+          className={cn(
+            "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:rgba(0,0,0,0.2)_transparent]",
+            chatTypography.input,
+          )}
           style={
             aiEnabled
-              ? {
-                  background: `linear-gradient(90deg, transparent ${AI_PREFIX.length}ch, black ${AI_PREFIX.length}ch)`,
-                  WebkitBackgroundClip: "text",
-                }
+              ? { paddingLeft: chatTypography.aiInputPaddingLeft }
               : undefined
           }
         />
@@ -140,7 +127,7 @@ export function ChatInputBar({
                 : "bg-light-gray text-black/40"
             }`}
           >
-            <span className="text-sm">@AI</span>
+            <span className={chatTypography.input}>{AI_LABEL}</span>
             {aiEnabled && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
           </button>
         </div>

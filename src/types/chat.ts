@@ -23,6 +23,8 @@ export interface ChatMessage {
   senderUserId?: number;
   /** PLACE_SHARE 타입일 때만 사용 — OG 카드 렌더 및 클릭 시 지도/디테일 패널 연동 */
   place?: PlaceShareData;
+  /** AI_REQUEST(STOMP) 수신 시 본문 앞에 초록 `@AI` 접두 UI 표시 */
+  isAiRequest?: boolean;
 }
 
 /** `/topic/rooms/{roomId}/messages` · GET /messages 응답 — 일반 말풍선은 CHAT 만 */

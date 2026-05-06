@@ -7,6 +7,8 @@ import { getPlacePhotoUrl } from "@/lib/api/places";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
+import { cn } from "@/lib/utils";
+import { chatTypography } from "@/components/chat/lib/chatTypography";
 import type { ChatMessage } from "@/types/chat";
 
 export function PlaceShareCard({ message }: { message: ChatMessage }) {
@@ -66,19 +68,19 @@ export function PlaceShareCard({ message }: { message: ChatMessage }) {
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2">
-        <div className="truncate text-sm font-semibold leading-5 text-brand-green">
+        <div className={cn("truncate", chatTypography.placeTitle)}>
           {place.name}
         </div>
         <div className="flex items-center gap-1">
           <Star className="h-3 w-3 fill-[#FDC700] text-[#FDC700]" />
-          <span className="text-[11px] font-medium leading-relaxed text-[#364153]">
+          <span className={chatTypography.placeRating}>
             {place.rating ? place.rating.toFixed(1) : "-"}
           </span>
         </div>
         {place.formattedAddress && (
           <div className="flex items-center gap-1">
             <MapPin className="h-3 w-3 shrink-0 text-[#99A1AF]" />
-            <span className="truncate text-[11px] leading-relaxed text-[#99A1AF]">
+            <span className={cn("truncate", chatTypography.placeAddress)}>
               {place.formattedAddress}
             </span>
           </div>
@@ -89,7 +91,7 @@ export function PlaceShareCard({ message }: { message: ChatMessage }) {
 
   const timeRow =
     message.time != null ? (
-      <span className="text-[10px] leading-relaxed text-dark-gray">
+      <span className={chatTypography.metaMuted}>
         {message.time}
       </span>
     ) : null;
@@ -116,7 +118,12 @@ export function PlaceShareCard({ message }: { message: ChatMessage }) {
             />
           ) : null}
         </div>
-        <span className="max-w-[4rem] truncate text-center text-[10px] leading-relaxed text-dark-gray">
+        <span
+          className={cn(
+            "max-w-[4rem] truncate text-center",
+            chatTypography.metaMuted,
+          )}
+        >
           {message.sender}
         </span>
       </div>
