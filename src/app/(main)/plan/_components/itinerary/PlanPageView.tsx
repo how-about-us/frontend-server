@@ -79,11 +79,15 @@ export function PlanPageView() {
       if (dayIndex !== lastDayIndex) return;
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
+      if (!confirm("이 일차를 삭제할까요?")) return;
       deleteSchedule(
         { roomId, scheduleId: sid },
         {
+          onSuccess: () => {
+            toast.success("일차를 삭제했어요.");
+          },
           onError: () => {
-            toast.error("일정을 삭제하지 못했어요.");
+            toast.error("일차를 삭제하지 못했어요.");
           },
         },
       );

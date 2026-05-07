@@ -37,8 +37,10 @@ function AiRequestMetaRow({
     return (
       <div
         className={cn(
-          "mt-1 flex w-full max-w-full text-xs",
-          isOwnMessage ? "justify-end" : "justify-start",
+          "mt-1 flex max-w-full text-xs",
+          isOwnMessage ?
+            "w-auto self-end justify-end"
+          : "w-full justify-start",
           typo.metaMuted,
         )}
       >
@@ -50,8 +52,10 @@ function AiRequestMetaRow({
   return (
     <div
       className={cn(
-        "mt-1 flex w-full max-w-full flex-row flex-wrap items-center gap-x-2 gap-y-1 text-xs",
-        isOwnMessage ? "justify-between" : "justify-start",
+        "mt-1 flex max-w-full flex-row flex-wrap items-center gap-x-2 gap-y-1 text-xs",
+        isOwnMessage ?
+          "w-auto self-end justify-end"
+        : "w-full justify-start",
         typo.metaMuted,
       )}
     >
@@ -202,14 +206,12 @@ export function MyMessageGroup({
             <BubbleMessageText msg={msg} typo={typo} />
           </div>
           {msg.isAiRequest ? (
-            <div className="w-full">
-              <AiRequestMetaRow
-                msg={msg}
-                typo={typo}
-                onCancelRequest={onCancelAiRequest}
-                isOwnMessage
-              />
-            </div>
+            <AiRequestMetaRow
+              msg={msg}
+              typo={typo}
+              onCancelRequest={onCancelAiRequest}
+              isOwnMessage
+            />
           ) : null}
         </div>
       ))}

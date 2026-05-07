@@ -35,8 +35,6 @@ export function RoomMembersSection() {
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
   const clearCurrentRoomInviteCode = useSessionStore((s) => s.clearCurrentRoomInviteCode);
   const clearCurrentRoomMeta = useSessionStore((s) => s.clearCurrentRoomMeta);
-  const inviteCode = useSessionStore((s) => s.currentRoomInviteCode);
-
   const { data: roomsData } = useRoomsList();
   const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
   const isHost = currentRoom?.role === "HOST";
@@ -128,7 +126,6 @@ export function RoomMembersSection() {
       {showInvitePanel && currentRoomId && (
         <AddMemberPanel
           roomId={currentRoomId}
-          inviteCode={inviteCode}
           onClose={() => setShowInvitePanel(false)}
         />
       )}

@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   roomId: string;
-  inviteCode: string | null;
   onClose: () => void;
 };
 
-export function AddMemberPanel({ roomId, inviteCode, onClose }: Props) {
+export function AddMemberPanel({ roomId, onClose }: Props) {
   const [copied, setCopied] = useState(false);
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const setCurrentRoomInviteCode = useSessionStore(
     (s) => s.setCurrentRoomInviteCode,
   );
@@ -21,8 +22,22 @@ export function AddMemberPanel({ roomId, inviteCode, onClose }: Props) {
   const { mutate: regenerate, isPending: isRegenerating } =
     useRegenerateInviteCode();
 
-  const inviteUrl = inviteCode
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${inviteCode}`
+  useEffect(() => {
+    const id = roomId.trim();
+    if (!id.length) return;
+    regenerate(id, {
+      onSuccess: ({ inviteCode: newCode }) => {
+        setCurrentRoomInviteCode(newCode);
+        setIssuedCode(newCode);
+      },
+      onError: () => {
+        toast.error("초대 링크를 발급하지 못했어요.");
+      },
+    });
+  }, [regenerate, roomId, setCurrentRoomInviteCode]);
+
+  const inviteUrl = issuedCode
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${issuedCode}`
     : null;
 
   function handleCopy() {
@@ -34,9 +49,15 @@ export function AddMemberPanel({ roomId, inviteCode, onClose }: Props) {
   }
 
   function handleRegenerate() {
-    regenerate(roomId, {
+    const id = roomId.trim();
+    if (!id.length) return;
+    regenerate(id, {
       onSuccess: ({ inviteCode: newCode }) => {
         setCurrentRoomInviteCode(newCode);
+        setIssuedCode(newCode);
+      },
+      onError: () => {
+        toast.error("초대 링크를 재발급하지 못했어요.");
       },
     });
   }
@@ -77,7 +98,7 @@ export function AddMemberPanel({ roomId, inviteCode, onClose }: Props) {
               <span className="truncate text-xs text-dark-gray">{inviteUrl}</span>
             ) : (
               <span className="truncate text-xs text-light-gray">
-                초대 코드를 불러오는 중…
+                {isRegenerating ? "초대 링크를 발급하는 중…" : "발급에 실패했어요. 재발급을 눌러 주세요."}
               </span>
             )}
           </div>
