@@ -6,3 +6,4 @@
 | **Styling**   |  Tailwind CSS |
 | **State**     |       Zustand |
 | **Animation** | Framer Motion |
+| **DataFetch** | Tanstack Query|
