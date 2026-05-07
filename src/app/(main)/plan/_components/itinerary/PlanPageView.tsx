@@ -119,7 +119,7 @@ export function PlanPageView() {
         onClick={handleAddSchedule}
         disabled={!canAddSchedule}
         aria-label="일차 추가"
-        className="inline-flex items-center justify-center rounded-xl border border-gray-border bg-white p-2.5 text-gray-900 shadow-sm transition-colors hover:bg-bubble-gray/60 disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-xl border border-brand-red bg-brand-red p-2.5 text-white shadow-sm transition-colors hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
       >
         <Plus className="h-5 w-5" aria-hidden />
       </button>

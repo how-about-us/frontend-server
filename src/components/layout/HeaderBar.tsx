@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Home } from "lucide-react";
 import { useMemo } from "react";
 
 import { useRoomsList } from "@/hooks/useRooms";
@@ -23,9 +24,9 @@ const HeaderBar = () => {
 
   const tripMeta = useMemo(
     () =>
-      roomId?.length ?
-        tripYmdBoundsFromRoomSources(roomId, listRooms, roomMeta ?? undefined)
-      : { startYmd: "", endYmd: "" },
+      roomId?.length
+        ? tripYmdBoundsFromRoomSources(roomId, listRooms, roomMeta ?? undefined)
+        : { startYmd: "", endYmd: "" },
     [listRooms, roomId, roomMeta],
   );
 
@@ -33,22 +34,30 @@ const HeaderBar = () => {
     ? (listRooms ?? []).find((r) => r.id === roomId)
     : undefined;
 
-  const dateStr =
-    currentRoom ?
-      formatRoomTripSubtitleKo(tripMeta.startYmd, tripMeta.endYmd)
+  const dateStr = currentRoom
+    ? formatRoomTripSubtitleKo(tripMeta.startYmd, tripMeta.endYmd)
     : "";
 
   return (
-    <Link href="/home" className="block">
-      <header className="border-b border-gray-border px-1 py-1 transition hover:bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="bg-white px-2.5 py-1.5">
+    <header className="border-b-2 border-brand-red">
+      <div className="flex items-center">
+        <div className="flex w-13 shrink-0 flex-col items-center justify-center py-1.5">
+          <Link
+            href="/home"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-dark-gray transition-colors hover:bg-light-gray"
+            aria-label="홈으로 이동"
+          >
+            <Home className="h-6 w-6" strokeWidth={2} aria-hidden />
+          </Link>
+        </div>
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-2 py-1 pr-2">
+          <div className="min-w-0 bg-white py-1.5">
             {currentRoom ? (
               <>
-                <span className="block text-sm font-semibold leading-tight">
+                <span className="block truncate text-sm font-semibold leading-tight">
                   {currentRoom.title}
                 </span>
-                <span className="block text-xs leading-tight text-dark-gray">
+                <span className="block truncate text-xs leading-tight text-dark-gray">
                   {dateStr}
                 </span>
               </>
@@ -60,15 +69,15 @@ const HeaderBar = () => {
                 …
               </span>
             ) : (
-              <span className="block text-sm font-semibold leading-tight text-dark-gray">
+              <span className="block truncate text-sm font-semibold leading-tight text-dark-gray">
                 {roomMeta?.title ?? "방 정보 없음"}
               </span>
             )}
           </div>
           <Image alt="logo" src="/icons/logo.svg" width={150} height={20} />
         </div>
-      </header>
-    </Link>
+      </div>
+    </header>
   );
 };
 

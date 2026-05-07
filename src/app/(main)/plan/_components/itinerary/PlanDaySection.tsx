@@ -35,9 +35,9 @@ export function PlanDaySection({
 
   const trackedSid =
     typeof itineraryScheduleId === "number" &&
-    Number.isFinite(itineraryScheduleId) ?
-      itineraryScheduleId
-    : undefined;
+    Number.isFinite(itineraryScheduleId)
+      ? itineraryScheduleId
+      : undefined;
 
   const [localExpanded, setLocalExpanded] = useState(defaultExpanded);
 
@@ -45,22 +45,21 @@ export function PlanDaySection({
   const hasKeyInStore = usePlanItineraryExpandedStore(
     (s) =>
       trackedSid !== undefined &&
-      Object.prototype.hasOwnProperty.call(
-        s.expandedByScheduleId,
-        trackedSid,
-      ),
+      Object.prototype.hasOwnProperty.call(s.expandedByScheduleId, trackedSid),
   );
 
   const storedExpanded = usePlanItineraryExpandedStore((s) =>
-    trackedSid !== undefined ?
-      Boolean(s.expandedByScheduleId[trackedSid])
-    : false,
+    trackedSid !== undefined
+      ? Boolean(s.expandedByScheduleId[trackedSid])
+      : false,
   );
 
   const expanded =
-    trackedSid === undefined ? localExpanded
-    : !hasKeyInStore ? defaultExpanded
-    : storedExpanded;
+    trackedSid === undefined
+      ? localExpanded
+      : !hasKeyInStore
+        ? defaultExpanded
+        : storedExpanded;
 
   const setScheduleExpanded = usePlanItineraryExpandedStore(
     (s) => s.setScheduleExpanded,
@@ -80,7 +79,7 @@ export function PlanDaySection({
       aria-label={subtitle ? `${title} ${subtitle}` : title}
     >
       <div
-        className={`flex w-full items-stretch gap-0.5 py-3.5 ${!expanded ? "border-b border-gray-border" : ""}`}
+        className={`relative flex w-full items-stretch gap-0.5 py-3.5 ${!expanded ? "border-b border-gray-border" : ""}`}
       >
         <button
           type="button"
@@ -88,7 +87,7 @@ export function PlanDaySection({
           aria-expanded={expanded}
           aria-controls={`${panelId}-panel`}
           onClick={toggle}
-          className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left transition-colors hover:bg-bubble-gray/60"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left transition-colors hover:bg-bubble-gray/60"
         >
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-gray-900">{title}</h2>
@@ -96,14 +95,17 @@ export function PlanDaySection({
               <p className="mt-0.5 text-xs text-dark-gray">{subtitle}</p>
             ) : null}
           </div>
-          <span className="shrink-0 text-dark-gray">
-            {expanded ? (
-              <ChevronUp className="h-5 w-5" aria-hidden />
-            ) : (
-              <ChevronDown className="h-5 w-5" aria-hidden />
-            )}
-          </span>
         </button>
+        <span
+          className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-dark-gray"
+          aria-hidden
+        >
+          {expanded ? (
+            <ChevronUp className="h-5 w-5" />
+          ) : (
+            <ChevronDown className="h-5 w-5" />
+          )}
+        </span>
         {onRequestDeleteSchedule ? (
           <button
             type="button"
