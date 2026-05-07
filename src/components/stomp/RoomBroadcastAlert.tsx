@@ -14,6 +14,7 @@ import {
   type RoomMemberListResponse,
 } from "@/lib/api/rooms";
 import { bookmarkCategoriesQueryKey } from "@/hooks/useRooms";
+import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
 
 const BROADCAST_TOAST_DURATION_MS = 3000;
 
@@ -139,7 +140,7 @@ async function fetchRoomMembersList(
   queryClient: QueryClient,
   roomId: string,
 ): Promise<RoomMember[] | null> {
-  const key = ["room-members", roomId] as const;
+  const key = roomMembersQueryKey(roomId);
   const cached = queryClient.getQueryData<RoomMemberListResponse>(key);
   let members = cached?.members;
   if (!members?.length) {

@@ -19,6 +19,7 @@ import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
+import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { useSessionStore } from "@/stores/session-store";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
@@ -193,7 +194,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
         subscribeToRoomTopics(client, rid);
         // 재연결 구간에 missed된 이벤트 보완
         void queryClientRef.current.invalidateQueries({
-          queryKey: ["room-members", rid],
+          queryKey: roomMembersQueryKey(rid),
           refetchType: "active",
         });
         void queryClientRef.current.invalidateQueries({

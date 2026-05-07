@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
+import { roomDetailQueryKey } from "@/lib/queryKeys/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
@@ -35,7 +36,7 @@ export function ChatPanel() {
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
   const { data: roomDetail } = useQuery({
-    queryKey: ["room-detail", rid],
+    queryKey: roomDetailQueryKey(rid),
     queryFn: () => getRoomDetail(rid),
     enabled: rid.length > 0,
   });

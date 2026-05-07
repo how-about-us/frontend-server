@@ -17,10 +17,13 @@ function AiRequestMetaRow({
   msg,
   typo,
   onCancelRequest,
+  /** 내 AI 요청이면 상태·취소됨 우측 정렬, 상대방이면 좌측 정렬 */
+  isOwnMessage = false,
 }: {
   msg: ChatMessage;
   typo: ChatMessageTextTypography;
   onCancelRequest?: (requestMessageId: string) => void;
+  isOwnMessage?: boolean;
 }) {
   const ar = msg.aiRequest;
   if (!ar?.aiStatus) return null;
@@ -30,30 +33,46 @@ function AiRequestMetaRow({
     ar.cancelable &&
     (ar.aiStatus === "QUEUED" || ar.aiStatus === "PROCESSING");
 
+  if (ar.aiStatus === "CANCELED") {
+    return (
+      <div
+        className={cn(
+          "mt-1 flex w-full max-w-full text-xs",
+          isOwnMessage ? "justify-end" : "justify-start",
+          typo.metaMuted,
+        )}
+      >
+        <span>{labelForAiStatus(ar.aiStatus)}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-1",
+        "mt-1 flex w-full max-w-full flex-row flex-wrap items-center gap-x-2 gap-y-1 text-xs",
+        isOwnMessage ? "justify-between" : "justify-start",
         typo.metaMuted,
-        "mt-1 text-xs",
       )}
     >
-      {ar.aiStatus === "PROCESSING" ? (
-        <span className="inline-flex items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-1.5">
+        {ar.aiStatus === "PROCESSING" ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span>{labelForAiStatus(ar.aiStatus)}</span>
+            <Loader2
+              className="h-3.5 w-3.5 shrink-0 animate-spin text-brand-green"
+              aria-hidden
+            />
+          </span>
+        ) : (
           <span>{labelForAiStatus(ar.aiStatus)}</span>
-          <Loader2
-            className="h-3.5 w-3.5 shrink-0 animate-spin text-brand-green"
-            aria-hidden
-          />
-        </span>
-      ) : (
-        <span>{labelForAiStatus(ar.aiStatus)}</span>
-      )}
+        )}
+      </div>
       {showCancel ? (
         <button
           type="button"
           className={cn(
-            "underline underline-offset-2 hover:opacity-90",
+            "shrink-0 underline underline-offset-2 hover:opacity-90",
             "text-neutral-700",
           )}
           onClick={() => onCancelRequest(ar.requestMessageId)}
@@ -141,7 +160,11 @@ export function OtherMessageGroup({
                 <BubbleMessageText msg={msg} typo={typo} />
               </div>
               {msg.isAiRequest ? (
-                <AiRequestMetaRow msg={msg} typo={typo} />
+                <AiRequestMetaRow
+                  msg={msg}
+                  typo={typo}
+                  isOwnMessage={false}
+                />
               ) : null}
             </div>
           ))}
@@ -179,11 +202,12 @@ export function MyMessageGroup({
             <BubbleMessageText msg={msg} typo={typo} />
           </div>
           {msg.isAiRequest ? (
-            <div className="flex justify-end">
+            <div className="w-full">
               <AiRequestMetaRow
                 msg={msg}
                 typo={typo}
                 onCancelRequest={onCancelAiRequest}
+                isOwnMessage
               />
             </div>
           ) : null}

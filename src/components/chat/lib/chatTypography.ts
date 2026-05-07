@@ -1,5 +1,5 @@
 const AI_OVERLAY_INSET = "0.5rem" as const;
-const AI_LABEL_WIDTH_CH = 3.35;
+const AI_LABEL_WIDTH_CH = 1.5;
 
 /** 말풍선·카드·입력 등 본문 (패널 일반 크기) */
 export const chatTypographyMessage = {

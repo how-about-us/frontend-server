@@ -50,12 +50,24 @@ import {
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
+import {
+  joinRequestsQueryKey,
+  ROOMS_QUERY_KEY,
+  roomDetailQueryKey,
+  roomMembersQueryKey,
+} from "@/lib/queryKeys/rooms";
+import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import {
+  clearPendingScheduleDeleteEcho,
+  markPendingScheduleDeleteEcho,
+} from "@/lib/stomp/scheduleDeleteEcho";
+import { syncRoomDetailFromServer } from "@/lib/rooms/syncRoomDetailCache";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
-export const ROOMS_QUERY_KEY = ["rooms"] as const;
+export { ROOMS_QUERY_KEY };
 
 export { roomSchedulesQueryKey };
 
@@ -120,6 +132,7 @@ export function useScheduleItemRoute(
 }
 
 export function useDeleteRoomSchedule() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       roomId,
@@ -128,6 +141,41 @@ export function useDeleteRoomSchedule() {
       roomId: string;
       scheduleId: number;
     }) => deleteRoomSchedule(roomId, scheduleId),
+    onMutate: async ({ roomId, scheduleId }) => {
+      const id = roomId.trim();
+      if (!id.length) return;
+      markPendingScheduleDeleteEcho(id, scheduleId);
+      await queryClient.cancelQueries({
+        queryKey: scheduleItemsQueryKey(id, scheduleId),
+      });
+      const prevSchedules = queryClient.getQueryData<RoomSchedule[]>(
+        roomSchedulesQueryKey(id),
+      );
+      queryClient.setQueryData<RoomSchedule[]>(
+        roomSchedulesQueryKey(id),
+        (prev) => {
+          const list = prev ?? [];
+          return sortRoomSchedules(
+            list.filter((s) => s.scheduleId !== scheduleId),
+          );
+        },
+      );
+      removeCachesForDeletedSchedule(queryClient, id, scheduleId);
+      return { prevSchedules };
+    },
+    onError: (_err, { roomId, scheduleId }, ctx) => {
+      const id = roomId.trim();
+      clearPendingScheduleDeleteEcho(id, scheduleId);
+      if (ctx?.prevSchedules !== undefined) {
+        queryClient.setQueryData(
+          roomSchedulesQueryKey(id),
+          ctx.prevSchedules,
+        );
+      }
+    },
+    onSuccess: async (_void, { roomId }) => {
+      await syncRoomDetailFromServer(queryClient, roomId.trim());
+    },
   });
 }
 
@@ -145,7 +193,7 @@ export function useCreateRoomSchedule() {
       roomId: string;
       body: RoomScheduleCreateRequest;
     }) => createRoomSchedule(roomId, body),
-    onSuccess: (created, { roomId }) => {
+    onSuccess: async (created, { roomId }) => {
       const id = roomId.trim();
       if (!id.length) return;
       queryClient.setQueryData<RoomSchedule[]>(
@@ -155,6 +203,7 @@ export function useCreateRoomSchedule() {
           return sortRoomSchedules(list);
         },
       );
+      await syncRoomDetailFromServer(queryClient, id);
     },
   });
 }
@@ -257,23 +306,25 @@ export function useUpdateRoom() {
                 ...r,
                 title: updated.title,
                 destination: updated.destination,
-                startDate: updated.startDate,
-                endDate: updated.endDate,
+                startDate: updated.startDate ?? null,
+                endDate: updated.endDate ?? null,
               }
             : r,
           ),
         };
       });
-      queryClient.setQueryData<RoomDetail>(["room-detail", roomId], (prev) =>
-        prev && prev.id === roomId ?
-          {
-            ...prev,
-            title: updated.title,
-            destination: updated.destination,
-            startDate: updated.startDate,
-            endDate: updated.endDate,
-          }
-        : prev,
+      queryClient.setQueryData<RoomDetail>(
+        roomDetailQueryKey(roomId),
+        (prev) =>
+          prev && prev.id === roomId ?
+            {
+              ...prev,
+              title: updated.title,
+              destination: updated.destination,
+              startDate: updated.startDate ?? null,
+              endDate: updated.endDate ?? null,
+            }
+          : prev,
       );
     },
   });
@@ -297,7 +348,7 @@ export function useRegenerateInviteCode() {
 
 export function useRoomMembers(roomId: string | null) {
   return useQuery({
-    queryKey: ["room-members", roomId],
+    queryKey: roomMembersQueryKey(roomId),
     queryFn: () => getRoomMembers(roomId!),
     enabled: !!roomId,
   });
@@ -317,7 +368,7 @@ export function useCheckJoinStatus() {
 
 export function useJoinRequests(roomId: string | null) {
   return useQuery({
-    queryKey: ["join-requests", roomId],
+    queryKey: joinRequestsQueryKey(roomId),
     queryFn: () => getJoinRequests(roomId!),
     enabled: !!roomId,
   });
@@ -334,7 +385,7 @@ export function useTransferHost() {
       targetUserId: number;
     }) => transferHost(roomId, targetUserId),
     onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: roomMembersQueryKey(roomId) });
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
   });
@@ -356,7 +407,7 @@ export function useKickMember() {
     mutationFn: ({ roomId, userId }: { roomId: string; userId: number }) =>
       kickMember(roomId, userId),
     onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: roomMembersQueryKey(roomId) });
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
   });
@@ -373,8 +424,8 @@ export function useApproveJoinRequest() {
       requestId: number;
     }) => approveJoinRequest(roomId, requestId),
     onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
-      queryClient.invalidateQueries({ queryKey: ["room-members", roomId] });
+      queryClient.invalidateQueries({ queryKey: joinRequestsQueryKey(roomId) });
+      queryClient.invalidateQueries({ queryKey: roomMembersQueryKey(roomId) });
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
     },
   });
@@ -391,7 +442,7 @@ export function useRejectJoinRequest() {
       requestId: number;
     }) => rejectJoinRequest(roomId, requestId),
     onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({ queryKey: ["join-requests", roomId] });
+      queryClient.invalidateQueries({ queryKey: joinRequestsQueryKey(roomId) });
     },
   });
 }

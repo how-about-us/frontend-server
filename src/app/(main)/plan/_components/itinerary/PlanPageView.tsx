@@ -8,19 +8,15 @@ import {
   useCreateRoomSchedule,
   useDeleteRoomSchedule,
   useRoomSchedules,
-  useRoomsList,
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import {
+  buildNextScheduleCreateBody,
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
-import {
-  nextUnusedTripSchedulePayload,
-  tripYmdBoundsFromRoomSources,
-} from "@/lib/plan/tripRange";
 
 import { PlanChatSectionWidth } from "../chat/PlanChatSectionWidth";
 import { PlanDaySection } from "./PlanDaySection";
@@ -28,15 +24,12 @@ import { PlanItinerary } from "./PlanItinerary";
 
 export function PlanPageView() {
   const storedId = useSessionStore((s) => s.currentRoomId);
-  const roomMeta = useSessionStore((s) => s.currentRoomMeta);
   const roomId =
     typeof storedId === "string" && storedId.trim().length > 0
       ? storedId.trim()
       : "";
 
   const roomIdForQueries = roomId.length > 0 ? roomId : null;
-
-  const { data: roomsData } = useRoomsList();
 
   const {
     data: schedules,
@@ -53,21 +46,6 @@ export function PlanPageView() {
     () => sortRoomSchedules(scheduleList),
     [scheduleList],
   );
-
-  const tripRange = useMemo(
-    () => tripYmdBoundsFromRoomSources(roomId, roomsData?.rooms, roomMeta),
-    [roomId, roomsData?.rooms, roomMeta],
-  );
-
-  const nextScheduleBody = useMemo(() => {
-    const { startYmd, endYmd } = tripRange;
-    if (!startYmd || !endYmd) return null;
-    return nextUnusedTripSchedulePayload(
-      startYmd,
-      endYmd,
-      sortedSchedules.map((s) => s.date),
-    );
-  }, [tripRange, sortedSchedules]);
 
   const scheduleExpansionSyncKey = useMemo(
     () => sortedSchedules.map((s) => s.scheduleId).join(","),
@@ -122,41 +100,17 @@ export function PlanPageView() {
   const handleAddSchedule = useCallback(() => {
     if (!roomId.length) return;
     if (isCreatingSchedule) return;
-    const { startYmd, endYmd } = tripRange;
-    if (!startYmd || !endYmd) {
-      toast.error("여행 기간을 불러오지 못했어요.");
-      return;
-    }
-    const body = nextScheduleBody;
-    if (!body) {
-      toast.error(
-        "여행 기간 안에 더 추가할 일차가 없어요. 설정에서 여행 기간을 늘린 뒤 다시 시도해 주세요.",
-      );
-      return;
-    }
+    const body = buildNextScheduleCreateBody(sortedSchedules);
     void createScheduleAsync({ roomId, body }).catch(() => {
       toast.error("일차를 추가하지 못했어요.");
     });
-  }, [
-    createScheduleAsync,
-    isCreatingSchedule,
-    nextScheduleBody,
-    roomId,
-    tripRange.endYmd,
-    tripRange.startYmd,
-  ]);
+  }, [createScheduleAsync, isCreatingSchedule, roomId, sortedSchedules]);
 
   const showInitialLoading = Boolean(
     roomId.length > 0 && isPending && schedules === undefined,
   );
 
-  const hasTripBounds = Boolean(tripRange.startYmd && tripRange.endYmd);
-  const canAddSchedule =
-    roomId.length > 0 &&
-    hasTripBounds &&
-    Boolean(nextScheduleBody) &&
-    !isCreatingSchedule &&
-    !showInitialLoading;
+  const canAddSchedule = roomId.length > 0 && !isCreatingSchedule;
 
   const scheduleToolbar = (
     <div className="flex justify-end">

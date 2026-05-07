@@ -7,7 +7,7 @@ import type {
   RoomMember,
   RoomMemberListResponse,
 } from "@/lib/api/rooms";
-import { ROOMS_QUERY_KEY } from "@/hooks/useRooms";
+import { ROOMS_QUERY_KEY, roomMembersQueryKey } from "@/lib/queryKeys/rooms";
 import { useSessionStore } from "@/stores/session-store";
 
 import type { RoomMemberPayload } from "./member-events";
@@ -53,7 +53,7 @@ export function dispatchRoomMemberEvent(
       if (!d) return;
 
       queryClient.setQueryData<RoomMemberListResponse>(
-        ["room-members", rid],
+        roomMembersQueryKey(rid),
         (prev) => {
           const members = prev?.members ?? [];
           const idx = members.findIndex((m) => m.userId === d.userId);
@@ -95,7 +95,7 @@ export function dispatchRoomMemberEvent(
       if (!d) return;
 
       queryClient.setQueryData<RoomMemberListResponse>(
-        ["room-members", rid],
+        roomMembersQueryKey(rid),
         (prev) => {
           if (!prev?.members?.length) return prev;
           return {
@@ -112,7 +112,7 @@ export function dispatchRoomMemberEvent(
       if (!d) return;
 
       queryClient.setQueryData<RoomMemberListResponse>(
-        ["room-members", rid],
+        roomMembersQueryKey(rid),
         (prev) => {
           if (!prev?.members?.length) return prev;
           const members = prev.members.map((m) => {

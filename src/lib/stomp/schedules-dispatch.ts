@@ -13,25 +13,14 @@ import type { RoomSchedule } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
+import { syncRoomDetailFromServer } from "@/lib/rooms/syncRoomDetailCache";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
+import {
+  consumePendingScheduleDeleteEcho,
+} from "@/lib/stomp/scheduleDeleteEcho";
+import { useSessionStore } from "@/stores/session-store";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
-
-function removeRouteQueriesForSchedule(
-  queryClient: QueryClient,
-  roomId: string,
-  scheduleId: number,
-): void {
-  queryClient.removeQueries({
-    predicate: (q) => {
-      const key = q.queryKey;
-      if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
-        return false;
-      }
-      if (String(key[1] ?? "").trim() !== roomId) return false;
-      return key[2] === scheduleId;
-    },
-  });
-}
 
 function removeRouteQueriesForDeletedItemSource(
   queryClient: QueryClient,
@@ -80,7 +69,8 @@ function bumpMapForRouteSources(
 
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
- * — `room-schedules`: 일차(스케줄) 목록(타 클라이언트·STOMP 유실 시에만 refetch; 액터는 POST로 이미 머지된 경우 생략)
+ * — `room-schedules` CREATE: 다른 클라이언트만 무효화(GET); 액터는 POST `onSuccess` 머지로 레이스 방지
+ * — `SCHEDULE_DELETED`: 삭제 일차의 route·items 캐시 제거 후 이 탭 에코면 `room-schedules` 무효화·GET /rooms 생략, 다른 탭은 무효화·동기화 유지
  * — 일정 생성 시 `schedule-items`: 빈 일차는 `[]`로 시드해 불필요한 GET 방지
  * — `schedule-items`: 그 외 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
@@ -105,25 +95,40 @@ export async function dispatchRoomScheduleEvent(
         roomSchedulesQueryKey(rid),
       );
       const alreadyHas = existing?.some((s) => s.scheduleId === sid) ?? false;
-      if (!alreadyHas) {
+      const me = useSessionStore.getState().user?.id;
+      const isScheduleCreateActor =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId;
+
+      if (!alreadyHas && !isScheduleCreateActor) {
         await queryClient.invalidateQueries({
           queryKey: roomSchedulesQueryKey(rid),
           refetchType: "active",
         });
       }
+      await syncRoomDetailFromServer(queryClient, rid);
       return;
     }
 
-    case "SCHEDULE_DELETED":
-      removeRouteQueriesForSchedule(queryClient, rid, sid);
-      queryClient.removeQueries({
-        queryKey: scheduleItemsQueryKey(rid, sid),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(rid),
-        refetchType: "active",
-      });
+    case "SCHEDULE_DELETED": {
+      removeCachesForDeletedSchedule(queryClient, rid, sid);
+      const me = useSessionStore.getState().user?.id;
+      const echoedFromThisTab =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId &&
+        consumePendingScheduleDeleteEcho(rid, sid);
+
+      if (!echoedFromThisTab) {
+        await queryClient.invalidateQueries({
+          queryKey: roomSchedulesQueryKey(rid),
+          refetchType: "active",
+        });
+        await syncRoomDetailFromServer(queryClient, rid);
+      }
       return;
+    }
 
     case "SCHEDULE_ITEM_DELETED": {
       const oldIds = readOrderedItemIdsFromScheduleItemsCache(

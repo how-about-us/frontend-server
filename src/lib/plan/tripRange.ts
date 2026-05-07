@@ -52,20 +52,6 @@ export function eachInclusiveTripDay(
   return out;
 }
 
-/** 방 여행 기간 안에서 아직 schedule이 없는 첫 날 — 서버 기대와 동일한 date·dayNumber */
-export function nextUnusedTripSchedulePayload(
-  startYmd: string,
-  endYmd: string,
-  existingDates: ReadonlySet<string> | readonly string[],
-): { dayNumber: number; date: string } | null {
-  const used =
-    existingDates instanceof Set ? existingDates : new Set(existingDates);
-  const next = eachInclusiveTripDay(startYmd, endYmd).find(
-    (d) => !used.has(d.date),
-  );
-  return next ? { dayNumber: next.dayNumber, date: next.date } : null;
-}
-
 export function isSameLocalDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -79,54 +65,36 @@ export function formatKoreanDateLabel(d: Date): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`;
 }
 
-/** `YYYY-MM-DD` 둘 중 이른 날 / 늦은 날 */
-export function minYmd(a: string, b: string): string {
-  return a.localeCompare(b) <= 0 ? a : b;
+function formatYmdKoShort(ymd: string): string {
+  const d = parseLocalYmd(ymd);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-export function maxYmd(a: string, b: string): string {
-  return a.localeCompare(b) >= 0 ? a : b;
+/** 홈 카드 등: `YYYY-MM-DD` 범위를 짧은 한글 문구로 (값 없음이면 빈 문자열). */
+export function formatTripYmdRangeShortKo(
+  startYmd: string | null | undefined,
+  endYmd: string | null | undefined,
+): string {
+  const s = startYmd?.trim() ?? "";
+  const e = endYmd?.trim() ?? "";
+  if (!s || !e) return "";
+  if (s === e) return formatYmdKoShort(s);
+  return `${formatYmdKoShort(s)} ~ ${formatYmdKoShort(e)}`;
 }
 
-/**
- * 방 메타의 여행 시작·종료와 일정에 포함된 날짜들을 합쳐 UI 표시용 구간을 만듭니다.
- */
-export function tripBoundsMergedWithScheduleDates(
-  roomStartYmd: string,
-  roomEndYmd: string,
-  scheduleDatesYmd: readonly string[],
-): { startYmd: string; endYmd: string } {
-  if (scheduleDatesYmd.length === 0) {
-    return { startYmd: roomStartYmd, endYmd: roomEndYmd };
-  }
-  let minD = scheduleDatesYmd[0]!;
-  let maxD = scheduleDatesYmd[0]!;
-  for (let i = 1; i < scheduleDatesYmd.length; i++) {
-    const d = scheduleDatesYmd[i]!;
-    minD = minYmd(minD, d);
-    maxD = maxYmd(maxD, d);
-  }
-  return {
-    startYmd: minYmd(roomStartYmd, minD),
-    endYmd: maxYmd(roomEndYmd, maxD),
-  };
-}
-
-/** 홈 카드·헤더 등: `YYYY-MM-DD` 범위를 짧은 한글 문구로 */
-export function formatTripYmdRangeShortKo(startYmd: string, endYmd: string): string {
-  const fmt = (ymd: string) => {
-    const date = new Date(ymd);
-    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
-  };
-  if (!startYmd && !endYmd) return "";
-  if (startYmd === endYmd) return fmt(startYmd);
-  return `${fmt(startYmd)} – ${fmt(endYmd)}`;
+/** 메인 헤더 부제: 서버 동기화된 여행 구간 또는 `일정 없음`. */
+export function formatRoomTripSubtitleKo(startYmd: string, endYmd: string): string {
+  const s = startYmd.trim();
+  const e = endYmd.trim();
+  if (!s || !e) return "일정 없음";
+  if (s === e) return formatYmdKoShort(s);
+  return `${formatYmdKoShort(s)} ~ ${formatYmdKoShort(e)}`;
 }
 
 export type RoomTripYmdSource = {
   id: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 /** 참여 중인 방 목록 또는 세션 메타에서 여행 `YYYY-MM-DD` 경계를 고릅니다. */

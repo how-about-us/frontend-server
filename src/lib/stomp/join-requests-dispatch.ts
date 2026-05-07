@@ -3,6 +3,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { joinRequestsQueryKey } from "@/lib/queryKeys/rooms";
+
 const HOST_JOIN_REQUEST_TOAST_MS = 4000;
 
 /** 호스트 개인 큐 — 새 입장 요청 시 목록 무효화(활성 observer refetch) + 알림 */
@@ -17,6 +19,6 @@ export function dispatchHostJoinRequestFromStomp(
   });
 
   void queryClient.invalidateQueries({
-    queryKey: ["join-requests", roomId] as const,
+    queryKey: joinRequestsQueryKey(roomId),
   });
 }

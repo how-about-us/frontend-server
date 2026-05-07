@@ -4,12 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 
-import { useRoomSchedules, useRoomsList } from "@/hooks/useRooms";
+import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
-import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
-  formatTripYmdRangeShortKo,
-  tripBoundsMergedWithScheduleDates,
+  formatRoomTripSubtitleKo,
   tripYmdBoundsFromRoomSources,
 } from "@/lib/plan/tripRange";
 
@@ -20,11 +18,6 @@ const HeaderBar = () => {
 
   const roomId =
     typeof storedRoomId === "string" ? storedRoomId.trim() : undefined;
-
-  const roomIdForSchedules =
-    roomId && roomId.length > 0 ? roomId : null;
-
-  const { data: schedules } = useRoomSchedules(roomIdForSchedules);
 
   const listRooms = data?.rooms;
 
@@ -40,24 +33,10 @@ const HeaderBar = () => {
     ? (listRooms ?? []).find((r) => r.id === roomId)
     : undefined;
 
-  const { startYmd: displayStart, endYmd: displayEnd } = useMemo(() => {
-    if (!currentRoom || !tripMeta.startYmd || !tripMeta.endYmd) {
-      return { startYmd: "", endYmd: "" };
-    }
-    const dates = schedules?.length
-      ? sortRoomSchedules(schedules).map((s) => s.date)
-      : [];
-    return tripBoundsMergedWithScheduleDates(
-      tripMeta.startYmd,
-      tripMeta.endYmd,
-      dates,
-    );
-  }, [currentRoom, schedules, tripMeta.endYmd, tripMeta.startYmd]);
-
   const dateStr =
-    currentRoom && displayStart && displayEnd
-      ? formatTripYmdRangeShortKo(displayStart, displayEnd)
-      : "";
+    currentRoom ?
+      formatRoomTripSubtitleKo(tripMeta.startYmd, tripMeta.endYmd)
+    : "";
 
   return (
     <Link href="/home" className="block">
@@ -69,11 +48,9 @@ const HeaderBar = () => {
                 <span className="block text-sm font-semibold leading-tight">
                   {currentRoom.title}
                 </span>
-                {dateStr && (
-                  <span className="block text-xs leading-tight text-dark-gray">
-                    {dateStr}
-                  </span>
-                )}
+                <span className="block text-xs leading-tight text-dark-gray">
+                  {dateStr}
+                </span>
               </>
             ) : isPending ? (
               <span

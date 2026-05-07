@@ -13,8 +13,8 @@ export type RoomCreateResponse = {
   id: string;
   title: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   inviteCode: string;
   memberCount: number;
   role: string;
@@ -25,8 +25,8 @@ export type RoomListItem = {
   id: string;
   title: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   role: string;
   joinedAt: string;
 };
@@ -48,8 +48,8 @@ export type RoomDetail = {
   id: string;
   title: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   inviteCode: string;
   memberCount: number;
   role: string;

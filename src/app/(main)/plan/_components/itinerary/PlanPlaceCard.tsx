@@ -1,13 +1,15 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { getPlacePhotoUrl } from "@/lib/api/places";
+import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,9 @@ export function PlanPlaceCard({
   onDragLeave,
   onDrop,
 }: PlanPlaceCardProps) {
+  const { setSelectedPlace } = useSelectedPlace();
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+
   const fallbackPhotoUrl =
     typeof place.imageUrl === "string" && place.imageUrl.trim().length > 0
       ? place.imageUrl.trim()
@@ -113,14 +118,60 @@ export function PlanPlaceCard({
     }
   }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
 
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      const start = pointerDownRef.current;
+      pointerDownRef.current = null;
+      if (start) {
+        const moved =
+          Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y);
+        if (moved > 12) return;
+      }
+      const loc = place.location;
+      if (
+        !loc ||
+        typeof loc.lat !== "number" ||
+        typeof loc.lng !== "number" ||
+        !Number.isFinite(loc.lat) ||
+        !Number.isFinite(loc.lng)
+      ) {
+        toast.info("지도에 표시할 위치 정보가 없어요.");
+        return;
+      }
+      const rawId =
+        typeof place.googlePlaceId === "string"
+          ? place.googlePlaceId.trim()
+          : "";
+      const gid =
+        rawId.length > 0 ? normalizeGooglePlaceResourceId(rawId) : undefined;
+
+      setSelectedPlace({
+        name: place.title,
+        category: "",
+        rating: null,
+        ...(gid ? { googlePlaceId: gid } : {}),
+        location: { lat: loc.lat, lng: loc.lng },
+        address: place.subtitle,
+      });
+    },
+    [place.googlePlaceId, place.location, place.subtitle, place.title, setSelectedPlace],
+  );
+
   return (
     <article
       draggable={!dragDisabled}
+      onPointerDown={handlePointerDown}
       onDragStart={dragDisabled ? undefined : onDragStart}
       onDragEnd={dragDisabled ? undefined : onDragEnd}
       onDragOver={dragDisabled ? undefined : onDragOver}
       onDragLeave={dragDisabled ? undefined : onDragLeave}
       onDrop={dragDisabled ? undefined : onDrop}
+      onClick={handleCardClick}
       className={cn(
         "flex w-full select-none gap-3 rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
@@ -181,7 +232,10 @@ export function PlanPlaceCard({
           </p>
         ) : null}
         {scheduleTimeEdit && typeof place.itemId === "number" ? (
-          <div onMouseDown={(e) => e.stopPropagation()}>
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <PlanItemTimeForm
               roomId={scheduleTimeEdit.roomId}
               scheduleId={scheduleTimeEdit.scheduleId}
