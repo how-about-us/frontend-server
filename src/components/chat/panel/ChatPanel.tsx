@@ -26,7 +26,12 @@ export function ChatPanel() {
   const { data: membersData } = useRoomMembers(roomId);
   const onlineCount =
     membersData?.members.filter((m) => m.isOnline).length ?? 0;
-  const { messages, sendChatMessage, sendAiMessage } = useChatMessages(roomId);
+  const {
+    messages,
+    sendChatMessage,
+    sendAiMessage,
+    sendCancelAiRequest,
+  } = useChatMessages(roomId);
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
   const { data: roomDetail } = useQuery({
@@ -72,7 +77,11 @@ export function ChatPanel() {
             onClose={closeChat}
           />
           <div className="h-px bg-black/[0.08]" />
-          <ChatMessageList messages={messages} isMinimized={isMinimized} />
+          <ChatMessageList
+            messages={messages}
+            isMinimized={isMinimized}
+            onCancelAiRequest={sendCancelAiRequest}
+          />
           <ChatInputBar
             isMinimized={isMinimized}
             onSendChat={sendChatMessage}

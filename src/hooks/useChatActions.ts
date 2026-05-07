@@ -68,5 +68,23 @@ export function useChatActions() {
     [client, connected, ridTrimmed],
   );
 
-  return { canSend, sendChatMessage, sendAiMessage, sendPlaceMessage };
+  const sendCancelAiRequest = useCallback(
+    (requestMessageId: string) => {
+      const id = requestMessageId.trim();
+      if (!client || !connected || !ridTrimmed || !id) return;
+      client.publish({
+        destination: `/app/rooms/${ridTrimmed}/messages/ai/cancel`,
+        body: JSON.stringify({ requestMessageId: id }),
+      });
+    },
+    [client, connected, ridTrimmed],
+  );
+
+  return {
+    canSend,
+    sendChatMessage,
+    sendAiMessage,
+    sendPlaceMessage,
+    sendCancelAiRequest,
+  };
 }

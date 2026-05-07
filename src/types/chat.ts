@@ -1,5 +1,8 @@
 export type ChatMessageType = "other" | "mine" | "system" | "ai" | "place";
 
+/** `/topic` AI_REQUEST 확장 메타데이터 — `AI_REQUEST:{ clientMessageId, aiStatus, … }` */
+export type AiRequestStatus = "QUEUED" | "PROCESSING" | "CANCELED";
+
 /** PLACE_SHARE 메시지 페이로드 — STOMP send/recv 양쪽에서 동일 형태 */
 export interface PlaceShareData {
   googlePlaceId: string;
@@ -25,6 +28,18 @@ export interface ChatMessage {
   place?: PlaceShareData;
   /** AI_REQUEST(STOMP) 수신 시 본문 앞에 초록 `@AI` 접두 UI 표시 */
   isAiRequest?: boolean;
+  /** AI_REQUEST — 취소 발행에는 `requestMessageId`(서버 메시지 id) 사용 */
+  aiRequest?: {
+    requestMessageId: string;
+    aiStatus?: AiRequestStatus;
+    cancelable: boolean;
+    canceledBy?: number;
+  };
+  /** AI_RESPONSE — 원 질문으로 스크롤 시 `requestMessageId`는 서버 AI_REQUEST 메시지 id */
+  aiRepliesTo?: {
+    requestMessageId: string;
+    quotePreview: string;
+  };
 }
 
 /** `/topic/rooms/{roomId}/messages` · GET /messages 응답 — 일반 말풍선은 CHAT 만 */

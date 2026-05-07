@@ -35,6 +35,7 @@ export function subscribeRoomStompTopics(
   options: SubscribeRoomStompTopicsOptions,
 ): RoomTopicsUnsubscriber {
   const subscribedRoomId = roomId.trim();
+  const messageIdsSeenForUnread = new Set<string>();
 
   const membersSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/members`,
@@ -106,8 +107,11 @@ export function subscribeRoomStompTopics(
         const parsed: unknown = JSON.parse(message.body);
         const msg = normalizeServerChatMessage(parsed);
         if (!msg) return;
-        useChatUnreadStore.getState().incrementFromMessage(msg);
         options.onRoomChatMessage?.(msg);
+        if (!messageIdsSeenForUnread.has(msg.id)) {
+          messageIdsSeenForUnread.add(msg.id);
+          useChatUnreadStore.getState().incrementFromMessage(msg);
+        }
       } catch {
         // malformed payload — ignore
       }
