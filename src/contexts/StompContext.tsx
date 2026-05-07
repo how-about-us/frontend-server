@@ -16,11 +16,14 @@ import type { Client } from "@stomp/stompjs";
 import { toast } from "sonner";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
+import { invalidateRoomQueriesAfterStompReconnect } from "@/lib/stomp/invalidateRoomQueriesAfterStompReconnect";
+import {
+  pathDefersRoomStompRoomTopics,
+  pathSuspendsStomp,
+} from "@/lib/stomp/stompPathPolicy";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
-import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
-import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { useSessionStore } from "@/stores/session-store";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import type { ServerChatMessage } from "@/types/chat";
@@ -44,16 +47,6 @@ const StompContext = createContext<StompContextValue>({
 
 const FORCED_ROOM_EXIT_TOAST_MS = 4500;
 
-/** 승인 대기·초대 코드 처리 구간은 HTTP만 사용하고 WebSocket은 열지 않음 */
-function pathSuspendsStomp(pathname: string): boolean {
-  return pathname === "/waiting" || pathname.startsWith("/join/");
-}
-
-/** 룸 목록·새 여행 등 — `currentRoomId` 가 있어도 방별 토픽은 구독하지 않음 (`/user/queue/rooms` 는 유지) */
-function pathDefersRoomStompRoomTopics(pathname: string): boolean {
-  return pathname === "/home" || pathname.startsWith("/home/");
-}
-
 export function StompProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -71,10 +64,14 @@ export function StompProvider({ children }: { children: ReactNode }) {
     currentRoomIdRef.current = currentRoomId;
   }, [currentRoomId]);
 
+  const pathnameRef = useRef(pathname);
+  useLayoutEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
   const clientRef = useRef<Client | null>(null);
   const roomTopicsUnsubRef = useRef<(() => void) | null>(null);
   const userRoomsQueueUnsubRef = useRef<(() => void) | null>(null);
-  const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
   const [connectionState, setConnectionState] = useState<StompConnectionState>({
     client: null,
@@ -88,13 +85,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const unsubscribeRoomTopics = useCallback(() => {
     detachRoomTopicsOnly();
-    lastSubscribedRoomIdRef.current = null;
     useChatUnreadStore.getState().resetChatCnt();
-  }, [detachRoomTopicsOnly]);
-
-  const pauseRoomStompRoomTopics = useCallback(() => {
-    detachRoomTopicsOnly();
-    lastSubscribedRoomIdRef.current = null;
   }, [detachRoomTopicsOnly]);
 
   const handleForcedRoomExit = useCallback(
@@ -155,23 +146,31 @@ export function StompProvider({ children }: { children: ReactNode }) {
         queryClientRef,
         { notifyForcedRoomExit, onRoomChatMessage },
       );
-      lastSubscribedRoomIdRef.current = rid;
     },
     [detachRoomTopicsOnly, notifyForcedRoomExit, onRoomChatMessage],
   );
 
+  const teardownConnectedClient = useCallback(() => {
+    unsubscribeRoomTopics();
+    userRoomsQueueUnsubRef.current?.();
+    userRoomsQueueUnsubRef.current = null;
+    clientRef.current?.deactivate();
+    clientRef.current = null;
+  }, [unsubscribeRoomTopics]);
+
+  /** 로그인 + (waiting/join 제외)일 때만 WebSocket 유지 — /home ↔ 플랜 등 경로 전환만으로는 재연결하지 않음 */
+  const stompEligible = Boolean(user && !pathSuspendsStomp(pathname));
+
   /* STOMP 활성/비활성 시 컨텍스트와 동기화 — 동기 setState 패턴 허용 */
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!user || pathSuspendsStomp(pathname)) {
-      if (clientRef.current) {
-        unsubscribeRoomTopics();
-        userRoomsQueueUnsubRef.current?.();
-        userRoomsQueueUnsubRef.current = null;
-        clientRef.current.deactivate();
-        clientRef.current = null;
-      }
+    if (!stompEligible) {
+      teardownConnectedClient();
       setConnectionState({ client: null, connected: false });
+      return;
+    }
+
+    if (clientRef.current) {
       return;
     }
 
@@ -190,25 +189,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
       });
 
       const rid = currentRoomIdRef.current?.trim() ?? "";
-      if (rid && !pathDefersRoomStompRoomTopics(pathname)) {
+      if (
+        rid &&
+        !pathDefersRoomStompRoomTopics(pathnameRef.current)
+      ) {
         subscribeToRoomTopics(client, rid);
-        // 재연결 구간에 missed된 이벤트 보완
-        void queryClientRef.current.invalidateQueries({
-          queryKey: roomMembersQueryKey(rid),
-          refetchType: "active",
-        });
-        void queryClientRef.current.invalidateQueries({
-          queryKey: roomSchedulesQueryKey(rid),
-          refetchType: "active",
-        });
-        void queryClientRef.current.invalidateQueries({
-          queryKey: ["schedule-items", rid],
-          refetchType: "active",
-        });
-        void queryClientRef.current.invalidateQueries({
-          queryKey: ["schedule-item-route", rid],
-          refetchType: "active",
-        });
+        invalidateRoomQueriesAfterStompReconnect(queryClientRef.current, rid);
       }
     };
 
@@ -223,18 +209,13 @@ export function StompProvider({ children }: { children: ReactNode }) {
     client.activate();
 
     return () => {
-      unsubscribeRoomTopics();
-      userRoomsQueueUnsubRef.current?.();
-      userRoomsQueueUnsubRef.current = null;
-      client.deactivate();
-      clientRef.current = null;
+      teardownConnectedClient();
     };
   }, [
     notifyForcedRoomExit,
-    pathname,
+    stompEligible,
     subscribeToRoomTopics,
-    unsubscribeRoomTopics,
-    user,
+    teardownConnectedClient,
   ]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -243,7 +224,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
     if (!client?.connected) return;
 
     if (pathDefersRoomStompRoomTopics(pathname)) {
-      pauseRoomStompRoomTopics();
+      detachRoomTopicsOnly();
       return;
     }
 
@@ -254,8 +235,8 @@ export function StompProvider({ children }: { children: ReactNode }) {
     }
   }, [
     currentRoomId,
+    detachRoomTopicsOnly,
     pathname,
-    pauseRoomStompRoomTopics,
     subscribeToRoomTopics,
     unsubscribeRoomTopics,
   ]);
