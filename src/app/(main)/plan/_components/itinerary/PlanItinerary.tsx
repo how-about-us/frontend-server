@@ -234,7 +234,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4 pb-40">
+      <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
         <p className="text-xs font-medium text-dark-gray">장소 추가</p>
         <PlacesSearchInput
           coords={mapCenter}

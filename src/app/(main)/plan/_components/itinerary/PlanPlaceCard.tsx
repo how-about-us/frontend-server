@@ -159,7 +159,13 @@ export function PlanPlaceCard({
         address: place.subtitle,
       });
     },
-    [place.googlePlaceId, place.location, place.subtitle, place.title, setSelectedPlace],
+    [
+      place.googlePlaceId,
+      place.location,
+      place.subtitle,
+      place.title,
+      setSelectedPlace,
+    ],
   );
 
   return (

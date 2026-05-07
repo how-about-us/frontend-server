@@ -63,13 +63,44 @@ export function PlacesSearchInput({
       return;
     }
     const r = el.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - r.bottom - 8;
-    const maxH = Math.min(320, Math.max(96, spaceBelow));
+    const margin = 8;
+    const gap = 4;
+    const maxCap = 125;
+    const minH = 48;
+
+    const spaceBelow = window.innerHeight - r.bottom - margin;
+    const spaceAbove = r.top - margin;
+
+    /** 뷰포트에서 더 넓은 쪽으로 열기 — 일정 맨 아래 입력은 보통 위쪽이 더 넓음 */
+    const openDown = spaceBelow >= spaceAbove;
+
+    const avail = Math.max(0, (openDown ? spaceBelow : spaceAbove) - gap);
+    let maxHeight = Math.min(
+      maxCap,
+      avail >= minH ? Math.max(minH, avail) : avail,
+    );
+
+    let top: number;
+    if (openDown) {
+      top = r.bottom + gap;
+    } else {
+      top = r.top - gap - maxHeight;
+      if (top < margin) {
+        top = margin;
+        maxHeight = Math.min(maxHeight, r.top - margin - gap);
+      }
+    }
+
+    const maxBottom = window.innerHeight - margin;
+    if (top + maxHeight > maxBottom) {
+      maxHeight = Math.max(0, maxBottom - top);
+    }
+
     setMenuGeometry({
-      top: r.bottom + 4,
+      top,
       left: r.left,
       width: Math.max(r.width, 200),
-      maxHeight: maxH,
+      maxHeight,
     });
   }, [isOpen, predictions.length]);
 
