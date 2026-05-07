@@ -1,8 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Plus } from "lucide-react";
 import { ChatEnterIcon } from "@/components/icons";
+import {
+  chatAiLabelMotion,
+  chatTapSoft,
+  chatTapTransition,
+} from "@/components/chat/lib/chat.animations";
 import { chatTypography, resolveChatMessageTypography } from "@/components/chat/lib/chatTypography";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +33,7 @@ export function ChatInputBar({
   const [aiEnabled, setAiEnabled] = useState(false);
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const reduceMotion = useReducedMotion();
 
   function toggleAi() {
     setAiEnabled((prev) => {
@@ -82,17 +89,30 @@ export function ChatInputBar({
       style={{ height: isMinimized ? "100px" : "90px" }}
     >
       <div className="relative min-h-0 flex-1 px-4 pb-1 pt-3">
-        {aiEnabled && (
-          <span
-            className={cn(
-              "pointer-events-none absolute left-0 top-3",
-              typo.inputAiLabel,
-            )}
-            style={{ paddingLeft: chatTypography.aiOverlayInset }}
-          >
-            {AI_LABEL}
-          </span>
-        )}
+        <AnimatePresence>
+          {aiEnabled && (
+            <motion.span
+              key="ai-overlay"
+              className={cn(
+                "pointer-events-none absolute left-0 top-3",
+                typo.inputAiLabel,
+              )}
+              style={{ paddingLeft: chatTypography.aiOverlayInset }}
+              initial={reduceMotion ? false : chatAiLabelMotion.initial}
+              animate={
+                reduceMotion ?
+                  { opacity: 1, x: 0 }
+                : chatAiLabelMotion.animate
+              }
+              exit={reduceMotion ? { opacity: 0, x: 0 } : chatAiLabelMotion.exit}
+              transition={
+                reduceMotion ? { duration: 0 } : chatAiLabelMotion.transition
+              }
+            >
+              {AI_LABEL}
+            </motion.span>
+          )}
+        </AnimatePresence>
         <textarea
           ref={inputRef}
           value={message}
@@ -117,10 +137,13 @@ export function ChatInputBar({
         )}
       >
         <div className="flex items-center gap-1">
-          <button
+          <motion.button
+            type="button"
             onClick={onPlusClick}
             disabled={plusDisabled || !onPlusClick}
             aria-label="장소 보내기"
+            whileTap={reduceMotion ? undefined : chatTapSoft}
+            transition={chatTapTransition}
             className={cn(
               "flex items-center justify-center rounded-full transition hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
               isMinimized ? "h-8 w-8" : "h-9 w-9",
@@ -132,9 +155,12 @@ export function ChatInputBar({
                 isMinimized ? "h-4 w-4" : "h-5 w-5",
               )}
             />
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            type="button"
             onClick={toggleAi}
+            whileTap={reduceMotion ? undefined : chatTapSoft}
+            transition={chatTapTransition}
             className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 transition-colors ${
               aiEnabled
                 ? "bg-brand-green text-white"
@@ -148,16 +174,19 @@ export function ChatInputBar({
                 strokeWidth={3}
               />
             )}
-          </button>
+          </motion.button>
         </div>
-        <button
+        <motion.button
+          type="button"
           onClick={handleSend}
+          whileTap={reduceMotion ? undefined : chatTapSoft}
+          transition={chatTapTransition}
           className="flex items-center gap-2 px-2 py-2 transition hover:opacity-80"
         >
           <ChatEnterIcon
             className={hasContent ? "text-brand-red" : "text-light-gray"}
           />
-        </button>
+        </motion.button>
       </div>
     </div>
   );

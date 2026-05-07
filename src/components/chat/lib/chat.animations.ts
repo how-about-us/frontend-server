@@ -1,4 +1,6 @@
-import type { Variants, Transition } from "framer-motion";
+import type { Transition, Variants } from "framer-motion";
+
+import type { ChatMessageType } from "@/types/chat";
 
 export const PANEL_SPRING: Transition = {
   type: "spring",
@@ -32,3 +34,51 @@ export function getPanelAnimate(isMinimized: boolean) {
       : "0 0 0 0 rgba(0,0,0,0)",
   };
 }
+
+/** 채팅 말풍선 그룹 등장 — 패널보다 약하게 */
+export const chatMessageSpring: Transition = {
+  type: "spring",
+  stiffness: 420,
+  damping: 34,
+};
+
+export function getChatMessageMotion(
+  type: ChatMessageType,
+  options?: { placeIsMine?: boolean },
+): {
+  initial: Record<string, number>;
+  transition: Transition;
+} {
+  if (type === "system") {
+    return {
+      initial: { opacity: 0, y: 8, scale: 0.97 },
+      transition: chatMessageSpring,
+    };
+  }
+
+  const fromRight =
+    type === "mine" ||
+    (type === "place" && Boolean(options?.placeIsMine));
+
+  if (fromRight) {
+    return {
+      initial: { opacity: 0, y: 12, x: 14 },
+      transition: chatMessageSpring,
+    };
+  }
+
+  return {
+    initial: { opacity: 0, y: 12, x: -14 },
+    transition: chatMessageSpring,
+  };
+}
+
+export const chatTapSoft = { scale: 0.96 };
+export const chatTapTransition = { type: "spring", stiffness: 500, damping: 28 } as const;
+
+export const chatAiLabelMotion = {
+  initial: { opacity: 0, x: -6 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -6 },
+  transition: { duration: 0.18, ease: [0.25, 0.1, 0.25, 1] } as Transition,
+};

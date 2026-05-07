@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import type { ChatMessage } from "@/types/chat";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/stores/session-store";
 import { groupConsecutiveMessages } from "../lib/chat.utils";
+import { getChatMessageMotion } from "../lib/chat.animations";
 import {
   OtherMessageGroup,
   MyMessageGroup,
@@ -24,6 +27,8 @@ export function ChatMessageList({
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const myId = useSessionStore((s) => s.user?.id);
+  const reduceMotion = useReducedMotion();
 
   const scrollToMessage = useCallback((messageId: string) => {
     const root = scrollRootRef.current;
@@ -51,46 +56,57 @@ export function ChatMessageList({
       <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
         {groups.map((group) => {
           const type = group[0].type;
-          if (type === "system")
-            return (
+          const placeIsMine =
+            type === "place" &&
+            myId != null &&
+            group[0].senderUserId != null &&
+            group[0].senderUserId === myId;
+          const motionCfg = getChatMessageMotion(type, { placeIsMine });
+
+          const inner =
+            type === "system" ? (
               <SystemMessage
-                key={group[0].id}
                 message={group[0]}
                 isMinimized={isMinimized}
               />
-            );
-          if (type === "place")
-            return (
+            ) :
+            type === "place" ? (
               <PlaceShareCard
-                key={group[0].id}
                 message={group[0]}
                 isMinimized={isMinimized}
               />
-            );
-          if (type === "mine")
-            return (
+            ) :
+            type === "mine" ? (
               <MyMessageGroup
-                key={group[0].id}
                 messages={group}
                 isMinimized={isMinimized}
                 onCancelAiRequest={onCancelAiRequest}
               />
-            );
-          if (type === "ai")
-            return (
+            ) :
+            type === "ai" ? (
               <AiMessageGroup
-                key={group[0].id}
                 messages={group}
                 isMinimized={isMinimized}
                 onReplyTargetClick={scrollToMessage}
               />
+            ) : (
+              <OtherMessageGroup
+                messages={group}
+                isMinimized={isMinimized}
+              />
             );
+
           return (
-            <OtherMessageGroup
+            <motion.div
               key={group[0].id}
-              messages={group}
-              isMinimized={isMinimized}
-            />
+              initial={reduceMotion ? false : motionCfg.initial}
+              animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+              transition={
+                reduceMotion ? { duration: 0 } : motionCfg.transition
+              }
+            >
+              {inner}
+            </motion.div>
           );
         })}
       </div>
