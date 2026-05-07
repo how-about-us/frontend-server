@@ -5,6 +5,11 @@ import {
   parseAiRequestUiMeta,
   parseAiResponseRequestMessageId,
 } from "@/lib/chat/aiRequestMetadata";
+import {
+  aiResponseDisplayText,
+  aiResponseStructuredToPartialFields,
+} from "@/lib/chat/aiResponseUiMapping";
+import { parseAiResponseStructuredMeta } from "@/lib/chat/aiResponseMetadata";
 import { parseFiniteNumber } from "@/lib/chat/normalizeServerChatMessage";
 import type { ChatMessage, PlaceShareData, ServerChatMessage } from "@/types/chat";
 
@@ -205,10 +210,12 @@ export function serverMessageToChatMessage(
   if (kind === "AI_RESPONSE" || kind === "AI") {
     const ref = parseAiResponseRequestMessageId(msg);
     const reply = ref ? aiRequestReplyLookup.get(ref) : undefined;
+    const structured = parseAiResponseStructuredMeta(msg.metadata);
+
     return {
       id: msg.id,
       type: "ai",
-      text: msg.content,
+      text: aiResponseDisplayText(msg.content, structured),
       time,
       sender: "WOORI",
       ...(reply
@@ -219,6 +226,7 @@ export function serverMessageToChatMessage(
             },
           }
         : {}),
+      ...aiResponseStructuredToPartialFields(structured),
     };
   }
 

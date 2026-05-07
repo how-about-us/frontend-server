@@ -52,6 +52,18 @@ export function ChatInputBar({
     });
   }
 
+  function fillAiDraft(text: string) {
+    setMessage(text);
+    setTimeout(() => {
+      const el = inputRef.current;
+      if (el) {
+        el.focus();
+        const end = text.length;
+        el.setSelectionRange(end, end);
+      }
+    });
+  }
+
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setMessage(e.target.value);
   }
@@ -175,6 +187,36 @@ export function ChatInputBar({
               />
             )}
           </motion.button>
+          {aiEnabled ?
+            <>
+              <motion.button
+                type="button"
+                onClick={() => fillAiDraft("장소 추천해줘.")}
+                whileTap={reduceMotion ? undefined : chatTapSoft}
+                transition={chatTapTransition}
+                aria-label="입력란에 장소 추천 요청 문구 넣기"
+                className={cn(
+                  "shrink-0 rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
+                  isMinimized ? "text-[10px]" : "text-[11px]",
+                )}
+              >
+                장소 추천
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => fillAiDraft("대화 요약해줘.")}
+                whileTap={reduceMotion ? undefined : chatTapSoft}
+                transition={chatTapTransition}
+                aria-label="입력란에 대화 요약 요청 문구 넣기"
+                className={cn(
+                  "shrink-0 rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
+                  isMinimized ? "text-[10px]" : "text-[11px]",
+                )}
+              >
+                대화 요약
+              </motion.button>
+            </>
+          : null}
         </div>
         <motion.button
           type="button"

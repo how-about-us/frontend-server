@@ -27,6 +27,8 @@ export function normalizeMetadataRecord(
     else if (typeof val === "number" && Number.isFinite(val))
       out[k] = String(val);
     else if (typeof val === "boolean") out[k] = val ? "true" : "false";
+    else if (val !== null && typeof val === "object")
+      out[k] = JSON.stringify(val);
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }

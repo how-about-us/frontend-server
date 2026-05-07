@@ -14,6 +14,43 @@ export interface PlaceShareData {
   rating: number;
 }
 
+/** AI_RESPONSE.place_recommendation — metadata.recommendedPlaces 항목 */
+export interface AiRecommendedPlace {
+  placeId: string;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  primaryType?: string;
+  reason?: string;
+  googleMapsUri?: string;
+}
+
+export interface AiConversationSummarySection {
+  type: string;
+  title: string;
+  items: string[];
+}
+
+export interface AiConversationSummaryMentionedPlace {
+  name: string;
+  source?: string;
+  note?: string;
+}
+
+export interface AiConversationSummaryPayload {
+  title: string;
+  overview: string;
+  sections?: AiConversationSummarySection[];
+  mentionedPlaces?: AiConversationSummaryMentionedPlace[];
+}
+
+/** AI_RESPONSE.place_recommendation 블록 헤더(metadata.place_recommendation.title 등) */
+export interface AiPlaceRecommendationHeading {
+  title?: string;
+  subtitle?: string;
+}
+
 export interface ChatMessage {
   id: string;
   type: ChatMessageType;
@@ -40,6 +77,14 @@ export interface ChatMessage {
     requestMessageId: string;
     quotePreview: string;
   };
+  /** AI_RESPONSE — 서버 메타 `intent`(소문자 정규화) */
+  aiIntent?: string;
+  /** AI_RESPONSE — intent place_recommendation 시 장소 목록 */
+  aiRecommendedPlaces?: AiRecommendedPlace[];
+  /** AI_RESPONSE — place_recommendation.title / subtitle */
+  aiPlaceRecommendationHeading?: AiPlaceRecommendationHeading;
+  /** AI_RESPONSE — intent conversation_summary 시 구조 요약 */
+  aiConversationSummary?: AiConversationSummaryPayload;
 }
 
 /** `/topic/rooms/{roomId}/messages` · GET /messages 응답 — 일반 말풍선은 CHAT 만 */
