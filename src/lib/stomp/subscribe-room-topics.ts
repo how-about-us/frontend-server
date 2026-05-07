@@ -10,9 +10,10 @@ import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
+import { parseRoomLifecycleMessage } from "@/lib/stomp/room-lifecycle-events";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
-import { parseRoomLifecycleMessage } from "@/lib/stomp/room-lifecycle-events";
+import { startSessionPresencePing } from "@/lib/stomp/sessionPresencePing";
 import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
 import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
@@ -118,7 +119,10 @@ export function subscribeRoomStompTopics(
     },
   );
 
+  const stopSessionPresencePing = startSessionPresencePing(client);
+
   return () => {
+    stopSessionPresencePing();
     membersSub.unsubscribe();
     presenceSub.unsubscribe();
     bookmarksSub.unsubscribe();
