@@ -9,10 +9,7 @@ import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { StompProvider } from "@/contexts/StompContext";
-import {
-  clearStalePersistedSessionIfNoAuthCookie,
-  syncSessionUserFromServer,
-} from "@/lib/auth/session-sync";
+import { clearStalePersistedSessionIfNoAuthCookie } from "@/lib/auth/session-sync";
 import {
   ROOM_COVER_PERSIST_STORAGE_KEY,
   dehydrateRoomCoverOnly,
@@ -47,12 +44,11 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
     [],
   );
 
-  /** `skipHydration` 세션 스토어 — 클라 마운트 후 localStorage 병합 후 서버 `users/me`와 동기화 */
+  /** `skipHydration` 세션 스토어 — 클라 마운트 후 localStorage 병합·쿠키 불일치 정리 (`users/me`는 `/home` 등에서 동기화) */
   useEffect(() => {
     void (async () => {
       await useSessionStore.persist?.rehydrate?.();
       clearStalePersistedSessionIfNoAuthCookie();
-      await syncSessionUserFromServer();
     })();
   }, []);
 

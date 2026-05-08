@@ -12,7 +12,12 @@ type Props = {
   onClose: () => void;
 };
 
+/**
+ * 패널은 열 때마다 remount되며, 마운트 시 항상 새 초대 코드를 발급합니다.
+ * (닫았다 다시 열거나 로컬에 남은 만료·구 코드를 그대로 보여 주지 않기 위함)
+ */
 export function AddMemberPanel({ roomId, onClose }: Props) {
+  const roomIdTrim = roomId.trim();
   const [copied, setCopied] = useState(false);
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const setCurrentRoomInviteCode = useSessionStore(
@@ -23,9 +28,11 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
     useRegenerateInviteCode();
 
   useEffect(() => {
-    const id = roomId.trim();
-    if (!id.length) return;
-    regenerate(id, {
+    if (!roomIdTrim.length) return;
+
+    setIssuedCode(null);
+
+    regenerate(roomIdTrim, {
       onSuccess: ({ inviteCode: newCode }) => {
         setCurrentRoomInviteCode(newCode);
         setIssuedCode(newCode);
@@ -34,7 +41,7 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
         toast.error("초대 링크를 발급하지 못했어요.");
       },
     });
-  }, [regenerate, roomId, setCurrentRoomInviteCode]);
+  }, [roomIdTrim, regenerate, setCurrentRoomInviteCode]);
 
   const inviteUrl = issuedCode
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${issuedCode}`
@@ -49,9 +56,9 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
   }
 
   function handleRegenerate() {
-    const id = roomId.trim();
-    if (!id.length) return;
-    regenerate(id, {
+    if (!roomIdTrim.length) return;
+    setIssuedCode(null);
+    regenerate(roomIdTrim, {
       onSuccess: ({ inviteCode: newCode }) => {
         setCurrentRoomInviteCode(newCode);
         setIssuedCode(newCode);
@@ -64,7 +71,6 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-border bg-gray-50">
-      {/* 패널 헤더 */}
       <div className="flex items-center justify-between border-b border-gray-border bg-white px-4 py-3">
         <span className="text-sm font-semibold text-gray-800">멤버 초대</span>
         <button
@@ -88,17 +94,19 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
 
       <div className="flex flex-col gap-3 p-4">
         <p className="text-xs text-dark-gray">
-          아래 초대 링크를 복사해 멤버를 초대하세요.
+          아래 초대 링크를 복사해 멤버를 초대하세요. 패널을 열 때마다 새 링크로
+          갱신됩니다.
         </p>
 
-        {/* 초대 링크 */}
         <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center rounded-lg border border-gray-border bg-white px-3 py-2">
             {inviteUrl ? (
               <span className="truncate text-xs text-dark-gray">{inviteUrl}</span>
             ) : (
               <span className="truncate text-xs text-light-gray">
-                {isRegenerating ? "초대 링크를 발급하는 중…" : "발급에 실패했어요. 재발급을 눌러 주세요."}
+                {isRegenerating
+                  ? "초대 링크를 발급하는 중…"
+                  : "발급에 실패했어요. 아래에서 재발급을 눌러 주세요."}
               </span>
             )}
           </div>
@@ -116,7 +124,6 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
           </button>
         </div>
 
-        {/* 재발급 버튼 */}
         <button
           type="button"
           onClick={handleRegenerate}

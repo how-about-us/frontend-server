@@ -1,3 +1,4 @@
+import { fetchSessionUserRaw } from "@/lib/auth/fetch-session-user-raw";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { useSessionStore } from "@/stores/session-store";
 import { refreshToken } from "./auth";
@@ -39,6 +40,11 @@ export async function apiFetch(
   if (!refreshed) {
     clearSessionAndRedirect();
     return res;
+  }
+
+  if (useSessionStore.getState().user == null) {
+    const user = await fetchSessionUserRaw();
+    if (user) useSessionStore.getState().setUser(user);
   }
 
   return fetch(input, opts);

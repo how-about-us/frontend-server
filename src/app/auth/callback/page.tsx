@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect } from "react";
 
 import { exchangeGoogleCode } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
@@ -11,13 +11,9 @@ import { useSessionStore } from "@/stores/session-store";
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const called = useRef(false);
   const setUser = useSessionStore((s) => s.setUser);
 
   useEffect(() => {
-    if (called.current) return;
-    called.current = true;
-
     const code = searchParams.get("code");
     const returnedState = searchParams.get("state");
     const savedState = sessionStorage.getItem("oauth_state");

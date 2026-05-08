@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
@@ -24,14 +24,12 @@ export default function JoinPage() {
     ? params.inviteCode[0]
     : params.inviteCode;
 
-  const called = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const { mutate: join } = useJoinRoom();
 
   useEffect(() => {
-    if (called.current || !inviteCode) return;
-    called.current = true;
+    if (!inviteCode) return;
 
     if (!hasSession()) {
       sessionStorage.setItem(PENDING_INVITE_KEY, inviteCode);

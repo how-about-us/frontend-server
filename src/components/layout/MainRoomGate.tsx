@@ -22,6 +22,7 @@ function isLegacyPlanRoomPath(pathname: string): boolean {
  * (main) 안에서는 선택된 방이 없으면 `/home`으로 보냅니다.
  *
  * 세션 병합은 루트 `AppRootProviders`의 `rehydrate()` 이후에만 판단합니다.
+ * 프로필 서버 동기화는 `/home`의 `HomeSessionSync`에서 수행합니다.
  */
 export function MainRoomGate({ children }: { children: ReactNode }) {
   const router = useRouter();

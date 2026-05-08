@@ -96,7 +96,7 @@ export function useChatMessages(roomId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [roomId, userId]);
+  }, [roomId]);
 
   useEffect(() => {
     if (!roomId) {

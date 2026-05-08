@@ -27,6 +27,7 @@ export function RoomMembersSection() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [invitePanelKey, setInvitePanelKey] = useState(0);
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
@@ -99,7 +100,12 @@ export function RoomMembersSection() {
         <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
         {isHost && (
           <button
-            onClick={() => setShowInvitePanel((v) => !v)}
+            onClick={() => {
+              setShowInvitePanel((open) => {
+                if (!open) setInvitePanelKey((k) => k + 1);
+                return !open;
+              });
+            }}
             className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
               showInvitePanel
                 ? "border-brand-red bg-brand-red/5 text-brand-red"
@@ -125,6 +131,7 @@ export function RoomMembersSection() {
       {/* 멤버 초대 패널 */}
       {showInvitePanel && currentRoomId && (
         <AddMemberPanel
+          key={`${currentRoomId}-${invitePanelKey}`}
           roomId={currentRoomId}
           onClose={() => setShowInvitePanel(false)}
         />
