@@ -132,7 +132,7 @@ export function PlanPageView() {
 
   if (showInitialLoading) {
     return (
-      <div className="space-y-3 pl-6 pr-6">
+      <div className="space-y-3 overflow-x-auto pl-6 pr-6">
         {scheduleToolbar}
         <PlanChatSectionWidth />
         <p className="py-8 text-center text-sm text-dark-gray">
@@ -143,7 +143,7 @@ export function PlanPageView() {
   }
 
   return (
-    <div className="space-y-3 pl-6 pr-6">
+    <div className="space-y-3 overflow-x-auto pl-6 pr-6">
       {scheduleToolbar}
 
       <PlanChatSectionWidth />

@@ -1,3 +1,4 @@
+import { PLAN_ROUTE_CARD_WIDTH_PX } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
 import { TravelRouteRail } from "./TravelRouteRail";
@@ -17,7 +18,10 @@ export function PlanTravelTimeCollapsed({
       role="separator"
     >
       <TravelRouteRail arrowClassName="text-light-gray" />
-      <div className="flex min-w-0 flex-1 items-center py-1">
+      <div
+        className="flex shrink-0 items-center py-1"
+        style={{ width: PLAN_ROUTE_CARD_WIDTH_PX }}
+      >
         <button
           type="button"
           className="text-xs text-brand-green underline-offset-2 hover:underline"

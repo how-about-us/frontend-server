@@ -97,7 +97,7 @@ export function TravelDirectionsCard({
       </button>
 
       {menuOpen ? (
-        <div className="border-t border-gray-border px-2.5 py-2">
+        <div className="w-fit max-w-full border-t border-gray-border px-2.5 py-2">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-dark-gray">
             이동 수단
           </p>

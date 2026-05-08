@@ -18,6 +18,7 @@ import {
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
+import { PLAN_ROUTE_CARD_WIDTH_PX } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
 import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
@@ -410,7 +411,10 @@ export function PlanTravelTime({
       aria-label="이동 시간 및 길찾기"
     >
       <TravelRouteRail arrowClassName="text-brand-green" />
-      <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
+      <div
+        className="flex shrink-0 flex-col justify-center py-0.5"
+        style={{ width: PLAN_ROUTE_CARD_WIDTH_PX }}
+      >
         <TravelDirectionsCard
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
