@@ -9,7 +9,7 @@ import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 import type { PlanPlace } from "@/lib/plan/types";
 
 /** `orderIndex` 기준 정렬(비변형) */
-export function sortRoomScheduleItemsByOrder(
+function sortRoomScheduleItemsByOrder(
   items: RoomScheduleItem[],
 ): RoomScheduleItem[] {
   return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -20,7 +20,7 @@ export function sortRoomScheduleItemsByOrder(
  * 제목·photoName·location 등은 유지하고 순서·시간·수단만 반영합니다.
  * 캐시에 없는 itemId가 있거나 집합/길이가 맞지 않으면 null → 전체 재조회.
  */
-export function mergeScheduleItemsIntoPlanPlaces(
+function mergeScheduleItemsIntoPlanPlaces(
   prev: PlanPlace[] | undefined,
   items: RoomScheduleItem[],
 ): PlanPlace[] | null {

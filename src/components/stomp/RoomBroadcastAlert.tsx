@@ -2,8 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { Bookmark, User } from "lucide-react";
-import Image from "next/image";
+import { Bookmark } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -36,40 +35,6 @@ export function showRoomBroadcastAlert({
   });
 }
 
-export function RoomBroadcastProfileIcon({ url }: { url: string | null }) {
-  if (!url) return null;
-  return (
-    <span className="relative flex h-6 w-6 shrink-0 overflow-hidden rounded-full">
-      <Image
-        src={url}
-        alt=""
-        width={24}
-        height={24}
-        className="h-full w-full object-cover"
-      />
-    </span>
-  );
-}
-
-/** 프로필 이미지 URL이 없을 때 presence 등에서 토스트 아이콘으로 사용 */
-export function RoomBroadcastUserPlaceholderIcon() {
-  return (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-border/80 text-dark-gray">
-      <User className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-    </span>
-  );
-}
-
-/** presence 토스트: URL이 있으면 프로필, 없으면 유저 플레이스홀더 항상 표시 */
-export function roomPresenceToastIcon(profileImageUrl: string | null) {
-  const trimmed =
-    typeof profileImageUrl === "string" ? profileImageUrl.trim() : "";
-  if (trimmed.length > 0) {
-    return <RoomBroadcastProfileIcon url={trimmed} />;
-  }
-  return <RoomBroadcastUserPlaceholderIcon />;
-}
-
 export function RoomBroadcastBookmarkIcon() {
   return (
     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
@@ -78,7 +43,7 @@ export function RoomBroadcastBookmarkIcon() {
   );
 }
 
-export type RoomBookmarkChangedType =
+type RoomBookmarkChangedType =
   | "BOOKMARK_CREATED"
   | "BOOKMARK_UPDATED"
   | "BOOKMARK_DELETED"
@@ -94,7 +59,7 @@ export type RoomBookmarkChangedEvent = {
   type: RoomBookmarkChangedType;
 };
 
-export function bookmarkChangedMessage(type: RoomBookmarkChangedType): string {
+function bookmarkChangedMessage(type: RoomBookmarkChangedType): string {
   switch (type) {
     case "BOOKMARK_CREATED":
       return "북마크가 추가되었습니다";
@@ -155,8 +120,7 @@ async function fetchRoomMembersList(
   return members ?? [];
 }
 
-/** presence 등 payload에 nickname이 비어 있을 때 멤버 목록으로 표시 이름 보강 */
-export async function resolveActorNickname(
+async function resolveActorNickname(
   queryClient: QueryClient,
   roomId: string,
   userId: number,

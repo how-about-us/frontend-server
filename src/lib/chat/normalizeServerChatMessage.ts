@@ -17,7 +17,7 @@ export function parseFiniteNumber(v: unknown): number | undefined {
   return undefined;
 }
 
-export function normalizeMetadataRecord(
+function normalizeMetadataRecord(
   raw: unknown,
 ): Record<string, string> | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;

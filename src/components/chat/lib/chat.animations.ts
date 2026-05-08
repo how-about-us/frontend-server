@@ -2,7 +2,7 @@ import type { Transition, Variants } from "framer-motion";
 
 import type { ChatMessageType } from "@/types/chat";
 
-export const PANEL_SPRING: Transition = {
+const PANEL_SPRING: Transition = {
   type: "spring",
   stiffness: 300,
   damping: 30,
@@ -36,7 +36,7 @@ export function getPanelAnimate(isMinimized: boolean) {
 }
 
 /** 채팅 말풍선 그룹 등장 — 패널보다 약하게 */
-export const chatMessageSpring: Transition = {
+const chatMessageSpring: Transition = {
   type: "spring",
   stiffness: 420,
   damping: 34,

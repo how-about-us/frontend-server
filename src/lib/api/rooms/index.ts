@@ -1,10 +1,4 @@
-// Re-export errors used by room consumers (HttpError, duplicate bookmark codes)
-export {
-  HttpError,
-  ROOM_BOOKMARK_DUPLICATE_ERROR_CODES,
-  isRoomBookmarkDuplicateFromBody,
-  readApiErrorCodeFromJson,
-} from "@/lib/api/errors";
+export { HttpError } from "@/lib/api/errors";
 
 export type {
   BookmarkCategory,

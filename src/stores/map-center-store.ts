@@ -1,15 +1,13 @@
 import { create } from "zustand";
 
-import { HIKONE_CENTER } from "@/mocks/map";
-
 export type MapCenterCoords = { lat: number; lng: number };
 
 type MapCenterState = {
-  mapCenter: MapCenterCoords;
+  mapCenter: MapCenterCoords | null;
   setMapCenter: (center: MapCenterCoords) => void;
 };
 
 export const useMapCenterStore = create<MapCenterState>((set) => ({
-  mapCenter: HIKONE_CENTER,
+  mapCenter: null,
   setMapCenter: (mapCenter) => set({ mapCenter }),
 }));

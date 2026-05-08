@@ -20,16 +20,6 @@ export function sortRoomSchedules<T extends { dayNumber: number; date: string }>
   });
 }
 
-export function rangeFromSchedules(
-  schedules: RoomSchedule[],
-): { start: Date; end: Date } | null {
-  if (!schedules.length) return null;
-  const times = schedules.map((s) => parseLocalYmd(s.date).getTime());
-  const start = startOfLocalDay(new Date(Math.min(...times)));
-  const end = startOfLocalDay(new Date(Math.max(...times)));
-  return { start, end };
-}
-
 export function mergeSchedulesWithPlaces(schedules: RoomSchedule[]): PlanDayData[] {
   const sorted = sortRoomSchedules(schedules);
   return sorted.map((s, i) => ({

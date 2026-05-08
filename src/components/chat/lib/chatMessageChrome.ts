@@ -14,7 +14,7 @@ export const chatMessageChrome = {
 } as const;
 
 /** 최소화 패널용 — 말풍선·시스템 띠 패딩 살짝 축소 */
-export const chatMessageChromeMinimized = {
+const chatMessageChromeMinimized = {
   bubbleBase: "w-fit rounded-lg px-3 py-1.5",
   systemPill:
     "my-1 max-w-[min(100%,18rem)] rounded-full bg-black/25 px-3 py-1.5 text-center text-white",

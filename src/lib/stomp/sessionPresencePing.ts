@@ -1,6 +1,6 @@
 import type { Client } from "@stomp/stompjs";
 
-export const SESSION_PRESENCE_PING_INTERVAL_MS = 30_000;
+const SESSION_PRESENCE_PING_INTERVAL_MS = 30_000;
 
 /**
  * 방 토픽 구독 후 세션 TTL 갱신용 fire-and-forget STOMP ping.

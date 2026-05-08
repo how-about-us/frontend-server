@@ -4,7 +4,7 @@ const AI_OVERLAY_INSET = "0.5rem" as const;
 const AI_LABEL_WIDTH_CH = 1.5;
 
 /** 말풍선·카드·입력 등 본문 (패널 일반 크기) */
-export const chatTypographyMessage = {
+const chatTypographyMessage = {
   bubble: "text-xs leading-relaxed",
   systemBody: "text-xs leading-relaxed",
   metaMuted: "text-[9px] leading-relaxed text-dark-gray",
@@ -18,7 +18,7 @@ export const chatTypographyMessage = {
 } as const;
 
 /** 패널 최소화(좁은 폭) */
-export const chatTypographyMinimized = {
+const chatTypographyMinimized = {
   bubble: "text-[11px] leading-relaxed",
   systemBody: "text-[11px] leading-relaxed",
   metaMuted: "text-[8px] leading-relaxed text-dark-gray",

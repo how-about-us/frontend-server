@@ -1,4 +1,4 @@
-export const PLAN_ITINERARY_MAP_PATH_CACHE_VERSION = "orient-v1" as const;
+const PLAN_ITINERARY_MAP_PATH_CACHE_VERSION = "orient-v1" as const;
 
 export function planItineraryMapPathQueryKey(
   rid: string,

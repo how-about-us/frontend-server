@@ -47,14 +47,14 @@ export default function SearchPage() {
     }
     setQuery(qParam);
     const { mapCenter: c } = useMapCenterStore.getState();
-    setSearchCoords({ lat: c.lat, lng: c.lng });
+    setSearchCoords(c ? { lat: c.lat, lng: c.lng } : null);
   }, [qParam]);
 
   function handleSearch(q: string) {
     const trimmed = q.trim();
     setQuery(trimmed);
     const { mapCenter: c } = useMapCenterStore.getState();
-    setSearchCoords({ lat: c.lat, lng: c.lng });
+    setSearchCoords(c ? { lat: c.lat, lng: c.lng } : null);
 
     const params = new URLSearchParams(searchParams.toString());
     if (trimmed) params.set("q", trimmed);

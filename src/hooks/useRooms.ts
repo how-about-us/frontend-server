@@ -71,10 +71,6 @@ import { syncRoomDetailFromServer } from "@/lib/rooms/syncRoomDetailCache";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
-export { ROOMS_QUERY_KEY };
-
-export { roomSchedulesQueryKey };
-
 export function useRoomsList() {
   return useQuery({
     queryKey: ROOMS_QUERY_KEY,

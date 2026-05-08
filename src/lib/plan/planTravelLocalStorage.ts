@@ -1,5 +1,4 @@
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
-import { getScheduleItemRoute } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import {
   canonicalScheduleTravelMode,
@@ -165,50 +164,6 @@ export function writeScheduleRouteToLocalStorage(
   } catch {
     /* quota / private mode */
   }
-}
-
-export async function getScheduleItemRoutePersisted(
-  roomId: string,
-  scheduleId: number,
-  segmentSourceItemId: number,
-  travelMode: string,
-  fp: string,
-): Promise<ScheduleItemRouteResponse | null> {
-  const tm = travelMode.trim();
-  if (!fp) {
-    return getScheduleItemRoute(
-      roomId,
-      scheduleId,
-      segmentSourceItemId,
-      tm,
-    );
-  }
-  const cached = readScheduleRouteFromLocalStorage(
-    roomId,
-    scheduleId,
-    segmentSourceItemId,
-    tm,
-    fp,
-  );
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const fresh = await getScheduleItemRoute(
-    roomId,
-    scheduleId,
-    segmentSourceItemId,
-    tm,
-  );
-  writeScheduleRouteToLocalStorage(
-    roomId,
-    scheduleId,
-    segmentSourceItemId,
-    tm,
-    fp,
-    fresh,
-  );
-  return fresh;
 }
 
 export function readTravelModeFromLocalStorage(

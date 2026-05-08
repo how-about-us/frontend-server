@@ -16,7 +16,7 @@ function hasAuthSessionCookie(): boolean {
  * 현재 브라우저 쿠키 세션으로 GET /users/me (refresh 한 번 포함).
  * 401이면 apiFetch가 로그아웃 처리할 수 있음.
  */
-export async function fetchSessionUser(): Promise<SessionUser | null> {
+async function fetchSessionUser(): Promise<SessionUser | null> {
   const res = await apiFetch(`${API_BASE}/users/me`);
   if (!res.ok) return null;
   return res.json() as Promise<SessionUser>;

@@ -8,7 +8,7 @@ import {
 } from "@/lib/maps/destinationCenterSessionCache";
 
 /** 지오코드 결과 없거나 방 미선택 시 기본 줌 근처 */
-export const DEFAULT_MAP_CENTER = { lat: 37.5665, lng: 126.978 };
+const DEFAULT_MAP_CENTER = { lat: 37.5665, lng: 126.978 };
 /** 목적지 문자열 지오코드 후 줌 레벨 */
 export const DESTINATION_MAP_ZOOM = 12;
 

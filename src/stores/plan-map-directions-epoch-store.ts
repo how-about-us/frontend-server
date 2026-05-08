@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type PlanMapSegmentEpochEntry = {
+type PlanMapSegmentEpochEntry = {
   scheduleId: number;
   segmentSourceItemId: number;
 };

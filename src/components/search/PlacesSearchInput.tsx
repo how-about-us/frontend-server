@@ -113,11 +113,9 @@ export function PlacesSearchInput({
     setInputValue(urlQuery);
   }, [urlQuery]);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- 포털 드롭다운 위치는 입력창 DOM 측정 직후에만 갱신 */
   useLayoutEffect(() => {
     updateMenuGeometry();
   }, [updateMenuGeometry, inputValue, pickOnly]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!isOpen || predictions.length === 0) return;

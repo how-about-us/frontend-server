@@ -1,12 +1,12 @@
 /** 보관함 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
-export const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
+const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
   "BOOKMARK_ALREADY_EXISTS",
   "BOOKMARK_DUPLICATE",
   "DUPLICATE_BOOKMARK",
   "ROOM_BOOKMARK_DUPLICATE",
 ]);
 
-export function readApiErrorCodeFromJson(body: unknown): string | undefined {
+function readApiErrorCodeFromJson(body: unknown): string | undefined {
   if (body === null || typeof body !== "object") return undefined;
   const o = body as Record<string, unknown>;
   const direct = o.code ?? o.errorCode;

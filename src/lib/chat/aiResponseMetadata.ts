@@ -102,7 +102,7 @@ function parseLegacyFlatRecommendedPlaces(
 }
 
 /** 제목·부제·장소 목록 — 블록 우선, 목록만 레거시 폴백 */
-export function parsePlaceRecommendationFromMeta(
+function parsePlaceRecommendationFromMeta(
   meta: Record<string, string> | undefined,
 ): {
   places?: AiRecommendedPlace[];
@@ -215,7 +215,7 @@ function parseConversationSummaryPayload(
   return payload;
 }
 
-export function parseConversationSummaryFromMeta(
+function parseConversationSummaryFromMeta(
   meta: Record<string, string> | undefined,
 ): AiConversationSummaryPayload | undefined {
   const rawStr = readMetaString(
