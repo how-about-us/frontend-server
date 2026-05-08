@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import { useJoinRequests, useRoomsList } from "@/hooks/useRooms";
+import { selectHostRoom } from "@/lib/rooms/selectHostRoom";
 import { useSessionStore } from "@/stores/session-store";
 
 export function JoinRequestsPoller() {
@@ -15,14 +16,17 @@ export function JoinRequestsPoller() {
 
   const { data: roomsData } = useRoomsList();
 
-  // currentRoomId가 있으면 그 방 우선, 없으면 HOST 권한인 첫 번째 방
-  const hostRoom =
-    roomsData?.rooms.find((r) => r.id === currentRoomId && r.role === "HOST") ??
-    roomsData?.rooms.find((r) => r.role === "HOST");
+  const hostRoom = selectHostRoom(
+    roomsData?.rooms,
+    currentRoomId,
+    "currentRoomHostOnly",
+  );
 
   const isOnSettings = pathname.startsWith("/settings");
 
-  const { data: requestsData } = useJoinRequests(hostRoom?.id ?? null);
+  const { data: requestsData } = useJoinRequests(hostRoom?.id ?? null, {
+    enabled: !!hostRoom,
+  });
 
   useEffect(() => {
     if (isOnSettings) return;
