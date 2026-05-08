@@ -17,7 +17,7 @@ import {
 
 export type MapBookmarkPinsProps = {
   roomId: string | null;
-  /** 보관함 핀 레이어 표시 */
+  /** true일 때만 핀을 그립니다. 데이터는 `roomId` 기준으로 캐시에 유지되며 토글과 무관합니다. */
   enabled: boolean;
 };
 
@@ -53,7 +53,7 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
 
   const { data: categories, isSuccess: categoriesReady } = useBookmarkCategories(
     roomId,
-    { enabled: enabled && !!roomId },
+    { enabled: !!roomId },
   );
 
   const categoryList = categories ?? [];
@@ -62,7 +62,7 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
     queries: categoryList.map((cat) => ({
       queryKey: roomBookmarksQueryKey(roomId, cat.categoryId),
       queryFn: () => getRoomBookmarks(roomId!, cat.categoryId),
-      enabled: enabled && !!roomId && categoriesReady,
+      enabled: !!roomId && categoriesReady,
       staleTime: 60_000,
     })),
   });
@@ -94,7 +94,6 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
       queryKey: bookmarkMapPinPlaceQueryKey(roomId!, row.bookmarkId),
       queryFn: () => getPlaceDetail(row.googlePlaceId),
       enabled:
-        enabled &&
         !!roomId &&
         listsLoaded &&
         flattenedBookmarks.length > 0,
