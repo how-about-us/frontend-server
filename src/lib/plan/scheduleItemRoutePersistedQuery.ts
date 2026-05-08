@@ -110,8 +110,9 @@ export function persistedScheduleItemRouteQueryOptions(
       return fresh;
     },
     enabled,
-    staleTime: Infinity,
-    refetchOnMount: false,
+    /** 순수 로컬 캐시에만 의존하지 않도록 주기적으로 서버 재검증 */
+    staleTime: 1000 * 60 * 60 * 6,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: false,
   };

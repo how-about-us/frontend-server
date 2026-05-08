@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
 /** 일차 삭제 후 route·items 쿼리 캐시 제거 (삭제된 scheduleId에 대한 GET 방지) */
@@ -10,6 +11,8 @@ export function removeCachesForDeletedSchedule(
 ): void {
   const rid = roomId.trim();
   if (!rid.length) return;
+
+  clearPersistedScheduleRoutesForSchedule(rid, scheduleId);
 
   queryClient.removeQueries({
     predicate: (q) => {

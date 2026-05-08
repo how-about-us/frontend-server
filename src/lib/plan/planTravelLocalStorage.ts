@@ -1,9 +1,15 @@
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
+import type { PlanPlace } from "@/lib/plan/types";
 import {
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
+
+function roundCoord(n: number): string {
+  if (!Number.isFinite(n)) return "";
+  return n.toFixed(6);
+}
 
 const NS_ROUTE = "hau:plan:route:v1";
 const NS_MODE = "hau:plan:travelMode:v1";
@@ -48,9 +54,54 @@ function routeBodyOk(
   );
 }
 
-/** 현재 일정에 대한 지문 — 항목 추가·삭제·순서 변경 시 바뀌며 LS·쿼리 캐시 무효에 사용 */
-export function schedulePlacesFingerprint(orderedItemIds: number[]): string {
-  return orderedItemIds.join(",");
+/**
+ * 일정 지문 — `itemId` 순서와 장소 정체성(Place ID·좌표)을 포함해
+ * 순서만 같고 장소만 바뀐 경우에도 LS·경로 캐시가 엇나가지 않게 합니다.
+ */
+export function schedulePlacesFingerprint(places: PlanPlace[]): string {
+  const parts: string[] = [];
+  for (const p of places) {
+    if (typeof p.itemId !== "number" || !Number.isFinite(p.itemId)) continue;
+    const gid = (p.googlePlaceId ?? "").trim();
+    const lat = p.location?.lat;
+    const lng = p.location?.lng;
+    const loc =
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng)
+        ? `${roundCoord(lat)},${roundCoord(lng)}`
+        : "";
+    parts.push(`${p.itemId}:${gid}:${loc}`);
+  }
+  return parts.join("|");
+}
+
+/** 해당 일차 경로·이동수단 LS 항목 일괄 제거 */
+export function clearPersistedScheduleRoutesForSchedule(
+  roomId: string,
+  scheduleId: number,
+): void {
+  if (typeof window === "undefined") return;
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  const prefixRoute = `${NS_ROUTE}:${rid}:${scheduleId}:`;
+  const prefixMode = `${NS_MODE}:${rid}:${scheduleId}:`;
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    if (k.startsWith(prefixRoute) || k.startsWith(prefixMode)) {
+      toRemove.push(k);
+    }
+  }
+  for (const k of toRemove) {
+    try {
+      localStorage.removeItem(k);
+    } catch {
+      /* quota */
+    }
+  }
 }
 
 /**

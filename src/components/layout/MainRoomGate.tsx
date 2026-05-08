@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
+import { validateRoomAccess } from "@/lib/rooms/validateRoomAccess";
 import { useSessionStore } from "@/stores/session-store";
 
 function hasTrimmedRoomId(id: unknown): boolean {
@@ -45,6 +46,27 @@ export function MainRoomGate({ children }: { children: ReactNode }) {
   }, []);
 
   const allowWithoutStoredRoom = isLegacyPlanRoomPath(pathname);
+
+  useEffect(() => {
+    if (!persistResolved) return;
+    if (allowWithoutStoredRoom) return;
+    const rid = useSessionStore.getState().currentRoomId?.trim() ?? "";
+    if (!rid.length) return;
+
+    let cancelled = false;
+    void (async () => {
+      const verdict = await validateRoomAccess(rid);
+      if (cancelled || verdict !== "forbidden") return;
+      const session = useSessionStore.getState();
+      session.clearCurrentRoomId();
+      session.clearCurrentRoomInviteCode();
+      session.clearCurrentRoomMeta();
+      router.replace("/home");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [persistResolved, allowWithoutStoredRoom, router, currentRoomId]);
 
   useEffect(() => {
     if (!persistResolved) return;

@@ -2,6 +2,7 @@
 
 import { useQueries } from "@tanstack/react-query";
 import { getPlaceCardPropsByGoogleId } from "@/lib/api/places";
+import { placeCardBookmarkQueryKey } from "@/lib/queryKeys/bookmarks";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
@@ -28,12 +29,11 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
 
   const placeQueries = useQueries({
     queries: (bookmarkRows ?? []).map((b) => ({
-      queryKey: [
-        "place-card-bookmark",
-        roomId,
+      queryKey: placeCardBookmarkQueryKey(
+        roomId ?? "",
         b.googlePlaceId,
         b.bookmarkId,
-      ] as const,
+      ),
       queryFn: async () => {
         const card = await getPlaceCardPropsByGoogleId(b.googlePlaceId);
         return { ...card, id: String(b.bookmarkId) } satisfies BookmarkedPlace;

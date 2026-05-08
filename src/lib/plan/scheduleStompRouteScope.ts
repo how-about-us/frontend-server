@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
 import type { PlanPlace } from "@/lib/plan/types";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
 
@@ -101,6 +102,7 @@ export async function invalidateScheduleItemRouteForSources(
 ): Promise<void> {
   if (sourceItemIds.length === 0) return;
   const rid = roomId.trim();
+  clearPersistedScheduleRoutesForSchedule(rid, scheduleId);
   const want = new Set(sourceItemIds);
   await queryClient.invalidateQueries({
     predicate: (q) => {
@@ -123,6 +125,7 @@ export async function invalidateScheduleItemRouteForWholeSchedule(
   scheduleId: number,
 ): Promise<void> {
   const rid = roomId.trim();
+  clearPersistedScheduleRoutesForSchedule(rid, scheduleId);
   await queryClient.invalidateQueries({
     predicate: (q) => {
       const key = q.queryKey;

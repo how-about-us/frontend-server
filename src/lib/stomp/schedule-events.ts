@@ -43,7 +43,8 @@ export function parseRoomScheduleMessage(
     if (
       type === "SCHEDULE_ITEM_DELETED" ||
       type === "SCHEDULE_ITEM_CREATED" ||
-      type === "SCHEDULE_ITEMS_REORDERED"
+      type === "SCHEDULE_ITEMS_REORDERED" ||
+      type === "SCHEDULE_ITEM_UPDATED"
     ) {
       if (
         typeof raw.itemId !== "number" ||

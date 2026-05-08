@@ -1,5 +1,4 @@
 import {
-  type QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
@@ -52,14 +51,18 @@ import {
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
+  bookmarkCategoriesQueryKey,
+  roomBookmarksQueryKey,
+} from "@/lib/queryKeys/bookmarks";
+import {
   joinRequestsQueryKey,
   ROOMS_QUERY_KEY,
   roomDetailQueryKey,
   roomMembersQueryKey,
 } from "@/lib/queryKeys/rooms";
-import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
 import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
 import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
 import {
   clearPendingScheduleDeleteEcho,
   markPendingScheduleDeleteEcho,
@@ -457,9 +460,6 @@ export function useRejectJoinRequest() {
   });
 }
 
-export const bookmarkCategoriesQueryKey = (roomId: string | null) =>
-  ["bookmark-categories", roomId] as const;
-
 export function useBookmarkCategories(roomId: string | null) {
   return useQuery({
     queryKey: bookmarkCategoriesQueryKey(roomId),
@@ -527,35 +527,6 @@ export function useDeleteBookmarkCategory() {
       });
     },
   });
-}
-
-export const roomBookmarksQueryKey = (
-  roomId: string | null,
-  categoryId: number | null,
-) => ["room-bookmarks", roomId, categoryId] as const;
-
-/** STOMP 북마크 브로드캐스트 등 — 카테고리·북마크 목록 refetch + 해당 방 장소 카드 캐시 제거 */
-export async function invalidateRoomBookmarkQueries(
-  queryClient: QueryClient,
-  roomId: string,
-): Promise<void> {
-  const rid = String(roomId ?? "").trim();
-  if (!rid) return;
-
-  queryClient.removeQueries({
-    queryKey: ["place-card-bookmark", rid],
-  });
-
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: bookmarkCategoriesQueryKey(rid),
-      refetchType: "all",
-    }),
-    queryClient.invalidateQueries({
-      queryKey: ["room-bookmarks", rid],
-      refetchType: "all",
-    }),
-  ]);
 }
 
 export function useRoomBookmarks(

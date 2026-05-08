@@ -55,3 +55,19 @@ export async function syncSessionUserFromServer(): Promise<void> {
     useSessionStore.getState().setUser(user);
   }
 }
+
+/**
+ * 인증 쿠키가 없는데 LS에 사용자가 남아 있으면 `clearUser`로 프로필·방 컨텍스트를 비웁니다.
+ * OAuth 콜백 경로에서는 쿠키 세팅 레이스를 피하기 위해 스킵합니다.
+ */
+export function clearStalePersistedSessionIfNoAuthCookie(): void {
+  if (!hasAuthSessionCookie()) {
+    const path =
+      typeof window !== "undefined" ? window.location.pathname : "";
+    if (path.startsWith("/auth/callback")) return;
+    const { user } = useSessionStore.getState();
+    if (user != null) {
+      useSessionStore.getState().clearUser();
+    }
+  }
+}

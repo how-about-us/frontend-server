@@ -9,7 +9,10 @@ import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/googleMap";
 import { StompProvider } from "@/contexts/StompContext";
-import { syncSessionUserFromServer } from "@/lib/auth/session-sync";
+import {
+  clearStalePersistedSessionIfNoAuthCookie,
+  syncSessionUserFromServer,
+} from "@/lib/auth/session-sync";
 import {
   ROOM_COVER_PERSIST_STORAGE_KEY,
   dehydrateRoomCoverOnly,
@@ -48,6 +51,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
   useEffect(() => {
     void (async () => {
       await useSessionStore.persist?.rehydrate?.();
+      clearStalePersistedSessionIfNoAuthCookie();
       await syncSessionUserFromServer();
     })();
   }, []);

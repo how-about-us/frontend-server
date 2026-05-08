@@ -13,7 +13,7 @@ import {
   type RoomMember,
   type RoomMemberListResponse,
 } from "@/lib/api/rooms";
-import { bookmarkCategoriesQueryKey } from "@/hooks/useRooms";
+import { bookmarkCategoriesQueryKey } from "@/lib/queryKeys/bookmarks";
 import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
 
 const BROADCAST_TOAST_DURATION_MS = 3000;

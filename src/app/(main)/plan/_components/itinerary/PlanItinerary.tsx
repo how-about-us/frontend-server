@@ -158,12 +158,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   );
 
   const scheduleFingerprint = useMemo(
-    () =>
-      schedulePlacesFingerprint(
-        places
-          .map((p) => p.itemId)
-          .filter((id): id is number => typeof id === "number"),
-      ),
+    () => schedulePlacesFingerprint(places),
     [places],
   );
 

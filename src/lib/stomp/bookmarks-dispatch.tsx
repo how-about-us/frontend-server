@@ -8,7 +8,7 @@ import {
   RoomBroadcastBookmarkIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
-import { invalidateRoomBookmarkQueries } from "@/hooks/useRooms";
+import { invalidateRoomBookmarkQueries } from "@/lib/bookmarks/invalidateRoomBookmarkQueries";
 
 /** bookmarks 토픽 STOMP 한 건 처리 — 무효화 후 토스트 */
 export async function dispatchRoomBookmarksToast(

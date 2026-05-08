@@ -219,11 +219,35 @@ export async function dispatchRoomScheduleEvent(
       return;
     }
 
-    case "SCHEDULE_ITEM_UPDATED":
+    case "SCHEDULE_ITEM_UPDATED": {
+      const itemId = event.itemId;
+      if (typeof itemId !== "number" || !Number.isFinite(itemId)) {
+        return;
+      }
+
       await queryClient.invalidateQueries({
         queryKey: scheduleItemsQueryKey(rid, sid),
         refetchType: "active",
       });
+      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+
+      const newIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const { sources, useFallback } = collectSegmentSourcesForCreate(
+        newIds,
+        itemId,
+      );
+      if (useFallback) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+        epochStore.bumpForDirections(rid);
+      } else {
+        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
+        bumpMapForRouteSources(rid, sid, sources);
+      }
       return;
+    }
   }
 }
