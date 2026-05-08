@@ -49,7 +49,7 @@ export function ChatMessageList({
     <div
       ref={scrollRootRef}
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:rgba(255,255,255,0.35)_transparent]",
+        "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:#d9d9d9_transparent]",
         isMinimized && "px-2 py-1.5",
       )}
     >

@@ -10,11 +10,15 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
+import { PLAN_PLACE_CARD_WIDE_MIN_PX } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
 
 import { PlanItemTimeForm } from "./PlanItemTimeForm";
+
+/** Tailwind 소스 리터럴 — 픽셀 값은 {@link PLAN_PLACE_CARD_WIDE_MIN_PX} 과 동기화 */
+const CQ_WIDE = `@min-[${PLAN_PLACE_CARD_WIDE_MIN_PX}px]/plan`;
 
 export type PlanPlaceCardProps = {
   place: PlanPlace;
@@ -151,7 +155,8 @@ export function PlanPlaceCard({
       onDrop={dragDisabled ? undefined : onDrop}
       onClick={handleCardClick}
       className={cn(
-        "flex w-full select-none gap-3 rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        "flex w-full select-none flex-col gap-3 rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
+        `${CQ_WIDE}:flex-row ${CQ_WIDE}:items-stretch`,
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
@@ -159,7 +164,13 @@ export function PlanPlaceCard({
       )}
       aria-grabbed={isDragging}
     >
-      <div className="relative flex h-30 w-30 shrink-0 items-center justify-center self-start overflow-hidden rounded-xl bg-brand-green/30">
+      <div
+        className={cn(
+          "relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-green/30",
+          "mx-auto self-start",
+          `${CQ_WIDE}:mx-0 ${CQ_WIDE}:h-30 ${CQ_WIDE}:w-30`,
+        )}
+      >
         {photoLoading ? (
           <Loader2
             className="h-6 w-6 animate-spin text-brand-green"
@@ -171,41 +182,51 @@ export function PlanPlaceCard({
             alt={place.title}
             fill
             className="object-cover"
-            sizes="80px"
+            sizes="120px"
             draggable={false}
           />
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex min-w-0 items-start gap-2">
-          <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-red text-xs font-bold text-white"
-            aria-label={`${orderIndex}번째 장소`}
+      <div className="flex min-w-0 w-full flex-1 flex-col gap-2">
+        {/* 좁은 컨테이너: 순번 · 제목(truncate) · 삭제 한 행 */}
+        <div className={`flex min-w-0 items-center gap-2 ${CQ_WIDE}:hidden`}>
+          <PlanOrderIndexBadge orderIndex={orderIndex} />
+          <h3
+            className="min-w-0 flex-1 truncate pt-0.5 text-base font-semibold leading-snug text-gray-900"
+            title={place.title}
           >
-            {orderIndex}
-          </span>
-          <h3 className="min-w-0 flex-1 pt-0.5 text-base font-semibold leading-snug text-gray-900">
             {place.title}
           </h3>
           {canManageServerItem ? (
-            <button
-              type="button"
-              className="-mr-1 -mt-0.5 shrink-0 rounded-lg p-1.5 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="일정에서 삭제"
+            <PlanScheduleItemDeleteButton
               disabled={isDeletingItem}
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                void handleDeleteScheduleItem();
-              }}
-            >
-              <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
-            </button>
+              onDelete={() => void handleDeleteScheduleItem()}
+            />
           ) : null}
         </div>
+
+        {/* 넓은 컨테이너: 기존 그리드(제목 줄바꿈) */}
+        <div
+          className={`hidden min-w-0 w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-1 items-start gap-x-2 gap-y-1 ${CQ_WIDE}:grid`}
+        >
+          <PlanOrderIndexBadge
+            orderIndex={orderIndex}
+            className="col-start-1 row-start-1"
+          />
+          {canManageServerItem ? (
+            <PlanScheduleItemDeleteButton
+              disabled={isDeletingItem}
+              gridPlacementClassName="col-start-3 row-start-1"
+              onDelete={() => void handleDeleteScheduleItem()}
+            />
+          ) : null}
+          <h3 className="col-start-2 row-start-1 min-w-0 pt-0.5 text-base font-semibold leading-snug text-gray-900 break-keep text-pretty">
+            {place.title}
+          </h3>
+        </div>
         {place.subtitle ? (
-          <p className="text-xs leading-relaxed text-dark-gray">
+          <p className="text-xs leading-relaxed text-dark-gray break-keep">
             {place.subtitle}
           </p>
         ) : null}
@@ -215,6 +236,7 @@ export function PlanPlaceCard({
             onClick={(e) => e.stopPropagation()}
           >
             <PlanItemTimeForm
+              key={`${scheduleTimeEdit.scheduleId}-${place.itemId}-${place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)}-${place.durationMinutes ?? 0}`}
               roomId={scheduleTimeEdit.roomId}
               scheduleId={scheduleTimeEdit.scheduleId}
               itemId={place.itemId}
@@ -227,5 +249,54 @@ export function PlanPlaceCard({
         ) : null}
       </div>
     </article>
+  );
+}
+
+function PlanOrderIndexBadge({
+  orderIndex,
+  className,
+}: {
+  orderIndex: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-red text-xs font-bold text-white",
+        className,
+      )}
+      aria-label={`${orderIndex}번째 장소`}
+    >
+      {orderIndex}
+    </span>
+  );
+}
+
+function PlanScheduleItemDeleteButton({
+  disabled,
+  onDelete,
+  gridPlacementClassName,
+}: {
+  disabled: boolean;
+  onDelete: () => void;
+  gridPlacementClassName?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "-mr-1 -mt-0.5 shrink-0 rounded-lg p-1.5 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40",
+        gridPlacementClassName,
+      )}
+      aria-label="일정에서 삭제"
+      disabled={disabled}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onDelete();
+      }}
+    >
+      <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+    </button>
   );
 }

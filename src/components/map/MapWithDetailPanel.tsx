@@ -13,7 +13,7 @@ export function MapWithDetailPanel() {
   if (selectedPlace) lastPlaceRef.current = selectedPlace;
 
   return (
-    <section className="relative hidden h-full min-w-s1 flex-1 overflow-hidden border-l border-gray-border s1:flex">
+    <section className="relative hidden h-full min-h-0 min-w-0 flex-1 basis-0 overflow-hidden border-l border-gray-border s1:flex">
       <Map />
 
       {/* Detail panel – slides in from the left over the map */}

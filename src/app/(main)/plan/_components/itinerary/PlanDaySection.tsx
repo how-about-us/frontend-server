@@ -1,6 +1,7 @@
 "use client";
 
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCallback, useId, useState } from "react";
 import type { ReactNode } from "react";
@@ -126,7 +127,16 @@ export function PlanDaySection({
         aria-labelledby={`${panelId}-trigger`}
         hidden={!expanded}
       >
-        <div className="px-4 pb-4 pt-1">{children}</div>
+        <div
+          className={cn(
+            "px-4 pb-4",
+            expanded ?
+              "border-t border-dashed border-gray-border pt-3"
+            : "pt-1",
+          )}
+        >
+          {children}
+        </div>
       </div>
     </section>
   );

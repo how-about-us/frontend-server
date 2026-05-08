@@ -145,7 +145,7 @@ export default function Map() {
   };
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full min-h-0 w-full min-w-0 overflow-hidden">
       {!bootstrap.ready ? (
         <div
           className="h-full w-full bg-[#e8e6e3]"

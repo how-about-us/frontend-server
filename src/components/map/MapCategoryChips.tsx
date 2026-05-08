@@ -27,7 +27,7 @@ export function MapCategoryChips({
   return (
     <div
       className={cn(
-        "pointer-events-auto -mx-1 flex flex-wrap gap-2 pb-0.5",
+        "pointer-events-auto -mx-1 flex min-w-0 max-w-full flex-wrap gap-2 pb-0.5",
         className,
       )}
     >

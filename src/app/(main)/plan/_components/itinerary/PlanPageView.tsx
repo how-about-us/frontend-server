@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
@@ -18,11 +18,12 @@ import {
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
 
-import { PlanChatSectionWidth } from "../chat/PlanChatSectionWidth";
+import { PlanContainerRefProvider } from "../plan-container";
 import { PlanDaySection } from "./PlanDaySection";
 import { PlanItinerary } from "./PlanItinerary";
 
 export function PlanPageView() {
+  const planContainerRef = useRef<HTMLDivElement>(null);
   const storedId = useSessionStore((s) => s.currentRoomId);
   const roomId =
     typeof storedId === "string" && storedId.trim().length > 0
@@ -132,21 +133,27 @@ export function PlanPageView() {
 
   if (showInitialLoading) {
     return (
-      <div className="space-y-3 overflow-x-auto pl-6 pr-6">
-        {scheduleToolbar}
-        <PlanChatSectionWidth />
-        <p className="py-8 text-center text-sm text-dark-gray">
-          일정을 불러오는 중…
-        </p>
-      </div>
+      <PlanContainerRefProvider containerRef={planContainerRef}>
+        <div
+          ref={planContainerRef}
+          className="@container/plan space-y-3 overflow-x-auto pl-6 pr-6"
+        >
+          {scheduleToolbar}
+          <p className="py-8 text-center text-sm text-dark-gray">
+            일정을 불러오는 중…
+          </p>
+        </div>
+      </PlanContainerRefProvider>
     );
   }
 
   return (
-    <div className="space-y-3 overflow-x-auto pl-6 pr-6">
+    <PlanContainerRefProvider containerRef={planContainerRef}>
+      <div
+        ref={planContainerRef}
+        className="@container/plan space-y-3 overflow-x-auto pl-6 pr-6"
+      >
       {scheduleToolbar}
-
-      <PlanChatSectionWidth />
 
       {isError ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-brand-red">
@@ -181,6 +188,7 @@ export function PlanPageView() {
           ) : null}
         </PlanDaySection>
       ))}
-    </div>
+      </div>
+    </PlanContainerRefProvider>
   );
 }

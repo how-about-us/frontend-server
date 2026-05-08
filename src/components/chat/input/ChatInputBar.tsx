@@ -132,7 +132,7 @@ export function ChatInputBar({
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요."
           className={cn(
-            "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:rgba(0,0,0,0.2)_transparent]",
+            "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
             typo.input,
           )}
           style={

@@ -26,10 +26,14 @@ export function MapDiscoverToolbar({
   setOpenNow,
 }: MapDiscoverToolbarProps) {
   return (
-    <div className="pointer-events-none absolute left-0 right-0 top-0 z-[15] mt-4 px-4">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-[15] mt-4 max-w-full overflow-x-hidden px-4">
       <AnimatePresence mode="wait" initial={false}>
         {selectedCategoryId == null ? (
-          <motion.div key="chips" className="w-full" {...mapToolbarPanelMotion}>
+          <motion.div
+            key="chips"
+            className="w-full min-w-0 max-w-full"
+            {...mapToolbarPanelMotion}
+          >
             <MapCategoryChips
               selectedCategoryId={selectedCategoryId}
               onSelectCategory={onSelectCategory}
@@ -38,7 +42,7 @@ export function MapDiscoverToolbar({
         ) : (
           <motion.div
             key="filter"
-            className="pointer-events-auto -mx-1 flex w-full flex-wrap items-center gap-2 pb-0.5"
+            className="pointer-events-auto -mx-1 flex min-w-0 max-w-full flex-wrap items-center gap-2 pb-0.5"
             {...mapToolbarPanelMotion}
           >
             <MapFilter

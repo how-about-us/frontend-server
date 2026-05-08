@@ -365,7 +365,7 @@ export function PlacesSearchInput({
           <button
             type="submit"
             disabled={!inputValue.trim() || disabled}
-            className="shrink-0 rounded-lg bg-brand-green px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="shrink-0 rounded-lg bg-brand-red px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           >
             검색
           </button>
