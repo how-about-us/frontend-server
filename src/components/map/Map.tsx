@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Bookmark } from "lucide-react";
 import {
   AdvancedMarker,
   Map as GoogleMap,
@@ -22,6 +23,7 @@ import {
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
+import { MapBookmarkPins } from "./MapBookmarkPins";
 import { MapDiscoverToolbar } from "./MapDiscoverToolbar";
 import { MapDiscoverPlaces } from "./MapDiscoverPlaces";
 import { PlanItineraryMapRoutes } from "./PlanItineraryMapRoutes";
@@ -110,6 +112,7 @@ export default function Map() {
   );
   const [rating, setRating] = useState<RatingValue>("all");
   const [openNow, setOpenNow] = useState<OpenValue>("all");
+  const [showBookmarkPins, setShowBookmarkPins] = useState(true);
 
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const { data: roomsData, isFetched: roomsFetched } = useRoomsList();
@@ -183,6 +186,8 @@ export default function Map() {
             openNow={openNow}
           />
 
+          <MapBookmarkPins roomId={currentRoomId} enabled={showBookmarkPins} />
+
           {selectedPlace?.location && (
             <AdvancedMarker
               position={selectedPlace.location}
@@ -191,9 +196,17 @@ export default function Map() {
               <span
                 className={`block scale-110 drop-shadow-lg ${
                   selectedPlace.fromBookmark
-                    ? "text-brand-green"
+                    ? selectedPlace.bookmarkCategoryColor?.trim()
+                      ? ""
+                      : "text-brand-green"
                     : "text-brand-red"
                 }`}
+                style={
+                  selectedPlace.fromBookmark &&
+                  selectedPlace.bookmarkCategoryColor?.trim()
+                    ? { color: selectedPlace.bookmarkCategoryColor.trim() }
+                    : undefined
+                }
               >
                 <MapPinIcon size={44} />
               </span>
@@ -210,6 +223,29 @@ export default function Map() {
         setRating={setRating}
         setOpenNow={setOpenNow}
       />
+
+      {!bootstrap.ready ? null : (
+        <div className="pointer-events-none absolute right-4 top-4 z-[16]">
+          <button
+            type="button"
+            onClick={() => setShowBookmarkPins((v) => !v)}
+            aria-pressed={showBookmarkPins}
+            aria-label={
+              showBookmarkPins
+                ? "보관함 장소 표시 끄기"
+                : "보관함 장소 표시 켜기"
+            }
+            title="보관함 장소 표시"
+            className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full shadow-md ring-2 ring-black/5 transition ${
+              showBookmarkPins
+                ? "bg-brand-red text-white"
+                : "bg-white text-dark-gray hover:bg-gray-50"
+            }`}
+          >
+            <Bookmark className="h-5 w-5" strokeWidth={2.2} aria-hidden />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

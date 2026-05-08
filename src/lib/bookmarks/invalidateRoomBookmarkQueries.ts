@@ -1,31 +1,99 @@
-import type { QueryClient } from "@tanstack/react-query";
+import type { Query, QueryClient } from "@tanstack/react-query";
+
+import type { RoomBookmarkChangedEvent } from "@/types/roomBookmarkStomp";
 
 import {
+  PLACE_CARD_BOOKMARK_SEGMENT,
   bookmarkCategoriesQueryKey,
+  bookmarkMapPinPlaceQueryKey,
+  bookmarkMapPinPlaceRootQueryKey,
   placeCardBookmarkRootQueryKey,
-  roomBookmarksByRoomRootQueryKey,
+  roomBookmarksQueryKey,
 } from "@/lib/queryKeys/bookmarks";
 
-/** 북마크 STOMP 브로드캐스트 등 — 카테고리·북마크 목록 refetch + 해당 방 장소 카드 캐시 제거 */
+function placeCardBookmarkPredicate(roomId: string, bookmarkId: number) {
+  return (query: Query) => {
+    const qk = query.queryKey as readonly unknown[];
+    return (
+      qk.length >= 4 &&
+      qk[0] === PLACE_CARD_BOOKMARK_SEGMENT &&
+      qk[1] === roomId &&
+      qk[3] === bookmarkId
+    );
+  };
+}
+
+/** STOMP `RoomBookmarkChangedEvent.type`별 최소 범위 무효화·제거만 수행합니다. */
 export async function invalidateRoomBookmarkQueries(
   queryClient: QueryClient,
-  roomId: string,
+  event: RoomBookmarkChangedEvent,
 ): Promise<void> {
-  const rid = String(roomId ?? "").trim();
+  const rid = String(event.roomId ?? "").trim();
   if (!rid) return;
 
-  queryClient.removeQueries({
-    queryKey: placeCardBookmarkRootQueryKey(rid),
-  });
+  const categoryId = event.categoryId;
+  const bookmarkId = event.bookmarkId;
 
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: bookmarkCategoriesQueryKey(rid),
-      refetchType: "all",
-    }),
-    queryClient.invalidateQueries({
-      queryKey: roomBookmarksByRoomRootQueryKey(rid),
-      refetchType: "all",
-    }),
-  ]);
+  switch (event.type) {
+    case "BOOKMARK_CREATED":
+      await queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(rid, categoryId),
+        refetchType: "all",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
+        refetchType: "all",
+      });
+      break;
+
+    case "BOOKMARK_UPDATED":
+      queryClient.removeQueries({ predicate: placeCardBookmarkPredicate(rid, bookmarkId) });
+      await queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(rid, categoryId),
+        refetchType: "all",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
+        refetchType: "all",
+      });
+      break;
+
+    case "BOOKMARK_DELETED":
+      queryClient.removeQueries({ predicate: placeCardBookmarkPredicate(rid, bookmarkId) });
+      queryClient.removeQueries({
+        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(rid, categoryId),
+        refetchType: "all",
+      });
+      break;
+
+    case "CATEGORY_CREATED":
+    case "CATEGORY_UPDATED":
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(rid),
+        refetchType: "all",
+      });
+      break;
+
+    case "CATEGORY_DELETED":
+      queryClient.removeQueries({
+        queryKey: roomBookmarksQueryKey(rid, categoryId),
+      });
+      queryClient.removeQueries({
+        queryKey: placeCardBookmarkRootQueryKey(rid),
+      });
+      queryClient.removeQueries({
+        queryKey: bookmarkMapPinPlaceRootQueryKey(rid),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(rid),
+        refetchType: "all",
+      });
+      break;
+
+    default:
+      break;
+  }
 }

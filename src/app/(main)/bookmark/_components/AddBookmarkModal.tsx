@@ -32,12 +32,15 @@ export function AddBookmarkModal({
   busy = false,
   onClose,
   onSave,
+  overlayZClass = "z-50",
 }: {
   mode: Mode;
   initialFolder: BookmarkFolder | null;
   busy?: boolean;
   onClose: () => void;
   onSave: (payload: { title: string; color: string }) => void;
+  /** 상위 모달 위에 겹칠 때만 지정 (예: `z-[65]`) */
+  overlayZClass?: string;
 }) {
   const [title, setTitle] = useState(() => initialTitle(mode, initialFolder));
   const [color, setColor] = useState(() => initialColor(mode, initialFolder));
@@ -62,7 +65,7 @@ export function AddBookmarkModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className={`fixed inset-0 ${overlayZClass} flex items-center justify-center bg-black/40 p-4`}
       role="presentation"
       onMouseDown={(ev) => {
         if (ev.target === ev.currentTarget) onClose();

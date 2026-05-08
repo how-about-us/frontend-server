@@ -4,11 +4,11 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import {
   buildBookmarkBroadcastMessage,
-  type RoomBookmarkChangedEvent,
   RoomBroadcastBookmarkIcon,
   showRoomBroadcastAlert,
 } from "@/components/stomp/RoomBroadcastAlert";
 import { invalidateRoomBookmarkQueries } from "@/lib/bookmarks/invalidateRoomBookmarkQueries";
+import type { RoomBookmarkChangedEvent } from "@/types/roomBookmarkStomp";
 
 /** bookmarks 토픽 STOMP 한 건 처리 — 무효화 후 토스트 */
 export async function dispatchRoomBookmarksToast(
@@ -20,7 +20,7 @@ export async function dispatchRoomBookmarksToast(
   if (!rid) return;
 
   const msg = await buildBookmarkBroadcastMessage(queryClient, event);
-  await invalidateRoomBookmarkQueries(queryClient, rid);
+  await invalidateRoomBookmarkQueries(queryClient, event);
   showRoomBroadcastAlert({
     message: msg,
     icon: <RoomBroadcastBookmarkIcon />,

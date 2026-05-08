@@ -33,6 +33,7 @@ import {
   leaveRoom,
   regenerateInviteCode,
   rejectJoinRequest,
+  type BookmarkCategory,
   type RoomCreateRequest,
   type RoomScheduleCreateRequest,
   type ReorderScheduleItemRequest,
@@ -481,11 +482,15 @@ export function useRejectJoinRequest() {
   });
 }
 
-export function useBookmarkCategories(roomId: string | null) {
+export function useBookmarkCategories(
+  roomId: string | null,
+  options?: { enabled?: boolean },
+) {
+  const queryEnabled = options?.enabled ?? true;
   return useQuery({
     queryKey: bookmarkCategoriesQueryKey(roomId),
     queryFn: () => getBookmarkCategories(roomId!),
-    enabled: !!roomId,
+    enabled: !!roomId && queryEnabled,
     staleTime: 0,
   });
 }
@@ -580,9 +585,17 @@ export function useCreateRoomBookmark() {
       queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(roomId, categoryId),
       });
-      queryClient.invalidateQueries({
-        queryKey: bookmarkCategoriesQueryKey(roomId),
-      });
+      queryClient.setQueryData<BookmarkCategory[]>(
+        bookmarkCategoriesQueryKey(roomId),
+        (prev) => {
+          if (!prev?.length) return prev;
+          return prev.map((c) =>
+            c.categoryId === categoryId
+              ? { ...c, placeCount: c.placeCount + 1 }
+              : c,
+          );
+        },
+      );
     },
   });
 }

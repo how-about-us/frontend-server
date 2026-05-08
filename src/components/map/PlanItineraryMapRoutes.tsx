@@ -24,6 +24,8 @@ import {
 } from "@/stores/plan-map-directions-epoch-store";
 import { useSessionStore } from "@/stores/session-store";
 
+import { PlanItineraryStopMapPin } from "./PlanItineraryStopMapPin";
+
 /**
  * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만,
  * 일정 순서 장소 간 경로(polyline)·정류장 마커를 표시합니다.
@@ -181,9 +183,10 @@ export function PlanItineraryMapRoutes() {
             );
           }}
         >
-          <div className="flex size-7 cursor-pointer select-none items-center justify-center rounded-full border-2 border-brand-red bg-white text-xs font-semibold text-brand-red shadow-md ring-2 ring-white/80">
-            {orderIdx + 1}
-          </div>
+          <PlanItineraryStopMapPin
+            orderLabel={orderIdx + 1}
+            className="cursor-pointer scale-90 select-none"
+          />
         </AdvancedMarker>,
       );
     });

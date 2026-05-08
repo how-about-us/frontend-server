@@ -1,10 +1,17 @@
 "use client";
 
+import { BookmarkPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
 import { HttpError } from "@/lib/api/rooms";
 import type { BookmarkCategory } from "@/lib/api/rooms";
-import { useBookmarkCategories, useCreateRoomBookmark } from "@/hooks/useRooms";
+import {
+  useBookmarkCategories,
+  useCreateBookmarkCategory,
+  useCreateRoomBookmark,
+} from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
@@ -27,15 +34,35 @@ export function AddToBookmarkModal({
     refetch,
   } = useBookmarkCategories(roomId);
   const { mutate: addBookmark, isPending: isAdding } = useCreateRoomBookmark();
+  const { mutate: createCategory, isPending: isCreatingCategory } =
+    useCreateBookmarkCategory();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
+  const [createFolderModalKey, setCreateFolderModalKey] = useState(0);
 
   useEffect(() => {
+    if (createFolderModalOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, createFolderModalOpen]);
+
+  const openCreateFolderModal = () => {
+    setCreateFolderModalKey((k) => k + 1);
+    setCreateFolderModalOpen(true);
+  };
+
+  const handleBookmarkError = (e: unknown) => {
+    if (e instanceof HttpError && e.status === 409) {
+      toast.error(e.message || "이미 북마크에 추가된 장소입니다");
+      return;
+    }
+    setSubmitError(
+      e instanceof Error ? e.message : "보관함에 추가하지 못했습니다.",
+    );
+  };
 
   const pickCategory = (c: BookmarkCategory) => {
     if (!roomId || isAdding) return;
@@ -47,15 +74,39 @@ export function AddToBookmarkModal({
           onAdded?.();
           onClose();
         },
+        onError: handleBookmarkError,
+      },
+    );
+  };
+
+  const handleCreateFolderSave = ({
+    title,
+    color,
+  }: {
+    title: string;
+    color: string;
+  }) => {
+    if (!roomId || isCreatingCategory || isAdding) return;
+    createCategory(
+      { roomId, name: title, colorCode: color },
+      {
+        onSuccess: (created) => {
+          setCreateFolderModalOpen(false);
+          setSubmitError(null);
+          addBookmark(
+            { roomId, googlePlaceId, categoryId: created.categoryId },
+            {
+              onSuccess: () => {
+                onAdded?.();
+                onClose();
+              },
+              onError: handleBookmarkError,
+            },
+          );
+        },
         onError: (e) => {
-          if (e instanceof HttpError && e.status === 409) {
-            toast.error(
-              e.message || "이미 북마크에 추가된 장소입니다",
-            );
-            return;
-          }
-          setSubmitError(
-            e instanceof Error ? e.message : "보관함에 추가하지 못했습니다.",
+          toast.error(
+            e instanceof Error ? e.message : "카테고리를 만들지 못했습니다.",
           );
         },
       },
@@ -115,39 +166,63 @@ export function AddToBookmarkModal({
             </div>
           )}
 
-          {categories && categories.length === 0 && (
-            <p className="text-center text-sm text-dark-gray">
-              북마크 카테고리가 없습니다. 보관함 탭에서 먼저 만들어 주세요.
-            </p>
+          {categories && categories.length === 0 && !categoriesLoading && (
+            <div className="space-y-3 text-center">
+              <p className="text-sm text-dark-gray">
+                북마크 카테고리가 없습니다. 새로 만들어 주세요.
+              </p>
+              <button
+                type="button"
+                onClick={openCreateFolderModal}
+                disabled={isCreatingCategory || isAdding}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-border bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray disabled:opacity-60"
+              >
+                <BookmarkPlus className="size-4" strokeWidth={2.2} aria-hidden />
+                새 북마크
+              </button>
+            </div>
           )}
 
           {categories && categories.length > 0 && (
-            <ul className="space-y-2">
-              {categories.map((c) => (
-                <li key={c.categoryId}>
-                  <button
-                    type="button"
-                    disabled={isAdding}
-                    onClick={() => pickCategory(c)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-gray-border px-3 py-3 text-left transition-colors hover:bg-bubble-gray disabled:opacity-60"
-                  >
-                    <span
-                      className="size-4 shrink-0 rounded-full border border-black/10 shadow-sm"
-                      style={{ backgroundColor: c.colorCode }}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
-                      {c.name}
-                    </span>
-                    {c.placeCount > 0 && (
-                      <span className="shrink-0 text-xs text-dark-gray">
-                        {c.placeCount}곳
+            <>
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={openCreateFolderModal}
+                  disabled={isCreatingCategory || isAdding}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray disabled:opacity-60"
+                >
+                  <BookmarkPlus className="size-4" strokeWidth={2.2} aria-hidden />
+                  새 북마크
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {categories.map((c) => (
+                  <li key={c.categoryId}>
+                    <button
+                      type="button"
+                      disabled={isAdding || isCreatingCategory}
+                      onClick={() => pickCategory(c)}
+                      className="flex w-full items-center gap-3 rounded-xl border border-gray-border px-3 py-3 text-left transition-colors hover:bg-bubble-gray disabled:opacity-60"
+                    >
+                      <span
+                        className="size-4 shrink-0 rounded-full border border-black/10 shadow-sm"
+                        style={{ backgroundColor: c.colorCode }}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
+                        {c.name}
                       </span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                      {c.placeCount > 0 && (
+                        <span className="shrink-0 text-xs text-dark-gray">
+                          {c.placeCount}곳
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
 
           {submitError && (
@@ -167,6 +242,18 @@ export function AddToBookmarkModal({
           </button>
         </div>
       </div>
+
+      {createFolderModalOpen && (
+        <AddBookmarkModal
+          key={createFolderModalKey}
+          mode="create"
+          initialFolder={null}
+          overlayZClass="z-[65]"
+          busy={isCreatingCategory || isAdding}
+          onClose={() => setCreateFolderModalOpen(false)}
+          onSave={handleCreateFolderSave}
+        />
+      )}
     </div>
   );
 }

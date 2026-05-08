@@ -128,7 +128,11 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
               onOpenDetail={() => {
                 const { id, ...card } = row;
                 void id;
-                setSelectedPlace({ ...card, fromBookmark: true });
+                setSelectedPlace({
+                  ...card,
+                  fromBookmark: true,
+                  bookmarkCategoryColor: folder.color,
+                });
               }}
             />
           ))

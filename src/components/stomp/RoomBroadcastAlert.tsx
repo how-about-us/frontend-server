@@ -12,8 +12,18 @@ import {
   type RoomMember,
   type RoomMemberListResponse,
 } from "@/lib/api/rooms";
-import { bookmarkCategoriesQueryKey } from "@/lib/queryKeys/bookmarks";
+import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
+import {
+  bookmarkCategoriesQueryKey,
+  roomBookmarksQueryKey,
+} from "@/lib/queryKeys/bookmarks";
 import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
+import type {
+  RoomBookmarkChangedEvent,
+  RoomBookmarkChangedType,
+} from "@/types/roomBookmarkStomp";
+
+export type { RoomBookmarkChangedEvent, RoomBookmarkChangedType };
 
 const BROADCAST_TOAST_DURATION_MS = 3000;
 
@@ -42,22 +52,6 @@ export function RoomBroadcastBookmarkIcon() {
     </span>
   );
 }
-
-type RoomBookmarkChangedType =
-  | "BOOKMARK_CREATED"
-  | "BOOKMARK_UPDATED"
-  | "BOOKMARK_DELETED"
-  | "CATEGORY_CREATED"
-  | "CATEGORY_UPDATED"
-  | "CATEGORY_DELETED";
-
-export type RoomBookmarkChangedEvent = {
-  actorUserId: number;
-  bookmarkId: number;
-  categoryId: number;
-  roomId: string;
-  type: RoomBookmarkChangedType;
-};
 
 function bookmarkChangedMessage(type: RoomBookmarkChangedType): string {
   switch (type) {
@@ -154,15 +148,52 @@ export async function buildBookmarkBroadcastMessage(
     ?.find((c) => c.categoryId === event.categoryId)
     ?.name?.trim();
 
-  if (!categoryLabel && event.type !== "CATEGORY_DELETED") {
-    try {
-      const fresh = await getBookmarkCategories(rid);
-      queryClient.setQueryData(bookmarkCategoriesQueryKey(rid), fresh);
-      categoryLabel =
-        fresh.find((c) => c.categoryId === event.categoryId)?.name?.trim() ??
-        undefined;
-    } catch {
-      /* use fallback below */
+  if (!categoryLabel) {
+    const t = event.type;
+    const isBookmarkDispatch =
+      t === "BOOKMARK_CREATED" ||
+      t === "BOOKMARK_UPDATED" ||
+      t === "BOOKMARK_DELETED";
+    const isCategoryUpsert = t === "CATEGORY_CREATED" || t === "CATEGORY_UPDATED";
+
+    if (isBookmarkDispatch) {
+      try {
+        const rows = await getRoomBookmarks(rid, event.categoryId);
+        queryClient.setQueryData(
+          roomBookmarksQueryKey(rid, event.categoryId),
+          rows,
+        );
+        categoryLabel =
+          rows.find((r) => r.bookmarkId === event.bookmarkId)?.category?.trim() ??
+          rows[0]?.category?.trim() ??
+          undefined;
+      } catch {
+        /* 아래 카테고리 목록 fallback */
+      }
+    }
+
+    if (!categoryLabel && isCategoryUpsert) {
+      try {
+        const fresh = await getBookmarkCategories(rid);
+        queryClient.setQueryData(bookmarkCategoriesQueryKey(rid), fresh);
+        categoryLabel =
+          fresh.find((c) => c.categoryId === event.categoryId)?.name?.trim() ??
+          undefined;
+      } catch {
+        /* */
+      }
+    }
+
+    if (!categoryLabel && t !== "CATEGORY_DELETED") {
+      try {
+        const fresh = await getBookmarkCategories(rid);
+        queryClient.setQueryData(bookmarkCategoriesQueryKey(rid), fresh);
+        categoryLabel =
+          fresh.find((c) => c.categoryId === event.categoryId)?.name?.trim() ??
+          undefined;
+      } catch {
+        /* */
+      }
     }
   }
 
