@@ -1,6 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import {
+  fetchScheduleItemsAsPlanPlaces,
+  mergeOrRefetchSchedulePlanPlacesFromItems,
+} from "@/lib/plan/scheduleItemPlaces";
+import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import {
   collectSegmentSourcesForCreate,
   collectSegmentSourcesForDelete,
@@ -188,11 +192,13 @@ export async function dispatchRoomScheduleEvent(
         rid,
         sid,
       );
-      await queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(rid, sid),
-        refetchType: "active",
-      });
-      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      const items = await getScheduleItems(rid, sid);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        rid,
+        sid,
+        items,
+      );
       const newIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,

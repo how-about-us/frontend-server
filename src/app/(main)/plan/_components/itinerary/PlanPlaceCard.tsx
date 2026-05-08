@@ -1,14 +1,14 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import Image from "next/image";
 import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { getPlacePhotoUrl } from "@/lib/api/places";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
+import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
@@ -63,39 +63,11 @@ export function PlanPlaceCard({
       ? place.photoName.trim()
       : null;
 
-  const [resolvedPhotoUrl, setResolvedPhotoUrl] = useState<string | null>(() =>
-    !photoName ? fallbackPhotoUrl : null,
-  );
-  const [photoLoading, setPhotoLoading] = useState(Boolean(photoName));
-
-  useEffect(() => {
-    if (!photoName) {
-      setResolvedPhotoUrl(fallbackPhotoUrl);
-      setPhotoLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setPhotoLoading(true);
-    setResolvedPhotoUrl(null);
-
-    void getPlacePhotoUrl(photoName)
-      .then((url) => {
-        if (cancelled) return;
-        const t = url?.trim();
-        setResolvedPhotoUrl(t || fallbackPhotoUrl);
-      })
-      .catch(() => {
-        if (!cancelled) setResolvedPhotoUrl(fallbackPhotoUrl);
-      })
-      .finally(() => {
-        if (!cancelled) setPhotoLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [photoName, fallbackPhotoUrl]);
+  const photoQuery = usePlacePhotoUrlQuery(photoName);
+  const resolvedPhotoUrl = photoName
+    ? (photoQuery.data?.trim() || fallbackPhotoUrl)
+    : fallbackPhotoUrl;
+  const photoLoading = Boolean(photoName) && photoQuery.isPending;
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();

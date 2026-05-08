@@ -47,6 +47,7 @@ import {
 } from "@/lib/api/rooms";
 import {
   fetchScheduleItemsAsPlanPlaces,
+  mergeOrRefetchSchedulePlanPlacesFromItems,
   slotStartTimeHm,
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
@@ -269,6 +270,7 @@ export function useDeleteScheduleItem() {
 }
 
 export function useReorderScheduleItem() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -282,6 +284,14 @@ export function useReorderScheduleItem() {
         vars.itemId,
         vars.body,
       ),
+    onSuccess: (items, { roomId, scheduleId }) => {
+      void mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        roomId,
+        scheduleId,
+        items,
+      );
+    },
   });
 }
 
