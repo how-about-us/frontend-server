@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { RoomListItem } from "@/lib/api/rooms";
+import { isHostRole } from "@/lib/rooms/selectHostRoom";
 import {
   usePlacePhotoUrlQuery,
   useRoomCoverPhotoName,
@@ -44,9 +45,11 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
             />
           ) : null}
         </div>
-        <div className="absolute right-2 top-2">
-          <RoomCardMenu room={room} onEdit={onEdit} onDelete={onDelete} />
-        </div>
+        {isHostRole(room.role) && (
+          <div className="absolute right-2 top-2">
+            <RoomCardMenu room={room} onEdit={onEdit} onDelete={onDelete} />
+          </div>
+        )}
       </div>
 
       <Link
