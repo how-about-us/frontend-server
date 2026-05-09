@@ -10,7 +10,7 @@ import {
   type RefObject,
 } from "react";
 
-import { PLAN_PLACE_CARD_WIDE_MIN_PX } from "@/lib/layout-tokens";
+import { PLAN_CONTAINER_NARROW_MAX_INLINE_PX } from "@/lib/layout-tokens";
 import {
   readPlanContainerContentInlineSize,
   readResizeObserverContentInlineSize,
@@ -39,7 +39,7 @@ export function usePlanContainerRef() {
 }
 
 /**
- * 플랜 루트 콘텐츠 박스 폭이 {@link PLAN_PLACE_CARD_WIDE_MIN_PX} 미만인지.
+ * 플랜 루트 콘텐츠 박스 폭이 {@link PLAN_CONTAINER_NARROW_MAX_INLINE_PX} 미만인지.
  * 넓어질 때마다 `onBecomeWide` 호출(접힌 패널 상태 초기화 등).
  */
 export function usePlanContainerNarrow(onBecomeWide?: () => void): boolean | null {
@@ -55,7 +55,7 @@ export function usePlanContainerNarrow(onBecomeWide?: () => void): boolean | nul
     const el = planContainerRef?.current;
     if (!el) return;
 
-    const threshold = PLAN_PLACE_CARD_WIDE_MIN_PX;
+    const threshold = PLAN_CONTAINER_NARROW_MAX_INLINE_PX;
 
     const apply = (contentInlinePx: number) => {
       const isNarrow = contentInlinePx < threshold;

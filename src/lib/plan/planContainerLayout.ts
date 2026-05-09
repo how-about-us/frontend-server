@@ -1,6 +1,7 @@
 /**
  * `@container/plan` 과 동일한 축 — 컨테이너 쿼리는 콘텐츠 박스 인라인 크기 기준.
- * {@link PLAN_PLACE_CARD_WIDE_MIN_PX} 와 함께 쓸 것.
+ * `usePlanContainerNarrow` 임계값은 {@link PLAN_CONTAINER_NARROW_MAX_INLINE_PX},
+ * `PlanPlaceCard` 가로 레이아웃은 {@link PLAN_PLACE_CARD_WIDE_TW}.
  */
 export function readPlanContainerContentInlineSize(el: HTMLElement): number {
   const cs = getComputedStyle(el);

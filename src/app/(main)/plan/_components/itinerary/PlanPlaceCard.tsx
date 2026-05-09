@@ -10,15 +10,12 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
-import { PLAN_PLACE_CARD_WIDE_MIN_PX } from "@/lib/layout-tokens";
+import { PLAN_PLACE_CARD_WIDE_TW } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
 
 import { PlanItemTimeForm } from "./PlanItemTimeForm";
-
-/** Tailwind 소스 리터럴 — 픽셀 값은 {@link PLAN_PLACE_CARD_WIDE_MIN_PX} 과 동기화 */
-const CQ_WIDE = `@min-[${PLAN_PLACE_CARD_WIDE_MIN_PX}px]/plan`;
 
 export type PlanPlaceCardProps = {
   place: PlanPlace;
@@ -159,7 +156,7 @@ export function PlanPlaceCard({
       onClick={handleCardClick}
       className={cn(
         "flex w-full select-none flex-col gap-3 rounded-2xl border border-gray-border bg-white p-4 shadow-sm",
-        `${CQ_WIDE}:flex-row ${CQ_WIDE}:items-stretch`,
+        PLAN_PLACE_CARD_WIDE_TW.articleFlexWide,
         dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
         isDragging && "scale-[0.99] opacity-70 shadow-md",
         isDropTarget &&
@@ -171,7 +168,7 @@ export function PlanPlaceCard({
         className={cn(
           "relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-green/30",
           "mx-auto self-start",
-          `${CQ_WIDE}:mx-0 ${CQ_WIDE}:h-30 ${CQ_WIDE}:w-30`,
+          PLAN_PLACE_CARD_WIDE_TW.thumbnailWide,
         )}
       >
         {photoLoading ? (
@@ -193,7 +190,12 @@ export function PlanPlaceCard({
 
       <div className="flex min-w-0 w-full flex-1 flex-col gap-2">
         {/* 좁은 컨테이너: 순번 · 제목(truncate) · 삭제 한 행 */}
-        <div className={`flex min-w-0 items-center gap-2 ${CQ_WIDE}:hidden`}>
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2",
+            PLAN_PLACE_CARD_WIDE_TW.narrowTitleRowWideHidden,
+          )}
+        >
           <PlanOrderIndexBadge
             orderIndex={orderIndex}
             backgroundColorHex={orderBadgeColor}
@@ -214,7 +216,10 @@ export function PlanPlaceCard({
 
         {/* 넓은 컨테이너: 기존 그리드(제목 줄바꿈) */}
         <div
-          className={`hidden min-w-0 w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-1 items-start gap-x-2 gap-y-1 ${CQ_WIDE}:grid`}
+          className={cn(
+            "hidden min-w-0 w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-1 items-start gap-x-2 gap-y-1",
+            PLAN_PLACE_CARD_WIDE_TW.wideTitleGridWide,
+          )}
         >
           <PlanOrderIndexBadge
             orderIndex={orderIndex}
