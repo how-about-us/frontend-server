@@ -21,9 +21,6 @@ import {
   syncRoomDetailFromServer,
 } from "@/lib/rooms";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
-import {
-  consumePendingScheduleDeleteEcho,
-} from "@/lib/stomp/scheduleDeleteEcho";
 import { useSessionStore } from "@/stores/session-store";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
@@ -75,7 +72,7 @@ function bumpMapForRouteSources(
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
  * — `room-schedules` CREATE: 다른 클라이언트만 무효화(GET); 액터는 POST `onSuccess` 머지로 레이스 방지
- * — `SCHEDULE_DELETED`: 삭제 일차의 route·items 캐시 제거 후 이 탭 에코면 `room-schedules` 무효화·GET /rooms 생략, 다른 탭은 무효화·동기화 유지
+ * — `SCHEDULE_DELETED`: 삭제 일차의 route·items 캐시 제거 후 `room-schedules` 무효화 및 방 상세 동기화(발신 탭 포함 동일)
  * — 일정 생성 시 `schedule-items`: 빈 일차는 `[]`로 시드해 불필요한 GET 방지
  * — `schedule-items`: 그 외 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
@@ -118,20 +115,11 @@ export async function dispatchRoomScheduleEvent(
 
     case "SCHEDULE_DELETED": {
       removeCachesForDeletedSchedule(queryClient, rid, sid);
-      const me = useSessionStore.getState().user?.id;
-      const echoedFromThisTab =
-        typeof me === "number" &&
-        Number.isFinite(me) &&
-        me === event.actorUserId &&
-        consumePendingScheduleDeleteEcho(rid, sid);
-
-      if (!echoedFromThisTab) {
-        await queryClient.invalidateQueries({
-          queryKey: roomSchedulesQueryKey(rid),
-          refetchType: "active",
-        });
-        await syncRoomDetailFromServer(queryClient, rid);
-      }
+      await queryClient.invalidateQueries({
+        queryKey: roomSchedulesQueryKey(rid),
+        refetchType: "active",
+      });
+      await syncRoomDetailFromServer(queryClient, rid);
       return;
     }
 

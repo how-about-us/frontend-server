@@ -65,14 +65,7 @@ import {
   roomSchedulesQueryKey,
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
-import {
-  removeCachesForDeletedSchedule,
-  syncRoomDetailFromServer,
-} from "@/lib/rooms";
-import {
-  clearPendingScheduleDeleteEcho,
-  markPendingScheduleDeleteEcho,
-} from "@/lib/stomp/scheduleDeleteEcho";
+import { syncRoomDetailFromServer } from "@/lib/rooms";
 import {
   pathDefersRoomStompRoomTopics,
   pathSuspendsStomp,
@@ -142,7 +135,6 @@ export function useScheduleItemRoute(
 }
 
 export function useDeleteRoomSchedule() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       roomId,
@@ -151,41 +143,7 @@ export function useDeleteRoomSchedule() {
       roomId: string;
       scheduleId: number;
     }) => deleteRoomSchedule(roomId, scheduleId),
-    onMutate: async ({ roomId, scheduleId }) => {
-      const id = roomId.trim();
-      if (!id.length) return;
-      markPendingScheduleDeleteEcho(id, scheduleId);
-      await queryClient.cancelQueries({
-        queryKey: scheduleItemsQueryKey(id, scheduleId),
-      });
-      const prevSchedules = queryClient.getQueryData<RoomSchedule[]>(
-        roomSchedulesQueryKey(id),
-      );
-      queryClient.setQueryData<RoomSchedule[]>(
-        roomSchedulesQueryKey(id),
-        (prev) => {
-          const list = prev ?? [];
-          return sortRoomSchedules(
-            list.filter((s) => s.scheduleId !== scheduleId),
-          );
-        },
-      );
-      removeCachesForDeletedSchedule(queryClient, id, scheduleId);
-      return { prevSchedules };
-    },
-    onError: (_err, { roomId, scheduleId }, ctx) => {
-      const id = roomId.trim();
-      clearPendingScheduleDeleteEcho(id, scheduleId);
-      if (ctx?.prevSchedules !== undefined) {
-        queryClient.setQueryData(
-          roomSchedulesQueryKey(id),
-          ctx.prevSchedules,
-        );
-      }
-    },
-    onSuccess: async (_void, { roomId }) => {
-      await syncRoomDetailFromServer(queryClient, roomId.trim());
-    },
+    /** UI·캐시는 `SCHEDULE_DELETED` STOMP(`dispatchRoomScheduleEvent`)에서만 갱신합니다. */
   });
 }
 
