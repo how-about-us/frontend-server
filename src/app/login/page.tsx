@@ -5,21 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { LoginErrorAlert } from "@/app/login/login-error-alert";
-
-const CLIENT_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
-  "813204192877-5ueflcpjqdd9cpntpnkrmjgnro1mc4rr.apps.googleusercontent.com";
-
-const REDIRECT_URI =
-  process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ??
-  "https://howaboutus.app/auth/callback";
-
-const GOOGLE_OAUTH_URL =
-  "https://accounts.google.com/o/oauth2/v2/auth" +
-  `?client_id=${CLIENT_ID}` +
-  `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-  "&response_type=code" +
-  "&scope=openid%20email%20profile";
+import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
+import {
+  buildGoogleAuthorizationUrl,
+  messageForOAuthLoginErrorParam,
+  OAUTH_STATE_SESSION_KEY,
+} from "@/lib/google-oauth";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -49,23 +40,6 @@ function GoogleMark({ className }: { className?: string }) {
   );
 }
 
-function mapOAuthErrorParam(code: string | null): string | null {
-  if (!code) return null;
-  const map: Record<string, string> = {
-    Configuration: "로그인 설정에 문제가 있습니다. 관리자에게 문의해 주세요.",
-    AccessDenied: "접근이 거부되었습니다. 계정을 확인해 주세요.",
-    Verification: "인증 링크가 만료되었거나 이미 사용되었습니다.",
-    OAuthSignin:
-      "로그인 요청을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.",
-    OAuthCallback: "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.",
-    OAuthCreateAccount:
-      "계정을 만들 수 없습니다. 다른 방법으로 로그인해 주세요.",
-    Callback: "로그인 응답을 처리하지 못했습니다. 다시 시도해 주세요.",
-    Default: "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
-  };
-  return map[code] ?? map.Default;
-}
-
 function LoginPageContent() {
   const searchParams = useSearchParams();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -73,7 +47,7 @@ function LoginPageContent() {
   const oauthErrorCode = searchParams.get("error");
 
   useEffect(() => {
-    const fromQuery = mapOAuthErrorParam(oauthErrorCode);
+    const fromQuery = messageForOAuthLoginErrorParam(oauthErrorCode);
     if (fromQuery) setErrorMessage(fromQuery);
   }, [oauthErrorCode]);
 
@@ -81,8 +55,8 @@ function LoginPageContent() {
 
   const handleContinueWithGoogle = () => {
     const state = crypto.randomUUID();
-    sessionStorage.setItem("oauth_state", state);
-    window.location.href = `${GOOGLE_OAUTH_URL}&state=${state}`;
+    sessionStorage.setItem(OAUTH_STATE_SESSION_KEY, state);
+    window.location.href = `${buildGoogleAuthorizationUrl()}&state=${state}`;
   };
 
   return (
@@ -127,11 +101,7 @@ function LoginPageContent() {
 }
 
 function LoginFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
-    </div>
-  );
+  return <AuthFlowSpinner />;
 }
 
 export default function LoginPage() {

@@ -4,12 +4,14 @@ const FETCH_OPTS: RequestInit = {
 
 export async function exchangeGoogleCode(
   code: string,
+  /** 인가 요청에 쓴 값과 동일해야 Google 토큰 교환이 성공한다. */
+  redirectUri: string,
 ): Promise<{ ok: true } | { ok: false; status: number }> {
   const res = await fetch("/api/auth/google", {
     ...FETCH_OPTS,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, redirect_uri: redirectUri }),
   });
 
   if (res.ok) return { ok: true };

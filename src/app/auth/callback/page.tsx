@@ -3,10 +3,14 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
 
+import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
-import { consumePendingInviteCode } from "@/lib/auth";
-import { fetchSessionUserWithRetry } from "@/lib/auth";
+import { consumePendingInviteCode, fetchSessionUserWithRetry } from "@/lib/auth";
+import {
+  getGoogleOAuthRedirectUri,
+  OAUTH_STATE_SESSION_KEY,
+} from "@/lib/google-oauth";
 import { useSessionStore } from "@/stores/session-store";
 
 function AuthCallbackContent() {
@@ -25,8 +29,8 @@ function AuthCallbackContent() {
 
     const code = searchParams.get("code");
     const returnedState = searchParams.get("state");
-    const savedState = sessionStorage.getItem("oauth_state");
-    sessionStorage.removeItem("oauth_state");
+    const savedState = sessionStorage.getItem(OAUTH_STATE_SESSION_KEY);
+    sessionStorage.removeItem(OAUTH_STATE_SESSION_KEY);
 
     // 인증 흐름의 어떤 결과든 pendingInviteCode 를 한 번에 소비해
     // 다음 진입(예: 재로그인)에서 홀더 값이 남아있지 않도록 한다.
@@ -37,7 +41,7 @@ function AuthCallbackContent() {
       return;
     }
 
-    exchangeGoogleCode(code)
+    exchangeGoogleCode(code, getGoogleOAuthRedirectUri())
       .then(async (result) => {
         if (result.ok) {
           const maxAge = 60 * 60 * 24 * 365;
@@ -67,21 +71,13 @@ function AuthCallbackContent() {
       });
   }, [searchParams, router, setUser]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
-    </div>
-  );
+  return <AuthFlowSpinner />;
 }
 
 export default function AuthCallbackPage() {
   return (
     <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
-        </div>
-      }
+      fallback={<AuthFlowSpinner />}
     >
       <AuthCallbackContent />
     </Suspense>

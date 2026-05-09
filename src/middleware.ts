@@ -3,8 +3,6 @@ import type { NextRequest } from "next/server";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 
-const BYPASS_AUTH = false; // 로컬 테스트용: true면 인증 없이 통과
-
 function isProtectedPath(pathname: string) {
   if (pathname === "/") return true;
   const prefixes = [
@@ -20,8 +18,7 @@ function isProtectedPath(pathname: string) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession =
-    BYPASS_AUTH || request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
+  const hasSession = request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
 
   if (pathname === "/login") {
     if (hasSession) {
