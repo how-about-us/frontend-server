@@ -69,6 +69,84 @@ function bumpMapForRouteSources(
   );
 }
 
+type DebouncedRouteInvBucket =
+  | { scope: "whole" }
+  | { scope: "sources"; ids: Set<number> };
+
+/** 리오더+연속 `ITEM_UPDATED`가 같은 구간 무효화를 반복해 `/route`가 이중 패치되는 것을 줄임 */
+const scheduleRouteInvalidateDebounceTimers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+const scheduleRouteInvalidatePending = new Map<string, DebouncedRouteInvBucket>();
+const DEBOUNCE_SCHEDULE_ROUTE_INVALIDATE_MS = 100;
+
+function mergeRouteInvalidateBucket(
+  prev: DebouncedRouteInvBucket | undefined,
+  sourcesToAdd: number[],
+  forceWholeSchedule: boolean,
+): DebouncedRouteInvBucket {
+  if (forceWholeSchedule || prev?.scope === "whole") {
+    return { scope: "whole" };
+  }
+  const ids =
+    prev?.scope === "sources" ? prev.ids : new Set<number>();
+  for (const id of sourcesToAdd) {
+    ids.add(id);
+  }
+  return { scope: "sources", ids };
+}
+
+function enqueueDebouncedInvalidateScheduleRoutes(
+  queryClient: QueryClient,
+  rid: string,
+  sid: number,
+  sourcesForInvalidation: number[],
+  forceWholeSchedule: boolean,
+): void {
+  const mapKey = `${rid}:${sid}`;
+  scheduleRouteInvalidatePending.set(
+    mapKey,
+    mergeRouteInvalidateBucket(
+      scheduleRouteInvalidatePending.get(mapKey),
+      sourcesForInvalidation,
+      forceWholeSchedule,
+    ),
+  );
+  const existing = scheduleRouteInvalidateDebounceTimers.get(mapKey);
+  if (existing !== undefined) clearTimeout(existing);
+
+  scheduleRouteInvalidateDebounceTimers.set(
+    mapKey,
+    setTimeout(() => {
+      scheduleRouteInvalidateDebounceTimers.delete(mapKey);
+      const epochStore = usePlanMapDirectionsEpochStore.getState();
+      const bucket = scheduleRouteInvalidatePending.get(mapKey);
+      scheduleRouteInvalidatePending.delete(mapKey);
+      if (!bucket) return;
+      void (async () => {
+        if (bucket.scope === "whole") {
+          await invalidateScheduleItemRouteForWholeSchedule(
+            queryClient,
+            rid,
+            sid,
+          );
+          epochStore.bumpForDirections(rid);
+        } else if (bucket.ids.size > 0) {
+          const sources = [...bucket.ids];
+          await invalidateScheduleItemRouteForSources(
+            queryClient,
+            rid,
+            sid,
+            sources,
+          );
+          bumpMapForRouteSources(rid, sid, sources);
+        }
+      })();
+    }, DEBOUNCE_SCHEDULE_ROUTE_INVALIDATE_MS),
+  );
+}
+
 /** 연속 `SCHEDULE_ITEM_UPDATED` 마다 `/items` GET이 나가지 않도록 같은 일차는 한 번으로 묶음 */
 const syncSchedulePlacesFromItemsDebouncers = new Map<
   string,
@@ -251,13 +329,13 @@ export async function dispatchRoomScheduleEvent(
         newIds,
         event.itemId,
       );
-      if (useFallback) {
-        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
-        epochStore.bumpForDirections(rid);
-      } else {
-        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
-        bumpMapForRouteSources(rid, sid, sources);
-      }
+      enqueueDebouncedInvalidateScheduleRoutes(
+        queryClient,
+        rid,
+        sid,
+        useFallback ? [] : sources,
+        useFallback,
+      );
       return;
     }
 
@@ -283,13 +361,13 @@ export async function dispatchRoomScheduleEvent(
           newIds,
           itemId,
         );
-        if (useFallback) {
-          await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
-          epochStore.bumpForDirections(rid);
-        } else {
-          await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
-          bumpMapForRouteSources(rid, sid, sources);
-        }
+        enqueueDebouncedInvalidateScheduleRoutes(
+          queryClient,
+          rid,
+          sid,
+          useFallback ? [] : sources,
+          useFallback,
+        );
         return;
       }
 
