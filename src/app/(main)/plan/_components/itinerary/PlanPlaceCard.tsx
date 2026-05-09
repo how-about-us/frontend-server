@@ -24,6 +24,8 @@ export type PlanPlaceCardProps = {
   place: PlanPlace;
   /** 카드에 표시하는 순번 (1부터) */
   orderIndex: number;
+  /** 일차별 지도 경로·핀 색과 동기화 (`#RRGGBB`) — 없으면 brand-red 배지 */
+  orderBadgeColor?: string;
   isDragging: boolean;
   isDropTarget: boolean;
   /** 서버 동기화 일정에서는 순서 변경 비활성화 */
@@ -45,6 +47,7 @@ export type PlanPlaceCardProps = {
 export function PlanPlaceCard({
   place,
   orderIndex,
+  orderBadgeColor,
   isDragging,
   isDropTarget,
   dragDisabled = false,
@@ -191,7 +194,10 @@ export function PlanPlaceCard({
       <div className="flex min-w-0 w-full flex-1 flex-col gap-2">
         {/* 좁은 컨테이너: 순번 · 제목(truncate) · 삭제 한 행 */}
         <div className={`flex min-w-0 items-center gap-2 ${CQ_WIDE}:hidden`}>
-          <PlanOrderIndexBadge orderIndex={orderIndex} />
+          <PlanOrderIndexBadge
+            orderIndex={orderIndex}
+            backgroundColorHex={orderBadgeColor}
+          />
           <h3
             className="min-w-0 flex-1 truncate pt-0.5 text-base font-semibold leading-snug text-gray-900"
             title={place.title}
@@ -212,6 +218,7 @@ export function PlanPlaceCard({
         >
           <PlanOrderIndexBadge
             orderIndex={orderIndex}
+            backgroundColorHex={orderBadgeColor}
             className="col-start-1 row-start-1"
           />
           {canManageServerItem ? (
@@ -254,17 +261,29 @@ export function PlanPlaceCard({
 
 function PlanOrderIndexBadge({
   orderIndex,
+  backgroundColorHex,
   className,
 }: {
   orderIndex: number;
+  /** 지도 일차 경로색과 동일한 hex — 유효하지 않으면 brand-red 클래스 */
+  backgroundColorHex?: string;
   className?: string;
 }) {
+  const hex =
+    typeof backgroundColorHex === "string" ?
+      backgroundColorHex.trim()
+    : "";
+  const customBg =
+    hex.length === 7 && hex.startsWith("#") && /^#[0-9a-fA-F]{6}$/.test(hex);
+
   return (
     <span
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-red text-xs font-bold text-white",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white",
+        !customBg && "bg-brand-red",
         className,
       )}
+      style={customBg ? { backgroundColor: hex } : undefined}
       aria-label={`${orderIndex}번째 장소`}
     >
       {orderIndex}

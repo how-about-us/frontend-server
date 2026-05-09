@@ -19,7 +19,9 @@ import {
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
+import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { PlanPlaceCard } from "./PlanPlaceCard";
@@ -33,6 +35,31 @@ export type PlanItineraryProps = {
 
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
+  const expandedByScheduleId = usePlanItineraryExpandedStore(
+    (s) => s.expandedByScheduleId,
+  );
+  const orderedExpandedScheduleIds = useMemo(
+    () =>
+      Object.keys(expandedByScheduleId)
+        .map((k) => Number(k))
+        .filter(
+          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
+        )
+        .sort((a, b) => a - b),
+    [expandedByScheduleId],
+  );
+  const routeColorByScheduleId = useMemo(
+    () =>
+      scheduleIdsToRouteColors(
+        orderedExpandedScheduleIds,
+        roomId.trim() || undefined,
+      ),
+    [orderedExpandedScheduleIds, roomId],
+  );
+  /** {@link PlanItineraryMapRoutes} 폴리라인·핀과 동일 팔레트 */
+  const orderBadgeColor =
+    routeColorByScheduleId.get(scheduleId) ?? "#f12d33";
+
   const {
     data: placesData,
     isLoading,
@@ -191,6 +218,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             <PlanPlaceCard
               place={place}
               orderIndex={index + 1}
+              orderBadgeColor={orderBadgeColor}
               dragDisabled={dragLocked || typeof place.itemId !== "number"}
               scheduleTimeEdit={{ roomId, scheduleId, slotIndex: index }}
               isDragging={dragFromIndex === index}

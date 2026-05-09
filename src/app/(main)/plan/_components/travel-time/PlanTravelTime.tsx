@@ -1,20 +1,15 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { useScheduleItemRoute } from "@/hooks/useRooms";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
-import {
-  readTravelModeFromLocalStorage,
-  writeTravelModeToLocalStorage,
-} from "@/lib/plan/planTravelLocalStorage";
 import { buildScheduleItemRouteSummariesByMode } from "@/lib/plan/scheduleItemRouteModes";
 import {
   SCHEDULE_ROUTE_DEFERRED_FETCH_MODES,
   SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
-  SCHEDULE_TRAVEL_MODES,
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
@@ -35,16 +30,15 @@ function routePayloadOk(
   );
 }
 
+/** 플랜 구간 경로는 항상 자동차 기준으로 표시·적용, 다른 수단은 패널에서 참고만 */
+const FIXED_TRAVEL_MODE = SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
+
 export type PlanTravelTimeProps = {
   roomId: string;
   scheduleId: number;
-  /** 현재 항목 → 다음 항목 구간의 시작 일정 항목 ID (`GET …/route` 에 사용) */
   segmentSourceItemId: number;
-  /** 일정 `itemId` 순서 지문 — 로컬 이동 수단 선택(LS) 일치용. 경로 API 쿼리 키에는 사용하지 않음 */
   scheduleFingerprint: string;
-  /** 일정 항목에 붙어 있으면 초기 이동 수단 추정값(표시용). 선택은 서버 저장 없음, LS에만 저장 */
   travelMode?: string;
-  /** 일정 항목 목록이 준비·갱신 완료되고 종점 둘 다 목록에 있을 때만 route GET 허용 */
   routeQueryEnabled?: boolean;
   className?: string;
 };
@@ -54,76 +48,14 @@ export function PlanTravelTime({
   scheduleId,
   segmentSourceItemId,
   scheduleFingerprint,
-  travelMode,
   routeQueryEnabled = true,
   className,
 }: PlanTravelTimeProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [directionsHidden, setDirectionsHidden] = useState(false);
-  /** false: 헤더·요약 줄은 서버 응답 `travelMode` 기준 → true 드롭다운 선택에 맞춤 */
-  const [commitSummaryToUserChoice, setCommitSummaryToUserChoice] =
-    useState(false);
 
   const fpTrim = scheduleFingerprint.trim();
-
-  const [selectedMode, setSelectedMode] =
-    useState<ScheduleTravelModeValue>(() => {
-      if (fpTrim.length > 0) {
-        const fromLs = readTravelModeFromLocalStorage(
-          roomId,
-          scheduleId,
-          segmentSourceItemId,
-          fpTrim,
-        );
-        if (fromLs) return fromLs;
-      }
-      return (
-        canonicalScheduleTravelMode(
-          typeof travelMode === "string" && travelMode.trim()
-            ? travelMode.trim()
-            : undefined,
-        ) ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE
-      );
-    });
-
-  useEffect(() => {
-    if (fpTrim.length > 0) {
-      const fromLs = readTravelModeFromLocalStorage(
-        roomId,
-        scheduleId,
-        segmentSourceItemId,
-        fpTrim,
-      );
-      if (fromLs != null) {
-        setSelectedMode(fromLs);
-        return;
-      }
-    }
-    setSelectedMode(
-      canonicalScheduleTravelMode(
-        typeof travelMode === "string" && travelMode.trim()
-          ? travelMode.trim()
-          : undefined,
-      ) ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `travelMode` 제외: 지문·구간이 같으면 LS·현재 선택을 유지
-  }, [
-    roomId,
-    scheduleId,
-    segmentSourceItemId,
-    fpTrim,
-  ]);
-
-  useEffect(() => {
-    setCommitSummaryToUserChoice(false);
-  }, [roomId, scheduleId, segmentSourceItemId, fpTrim]);
-
   const rid = roomId.trim();
-
-  const modeRaw = typeof travelMode === "string" ? travelMode.trim() : "";
-  const canonFromPayload = canonicalScheduleTravelMode(
-    modeRaw.length > 0 ? modeRaw : undefined,
-  );
 
   const {
     data: drivingRoute,
@@ -134,7 +66,7 @@ export function PlanTravelTime({
     roomId,
     scheduleId,
     segmentSourceItemId,
-    SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
+    FIXED_TRAVEL_MODE,
     routeQueryEnabled,
     fpTrim,
   );
@@ -161,40 +93,6 @@ export function PlanTravelTime({
       ),
     ),
   });
-
-  const knownValues = new Set<string>(
-    SCHEDULE_TRAVEL_MODES.map((m) => m.value),
-  );
-  const showUnknownOption =
-    modeRaw.length > 0 &&
-    canonFromPayload === null &&
-    !knownValues.has(modeRaw.toUpperCase());
-
-  const handleTravelModeChange = useCallback(
-    (next: ScheduleTravelModeValue) => {
-      setCommitSummaryToUserChoice(true);
-      if (next !== selectedMode) {
-        setSelectedMode(next);
-        if (fpTrim.length > 0) {
-          writeTravelModeToLocalStorage(
-            roomId,
-            scheduleId,
-            segmentSourceItemId,
-            fpTrim,
-            next,
-          );
-        }
-      }
-      setMenuOpen(false);
-    },
-    [
-      selectedMode,
-      roomId,
-      scheduleId,
-      segmentSourceItemId,
-      fpTrim,
-    ],
-  );
 
   const deferredD0 = deferredRouteQueries[0]?.data;
   const deferredD1 = deferredRouteQueries[1]?.data;
@@ -229,15 +127,14 @@ export function PlanTravelTime({
   }, [drivingRoute, deferredD0, deferredD1, deferredD2]);
 
   const displayRoute = useMemo(() => {
-    const mode = selectedMode;
-    const sel = modeRouteSummaries[mode];
+    const sel = modeRouteSummaries[FIXED_TRAVEL_MODE];
     if (
       sel != null &&
       sel.durationSeconds >= 0 &&
       sel.distanceMeters >= 0
     ) {
       return {
-        travelMode: mode,
+        travelMode: FIXED_TRAVEL_MODE,
         durationSeconds: sel.durationSeconds,
         distanceMeters: sel.distanceMeters,
       } satisfies ScheduleItemRouteResponse;
@@ -248,10 +145,10 @@ export function PlanTravelTime({
           ? drivingRoute.travelMode.trim()
           : "",
       );
-      if (rc === mode) return drivingRoute;
+      if (rc === FIXED_TRAVEL_MODE) return drivingRoute;
     }
     return undefined;
-  }, [modeRouteSummaries, drivingRoute, selectedMode]);
+  }, [modeRouteSummaries, drivingRoute]);
 
   const dq0Pending = deferredRouteQueries[0]?.isPending ?? false;
   const dq0Fetching = deferredRouteQueries[0]?.isFetching ?? false;
@@ -271,8 +168,8 @@ export function PlanTravelTime({
       );
     };
     if (routeQueryEnabled) {
-      out[SCHEDULE_ROUTE_PRIMARY_FETCH_MODE] =
-        !hasSummary(SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) &&
+      out[FIXED_TRAVEL_MODE] =
+        !hasSummary(FIXED_TRAVEL_MODE) &&
         (drivingPending || drivingFetching);
       const pendFetch = [
         dq0Pending || dq0Fetching,
@@ -301,77 +198,11 @@ export function PlanTravelTime({
     dq2Fetching,
   ]);
 
-  const dq0Error = deferredRouteQueries[0]?.isError ?? false;
-  const dq1Error = deferredRouteQueries[1]?.isError ?? false;
-  const dq2Error = deferredRouteQueries[2]?.isError ?? false;
-
-  const activeBackingQueryStatus = useMemo(() => {
-    /**
-     * 마운트~첫 선택 전까지 네트워크는 DRIVING 한 번만 보냄.
-     * `enabled: false` 인 지연 쿼리는 `isPending` 이 true로 남는 경우가 있어
-     * 요약 줄 로딩에 끌어다 쓰면 스피너가 무한히 도는 버그가 난다.
-     */
-    if (!commitSummaryToUserChoice) {
-      return {
-        isPending: drivingPending,
-        isFetching: drivingFetching,
-        isError: drivingError,
-      } as const;
-    }
-
-    if (selectedMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
-      return {
-        isPending: drivingPending,
-        isFetching: drivingFetching,
-        isError: drivingError,
-      } as const;
-    }
-    const deferredList =
-      SCHEDULE_ROUTE_DEFERRED_FETCH_MODES as readonly ScheduleTravelModeValue[];
-    const idx = deferredList.indexOf(selectedMode);
-    if (idx === 0) {
-      return {
-        isPending: deferredLazyEnabled && dq0Pending,
-        isFetching: deferredLazyEnabled && dq0Fetching,
-        isError: dq0Error,
-      } as const;
-    }
-    if (idx === 1) {
-      return {
-        isPending: deferredLazyEnabled && dq1Pending,
-        isFetching: deferredLazyEnabled && dq1Fetching,
-        isError: dq1Error,
-      } as const;
-    }
-    if (idx === 2) {
-      return {
-        isPending: deferredLazyEnabled && dq2Pending,
-        isFetching: deferredLazyEnabled && dq2Fetching,
-        isError: dq2Error,
-      } as const;
-    }
-    return {
-      isPending: drivingPending,
-      isFetching: drivingFetching,
-      isError: drivingError,
-    } as const;
-  }, [
-    commitSummaryToUserChoice,
-    selectedMode,
-    deferredLazyEnabled,
-    drivingPending,
-    drivingFetching,
-    drivingError,
-    dq0Pending,
-    dq0Fetching,
-    dq0Error,
-    dq1Pending,
-    dq1Fetching,
-    dq1Error,
-    dq2Pending,
-    dq2Fetching,
-    dq2Error,
-  ]);
+  const activeBackingQueryStatus = {
+    isPending: drivingPending,
+    isFetching: drivingFetching,
+    isError: drivingError,
+  } as const;
 
   const primarySettled =
     !activeBackingQueryStatus.isPending &&
@@ -392,8 +223,6 @@ export function PlanTravelTime({
     !displayRoute &&
     primarySettled &&
     !summaryIsError;
-
-  const summaryMode = selectedMode;
 
   if (directionsHidden) {
     return (
@@ -418,8 +247,7 @@ export function PlanTravelTime({
         <TravelDirectionsCard
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
-          setMenuOpen={setMenuOpen}
-          summaryMode={summaryMode}
+          summaryMode={FIXED_TRAVEL_MODE}
           route={displayRoute}
           routeQuery={{
             isPending: summaryPending,
@@ -429,10 +257,10 @@ export function PlanTravelTime({
           routeUnavailable={summaryUnavailable}
           modeRouteSummaries={modeRouteSummaries}
           modeRouteRowLoading={modeRouteRowLoading}
-          effectiveMode={selectedMode}
-          showUnknownOption={showUnknownOption}
-          modeRaw={modeRaw}
-          onSelectTravelMode={handleTravelModeChange}
+          effectiveMode={FIXED_TRAVEL_MODE}
+          showUnknownOption={false}
+          modeRaw=""
+          readOnly
           onHideDirections={() => {
             setDirectionsHidden(true);
             setMenuOpen(false);

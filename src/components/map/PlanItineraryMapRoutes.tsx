@@ -14,6 +14,7 @@ import {
 } from "@/lib/maps";
 import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
+import { displayPositionsForOverlappingStops } from "@/lib/plan/planItineraryMapMarkerOffset";
 import {
   flattenPlanItinerarySegmentsFromPlaces,
   planItinerarySegmentPathRecordKey,
@@ -164,6 +165,34 @@ export function PlanItineraryMapRoutes() {
     );
   });
 
+  const stopsForOffset = useMemo(() => {
+    const out: Array<{
+      scheduleId: number;
+      itemId: number;
+      location: google.maps.LatLngLiteral;
+    }> = [];
+    orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
+      const places = buckets[bucketIdx] ?? [];
+      places.forEach((place) => {
+        const loc = place.location;
+        const gid =
+          typeof place.googlePlaceId === "string"
+            ? place.googlePlaceId.trim()
+            : "";
+        if (!loc || typeof place.itemId !== "number" || !gid.length) return;
+        const legacyId = normalizeGooglePlaceResourceId(gid);
+        if (selectedNorm != null && legacyId === selectedNorm) return;
+        out.push({ scheduleId, itemId: place.itemId, location: loc });
+      });
+    });
+    return out;
+  }, [orderedScheduleIdsForQueries, buckets, selectedNorm]);
+
+  const displayPosByStopId = useMemo(
+    () => displayPositionsForOverlappingStops(stopsForOffset),
+    [stopsForOffset],
+  );
+
   const stopMarkers: Array<JSX.Element> = [];
   orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
     const places = buckets[bucketIdx] ?? [];
@@ -181,10 +210,14 @@ export function PlanItineraryMapRoutes() {
       const dayColor =
         routeColorByScheduleId.get(scheduleId) ?? fallbackRouteStroke;
 
+      const stopKey = `${scheduleId}-${place.itemId}`;
+      const markerPos =
+        displayPosByStopId.get(stopKey) ?? loc;
+
       stopMarkers.push(
         <AdvancedMarker
           key={`plan-stop-${scheduleId}-${place.itemId}`}
-          position={loc}
+          position={markerPos}
           title={place.title}
           onClick={(e) => {
             e.stop();

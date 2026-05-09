@@ -23,8 +23,7 @@ import { TravelRouteSummaryLine } from "./TravelRouteSummaryLine";
 export type TravelDirectionsCardProps = {
   menuOpen: boolean;
   onToggleMenu: () => void;
-  setMenuOpen: (open: boolean) => void;
-  /** 헤더 글리프·요약 줄에 쓰이는 수단(처음엔 서버 `travelMode`, 드롭다운 선택 후엔 그 선택) */
+  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 플랜에서는 항상 자동차 고정 */
   summaryMode: string;
   route: ScheduleItemRouteResponse | null | undefined;
   routeQuery: {
@@ -41,14 +40,15 @@ export type TravelDirectionsCardProps = {
   effectiveMode: ScheduleTravelModeValue;
   showUnknownOption: boolean;
   modeRaw: string;
-  onSelectTravelMode: (next: ScheduleTravelModeValue) => void;
+  /** true면 목록은 참고용(클릭 선택 불가), `onSelectTravelMode` 미사용 */
+  readOnly?: boolean;
+  onSelectTravelMode?: (next: ScheduleTravelModeValue) => void;
   onHideDirections: () => void;
 };
 
 export function TravelDirectionsCard({
   menuOpen,
   onToggleMenu,
-  setMenuOpen,
   summaryMode,
   route,
   routeQuery,
@@ -58,6 +58,7 @@ export function TravelDirectionsCard({
   effectiveMode,
   showUnknownOption,
   modeRaw,
+  readOnly = false,
   onSelectTravelMode,
   onHideDirections,
 }: TravelDirectionsCardProps) {
@@ -93,15 +94,19 @@ export function TravelDirectionsCard({
             "h-4 w-4 shrink-0 text-dark-gray transition-transform",
             menuOpen && "rotate-180",
           )}
+          aria-hidden
         />
       </button>
 
       {menuOpen ? (
         <div className="w-fit max-w-full border-t border-gray-border px-2.5 py-2">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-dark-gray">
-            이동 수단
+            {readOnly ? "다른 수단 참고(자동차 고정)" : "이동 수단"}
           </p>
-          <ul className="flex flex-col gap-1" role="listbox">
+          <ul
+            className="flex flex-col gap-1"
+            role={readOnly ? undefined : "listbox"}
+          >
             {SCHEDULE_TRAVEL_MODES.map(({ value }) => {
               const rowSummary = modeRouteSummaries[value];
               const row =
@@ -121,6 +126,33 @@ export function TravelDirectionsCard({
                   <span className="text-dark-gray">—</span>
                 );
               const selected = value === effectiveMode;
+              const rowClass = cn(
+                "flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs",
+                !readOnly && "hover:bg-gray-border/30",
+                selected &&
+                  (readOnly ?
+                    "bg-gray-50 ring-1 ring-gray-border/40"
+                  : "bg-brand-green/10 ring-1 ring-brand-green/25"),
+              );
+
+              if (readOnly) {
+                return (
+                  <li key={value}>
+                    <div className={rowClass}>
+                      <TravelModeGlyph mode={value} />
+                      <span className="font-medium text-gray-900">
+                        {scheduleTravelModeLabel(value)}
+                      </span>
+                      {selected ?
+                        <span className="ml-auto shrink-0 text-[10px] font-semibold text-dark-gray">
+                          적용 중
+                        </span>
+                      : <span className="ml-auto text-dark-gray">{row}</span>}
+                    </div>
+                  </li>
+                );
+              }
+
               return (
                 <li key={value}>
                   <button
@@ -128,12 +160,11 @@ export function TravelDirectionsCard({
                     role="option"
                     aria-selected={selected}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs hover:bg-gray-border/30 disabled:opacity-50",
-                      selected &&
-                        "bg-brand-green/10 ring-1 ring-brand-green/25",
+                      rowClass,
+                      "disabled:opacity-50",
                     )}
                     onClick={() => {
-                      void onSelectTravelMode(value);
+                      void onSelectTravelMode?.(value);
                     }}
                   >
                     <TravelModeGlyph mode={value} />
@@ -151,7 +182,7 @@ export function TravelDirectionsCard({
                 </li>
               );
             })}
-            {showUnknownOption ? (
+            {showUnknownOption && !readOnly ? (
               <li>
                 <button
                   type="button"
@@ -164,7 +195,7 @@ export function TravelDirectionsCard({
                       );
                       return;
                     }
-                    void onSelectTravelMode(c);
+                    void onSelectTravelMode?.(c);
                   }}
                 >
                   <TravelModeGlyph mode={modeRaw} />
@@ -187,7 +218,7 @@ export function TravelDirectionsCard({
             onClick={onHideDirections}
           >
             <EyeOff className="h-4 w-4 shrink-0" aria-hidden />
-            길찾기 숨기기
+            숨기기
           </button>
         </div>
       ) : null}
