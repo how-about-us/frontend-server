@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Plus } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { ChatEnterIcon } from "@/components/icons";
 import {
   chatAiLabelMotion,
@@ -148,26 +148,26 @@ export function ChatInputBar({
           isMinimized ? "pt-0.5" : "pt-1",
         )}
       >
-        <div className="flex items-center gap-1">
-          <motion.button
+        <div className="flex min-w-0 items-center gap-1">
+          <button
             type="button"
             onClick={onPlusClick}
             disabled={plusDisabled || !onPlusClick}
-            aria-label="장소 보내기"
-            whileTap={reduceMotion ? undefined : chatTapSoft}
-            transition={chatTapTransition}
+            aria-label="검색에서 장소 선택 시 이 방 채팅으로 보냅니다"
+            title="장소를 검색해서 고르면 채팅으로 전송돼요"
             className={cn(
-              "flex items-center justify-center rounded-full transition hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
+              "flex shrink-0 items-center justify-center rounded-full text-dark-gray transition-colors hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
               isMinimized ? "h-8 w-8" : "h-9 w-9",
             )}
           >
-            <Plus
+            <Search
               className={cn(
-                "text-dark-gray",
                 isMinimized ? "h-4 w-4" : "h-5 w-5",
               )}
+              strokeWidth={2}
+              aria-hidden
             />
-          </motion.button>
+          </button>
           <motion.button
             type="button"
             onClick={toggleAi}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -16,10 +17,15 @@ import {
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 import { useChatActions } from "@/hooks/useChatActions";
 import { useChat } from "@/hooks/useChat";
+import {
+  chatPlaceShareBannerGlowDurationSec,
+  chatPlaceShareBannerSweepDurationSec,
+} from "@/components/chat/chat-animations";
 import { useSessionStore } from "@/stores/session-store";
 
 export default function SearchPage() {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const qParam = searchParams.get("q")?.trim() ?? "";
   const isShareMode = searchParams.get("share") === "chat";
@@ -110,19 +116,111 @@ export default function SearchPage() {
           onSearch={handleSearch}
         />
       </div>
-      {shareModeActive && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-gray-border bg-brand-green/10 px-4 py-2 text-[13px] text-brand-green">
-          <Send className="h-3.5 w-3.5" />
-          <span>장소를 선택하면 채팅으로 전송됩니다.</span>
-          <button
-            type="button"
-            onClick={() => router.replace("/search")}
-            className="ml-auto rounded-md bg-white/60 px-2 py-0.5 text-[11px] text-dark-gray hover:bg-white"
-          >
-            취소
-          </button>
-        </div>
-      )}
+      {shareModeActive ?
+        <motion.div
+          className="relative shrink-0 overflow-hidden border-b border-brand-red/40"
+          initial={reduceMotion ? false : { opacity: 0, y: -6 }}
+          animate={
+            reduceMotion ?
+              {
+                opacity: 1,
+                y: 0,
+                backgroundColor: "rgba(241,45,51,0.09)",
+              }
+            : {
+                opacity: 1,
+                y: 0,
+                backgroundColor: [
+                  "rgba(241,45,51,0.055)",
+                  "rgba(241,45,51,0.13)",
+                  "rgba(241,45,51,0.055)",
+                ],
+                boxShadow: [
+                  "inset 0 0 0 rgba(241,45,51,0)",
+                  "inset 0 -18px 40px rgba(241,45,51,0.125)",
+                  "inset 0 0 0 rgba(241,45,51,0)",
+                ],
+              }
+          }
+          transition={
+            reduceMotion ?
+              { duration: 0 }
+            : {
+                opacity: { type: "spring", stiffness: 420, damping: 32 },
+                y: { type: "spring", stiffness: 420, damping: 32 },
+                backgroundColor: {
+                  repeat: Infinity,
+                  duration: chatPlaceShareBannerGlowDurationSec,
+                  ease: "easeInOut",
+                },
+                boxShadow: {
+                  repeat: Infinity,
+                  duration: chatPlaceShareBannerGlowDurationSec,
+                  ease: "easeInOut",
+                },
+              }
+          }
+        >
+          {!reduceMotion ?
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[8px] overflow-hidden bg-gradient-to-b from-brand-red/[0.38] via-brand-red/[0.12] to-transparent"
+            >
+              <motion.div
+                className="absolute left-0 top-px h-[3px] w-[44%]"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent 5%, rgba(251,165,173,1) 38%, rgba(255,248,249,1) 48%, rgba(241,45,51,1) 52%, rgba(255,190,196,1) 60%, transparent 95%)",
+                  boxShadow:
+                    "0 0 18px rgba(241,45,51,1), 0 0 32px rgba(241,45,51,0.65), 0 0 48px rgba(255,96,109,0.45)",
+                  filter: "blur(0.55px)",
+                }}
+                initial={false}
+                animate={{ left: ["-48%", "135%"] }}
+                transition={{
+                  repeat: Infinity,
+                  duration: chatPlaceShareBannerSweepDurationSec,
+                  ease: "linear",
+                }}
+              />
+            </div>
+          : null}
+          <div className="relative z-[3] flex shrink-0 items-center gap-2 px-4 py-2 text-[13px] font-semibold tracking-tight text-brand-red drop-shadow-[0_0_10px_rgba(241,45,51,0.22)]">
+            <motion.span
+              className="inline-flex shrink-0 text-brand-red"
+              aria-hidden
+              animate={
+                reduceMotion ?
+                  {}
+                : {
+                    filter: [
+                      "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
+                      "drop-shadow(0 0 7px rgba(241,45,51,0.55))",
+                      "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
+                    ],
+                  }
+              }
+              transition={{
+                repeat: Infinity,
+                duration: chatPlaceShareBannerGlowDurationSec,
+                ease: "easeInOut",
+              }}
+            >
+              <Send className="h-3.5 w-3.5" />
+            </motion.span>
+            <span className="min-w-0 flex-1">
+              장소를 선택하면 채팅으로 전송됩니다.
+            </span>
+            <button
+              type="button"
+              onClick={() => router.replace("/search")}
+              className="ml-auto shrink-0 rounded-md border border-brand-red/45 bg-white/92 px-2 py-0.5 text-[11px] font-medium text-dark-gray shadow-sm hover:bg-white"
+            >
+              취소
+            </button>
+          </div>
+        </motion.div>
+      : null}
 
       {/* 결과 */}
       <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent]">

@@ -98,3 +98,13 @@ export function chatAiBubbleMutedListClass(isMinimized: boolean): string {
     isMinimized ? "text-[10px] leading-snug" : "text-[11px] leading-snug",
   );
 }
+
+/** AI 장소 추천 행 카드 아래 `reason`(장소 설명) 본문 */
+export function chatAiBubblePlaceRecommendationReasonClass(
+  isMinimized: boolean,
+): string {
+  return cn(
+    "leading-snug text-white/75",
+    isMinimized ? "text-[11px]" : "text-xs",
+  );
+}

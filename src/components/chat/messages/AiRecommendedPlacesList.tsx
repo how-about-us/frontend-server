@@ -7,6 +7,7 @@ import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import {
   chatAiBubbleBlockSubtitleClass,
   chatAiBubbleBlockTitleClass,
+  chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { aiRecommendedPlaceEnrichmentQueryKey } from "@/lib/query-keys";
@@ -77,8 +78,9 @@ function AiRecommendedPlaceRow({
       {place.reason ?
         <p
           className={cn(
-            "max-w-[260px] text-[10px] leading-snug text-white/75",
+            "max-w-[260px]",
             isMinimized && "max-w-[228px]",
+            chatAiBubblePlaceRecommendationReasonClass(isMinimized),
           )}
         >
           <AiHighlightedText text={place.reason} />
