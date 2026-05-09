@@ -6,6 +6,9 @@ import {
 } from "@/lib/api/places";
 import type { SearchResultCardProps } from "@/types/place";
 
+/** 검색 페이지에서 한 요청당 최대 장소 개수(서버 `limit` + 클라 보정·썸네일 호출 상한) */
+export const PLACES_SEARCH_MAX_RESULTS = 10;
+
 export type PlaceSearchResult = SearchResultCardProps & {
   googlePlaceId: string;
   location: { lat: number; lng: number };
@@ -17,16 +20,20 @@ async function fetchPlacesWithPhotos(
   query: string,
   latitude: number,
   longitude: number,
-  radius?: number,
+  radius: number | undefined,
+  maxResults: number,
 ): Promise<PlaceSearchResult[]> {
-  const items: PlaceSearchItem[] = await searchPlaces({
+  const raw: PlaceSearchItem[] = await searchPlaces({
     query,
     latitude,
     longitude,
     radius,
+    limit: maxResults,
   });
 
-  // Fetch all photo URLs in parallel
+  const items = raw.slice(0, maxResults);
+
+  // Fetch photo URLs in parallel (최대 maxResults건)
   const results = await Promise.all(
     items.map(async (item) => {
       let imageUrl: string | undefined;
@@ -62,8 +69,23 @@ export function usePlacesSearch(
   radius?: number,
 ) {
   return useQuery({
-    queryKey: ["places", "search", query, latitude, longitude, radius],
-    queryFn: () => fetchPlacesWithPhotos(query, latitude!, longitude!, radius),
+    queryKey: [
+      "places",
+      "search",
+      query,
+      latitude,
+      longitude,
+      radius,
+      PLACES_SEARCH_MAX_RESULTS,
+    ],
+    queryFn: () =>
+      fetchPlacesWithPhotos(
+        query,
+        latitude!,
+        longitude!,
+        radius,
+        PLACES_SEARCH_MAX_RESULTS,
+      ),
     enabled: query.trim().length > 0 && latitude !== null && longitude !== null,
     staleTime: 30_000,
   });

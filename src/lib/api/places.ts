@@ -63,6 +63,8 @@ export async function searchPlaces(params: {
   latitude: number;
   longitude: number;
   radius?: number;
+  /** 서버가 지원하면 응답 개수 상한(미지원 시에도 클라이언트에서 잘라 처리 가능) */
+  limit?: number;
 }): Promise<PlaceSearchItem[]> {
   const url = new URL(`${API_BASE}/places/search`);
   url.searchParams.set("query", params.query);
@@ -70,6 +72,9 @@ export async function searchPlaces(params: {
   url.searchParams.set("longitude", String(params.longitude));
   if (params.radius !== undefined) {
     url.searchParams.set("radius", String(params.radius));
+  }
+  if (params.limit !== undefined) {
+    url.searchParams.set("limit", String(params.limit));
   }
 
   const res = await apiFetch(url.toString());

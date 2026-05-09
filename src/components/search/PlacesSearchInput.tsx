@@ -220,11 +220,7 @@ export function PlacesSearchInput({
       }
       return;
     }
-    if (activeIndex >= 0 && predictions[activeIndex]) {
-      handleSelectPrediction(predictions[activeIndex]);
-    } else {
-      commitSearch(inputValue);
-    }
+    commitSearch(inputValue);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
