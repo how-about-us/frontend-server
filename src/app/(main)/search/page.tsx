@@ -164,7 +164,7 @@ export default function SearchPage() {
           {!reduceMotion ?
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[8px] overflow-hidden bg-gradient-to-b from-brand-red/[0.38] via-brand-red/[0.12] to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[11px] overflow-hidden bg-gradient-to-b from-brand-red/[0.38] via-brand-red/[0.12] to-transparent"
             >
               <motion.div
                 className="absolute left-0 top-px h-[3px] w-[44%]"
@@ -185,7 +185,7 @@ export default function SearchPage() {
               />
             </div>
           : null}
-          <div className="relative z-[3] flex shrink-0 items-center gap-2 px-4 py-2 text-[13px] font-semibold tracking-tight text-brand-red drop-shadow-[0_0_10px_rgba(241,45,51,0.22)]">
+          <div className="relative z-[3] flex min-h-[52px] shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-semibold leading-snug tracking-tight text-brand-red drop-shadow-[0_0_10px_rgba(241,45,51,0.22)]">
             <motion.span
               className="inline-flex shrink-0 text-brand-red"
               aria-hidden
@@ -206,7 +206,7 @@ export default function SearchPage() {
                 ease: "easeInOut",
               }}
             >
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-4 w-4" />
             </motion.span>
             <span className="min-w-0 flex-1">
               장소를 선택하면 채팅으로 전송됩니다.
@@ -214,7 +214,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => router.replace("/search")}
-              className="ml-auto shrink-0 rounded-md border border-brand-red/45 bg-white/92 px-2 py-0.5 text-[11px] font-medium text-dark-gray shadow-sm hover:bg-white"
+              className="ml-auto shrink-0 rounded-md border border-brand-red/45 bg-white/92 px-2.5 py-1.5 text-[11px] font-medium text-dark-gray shadow-sm hover:bg-white"
             >
               취소
             </button>

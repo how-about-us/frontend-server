@@ -55,6 +55,8 @@ export type PlacePhotoResponse = {
 /** In-flight + settled memo: 일정 리오더처럼 같은 place·photo 가 반복될 때 API 재호출 방지 */
 const placeDetailPromisesById = new Map<string, Promise<PlaceDetail>>();
 const placePhotoUrlPromisesByName = new Map<string, Promise<string>>();
+/** 성공 응답 URL — 동일 trim `photoName`에 대해 RQ 가 `queryFn`을 재실행해도 `GET /places/photos` 생략 */
+const resolvedPlacePhotoUrlByTrimmedName = new Map<string, string>();
 
 // ─── API functions ─────────────────────────────────────────────────────────
 
@@ -119,15 +121,29 @@ async function requestPlacePhotoUrl(photoName: string): Promise<string> {
 
 export async function getPlacePhotoUrl(photoName: string): Promise<string> {
   const cacheKey = typeof photoName === "string" ? photoName.trim() : "";
-  const hit =
-    cacheKey.length > 0 ? placePhotoUrlPromisesByName.get(cacheKey) : undefined;
+  if (cacheKey.length === 0) {
+    throw new Error("getPlacePhotoUrl: empty photoName");
+  }
+
+  const resolved = resolvedPlacePhotoUrlByTrimmedName.get(cacheKey);
+  if (resolved !== undefined) {
+    return resolved;
+  }
+
+  const hit = placePhotoUrlPromisesByName.get(cacheKey);
   if (hit) return hit;
 
-  const p = requestPlacePhotoUrl(photoName).catch((err) => {
-    if (cacheKey.length > 0) placePhotoUrlPromisesByName.delete(cacheKey);
-    throw err;
-  });
-  if (cacheKey.length > 0) placePhotoUrlPromisesByName.set(cacheKey, p);
+  const p = requestPlacePhotoUrl(cacheKey)
+    .then((url) => {
+      resolvedPlacePhotoUrlByTrimmedName.set(cacheKey, url);
+      placePhotoUrlPromisesByName.delete(cacheKey);
+      return url;
+    })
+    .catch((err) => {
+      placePhotoUrlPromisesByName.delete(cacheKey);
+      throw err;
+    });
+  placePhotoUrlPromisesByName.set(cacheKey, p);
   return p;
 }
 

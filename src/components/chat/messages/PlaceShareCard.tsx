@@ -24,8 +24,7 @@ export function PlaceShareCard({
   const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
 
   const senderUserId = message.senderUserId;
-  const isMine =
-    myId != null && senderUserId != null && senderUserId === myId;
+  const isMine = myId != null && senderUserId != null && senderUserId === myId;
 
   const { data: imageUrl } = usePlacePhotoUrlQuery(place?.photoName);
 
@@ -57,9 +56,9 @@ export function PlaceShareCard({
   );
 
   const timeRow =
-    message.time != null ?
+    message.time != null ? (
       <span className={typo.metaMuted}>{message.time}</span>
-    : null;
+    ) : null;
 
   if (isMine) {
     return (
@@ -74,20 +73,17 @@ export function PlaceShareCard({
     <div className="flex gap-2">
       <div className="flex flex-col items-center gap-1">
         <div className={cn(chatMessageChrome.avatarSm, "bg-light-gray")}>
-          {message.avatar ?
+          {message.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element -- 멤버 프로필 URL 가변
             <img
               src={message.avatar}
               alt={message.sender ?? ""}
               className="h-full w-full object-cover"
             />
-          : null}
+          ) : null}
         </div>
         <span
-          className={cn(
-            "max-w-[4rem] truncate text-center",
-            typo.metaMuted,
-          )}
+          className={cn("max-w-[4rem] truncate text-center", typo.metaMuted)}
         >
           {message.sender}
         </span>

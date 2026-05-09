@@ -22,6 +22,7 @@ export function ChatPanel() {
   const router = useRouter();
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const isMinimized = chatState === "minimized";
+  const panelOpen = chatState !== "closed";
   const roomId = useSessionStore((s) => s.currentRoomId);
   const sessionRoomTitle = useSessionStore((s) => s.currentRoomMeta?.title);
   const { data: membersData } = useRoomMembers(roomId);
@@ -32,7 +33,7 @@ export function ChatPanel() {
     sendChatMessage,
     sendAiMessage,
     sendCancelAiRequest,
-  } = useChatMessages(roomId);
+  } = useChatMessages(roomId, { fetchHistory: panelOpen });
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
   const { data: roomDetail } = useQuery({

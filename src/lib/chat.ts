@@ -669,6 +669,53 @@ function parsePlaceShareMetadata(
   };
 }
 
+/** 히스토리 merge 직후 등—`GET /places/photos` prefetch 입력 */
+export function collectPlacePhotoNamesFromServerMessages(
+  messages: ServerChatMessage[],
+): string[] {
+  const names = new Set<string>();
+  for (const msg of messages) {
+    const kind = normalizeMessageKind(msg.messageType);
+    if (kind === "PLACE_SHARE") {
+      const place = parsePlaceShareMetadata(msg.metadata);
+      const pn =
+        typeof place?.photoName === "string" ? place.photoName.trim() : "";
+      if (pn.length > 0) names.add(pn);
+      continue;
+    }
+    if (kind === "AI_RESPONSE" || kind === "AI") {
+      const structured = parseAiResponseStructuredMeta(msg.metadata);
+      for (const rp of structured.recommendedPlaces ?? []) {
+        const pn =
+          typeof rp.photoName === "string" ? rp.photoName.trim() : "";
+        if (pn.length > 0) names.add(pn);
+      }
+    }
+  }
+  return [...names];
+}
+
+/** 메타에 `photoName`이 없어 디테일로 보강하는 AI 추천 — 히스토리 선warming용 */
+export function collectGooglePlaceIdsForAiPhotoBackfill(
+  messages: ServerChatMessage[],
+): string[] {
+  const ids = new Set<string>();
+  for (const msg of messages) {
+    const kind = normalizeMessageKind(msg.messageType);
+    if (kind !== "AI_RESPONSE" && kind !== "AI") continue;
+    const structured = parseAiResponseStructuredMeta(msg.metadata);
+    for (const rp of structured.recommendedPlaces ?? []) {
+      const pid = typeof rp.placeId === "string" ? rp.placeId.trim() : "";
+      if (pid.length === 0) continue;
+      const pn =
+        typeof rp.photoName === "string" ? rp.photoName.trim() : "";
+      if (pn.length > 0) continue;
+      ids.add(pid);
+    }
+  }
+  return [...ids];
+}
+
 export function serverMessageToChatMessage(
   msg: ServerChatMessage,
   currentUserId: number | undefined,

@@ -6,6 +6,7 @@ import {
   placePhotoUrlQueryKey,
   roomCoverPhotoNameKey,
 } from "@/lib/room-cover-query";
+import { placePhotoUrlQueryDefaults } from "@/lib/place-photo-query";
 
 const DEFAULT_SEARCH_CENTER = { lat: 37.5665, lng: 126.978 };
 
@@ -15,7 +16,10 @@ const GEO_OPTIONS: PositionOptions = {
   timeout: 4_000,
 };
 
-async function resolveRoughSearchCoords(): Promise<{ lat: number; lng: number }> {
+async function resolveRoughSearchCoords(): Promise<{
+  lat: number;
+  lng: number;
+}> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return DEFAULT_SEARCH_CENTER;
   }
@@ -31,22 +35,13 @@ async function resolveRoughSearchCoords(): Promise<{ lat: number; lng: number }>
   });
 }
 
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-const photoQueryDefaults = {
-  staleTime: Infinity,
-  gcTime: ONE_WEEK_MS,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-} as const;
-
 export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   return useQuery({
     queryKey: placePhotoUrlQueryKey(name),
     queryFn: () => getPlacePhotoUrl(name),
     enabled: name.length > 0,
-    ...photoQueryDefaults,
+    ...placePhotoUrlQueryDefaults,
   });
 }
 
@@ -72,7 +67,7 @@ export function useRoomCoverPhotoName(room: RoomListItem) {
       return raw.length > 0 ? raw : null;
     },
     enabled: id.length > 0 && dest.length > 0,
-    ...photoQueryDefaults,
+    ...placePhotoUrlQueryDefaults,
   });
 }
 

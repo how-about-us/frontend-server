@@ -41,14 +41,13 @@ function AiRecommendedPlaceRow({
     enabled: needsDetail && place.placeId.trim().length > 0,
     staleTime: 5 * 60_000,
   });
-  const photoName =
-    fromMeta || enriched?.photoName?.trim() || "";
+  const photoName = fromMeta || enriched?.photoName?.trim() || "";
   const displayRating =
-    place.rating !== undefined ? place.rating : enriched?.rating ?? null;
+    place.rating !== undefined ? place.rating : (enriched?.rating ?? null);
   const displayReviewCount =
-    place.userRatingCount !== undefined ?
-      place.userRatingCount
-    : enriched?.userRatingCount ?? null;
+    place.userRatingCount !== undefined
+      ? place.userRatingCount
+      : (enriched?.userRatingCount ?? null);
 
   function handleClick() {
     setMapCenter({ lat: place.lat, lng: place.lng });
@@ -75,7 +74,7 @@ function AiRecommendedPlaceRow({
         isMinimized={isMinimized}
         onClick={handleClick}
       />
-      {place.reason ?
+      {place.reason ? (
         <p
           className={cn(
             "max-w-[260px]",
@@ -85,7 +84,7 @@ function AiRecommendedPlaceRow({
         >
           <AiHighlightedText text={place.reason} />
         </p>
-      : null}
+      ) : null}
     </div>
   );
 }
@@ -113,16 +112,16 @@ export function AiRecommendedPlacesList({
         className,
       )}
     >
-      {heading?.title ?
+      {heading?.title ? (
         <div className={titleCls}>
           <AiHighlightedText text={heading.title} />
         </div>
-      : null}
-      {heading?.subtitle ?
+      ) : null}
+      {heading?.subtitle ? (
         <div className={subtitleCls}>
           <AiHighlightedText text={heading.subtitle} />
         </div>
-      : null}
+      ) : null}
       <div className="flex flex-col gap-4">
         {places.map((p) => (
           <AiRecommendedPlaceRow

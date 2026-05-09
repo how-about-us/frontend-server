@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import {
   deriveAiRequestConversationState,
@@ -14,8 +15,23 @@ import { getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
+import { warmPlacePhotoQueriesFromChatHistory } from "@/lib/places/warmChatHistoryPlacePhotos";
 
-export function useChatMessages(roomId: string | null) {
+export type UseChatMessagesOptions = {
+  /**
+   * `false`: 패널 닫힘 — GET 없음. STOMP만 유지.
+   * `true`: 이 `roomId`에 대해 **이번 페이지 수명 내 아직 GET을 한 적 없을 때만** 히스토리 GET.
+   * (닫았다 다시 열 때는 같은 방이면 재요청 안 함.)
+   */
+  fetchHistory: boolean;
+};
+
+export function useChatMessages(
+  roomId: string | null,
+  options: UseChatMessagesOptions,
+) {
+  const { fetchHistory } = options;
+  const queryClient = useQueryClient();
   const { setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
   const { data: membersData } = useRoomMembers(roomId);
@@ -26,6 +42,10 @@ export function useChatMessages(roomId: string | null) {
     sendPlaceMessage,
     sendCancelAiRequest,
   } = useChatActions();
+
+  const prevRoomForHistoryGateRef = useRef<string | null>(null);
+  /** 같은 탭·새로고침 전까지 `roomId`별 히스토리 GET 1회만 */
+  const historyFetchedRoomIdsRef = useRef<Set<string>>(new Set());
 
   const memberMap = useMemo(() => {
     const members = membersData?.members;
@@ -74,30 +94,53 @@ export function useChatMessages(roomId: string | null) {
   useEffect(() => {
     if (!roomId) {
       setRawMessages([]);
+      prevRoomForHistoryGateRef.current = null;
+      historyFetchedRoomIdsRef.current.clear();
+      return;
+    }
+
+    if (!fetchHistory) {
+      const prevR = prevRoomForHistoryGateRef.current;
+      if (prevR !== null && prevR !== roomId) {
+        setRawMessages([]);
+      }
+      prevRoomForHistoryGateRef.current = roomId;
+      return;
+    }
+
+    prevRoomForHistoryGateRef.current = roomId;
+
+    if (historyFetchedRoomIdsRef.current.has(roomId)) {
       return;
     }
 
     setRawMessages([]);
     let cancelled = false;
 
-    getRoomMessages(roomId).then((history) => {
-      if (cancelled) return;
-      const normalizedHistory = history.map(
-        (row) => normalizeServerChatMessage(row) ?? row,
-      );
-      setRawMessages((prev) => {
-        const systemDuringFetch = prev.filter((m) => {
-          const k = normalizeMessageKind(m.messageType);
-          return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
+    getRoomMessages(roomId)
+      .then((history) => {
+        if (cancelled) return;
+        const normalizedHistory = history.map(
+          (row) => normalizeServerChatMessage(row) ?? row,
+        );
+        setRawMessages((prev) => {
+          const systemDuringFetch = prev.filter((m) => {
+            const k = normalizeMessageKind(m.messageType);
+            return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
+          });
+          return mergeServerMessageLists(normalizedHistory, systemDuringFetch);
         });
-        return mergeServerMessageLists(normalizedHistory, systemDuringFetch);
+        historyFetchedRoomIdsRef.current.add(roomId);
+        void warmPlacePhotoQueriesFromChatHistory(queryClient, normalizedHistory);
+      })
+      .catch(() => {
+        /* 실패 시 Set에 넣지 않음 → 다음 패널 오픈 시 재시도 */
       });
-    });
 
     return () => {
       cancelled = true;
     };
-  }, [roomId]);
+  }, [roomId, fetchHistory]);
 
   useEffect(() => {
     if (!roomId) {
