@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
@@ -36,6 +36,15 @@ export function PlanItemTimeForm({
   const [durationStr, setDurationStr] = useState(String(durationMinutes));
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
+  const serverHm = normalizeStartTimeToHm(startTime);
+  useEffect(() => {
+    setTimeHm(serverHm);
+  }, [serverHm]);
+
+  useEffect(() => {
+    setDurationStr(String(durationMinutes));
+  }, [durationMinutes]);
+
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
     if (!Number.isFinite(dm) || dm < 0) {
@@ -67,13 +76,43 @@ export function PlanItemTimeForm({
     <div className="flex flex-wrap items-end gap-3">
       <label className="flex flex-col gap-1">
         <span className="text-[11px] text-dark-gray">시작</span>
-        <input
-          type="time"
-          value={timeHm}
-          onChange={(e) => setTimeHm(e.target.value)}
-          className={inputClass}
-          disabled={isPending}
-        />
+        {!timeHm ? (
+          <div
+            className={cn(
+              "relative flex min-h-[2.375rem] items-center",
+              inputClass,
+              !isPending && "cursor-pointer",
+              isPending && "pointer-events-none opacity-70",
+            )}
+          >
+            <span
+              className="pointer-events-none text-sm tabular-nums tracking-wide text-dark-gray"
+              aria-hidden
+            >
+              -- : --
+            </span>
+            <input
+              type="time"
+              aria-label="시작 시각"
+              value=""
+              disabled={isPending}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) setTimeHm(v);
+              }}
+              className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            />
+          </div>
+        ) : (
+          <input
+            type="time"
+            aria-label="시작 시각"
+            value={timeHm}
+            onChange={(e) => setTimeHm(e.target.value)}
+            className={cn(inputClass, "[color-scheme:light]")}
+            disabled={isPending}
+          />
+        )}
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-[11px] text-dark-gray">체류(분)</span>

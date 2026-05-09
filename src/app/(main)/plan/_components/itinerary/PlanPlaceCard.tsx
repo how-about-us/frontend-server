@@ -12,7 +12,6 @@ import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_WIDE_TW } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";
-import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";
 import { cn } from "@/lib/utils";
 
 import { PlanItemTimeForm } from "./PlanItemTimeForm";
@@ -31,8 +30,6 @@ export type PlanPlaceCardProps = {
   scheduleTimeEdit?: {
     roomId: string;
     scheduleId: number;
-    /** `slotStartTimeHm` 폴백용 0-based 인덱스 */
-    slotIndex: number;
   };
   onDragStart: (e: DragEvent<Element>) => void;
   onDragEnd: (e: DragEvent<Element>) => void;
@@ -248,13 +245,11 @@ export function PlanPlaceCard({
             onClick={(e) => e.stopPropagation()}
           >
             <PlanItemTimeForm
-              key={`${scheduleTimeEdit.scheduleId}-${place.itemId}-${place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)}-${place.durationMinutes ?? 0}`}
+              key={`${scheduleTimeEdit.scheduleId}-${place.itemId}`}
               roomId={scheduleTimeEdit.roomId}
               scheduleId={scheduleTimeEdit.scheduleId}
               itemId={place.itemId}
-              startTime={
-                place.startTime ?? slotStartTimeHm(scheduleTimeEdit.slotIndex)
-              }
+              startTime={place.startTime ?? ""}
               durationMinutes={place.durationMinutes ?? 0}
             />
           </div>

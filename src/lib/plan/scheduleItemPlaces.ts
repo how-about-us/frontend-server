@@ -6,10 +6,11 @@ import {
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
+import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
 
 /** `orderIndex` 기준 정렬(비변형) */
-function sortRoomScheduleItemsByOrder(
+export function sortRoomScheduleItemsByOrder(
   items: RoomScheduleItem[],
 ): RoomScheduleItem[] {
   return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -43,11 +44,16 @@ function mergeScheduleItemsIntoPlanPlaces(
   for (const item of sorted) {
     const existing = byId.get(item.itemId);
     if (!existing) return null;
+    const hasServerStart =
+      typeof item.startTime === "string" && item.startTime.trim().length > 0;
+    const serverDurationOk =
+      typeof item.durationMinutes === "number" &&
+      Number.isFinite(item.durationMinutes);
     out.push({
       ...existing,
       googlePlaceId: item.googlePlaceId,
-      startTime: item.startTime,
-      durationMinutes: item.durationMinutes,
+      startTime: hasServerStart ? item.startTime : existing.startTime,
+      durationMinutes: serverDurationOk ? item.durationMinutes : existing.durationMinutes,
       travelMode: item.travelMode,
     });
   }
@@ -83,6 +89,124 @@ export async function mergeOrRefetchSchedulePlanPlacesFromItems(
 export function slotStartTimeHm(itemIndex: number): string {
   const hour = Math.min(8 + itemIndex, 22);
   return `${String(hour).padStart(2, "0")}:00`;
+}
+
+/** 일차 항목들 중 유효한 시작 시각이 가장 이른 `HH:mm` — 리오더 시 1번 칸 기준이 뒷줄로 밀려 올라가지 않도록 앵커로 씁니다. */
+function earliestAnchoredHmFromScheduleItems(items: RoomScheduleItem[]): string {
+  let minM: number | null = null;
+  for (const it of items) {
+    const hm = normalizeStartTimeToHm(it.startTime ?? "");
+    if (!hm) continue;
+    const m = hmToMinutesSinceMidnight(hm);
+    if (m === null) continue;
+    if (minM === null || m < minM) minM = m;
+  }
+  if (minM === null) return slotStartTimeHm(0);
+  return minutesSinceMidnightToHm(minM);
+}
+
+/**
+ * 리오더 후 이전 항목 `시작 + 체류`로 시작 시각을 이어 붙입니다.
+ * 1번 칸 시작은 현재 목록 안에서 **가장 이른 시작 시각**(앵커)으로 고정해, 순서 변경만 할 때 기준이 늘지 않습니다.
+ */
+export function buildChainedStartPatchesForReorder(
+  items: RoomScheduleItem[],
+): Array<{ itemId: number; startTime: string; durationMinutes: number }> {
+  const sorted = sortRoomScheduleItemsByOrder(items);
+  if (sorted.length === 0) return [];
+
+  const anchorHm = earliestAnchoredHmFromScheduleItems(sorted);
+
+  const patches: Array<{
+    itemId: number;
+    startTime: string;
+    durationMinutes: number;
+  }> = [];
+
+  let prevStartHm = anchorHm;
+  let prevDur =
+    typeof sorted[0].durationMinutes === "number" &&
+    Number.isFinite(sorted[0].durationMinutes) ?
+      sorted[0].durationMinutes
+    : 0;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const item = sorted[i];
+    const dur =
+      typeof item.durationMinutes === "number" &&
+      Number.isFinite(item.durationMinutes) ?
+        item.durationMinutes
+      : 0;
+
+    const targetHm =
+      i === 0 ? anchorHm : addMinutesToHm(prevStartHm, prevDur);
+
+    const currentHm = normalizeStartTimeToHm(item.startTime);
+    if (currentHm !== targetHm) {
+      patches.push({
+        itemId: item.itemId,
+        startTime: targetHm,
+        durationMinutes: dur,
+      });
+    }
+
+    prevStartHm = targetHm;
+    prevDur = dur;
+  }
+
+  return patches;
+}
+
+/** 화면 순서 유지 `PlanPlace[]` 기준: 마지막 카드 시작 + 1시간, 없으면 슬롯 폴백. */
+export function defaultNewItemStartTimeHmFromPlanPlaces(
+  places: PlanPlace[],
+): string {
+  if (places.length === 0) return slotStartTimeHm(0);
+  const last = places[places.length - 1];
+  const hm = normalizeStartTimeToHm(last.startTime ?? "");
+  if (!hm) return slotStartTimeHm(places.length);
+  return addMinutesToHm(hm, 60);
+}
+
+/** `orderIndex` 정렬된 항목 목록 기준: 마지막 카드 시작 + 1시간. */
+export function defaultNewItemStartTimeHmFromScheduleItems(
+  items: RoomScheduleItem[],
+): string {
+  const sorted = sortRoomScheduleItemsByOrder(items);
+  if (sorted.length === 0) return slotStartTimeHm(0);
+  const last = sorted[sorted.length - 1];
+  const hm = normalizeStartTimeToHm(last.startTime);
+  if (!hm) return slotStartTimeHm(sorted.length);
+  return addMinutesToHm(hm, 60);
+}
+
+/** PATCH 응답 한 건으로 로컬 PlanPlace 캐시만 갱신(같은 목록에 itemId가 있을 때). */
+export function applyRoomScheduleItemToPlanPlaces(
+  prev: PlanPlace[] | undefined,
+  updated: RoomScheduleItem,
+): PlanPlace[] | null {
+  if (!prev || prev.length === 0) return null;
+  let found = false;
+  const out = prev.map((p) => {
+    if (p.itemId !== updated.itemId) return p;
+    found = true;
+    const hasServerStart =
+      typeof updated.startTime === "string" &&
+      updated.startTime.trim().length > 0;
+    const serverDurationOk =
+      typeof updated.durationMinutes === "number" &&
+      Number.isFinite(updated.durationMinutes);
+    return {
+      ...p,
+      googlePlaceId: updated.googlePlaceId,
+      startTime: hasServerStart ? updated.startTime : p.startTime,
+      durationMinutes: serverDurationOk
+        ? updated.durationMinutes
+        : p.durationMinutes,
+      travelMode: updated.travelMode,
+    };
+  });
+  return found ? out : null;
 }
 
 /** 드래그를 `toIndex` 자리에 놓았을 때 PATCH에 넣을 `newOrderIndex`(0-based) */

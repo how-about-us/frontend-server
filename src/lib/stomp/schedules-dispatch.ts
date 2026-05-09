@@ -69,6 +69,49 @@ function bumpMapForRouteSources(
   );
 }
 
+/** 연속 `SCHEDULE_ITEM_UPDATED` 마다 `/items` GET이 나가지 않도록 같은 일차는 한 번으로 묶음 */
+const syncSchedulePlacesFromItemsDebouncers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+const DEBOUNCE_ITEMS_GET_MS = 90;
+
+function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
+  queryClient: QueryClient,
+  rid: string,
+  sid: number,
+): void {
+  const mapKey = `${rid}:${sid}`;
+  const pending = syncSchedulePlacesFromItemsDebouncers.get(mapKey);
+  if (pending !== undefined) clearTimeout(pending);
+  syncSchedulePlacesFromItemsDebouncers.set(
+    mapKey,
+    setTimeout(() => {
+      syncSchedulePlacesFromItemsDebouncers.delete(mapKey);
+      void (async () => {
+        const epochStore = usePlanMapDirectionsEpochStore.getState();
+        try {
+          const rows = await getScheduleItems(rid, sid);
+          await mergeOrRefetchSchedulePlanPlacesFromItems(
+            queryClient,
+            rid,
+            sid,
+            rows,
+          );
+          await invalidateScheduleItemRouteForWholeSchedule(
+            queryClient,
+            rid,
+            sid,
+          );
+          epochStore.bumpForDirections(rid);
+        } catch {
+          //
+        }
+      })();
+    }, DEBOUNCE_ITEMS_GET_MS),
+  );
+}
+
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
  * — `room-schedules` CREATE: 다른 클라이언트만 무효화(GET); 액터는 POST `onSuccess` 머지로 레이스 방지
@@ -181,13 +224,23 @@ export async function dispatchRoomScheduleEvent(
         rid,
         sid,
       );
-      const items = await getScheduleItems(rid, sid);
-      await mergeOrRefetchSchedulePlanPlacesFromItems(
-        queryClient,
-        rid,
-        sid,
-        items,
-      );
+      const me = useSessionStore.getState().user?.id;
+      const hydrateFromApi =
+        !(
+          typeof me === "number" &&
+          Number.isFinite(me) &&
+          event.actorUserId === me
+        );
+
+      if (hydrateFromApi) {
+        const items = await getScheduleItems(rid, sid);
+        await mergeOrRefetchSchedulePlanPlacesFromItems(
+          queryClient,
+          rid,
+          sid,
+          items,
+        );
+      }
       const newIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,
@@ -214,28 +267,33 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(rid, sid),
-        refetchType: "active",
-      });
-      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      const me = useSessionStore.getState().user?.id;
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        event.actorUserId === me;
 
-      const newIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
-      const { sources, useFallback } = collectSegmentSourcesForCreate(
-        newIds,
-        itemId,
-      );
-      if (useFallback) {
-        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
-        epochStore.bumpForDirections(rid);
-      } else {
-        await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
-        bumpMapForRouteSources(rid, sid, sources);
+      if (actorIsMe) {
+        const newIds = readOrderedItemIdsFromScheduleItemsCache(
+          queryClient,
+          rid,
+          sid,
+        );
+        const { sources, useFallback } = collectSegmentSourcesForCreate(
+          newIds,
+          itemId,
+        );
+        if (useFallback) {
+          await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+          epochStore.bumpForDirections(rid);
+        } else {
+          await invalidateScheduleItemRouteForSources(queryClient, rid, sid, sources);
+          bumpMapForRouteSources(rid, sid, sources);
+        }
+        return;
       }
+
+      enqueueDebouncedHydratePlacesFromScheduleItemsApi(queryClient, rid, sid);
       return;
     }
   }

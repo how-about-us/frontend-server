@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { getScheduleItems } from "@/lib/api/rooms";
 import { useCreateScheduleItem, useRoomSchedules } from "@/hooks/useRooms";
+import { defaultNewItemStartTimeHmFromScheduleItems } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   formatKoreanDateLabel,
@@ -55,7 +56,7 @@ export function AddToScheduleModal({
         roomId: rid,
         scheduleId,
         googlePlaceId,
-        nextSlotIndex: items.length,
+        startTimeHm: defaultNewItemStartTimeHmFromScheduleItems(items),
       });
       toast.success("일정에 추가했어요.");
       onAdded?.();

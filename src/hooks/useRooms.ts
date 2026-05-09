@@ -6,6 +6,8 @@ import {
 import { usePathname } from "next/navigation";
 
 import { useStompContext } from "@/contexts/StompContext";
+import { toast } from "sonner";
+
 import {
   HttpError,
   approveJoinRequest,
@@ -15,6 +17,7 @@ import {
   createRoomSchedule,
   createScheduleItem,
   deleteScheduleItem,
+  getScheduleItems,
   reorderScheduleItem,
   updateScheduleItem,
   deleteRoomBookmark,
@@ -49,9 +52,11 @@ import {
   type RoomSchedule,
 } from "@/lib/api/rooms";
 import {
+  applyRoomScheduleItemToPlanPlaces,
+  buildChainedStartPatchesForReorder,
   fetchScheduleItemsAsPlanPlaces,
   mergeOrRefetchSchedulePlanPlacesFromItems,
-  slotStartTimeHm,
+  sortRoomScheduleItemsByOrder,
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
@@ -72,6 +77,7 @@ import {
 } from "@/lib/stomp/stompPathPolicy";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
+import type { PlanPlace } from "@/lib/plan/types";
 import { useSessionStore } from "@/stores/session-store";
 
 export function useRoomsList() {
@@ -199,17 +205,18 @@ export function useCreateScheduleItem() {
       roomId: string;
       scheduleId: number;
       googlePlaceId: string;
-      nextSlotIndex: number;
+      startTimeHm: string;
     }) =>
       createScheduleItem(vars.roomId, vars.scheduleId, {
         googlePlaceId: vars.googlePlaceId,
-        startTime: slotStartTimeHm(vars.nextSlotIndex),
+        startTime: vars.startTimeHm,
         durationMinutes: 60,
       }),
   });
 }
 
 export function useUpdateScheduleItem() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -223,6 +230,21 @@ export function useUpdateScheduleItem() {
         vars.itemId,
         vars.body,
       ),
+    onSuccess: (updated, { roomId, scheduleId }) => {
+      const rid = roomId.trim();
+      if (!rid.length) return;
+      const key = scheduleItemsQueryKey(rid, scheduleId);
+      const prev = queryClient.getQueryData<PlanPlace[]>(key);
+      const merged = applyRoomScheduleItemToPlanPlaces(prev, updated);
+      if (merged) {
+        queryClient.setQueryData(key, merged);
+      } else {
+        void queryClient.invalidateQueries({
+          queryKey: key,
+          refetchType: "active",
+        });
+      }
+    },
   });
 }
 
@@ -251,12 +273,51 @@ export function useReorderScheduleItem() {
         vars.itemId,
         vars.body,
       ),
-    onSuccess: (items, { roomId, scheduleId }) => {
-      void mergeOrRefetchSchedulePlanPlacesFromItems(
+    onSuccess: async (items, { roomId, scheduleId }) => {
+      const rid = roomId.trim();
+      if (!rid.length) return;
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
         queryClient,
         roomId,
         scheduleId,
         items,
+      );
+
+      const patches = buildChainedStartPatchesForReorder(items);
+      if (patches.length === 0) return;
+
+      const snapshot = sortRoomScheduleItemsByOrder(items);
+      const byItemId = new Map(snapshot.map((it) => [it.itemId, it]));
+
+      try {
+        for (const p of patches) {
+          const updated = await updateScheduleItem(rid, scheduleId, p.itemId, {
+            startTime: p.startTime,
+            durationMinutes: p.durationMinutes,
+          });
+          byItemId.set(updated.itemId, updated);
+        }
+      } catch {
+        toast.error("순서에 맞게 시작 시간을 바꾸지 못했어요.");
+        try {
+          const fresh = await getScheduleItems(rid, scheduleId);
+          await mergeOrRefetchSchedulePlanPlacesFromItems(
+            queryClient,
+            roomId,
+            scheduleId,
+            fresh,
+          );
+        } catch {
+          //
+        }
+        return;
+      }
+
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        roomId,
+        scheduleId,
+        sortRoomScheduleItemsByOrder([...byItemId.values()]),
       );
     },
   });

@@ -17,16 +17,23 @@ import {
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
+import {
+  defaultNewItemStartTimeHmFromPlanPlaces,
+  newOrderIndexAfterMove,
+} from "@/lib/plan/scheduleItemPlaces";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
+import type { PlanPlace } from "@/lib/plan/types";
+
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { PlanPlaceCard } from "./PlanPlaceCard";
 
 const DND_INDEX_MIME = "application/x-plan-item-index";
+
+const EMPTY_PLAN_PLACES: PlanPlace[] = [];
 
 export type PlanItineraryProps = {
   roomId: string;
@@ -67,7 +74,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     isError,
   } = useSchedulePlanPlaces(roomId, scheduleId);
 
-  const places = placesData ?? [];
+  const places = placesData ?? EMPTY_PLAN_PLACES;
 
   const existingItemIds = useMemo(
     () =>
@@ -98,13 +105,13 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
           roomId,
           scheduleId,
           googlePlaceId,
-          nextSlotIndex: places.length,
+          startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(places),
         });
       } catch {
         toast.error("장소를 일정에 추가하지 못했어요.");
       }
     },
-    [createItem, places.length, roomId, scheduleId],
+    [createItem, places, roomId, scheduleId],
   );
 
   const handleDragStart = useCallback(
@@ -220,7 +227,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               orderIndex={index + 1}
               orderBadgeColor={orderBadgeColor}
               dragDisabled={dragLocked || typeof place.itemId !== "number"}
-              scheduleTimeEdit={{ roomId, scheduleId, slotIndex: index }}
+              scheduleTimeEdit={{ roomId, scheduleId }}
               isDragging={dragFromIndex === index}
               isDropTarget={
                 dropTargetIndex === index &&
