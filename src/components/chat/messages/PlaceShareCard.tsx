@@ -1,8 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-
-import { getPlacePhotoUrl } from "@/lib/api/places";
+import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
@@ -29,12 +27,7 @@ export function PlaceShareCard({
   const isMine =
     myId != null && senderUserId != null && senderUserId === myId;
 
-  const { data: imageUrl } = useQuery({
-    queryKey: ["place-photo", place?.photoName],
-    queryFn: () => getPlacePhotoUrl(place!.photoName),
-    enabled: Boolean(place?.photoName),
-    staleTime: 5 * 60_000,
-  });
+  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.photoName);
 
   if (!place) return null;
   const p = place;

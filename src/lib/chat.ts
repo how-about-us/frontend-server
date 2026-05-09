@@ -242,6 +242,28 @@ function parseOneRecommendedPlace(raw: unknown): AiRecommendedPlace | null {
     raw.googleMapsUri,
     raw.google_maps_uri,
   );
+  const photoName = pickString(
+    raw.photoName,
+    raw.photo_name,
+    raw.firstPhotoName,
+    raw.first_photo_name,
+  )?.trim();
+  const rating = parseFiniteNumber(
+    raw.rating ?? raw.userRating ?? raw.user_rating,
+  );
+  const userRatingCountRaw = parseFiniteNumber(
+    raw.userRatingCount ??
+      raw.user_rating_count ??
+      raw.reviewCount ??
+      raw.review_count ??
+      raw.userRatingsTotal ??
+      raw.user_ratings_total,
+  );
+  const userRatingCount =
+    userRatingCountRaw !== undefined &&
+    Number.isFinite(userRatingCountRaw) ?
+      Math.max(0, Math.round(userRatingCountRaw))
+    : undefined;
 
   return {
     placeId,
@@ -249,6 +271,9 @@ function parseOneRecommendedPlace(raw: unknown): AiRecommendedPlace | null {
     address,
     lat,
     lng,
+    ...(photoName ? { photoName } : {}),
+    ...(rating !== undefined && Number.isFinite(rating) ? { rating } : {}),
+    ...(userRatingCount !== undefined ? { userRatingCount } : {}),
     ...(primaryType ? { primaryType } : {}),
     ...(reason ? { reason } : {}),
     ...(googleMapsUri ? { googleMapsUri } : {}),

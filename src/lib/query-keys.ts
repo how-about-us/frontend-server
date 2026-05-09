@@ -53,6 +53,16 @@ export function bookmarkMapPinPlaceQueryKey(
   return [BOOKMARK_MAP_PIN_PLACE, roomId, bookmarkId] as const;
 }
 
+const AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT =
+  "ai-recommended-place-enrichment" as const;
+
+/** AI 장소 추천 카드 — 메타 결손 시 `resolvePlaceCardEnrichmentFromPlaceId` 쿼리 */
+export function aiRecommendedPlaceEnrichmentQueryKey(googlePlaceId: string) {
+  const id =
+    typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  return [AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT, id] as const;
+}
+
 // ─── Plan itinerary map path ─────────────────────────────────────────────────
 
 const PLAN_ITINERARY_MAP_PATH_CACHE_VERSION = "orient-v1" as const;

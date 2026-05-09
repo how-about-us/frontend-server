@@ -1,10 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-  getPlaceDetail,
-  getPlacePhotoUrl,
-  searchPlaces,
-} from "@/lib/api/places";
+import { getPlacePhotoUrl, searchPlaces } from "@/lib/api/places";
 import type { RoomListItem } from "@/lib/api/rooms";
 import {
   placePhotoUrlQueryKey,
@@ -78,21 +74,6 @@ export function useRoomCoverPhotoName(room: RoomListItem) {
     enabled: id.length > 0 && dest.length > 0,
     ...photoQueryDefaults,
   });
-}
-
-/** Autocomplete 선택 직후: place 상세에서 첫 사진 리소스 이름. */
-export async function resolveCoverPhotoNameFromPlaceId(
-  googlePlaceId: string,
-): Promise<string | null> {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  if (!id) return null;
-  try {
-    const detail = await getPlaceDetail(id);
-    const first = detail.photoNames?.[0]?.trim() ?? "";
-    return first.length > 0 ? first : null;
-  } catch {
-    return null;
-  }
 }
 
 /** placeId 없을 때 제출용: 검색 첫 결과의 photoName */

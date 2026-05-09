@@ -21,6 +21,10 @@ export interface AiRecommendedPlace {
   address: string;
   lat: number;
   lng: number;
+  /** `GET /places/photos?photoName=` — 없으면 클라이언트가 placeId로 보강 시도 */
+  photoName?: string;
+  rating?: number;
+  userRatingCount?: number;
   primaryType?: string;
   reason?: string;
   googleMapsUri?: string;

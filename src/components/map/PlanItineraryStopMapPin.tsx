@@ -8,6 +8,8 @@ const PIN_SIZE_PX = 36;
 export type PlanItineraryStopMapPinProps = {
   /** 표시 순번 (1부터). 호출부에서 `orderIdx + 1` 전달 권장 */
   orderLabel: number;
+  /** 폴리라인 일차색과 동일한 hex. 없으면 brand-red와 동등 */
+  pinColor?: string;
   className?: string;
 };
 
@@ -16,18 +18,24 @@ export type PlanItineraryStopMapPinProps = {
  */
 export function PlanItineraryStopMapPin({
   orderLabel,
+  pinColor,
   className,
 }: PlanItineraryStopMapPinProps) {
   const twoDigits = orderLabel >= 10;
+  const trimmed = typeof pinColor === "string" ? pinColor.trim() : "";
 
   return (
     <span
       className={cn(
-        "relative inline-block text-brand-red drop-shadow-md",
+        "relative inline-block drop-shadow-md",
+        trimmed.length === 0 && "text-brand-red",
         className,
       )}
     >
-      <MapPinIconWithoutCircle size={PIN_SIZE_PX} />
+      <MapPinIconWithoutCircle
+        size={PIN_SIZE_PX}
+        color={trimmed.length > 0 ? trimmed : "currentColor"}
+      />
       <span
         className={cn(
           "pointer-events-none absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 font-semibold tabular-nums leading-none tracking-tight text-white",

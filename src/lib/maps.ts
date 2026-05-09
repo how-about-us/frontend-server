@@ -168,22 +168,50 @@ export async function fetchPlanSegmentPathLatLng(
 }
 
 /**
- * 폴리라인顶点 인덱스 **감소** 방향을 가리키는 닫힌 화살표 (`SymbolPath.BACKWARD_CLOSED_ARROW` = 0).
+ * 라인색에 맞춰 폴리라인 화살표 테두리를 어둡게 한다.
  */
-export const PLAN_ITINERARY_ROUTE_ARROW_ICONS: google.maps.IconSequence[] = [
-  {
-    icon: {
-      path: 1 satisfies google.maps.SymbolPath,
-      fillColor: "#ffffff",
-      fillOpacity: 0.96,
-      strokeColor: "#d61f25",
-      strokeOpacity: 0.95,
-      strokeWeight: 1.5,
-      scale: 3,
+function mixRgbTowardsBlack(hex: string, blend: number): string {
+  const h = hex.replace(/^#/, "").trim();
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return "#591016";
+  const r = Number.parseInt(h.slice(0, 2), 16);
+  const g = Number.parseInt(h.slice(2, 4), 16);
+  const b = Number.parseInt(h.slice(4, 6), 16);
+  const t = Math.max(0, Math.min(1, blend));
+  return `#${[r, g, b]
+    .map((c) =>
+      Math.round(c * (1 - t)).toString(16).padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
+/**
+ * 폴리라인·일차 라인색에 맞춘 화살표 아이콘 시퀀스 (`SymbolPath.BACKWARD_CLOSED_ARROW` = path 1).
+ */
+export function buildPlanItineraryRouteArrowIcons(
+  routeStrokeHex: string,
+): google.maps.IconSequence[] {
+  const strokeDark = mixRgbTowardsBlack(routeStrokeHex.trim(), 0.22);
+  return [
+    {
+      icon: {
+        path: 1 satisfies google.maps.SymbolPath,
+        fillColor: "#ffffff",
+        fillOpacity: 0.96,
+        strokeColor: strokeDark,
+        strokeOpacity: 0.95,
+        strokeWeight: 1.5,
+        scale: 3,
+      },
+      repeat: "70px",
     },
-    repeat: "70px",
-  },
-];
+  ];
+}
+
+/**
+ * 레거시 기본 라인색용; 신규는 {@link buildPlanItineraryRouteArrowIcons}.
+ */
+export const PLAN_ITINERARY_ROUTE_ARROW_ICONS: google.maps.IconSequence[] =
+  buildPlanItineraryRouteArrowIcons("#f12d33");
 
 export async function fetchPlanItineraryMapPathsBundle(
   queryClient: QueryClient,

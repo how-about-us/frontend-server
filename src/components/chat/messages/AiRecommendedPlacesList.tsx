@@ -1,5 +1,7 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import {
@@ -7,6 +9,8 @@ import {
   chatAiBubbleBlockTitleClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { aiRecommendedPlaceEnrichmentQueryKey } from "@/lib/query-keys";
+import { resolvePlaceCardEnrichmentFromPlaceId } from "@/lib/places/placeCardEnrichment";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import type {
   AiPlaceRecommendationHeading,
@@ -24,12 +28,34 @@ function AiRecommendedPlaceRow({
   const { setSelectedPlace } = useSelectedPlace();
   const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
 
+  const fromMeta =
+    typeof place.photoName === "string" ? place.photoName.trim() : "";
+  const needsDetail =
+    fromMeta.length === 0 ||
+    place.rating === undefined ||
+    place.userRatingCount === undefined;
+  const { data: enriched } = useQuery({
+    queryKey: aiRecommendedPlaceEnrichmentQueryKey(place.placeId),
+    queryFn: () => resolvePlaceCardEnrichmentFromPlaceId(place.placeId),
+    enabled: needsDetail && place.placeId.trim().length > 0,
+    staleTime: 5 * 60_000,
+  });
+  const photoName =
+    fromMeta || enriched?.photoName?.trim() || "";
+  const displayRating =
+    place.rating !== undefined ? place.rating : enriched?.rating ?? null;
+  const displayReviewCount =
+    place.userRatingCount !== undefined ?
+      place.userRatingCount
+    : enriched?.userRatingCount ?? null;
+
   function handleClick() {
     setMapCenter({ lat: place.lat, lng: place.lng });
     setSelectedPlace({
       name: place.name,
       category: place.primaryType ?? "",
-      rating: null,
+      rating: displayRating ?? null,
+      userRatingCount: displayReviewCount,
       address: place.address,
       googlePlaceId: place.placeId,
       location: { lat: place.lat, lng: place.lng },
@@ -42,8 +68,9 @@ function AiRecommendedPlaceRow({
       <OgPlacePreviewCard
         name={place.name}
         formattedAddress={place.address}
-        photoName=""
-        rating={0}
+        photoName={photoName}
+        rating={displayRating}
+        userRatingCount={displayReviewCount}
         isMinimized={isMinimized}
         onClick={handleClick}
       />

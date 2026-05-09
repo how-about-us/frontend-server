@@ -1,4 +1,12 @@
-import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
+import { readUserFacingMessageFromApiBody } from "@/lib/api/errors";
+import { apiFetch } from "@/lib/api/client";
+import {
+  apiUrl,
+  jsonBody,
+  requestJson,
+  requestVoid,
+  tryParseJson,
+} from "@/lib/api/http";
 import type {
   RoomCreateRequest,
   RoomCreateResponse,
@@ -10,11 +18,16 @@ import type {
 export async function createRoom(
   data: RoomCreateRequest,
 ): Promise<RoomCreateResponse> {
-  return requestJson(
-    apiUrl("/rooms"),
-    { method: "POST", ...jsonBody(data) },
-    { errorMessage: "방 생성 실패" },
-  );
+  const res = await apiFetch(apiUrl("/rooms"), {
+    method: "POST",
+    ...jsonBody(data),
+  });
+  const parsed = await tryParseJson(res);
+  if (!res.ok) {
+    const fromBody = readUserFacingMessageFromApiBody(parsed);
+    throw new Error(fromBody ?? `방 생성 실패: ${res.status}`);
+  }
+  return parsed as RoomCreateResponse;
 }
 
 export async function getRooms(params?: {

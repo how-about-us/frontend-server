@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { MapPin, Star } from "lucide-react";
 
-import { getPlacePhotoUrl } from "@/lib/api/places";
+import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +10,9 @@ export type OgPlacePreviewCardProps = {
   name: string;
   formattedAddress: string;
   photoName: string;
-  rating: number;
+  /** Google 평점. null/omit 시 "-" */
+  rating?: number | null;
+  userRatingCount?: number | null;
   isMinimized?: boolean;
   onClick: () => void;
   className?: string;
@@ -21,19 +22,15 @@ export function OgPlacePreviewCard({
   name,
   formattedAddress,
   photoName,
-  rating,
+  rating = null,
+  userRatingCount,
   isMinimized = false,
   onClick,
   className,
 }: OgPlacePreviewCardProps) {
   const typo = resolveChatMessageTypography(isMinimized);
 
-  const { data: imageUrl } = useQuery({
-    queryKey: ["place-photo", photoName],
-    queryFn: () => getPlacePhotoUrl(photoName),
-    enabled: Boolean(photoName?.trim()),
-    staleTime: 5 * 60_000,
-  });
+  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
 
   return (
     <button
@@ -78,16 +75,23 @@ export function OgPlacePreviewCard({
         <div className={cn("truncate", typo.placeTitle)}>
           {name}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0">
           <Star
             className={cn(
-              "fill-[#FDC700] text-[#FDC700]",
+              "shrink-0 fill-[#FDC700] text-[#FDC700]",
               isMinimized ? "h-2.5 w-2.5" : "h-3 w-3",
             )}
           />
           <span className={typo.placeRating}>
-            {rating ? rating.toFixed(1) : "-"}
+            {rating != null && Number.isFinite(rating) ?
+              rating.toFixed(1)
+            : "-"}
           </span>
+          {userRatingCount != null && Number.isFinite(userRatingCount) ?
+            <span className={cn("shrink-0", typo.placeAddress)}>
+              ({Math.round(userRatingCount).toLocaleString()})
+            </span>
+          : null}
         </div>
         {formattedAddress ?
           <div className="flex items-center gap-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock, Plus, Star } from "lucide-react";
+import { Check, Plus, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -271,23 +271,16 @@ export function AddToBookmarkModal({
                         "disabled:opacity-60",
                       )}
                     >
-                      <div className="relative shrink-0">
-                        <span
-                          className="relative flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-inner"
-                          style={{ backgroundColor: c.colorCode }}
-                          aria-hidden
-                        >
-                          <Star
-                            className="size-[1.125rem] fill-current text-white/95"
-                            strokeWidth={1.25}
-                          />
-                          <Lock
-                            className="pointer-events-none absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-white p-px text-neutral-900 ring-1 ring-black/15"
-                            strokeWidth={2.5}
-                            aria-hidden
-                          />
-                        </span>
-                      </div>
+                      <span
+                        className="flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-inner"
+                        style={{ backgroundColor: c.colorCode }}
+                        aria-hidden
+                      >
+                        <Star
+                          className="size-[1.125rem] fill-current text-white/95"
+                          strokeWidth={1.25}
+                        />
+                      </span>
                       <div className="min-w-0 flex-1">
                         <span className="text-sm font-medium text-neutral-900">
                           {c.name}

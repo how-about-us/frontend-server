@@ -1,10 +1,10 @@
 "use client";
 
+import { Bookmark } from "lucide-react";
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
-import { MapPinIcon } from "@/components/icons";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useBookmarkCategories } from "@/hooks/useRooms";
 import { getPlaceDetail } from "@/lib/api/places";
@@ -14,6 +14,9 @@ import {
   bookmarkMapPinPlaceQueryKey,
   roomBookmarksQueryKey,
 } from "@/lib/query-keys";
+
+/** 맵 북마크 마커 아이콘 테두리 (gray-400 계열) */
+const BOOKMARK_MAP_MARKER_STROKE = "#9ca3af";
 
 export type MapBookmarkPinsProps = {
   roomId: string | null;
@@ -139,10 +142,17 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
             }}
           >
             <span
-              className="block scale-95 drop-shadow-md"
+              className="flex h-[34px] w-[34px] items-center justify-center drop-shadow-md"
               style={{ color: row.colorCode }}
             >
-              <MapPinIcon size={34} />
+              <Bookmark
+                className="h-7 w-7"
+                fill="currentColor"
+                stroke={BOOKMARK_MAP_MARKER_STROKE}
+                strokeWidth={2.75}
+                strokeLinejoin="round"
+                aria-hidden
+              />
             </span>
           </AdvancedMarker>
         );

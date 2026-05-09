@@ -9,10 +9,11 @@ import { useMemo, type JSX } from "react";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
   fetchPlanItineraryMapPathsBundle,
+  buildPlanItineraryRouteArrowIcons,
   normalizeGooglePlaceResourceId,
-  PLAN_ITINERARY_ROUTE_ARROW_ICONS,
 } from "@/lib/maps";
 import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import {
   flattenPlanItinerarySegmentsFromPlaces,
   planItinerarySegmentPathRecordKey,
@@ -70,6 +71,13 @@ export function PlanItineraryMapRoutes() {
     () => [...expandedScheduleIds].sort((a, b) => a - b),
     [expandedScheduleIds],
   );
+
+  const routeColorByScheduleId = useMemo(
+    () =>
+      scheduleIdsToRouteColors(orderedScheduleIdsForQueries, rid || undefined),
+    [orderedScheduleIdsForQueries, rid],
+  );
+  const fallbackRouteStroke = "#f12d33";
 
   const queryClient = useQueryClient();
 
@@ -140,15 +148,18 @@ export function PlanItineraryMapRoutes() {
     );
     const segEpoch = epochBySegmentKey[segEpochKey] ?? 0;
 
+    const routeColor =
+      routeColorByScheduleId.get(seg.scheduleId) ?? fallbackRouteStroke;
+
     polylines.push(
       <Polyline
         key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}-${segEpoch}`}
         zIndex={40 + segIdx}
-        strokeColor="#f12d33"
+        strokeColor={routeColor}
         strokeOpacity={0.8}
         strokeWeight={8}
         path={pts}
-        icons={PLAN_ITINERARY_ROUTE_ARROW_ICONS}
+        icons={buildPlanItineraryRouteArrowIcons(routeColor)}
       />,
     );
   });
@@ -166,6 +177,9 @@ export function PlanItineraryMapRoutes() {
 
       const legacyId = normalizeGooglePlaceResourceId(gid);
       if (selectedNorm != null && legacyId === selectedNorm) return;
+
+      const dayColor =
+        routeColorByScheduleId.get(scheduleId) ?? fallbackRouteStroke;
 
       stopMarkers.push(
         <AdvancedMarker
@@ -189,6 +203,7 @@ export function PlanItineraryMapRoutes() {
         >
           <PlanItineraryStopMapPin
             orderLabel={orderIdx + 1}
+            pinColor={dayColor}
             className="cursor-pointer scale-90 select-none"
           />
         </AdvancedMarker>,

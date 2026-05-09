@@ -7,13 +7,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 
 import { useCreateRoom } from "@/hooks/useRooms";
-import {
-  resolveCoverPhotoNameFromPlaceId,
-  resolveCoverPhotoNameFromSearch,
-} from "@/hooks/useRoomCoverPhoto";
+import { resolveCoverPhotoNameFromSearch } from "@/hooks/useRoomCoverPhoto";
+import { resolveCoverPhotoNameFromPlaceId } from "@/lib/places/placeCardEnrichment";
 import { roomCoverPhotoNameKey } from "@/lib/room-cover-query";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
+
+const TITLE_MAX_LENGTH = 20;
 
 export default function NewTripPage() {
   const router = useRouter();
@@ -31,14 +31,18 @@ export default function NewTripPage() {
   );
   const { mutate: createRoom, isPending, error } = useCreateRoom();
 
+  const dateRangeInvalid =
+    Boolean(startDate && endDate && endDate < startDate);
+
   const canSubmit =
     title.trim() &&
     destination.trim() &&
     !isPending &&
-    !isResolvingCover;
+    !isResolvingCover &&
+    !dateRangeInvalid;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || dateRangeInvalid) return;
     setIsResolvingCover(true);
     let photoName: string | null = null;
     try {
@@ -87,10 +91,16 @@ export default function NewTripPage() {
 
         <div className="space-y-3">
           <div className="rounded-2xl border-2 border-gray-border bg-white px-5 py-4 transition focus-within:border-brand-red">
-            <p className="mb-1.5 text-sm font-bold text-black">여행 제목</p>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <p className="text-sm font-bold text-black">여행 제목</p>
+              <p className="shrink-0 text-xs tabular-nums text-light-gray">
+                {title.length}/{TITLE_MAX_LENGTH}
+              </p>
+            </div>
             <input
               type="text"
               value={title}
+              maxLength={TITLE_MAX_LENGTH}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 봄 일본 여행, 하와이 신혼여행"
               className="w-full text-sm text-dark-gray outline-none placeholder:text-light-gray"
@@ -134,12 +144,19 @@ export default function NewTripPage() {
                 />
               </label>
             </div>
+            {dateRangeInvalid && (
+              <p className="mt-2 text-xs text-brand-red">
+                종료일은 시작일 이후여야 해요.
+              </p>
+            )}
           </div>
         </div>
 
         {error && (
           <p className="mt-3 text-center text-sm text-brand-red">
-            방 생성에 실패했어요. 다시 시도해주세요.
+            {error instanceof Error
+              ? error.message
+              : "방 생성에 실패했어요. 다시 시도해주세요."}
           </p>
         )}
 

@@ -5,10 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Calendar, X } from "lucide-react";
 
 import { RoomListItem } from "@/lib/api/rooms";
-import {
-  resolveCoverPhotoNameFromPlaceId,
-  resolveCoverPhotoNameFromSearch,
-} from "@/hooks/useRoomCoverPhoto";
+import { resolveCoverPhotoNameFromSearch } from "@/hooks/useRoomCoverPhoto";
+import { resolveCoverPhotoNameFromPlaceId } from "@/lib/places/placeCardEnrichment";
 import { useUpdateRoom } from "@/hooks/useRooms";
 import { roomCoverPhotoNameKey } from "@/lib/room-cover-query";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
