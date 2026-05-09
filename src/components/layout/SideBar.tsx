@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useChat } from "@/contexts/ChatContext";
+import { useChat } from "@/hooks/useChat";
 import { useSessionStore } from "@/stores/session-store";
 import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
 

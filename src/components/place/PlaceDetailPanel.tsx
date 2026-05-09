@@ -4,7 +4,7 @@ import { ArrowLeft, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
-import { useChat } from "@/contexts/ChatContext";
+import { useChat } from "@/hooks/useChat";
 import { useChatActions } from "@/hooks/useChatActions";
 
 import type { SearchResultCardProps } from "./SearchResultCard";

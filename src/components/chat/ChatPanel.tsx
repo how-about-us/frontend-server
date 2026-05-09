@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useChat } from "@/contexts/ChatContext";
+import { useChat } from "@/hooks/useChat";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
 import { roomDetailQueryKey } from "@/lib/query-keys";

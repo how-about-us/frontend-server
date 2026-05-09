@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
-import { useChat } from "@/contexts/ChatContext";
+import { useChat } from "@/hooks/useChat";
 import { useSectionWidth } from "@/contexts/SectionWidthContext";
 import { width, CHAT_PANEL_DOCKED_WIDTH } from "@/lib/layout-tokens";
 

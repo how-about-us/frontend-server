@@ -15,7 +15,7 @@ import {
 } from "@/hooks/usePlacesSearch";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 import { useChatActions } from "@/hooks/useChatActions";
-import { useChat } from "@/contexts/ChatContext";
+import { useChat } from "@/hooks/useChat";
 import { useSessionStore } from "@/stores/session-store";
 
 export default function SearchPage() {
