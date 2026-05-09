@@ -66,7 +66,7 @@ function WaitingContent() {
       />
 
       <Image
-        src="/icons/logo.svg"
+        src="/logo.svg"
         alt=""
         width={160}
         height={26}

@@ -1,7 +1,6 @@
 @config "../../tailwind.config.js";
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 @layer base {
   html {

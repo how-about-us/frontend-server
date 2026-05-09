@@ -96,7 +96,7 @@ function LoginPageContent() {
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
             <Image
-              src="/icons/logo.svg"
+              src="/logo.svg"
               alt=""
               width={200}
               height={32}

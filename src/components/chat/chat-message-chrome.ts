@@ -10,7 +10,7 @@ export const chatMessageChrome = {
   systemPill:
     "my-1.5 max-w-[min(100%,20rem)] rounded-full bg-black/25 px-4 py-2 text-center text-white",
   avatarSm: "h-10 w-10 shrink-0 overflow-hidden rounded-xl",
-  wooriIconSrc: "/icons/woori.svg",
+  wooriIconSrc: "/woori.svg",
 } as const;
 
 /** 최소화 패널용 — 말풍선·시스템 띠 패딩 살짝 축소 */

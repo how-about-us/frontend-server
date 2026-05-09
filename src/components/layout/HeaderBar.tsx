@@ -74,7 +74,7 @@ const HeaderBar = () => {
               </span>
             )}
           </div>
-          <Image alt="logo" src="/icons/logo.svg" width={150} height={20} />
+          <Image alt="logo" src="/logo.svg" width={150} height={20} />
         </div>
       </div>
     </header>

@@ -7,10 +7,10 @@ import { useSessionStore } from "@/stores/session-store";
 import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
 
 const SIDEBAR_ITEMS = [
-  { key: "search", href: "/search", icon: "/icons/search.svg" },
-  { key: "plan", href: "/plan", icon: "/icons/calendar-days.svg" },
-  { key: "bookmark", href: "/bookmark", icon: "/icons/bookmark.svg" },
-  { key: "settings", href: "/settings", icon: "/icons/user-cog.svg" },
+  { key: "search", href: "/search", icon: "/search.svg" },
+  { key: "plan", href: "/plan", icon: "/calendar-days.svg" },
+  { key: "bookmark", href: "/bookmark", icon: "/bookmark.svg" },
+  { key: "settings", href: "/settings", icon: "/user-cog.svg" },
 ] as const;
 
 function SideBar() {
@@ -36,7 +36,7 @@ function SideBar() {
         aria-label="sidebar-chat"
       >
         <img
-          src="/icons/chat.svg"
+          src="/chat.svg"
           alt=""
           className="h-9 w-9 brightness-0 invert"
         />

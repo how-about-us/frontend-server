@@ -50,7 +50,7 @@ export function ChatPanelHeader({
           aria-label={isMinimized ? "최대화" : "최소화"}
         >
           <img
-            src={isMinimized ? "/icons/maximize.svg" : "/icons/minimize.svg"}
+            src={isMinimized ? "/maximize.svg" : "/minimize.svg"}
             alt={isMinimized ? "maximize" : "minimize"}
             className="h-4 w-4"
           />
