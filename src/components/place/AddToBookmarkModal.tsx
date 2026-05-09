@@ -1,17 +1,16 @@
 "use client";
 
-import { BookmarkPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Lock, Plus, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
-import { HttpError } from "@/lib/api/rooms";
-import type { BookmarkCategory } from "@/lib/api/rooms";
 import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
-  useCreateRoomBookmark,
+  useCreateRoomBookmarksInCategories,
 } from "@/hooks/useRooms";
+import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
@@ -33,12 +32,26 @@ export function AddToBookmarkModal({
     error: categoriesErr,
     refetch,
   } = useBookmarkCategories(roomId);
-  const { mutate: addBookmark, isPending: isAdding } = useCreateRoomBookmark();
+  const {
+    mutate: addBookmarksBulk,
+    isPending: isAddingBookmarks,
+  } = useCreateRoomBookmarksInCategories();
   const { mutate: createCategory, isPending: isCreatingCategory } =
     useCreateBookmarkCategory();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
   const [createFolderModalKey, setCreateFolderModalKey] = useState(0);
+  const [selectedIds, setSelectedIds] = useState(() => new Set<number>());
+
+  const toggleCategory = useCallback((categoryId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      return next;
+    });
+    setSubmitError(null);
+  }, []);
 
   useEffect(() => {
     if (createFolderModalOpen) return;
@@ -54,27 +67,65 @@ export function AddToBookmarkModal({
     setCreateFolderModalOpen(true);
   };
 
-  const handleBookmarkError = (e: unknown) => {
-    if (e instanceof HttpError && e.status === 409) {
-      toast.error(e.message || "이미 북마크에 추가된 장소입니다");
+  const selectedAsArray = useMemo(
+    () => Array.from(selectedIds),
+    [selectedIds],
+  );
+
+  const notifyResult = ({
+    added,
+    skippedDuplicate,
+    firstHardError,
+  }: {
+    added: number;
+    skippedDuplicate: number;
+    firstHardError: Error | null;
+  }) => {
+    if (firstHardError) {
+      toast.error(firstHardError.message);
+      if (added > 0) {
+        toast.message(`추가한 리스트는 ${added}개예요`);
+      }
       return;
     }
-    setSubmitError(
-      e instanceof Error ? e.message : "보관함에 추가하지 못했습니다.",
-    );
+    if (added > 0 && skippedDuplicate === 0) {
+      toast.success(
+        added === 1
+          ? "보관함에 추가했어요"
+          : `${added}개 리스트에 추가했어요`,
+      );
+    } else if (added > 0 && skippedDuplicate > 0) {
+      toast.success(`${added}개 리스트에 추가했어요`, {
+        description: `${skippedDuplicate}개 리스트에는 이미 이 장소가 있어요`,
+      });
+    } else if (added === 0 && skippedDuplicate > 0) {
+      toast.message("모든 선택 리스트에 이미 추가되어 있어요");
+    }
   };
 
-  const pickCategory = (c: BookmarkCategory) => {
-    if (!roomId || isAdding) return;
+  const handleConfirmAdd = () => {
+    if (!roomId || isAddingBookmarks) return;
+    if (selectedAsArray.length === 0) {
+      setSubmitError("리스트를 하나 이상 선택해 주세요.");
+      return;
+    }
     setSubmitError(null);
-    addBookmark(
-      { roomId, googlePlaceId, categoryId: c.categoryId },
+    addBookmarksBulk(
       {
-        onSuccess: () => {
-          onAdded?.();
-          onClose();
+        roomId,
+        googlePlaceId,
+        categoryIds: selectedAsArray,
+      },
+      {
+        onSuccess: (result) => {
+          notifyResult(result);
+          if (result.added > 0) {
+            onAdded?.();
+          }
+          if (!result.firstHardError) {
+            onClose();
+          }
         },
-        onError: handleBookmarkError,
       },
     );
   };
@@ -86,23 +137,14 @@ export function AddToBookmarkModal({
     title: string;
     color: string;
   }) => {
-    if (!roomId || isCreatingCategory || isAdding) return;
+    if (!roomId || isCreatingCategory || isAddingBookmarks) return;
     createCategory(
       { roomId, name: title, colorCode: color },
       {
         onSuccess: (created) => {
           setCreateFolderModalOpen(false);
           setSubmitError(null);
-          addBookmark(
-            { roomId, googlePlaceId, categoryId: created.categoryId },
-            {
-              onSuccess: () => {
-                onAdded?.();
-                onClose();
-              },
-              onError: handleBookmarkError,
-            },
-          );
+          setSelectedIds((prev) => new Set(prev).add(created.categoryId));
         },
         onError: (e) => {
           toast.error(
@@ -119,20 +161,31 @@ export function AddToBookmarkModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
       role="presentation"
+      className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/40 md:justify-center md:px-4"
       onMouseDown={(ev) => {
         if (ev.target === ev.currentTarget) onClose();
       }}
     >
       <div
-        className="flex max-h-[min(80vh,520px)] w-full max-w-sm flex-col rounded-2xl border border-gray-border bg-white shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-bookmark-modal-title"
         onMouseDown={(e) => e.stopPropagation()}
+        className={cn(
+          "flex max-h-[min(85vh,560px)] w-full flex-col overflow-hidden",
+          "border-t border-gray-border bg-white shadow-[0_-8px_32px_-8px_rgba(0,0,0,0.12)] md:rounded-2xl md:border md:shadow-lg",
+          "rounded-t-[1.35rem]",
+          "mx-auto md:max-w-sm",
+          "pb-[max(env(safe-area-inset-bottom,0px),12px)]",
+        )}
       >
-        <div className="shrink-0 border-b border-gray-border px-5 py-4">
+        <div
+          aria-hidden
+          className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-black/15 md:hidden"
+        />
+
+        <div className="shrink-0 px-5 pb-2 pt-3">
           <h2
             id="add-bookmark-modal-title"
             className="text-lg font-semibold text-neutral-900"
@@ -140,17 +193,32 @@ export function AddToBookmarkModal({
             보관함에 추가
           </h2>
           <p className="mt-1 text-sm text-dark-gray">
-            담을 북마크 카테고리를 선택하세요.
+            담을 리스트를 선택한 뒤 추가를 눌러 주세요.
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.15)_transparent] [scrollbar-gutter:stable]">
+          <button
+            type="button"
+            disabled={isCreatingCategory || isAddingBookmarks}
+            onClick={openCreateFolderModal}
+            className={cn(
+              "flex w-full items-center gap-2.5 border-b border-gray-border px-5 py-3.5 text-left text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray",
+              "disabled:opacity-55",
+            )}
+          >
+            <Plus className="size-5 shrink-0 stroke-[2.25]" aria-hidden />
+            새 리스트 만들기
+          </button>
+
           {categoriesLoading && (
-            <p className="text-center text-sm text-dark-gray">불러오는 중…</p>
+            <p className="px-5 py-6 text-center text-sm text-dark-gray">
+              불러오는 중…
+            </p>
           )}
 
           {categoriesError && (
-            <div className="space-y-2 text-center">
+            <div className="space-y-2 px-5 py-6 text-center">
               <p className="text-sm text-brand-red">
                 {categoriesErr instanceof Error
                   ? categoriesErr.message
@@ -167,78 +235,111 @@ export function AddToBookmarkModal({
           )}
 
           {categories && categories.length === 0 && !categoriesLoading && (
-            <div className="space-y-3 text-center">
+            <div className="space-y-3 px-5 py-6 text-center">
               <p className="text-sm text-dark-gray">
-                북마크 카테고리가 없습니다. 새로 만들어 주세요.
+                북마크 리스트가 없습니다. 새로 만들어 주세요.
               </p>
               <button
                 type="button"
                 onClick={openCreateFolderModal}
-                disabled={isCreatingCategory || isAdding}
+                disabled={isCreatingCategory || isAddingBookmarks}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-border bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray disabled:opacity-60"
               >
-                <BookmarkPlus className="size-4" strokeWidth={2.2} aria-hidden />
-                새 북마크
+                <Plus className="size-4" strokeWidth={2.2} aria-hidden />
+                새 리스트 만들기
               </button>
             </div>
           )}
 
           {categories && categories.length > 0 && (
-            <>
-              <div className="mb-3">
-                <button
-                  type="button"
-                  onClick={openCreateFolderModal}
-                  disabled={isCreatingCategory || isAdding}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray disabled:opacity-60"
-                >
-                  <BookmarkPlus className="size-4" strokeWidth={2.2} aria-hidden />
-                  새 북마크
-                </button>
-              </div>
-              <ul className="space-y-2">
-                {categories.map((c) => (
-                  <li key={c.categoryId}>
+            <ul role="list">
+              {categories.map((c, index) => {
+                const sel = selectedIds.has(c.categoryId);
+                return (
+                  <li
+                    key={c.categoryId}
+                    className={cn(index > 0 && "border-t border-gray-border")}
+                  >
                     <button
                       type="button"
-                      disabled={isAdding || isCreatingCategory}
-                      onClick={() => pickCategory(c)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-gray-border px-3 py-3 text-left transition-colors hover:bg-bubble-gray disabled:opacity-60"
-                    >
-                      <span
-                        className="size-4 shrink-0 rounded-full border border-black/10 shadow-sm"
-                        style={{ backgroundColor: c.colorCode }}
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-900">
-                        {c.name}
-                      </span>
-                      {c.placeCount > 0 && (
-                        <span className="shrink-0 text-xs text-dark-gray">
-                          {c.placeCount}곳
-                        </span>
+                      disabled={isAddingBookmarks}
+                      aria-pressed={sel}
+                      aria-label={`${c.name} 리스트에서 ${sel ? "선택 해제" : "선택"}`}
+                      onClick={() => toggleCategory(c.categoryId)}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-black/[0.02]",
+                        "disabled:opacity-60",
                       )}
+                    >
+                      <div className="relative shrink-0">
+                        <span
+                          className="relative flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-inner"
+                          style={{ backgroundColor: c.colorCode }}
+                          aria-hidden
+                        >
+                          <Star
+                            className="size-[1.125rem] fill-current text-white/95"
+                            strokeWidth={1.25}
+                          />
+                          <Lock
+                            className="pointer-events-none absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-white p-px text-neutral-900 ring-1 ring-black/15"
+                            strokeWidth={2.5}
+                            aria-hidden
+                          />
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-medium text-neutral-900">
+                          {c.name}
+                          <span className="ml-1.5 inline font-normal text-dark-gray tabular-nums">
+                            {c.placeCount}
+                          </span>
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                          sel
+                            ? "border-brand-red bg-brand-red text-white shadow-sm"
+                            : "border-gray-300 bg-white text-transparent",
+                        )}
+                      >
+                        <Check className="size-[1.125rem]" strokeWidth={3} />
+                      </span>
                     </button>
                   </li>
-                ))}
-              </ul>
-            </>
+                );
+              })}
+            </ul>
           )}
 
           {submitError && (
-            <p className="mt-3 text-center text-sm text-brand-red">
+            <p className="border-t border-gray-border px-5 py-3 text-center text-sm text-brand-red">
               {submitError}
             </p>
           )}
         </div>
 
-        <div className="shrink-0 border-t border-gray-border px-5 py-3">
+        <div className="flex shrink-0 gap-2 border-t border-gray-border px-5 pt-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray"
+            disabled={isAddingBookmarks}
+            className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray disabled:opacity-60"
           >
             닫기
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmAdd}
+            disabled={
+              isAddingBookmarks ||
+              selectedIds.size === 0 ||
+              (categories?.length === 0 && !categoriesLoading)
+            }
+            className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 disabled:opacity-55"
+          >
+            {isAddingBookmarks ? "추가 중…" : "추가"}
           </button>
         </div>
       </div>
@@ -249,7 +350,7 @@ export function AddToBookmarkModal({
           mode="create"
           initialFolder={null}
           overlayZClass="z-[65]"
-          busy={isCreatingCategory || isAdding}
+          busy={isCreatingCategory || isAddingBookmarks}
           onClose={() => setCreateFolderModalOpen(false)}
           onSave={handleCreateFolderSave}
         />

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { useStompContext } from "@/contexts/StompContext";
 import {
+  HttpError,
   approveJoinRequest,
   createBookmarkCategory,
   createRoomBookmark,
@@ -55,6 +56,7 @@ import {
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   bookmarkCategoriesQueryKey,
+  roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
 } from "@/lib/queryKeys/bookmarks";
 import {
@@ -600,6 +602,60 @@ export function useCreateRoomBookmark() {
   });
 }
 
+export type CreateRoomBookmarksInCategoriesResult = {
+  added: number;
+  skippedDuplicate: number;
+  /** Stopped early; categories after this were not attempted. */
+  firstHardError: Error | null;
+};
+
+/** Sequentially POST one bookmark per category; invalidates category + list caches once. */
+export function useCreateRoomBookmarksInCategories() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      roomId,
+      googlePlaceId,
+      categoryIds,
+    }: {
+      roomId: string;
+      googlePlaceId: string;
+      categoryIds: number[];
+    }): Promise<CreateRoomBookmarksInCategoriesResult> => {
+      let added = 0;
+      let skippedDuplicate = 0;
+      let firstHardError: Error | null = null;
+      for (const categoryId of categoryIds) {
+        try {
+          await createRoomBookmark(roomId, { googlePlaceId, categoryId });
+          added += 1;
+        } catch (e) {
+          if (e instanceof HttpError && e.status === 409) {
+            skippedDuplicate += 1;
+          } else {
+            firstHardError = e instanceof Error ? e : new Error(String(e));
+            break;
+          }
+        }
+      }
+      return { added, skippedDuplicate, firstHardError };
+    },
+    onSettled: (_data, _err, { roomId, categoryIds }) => {
+      queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: roomBookmarksByRoomRootQueryKey(roomId),
+      });
+      for (const cid of categoryIds) {
+        queryClient.invalidateQueries({
+          queryKey: roomBookmarksQueryKey(roomId, cid),
+        });
+      }
+    },
+  });
+}
+
 export function useMoveRoomBookmark() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -630,15 +686,11 @@ export function useMoveRoomBookmark() {
 export function useDeleteRoomBookmarkItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      roomId,
-      bookmarkId,
-      categoryId,
-    }: {
+    mutationFn: (input: {
       roomId: string;
       bookmarkId: number;
       categoryId: number;
-    }) => deleteRoomBookmark(roomId, bookmarkId),
+    }) => deleteRoomBookmark(input.roomId, input.bookmarkId),
     onSuccess: (_, { roomId, categoryId }) => {
       queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(roomId, categoryId),
