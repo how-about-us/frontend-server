@@ -1,8 +1,8 @@
 import type { ChatMessage } from "@/types/chat";
-import { AiHighlightedText } from "@/components/chat/lib/aiHighlightedText";
+import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import { AiConversationSummaryContent } from "@/components/chat/messages/AiConversationSummaryContent";
 import { AiRecommendedPlacesList } from "@/components/chat/messages/AiRecommendedPlacesList";
-import type { ChatMessageTextTypography } from "@/components/chat/lib/chatTypography";
+import type { ChatMessageTextTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 import { Reply } from "lucide-react";
 

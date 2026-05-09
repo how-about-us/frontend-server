@@ -1,8 +1,9 @@
 "use client";
 
-import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
-import { cn } from "@/lib/utils";
 import { useRef, useState } from "react";
+
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import { cn } from "@/lib/utils";
 
 export type FilterOption<T extends string> = { label: string; value: T };
 

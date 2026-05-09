@@ -1,13 +1,13 @@
 "use client";
 
-import { AiHighlightedText } from "@/components/chat/lib/aiHighlightedText";
+import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import {
   chatAiBubbleListTextClass,
   chatAiBubbleMutedListClass,
   chatAiBubbleOverviewBodyClass,
   chatAiBubbleSectionLabelClass,
   chatAiBubbleBlockTitleClass,
-} from "@/components/chat/lib/chatTypography";
+} from "@/components/chat/chat-typography";
 import type { AiConversationSummaryPayload } from "@/types/chat";
 import { cn } from "@/lib/utils";
 

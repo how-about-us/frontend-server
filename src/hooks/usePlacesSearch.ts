@@ -4,7 +4,7 @@ import {
   getPlacePhotoUrl,
   type PlaceSearchItem,
 } from "@/lib/api/places";
-import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import type { SearchResultCardProps } from "@/types/place";
 
 export type PlaceSearchResult = SearchResultCardProps & {
   googlePlaceId: string;

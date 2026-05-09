@@ -19,7 +19,7 @@ import {
 import {
   readDestinationLatLngFromSession,
   writeDestinationLatLngToSession,
-} from "@/lib/maps/destinationCenterSessionCache";
+} from "@/lib/maps";
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";

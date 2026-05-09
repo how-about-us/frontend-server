@@ -2,7 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
 import type { PlanPlace } from "@/lib/plan/types";
-import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import { scheduleItemsQueryKey } from "@/lib/query-keys";
 
 function asOrderedItemIds(places: unknown): number[] | null {
   if (!Array.isArray(places)) return null;

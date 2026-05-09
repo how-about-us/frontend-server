@@ -8,8 +8,8 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
-import { chatMessageChrome } from "@/components/chat/lib/chatMessageChrome";
-import { resolveChatMessageTypography } from "@/components/chat/lib/chatTypography";
+import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
+import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import type { ChatMessage } from "@/types/chat";
 
 export function PlaceShareCard({

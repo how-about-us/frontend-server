@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { RoomListItem } from "@/lib/api/rooms";
 
 type Props = {

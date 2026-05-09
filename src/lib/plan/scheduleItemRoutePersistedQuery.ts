@@ -6,7 +6,7 @@ import type {
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
-import { scheduleItemRouteQueryKey } from "@/lib/queryKeys/scheduleRoutes";
+import { scheduleItemRouteQueryKey } from "@/lib/query-keys";
 import {
   readScheduleRouteFromLocalStorage,
   writeScheduleRouteToLocalStorage,

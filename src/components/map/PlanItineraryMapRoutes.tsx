@@ -7,16 +7,20 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type JSX } from "react";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { fetchPlanItineraryMapPathsBundle } from "@/lib/maps/fetchPlanItineraryMapPathsBundle";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
-import { PLAN_ITINERARY_ROUTE_ARROW_ICONS } from "@/lib/maps/planItineraryRoutePolylineIcons";
+import {
+  fetchPlanItineraryMapPathsBundle,
+  normalizeGooglePlaceResourceId,
+  PLAN_ITINERARY_ROUTE_ARROW_ICONS,
+} from "@/lib/maps";
 import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import {
   flattenPlanItinerarySegmentsFromPlaces,
   planItinerarySegmentPathRecordKey,
 } from "@/lib/plan/planItineraryMapSegments";
-import { planItineraryMapPathQueryKey } from "@/lib/queryKeys/planItineraryMapPath";
-import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import {
+  planItineraryMapPathQueryKey,
+  scheduleItemsQueryKey,
+} from "@/lib/query-keys";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import {
   planMapSegmentEpochStoreKey,

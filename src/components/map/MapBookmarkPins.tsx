@@ -9,11 +9,11 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useBookmarkCategories } from "@/hooks/useRooms";
 import { getPlaceDetail } from "@/lib/api/places";
 import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import {
   bookmarkMapPinPlaceQueryKey,
   roomBookmarksQueryKey,
-} from "@/lib/queryKeys/bookmarks";
+} from "@/lib/query-keys";
 
 export type MapBookmarkPinsProps = {
   roomId: string | null;

@@ -16,8 +16,8 @@ import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
 import {
   bookmarkCategoriesQueryKey,
   roomBookmarksQueryKey,
-} from "@/lib/queryKeys/bookmarks";
-import { roomMembersQueryKey } from "@/lib/queryKeys/rooms";
+  roomMembersQueryKey,
+} from "@/lib/query-keys";
 import type {
   RoomBookmarkChangedEvent,
   RoomBookmarkChangedType,

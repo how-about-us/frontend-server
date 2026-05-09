@@ -1,7 +1,7 @@
 import type { AiRequestStatus, ChatMessage } from "@/types/chat";
 import { AiResponseBubble } from "@/components/chat/messages/AiResponseBubble";
-import { getChatPanelLook } from "@/components/chat/lib/chatPanelLook";
-import type { ChatMessageTextTypography } from "@/components/chat/lib/chatTypography";
+import { getChatPanelLook } from "@/components/chat/chat-panel-look";
+import type { ChatMessageTextTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 

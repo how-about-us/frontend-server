@@ -5,8 +5,8 @@ import type { ChatMessage } from "@/types/chat";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
-import { groupConsecutiveMessages } from "../lib/chat.utils";
-import { getChatMessageMotion } from "../lib/chat.animations";
+import { groupConsecutiveMessages } from "../chat-message-utils";
+import { getChatMessageMotion } from "../chat-animations";
 import {
   OtherMessageGroup,
   MyMessageGroup,

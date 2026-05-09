@@ -7,14 +7,14 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
-import { GoogleMapsProvider } from "@/components/googleMap";
+import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
-import { clearStalePersistedSessionIfNoAuthCookie } from "@/lib/auth/session-sync";
+import { clearStalePersistedSessionIfNoAuthCookie } from "@/lib/auth";
 import {
   ROOM_COVER_PERSIST_STORAGE_KEY,
   dehydrateRoomCoverOnly,
-} from "@/lib/query/roomCover";
-import { createQueryClient } from "@/lib/query/queryClient";
+} from "@/lib/room-cover-query";
+import { createQueryClient } from "@/lib/query-client";
 import { useSessionStore } from "@/stores/session-store";
 
 const ROOM_COVER_PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14;

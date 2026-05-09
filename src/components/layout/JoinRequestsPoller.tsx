@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 import { useJoinRequests, useRoomsList } from "@/hooks/useRooms";
-import { selectHostRoom } from "@/lib/rooms/selectHostRoom";
+import { selectHostRoom } from "@/lib/rooms";
 import { useSessionStore } from "@/stores/session-store";
 
 export function JoinRequestsPoller() {

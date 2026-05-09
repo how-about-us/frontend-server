@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import type { ServerChatMessage } from "@/types/chat";
-import { normalizeMessageKind } from "@/lib/chat/messageKind";
-import { normalizeServerChatMessage, parseFiniteNumber } from "@/lib/chat/normalizeServerChatMessage";
 import {
   deriveAiRequestConversationState,
   mergeServerMessageLists,
+  normalizeMessageKind,
+  normalizeServerChatMessage,
+  parseFiniteNumber,
   serverMessageToChatMessage,
-} from "@/lib/chat/serverMessagesForUi";
+} from "@/lib/chat";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
 import { getRoomMessages } from "@/lib/api/rooms";

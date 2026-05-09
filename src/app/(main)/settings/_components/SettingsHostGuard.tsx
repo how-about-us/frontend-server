@@ -2,7 +2,7 @@
 
 import { useSessionStore } from "@/stores/session-store";
 import { useRoomsList } from "@/hooks/useRooms";
-import { selectHostRoom } from "@/lib/rooms/selectHostRoom";
+import { selectHostRoom } from "@/lib/rooms";
 import { JoinRequestsSection } from "./JoinRequestsSection";
 
 export function SettingsHostGuard() {

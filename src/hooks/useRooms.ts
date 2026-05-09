@@ -56,18 +56,19 @@ import {
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   bookmarkCategoriesQueryKey,
+  joinRequestsQueryKey,
   roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
-} from "@/lib/queryKeys/bookmarks";
-import {
-  joinRequestsQueryKey,
   ROOMS_QUERY_KEY,
   roomDetailQueryKey,
   roomMembersQueryKey,
-} from "@/lib/queryKeys/rooms";
-import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
-import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
+  roomSchedulesQueryKey,
+  scheduleItemsQueryKey,
+} from "@/lib/query-keys";
+import {
+  removeCachesForDeletedSchedule,
+  syncRoomDetailFromServer,
+} from "@/lib/rooms";
 import {
   clearPendingScheduleDeleteEcho,
   markPendingScheduleDeleteEcho,
@@ -76,7 +77,6 @@ import {
   pathDefersRoomStompRoomTopics,
   pathSuspendsStomp,
 } from "@/lib/stomp/stompPathPolicy";
-import { syncRoomDetailFromServer } from "@/lib/rooms/syncRoomDetailCache";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 import { useSessionStore } from "@/stores/session-store";

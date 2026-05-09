@@ -1,4 +1,4 @@
-import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import type { SearchResultCardProps } from "@/types/place";
 
 /** One saved place in a folder (card props + server bookmark row id as string). */
 export type BookmarkedPlace = SearchResultCardProps & { id: string };

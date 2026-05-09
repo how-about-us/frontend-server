@@ -1,11 +1,11 @@
 "use client";
 
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
-import { AiHighlightedText } from "@/components/chat/lib/aiHighlightedText";
+import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import {
   chatAiBubbleBlockSubtitleClass,
   chatAiBubbleBlockTitleClass,
-} from "@/components/chat/lib/chatTypography";
+} from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import type {

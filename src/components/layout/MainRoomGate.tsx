@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { validateRoomAccess } from "@/lib/rooms/validateRoomAccess";
+import { validateRoomAccess } from "@/lib/rooms";
 import { useSessionStore } from "@/stores/session-store";
 
 function hasTrimmedRoomId(id: unknown): boolean {

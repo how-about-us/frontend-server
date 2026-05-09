@@ -1,4 +1,4 @@
-import { FilterDropdown } from "@/components/globalUI/FilterDropdown";
+import { FilterDropdown } from "@/components/filter-dropdown";
 import { cn } from "@/lib/utils";
 
 import {

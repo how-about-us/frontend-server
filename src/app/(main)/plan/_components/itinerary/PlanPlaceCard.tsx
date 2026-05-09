@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_WIDE_MIN_PX } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";
 import { slotStartTimeHm } from "@/lib/plan/scheduleItemPlaces";

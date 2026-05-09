@@ -3,7 +3,7 @@ import { JoinRequestsPoller } from "@/components/layout/JoinRequestsPoller";
 import { MainRoomGate } from "@/components/layout/MainRoomGate";
 import { ChatPanel } from "@/components/chat";
 import { MapWithDetailPanel } from "@/components/map";
-import { MainProviders } from "./MainProviders";
+import { MainChromeProviders } from "@/providers/main-providers";
 
 export default function MainLayout({
   children,
@@ -11,7 +11,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <MainProviders>
+    <MainChromeProviders>
       <MainRoomGate>
         <JoinRequestsPoller />
         <main className="h-screen">
@@ -32,6 +32,6 @@ export default function MainLayout({
           </div>
         </main>
       </MainRoomGate>
-    </MainProviders>
+    </MainChromeProviders>
   );
 }

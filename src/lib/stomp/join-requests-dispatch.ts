@@ -3,7 +3,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { joinRequestsQueryKey } from "@/lib/queryKeys/rooms";
+import { joinRequestsQueryKey } from "@/lib/query-keys";
 
 const HOST_JOIN_REQUEST_TOAST_MS = 4000;
 

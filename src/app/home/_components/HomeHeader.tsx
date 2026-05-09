@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { logout } from "@/lib/api/auth";
 import { useSessionStore } from "@/stores/session-store";

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { ServerChatMessage } from "@/types/chat";
-import { normalizeMessageKind } from "@/lib/chat/messageKind";
+import { normalizeMessageKind } from "@/lib/chat";
 
 interface ChatUnreadStore {
   chatCnt: number;

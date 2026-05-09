@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
-import { setPendingInviteCode } from "@/lib/auth/pending-invite";
+import { setPendingInviteCode } from "@/lib/auth";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
 import { useSessionStore } from "@/stores/session-store";

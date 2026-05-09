@@ -1,4 +1,4 @@
-import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import type { SearchResultCardProps } from "@/types/place";
 import { API_BASE } from "./config";
 import { apiFetch } from "./client";
 

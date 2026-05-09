@@ -1,4 +1,4 @@
-import { fetchSessionUserRaw } from "@/lib/auth/fetch-session-user-raw";
+import { fetchSessionUserRaw } from "@/lib/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { useSessionStore } from "@/stores/session-store";
 import { refreshToken } from "./auth";

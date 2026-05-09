@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { RoomListItem } from "@/lib/api/rooms";
-import { isHostRole } from "@/lib/rooms/selectHostRoom";
+import { isHostRole } from "@/lib/rooms";
 import {
   usePlacePhotoUrlQuery,
   useRoomCoverPhotoName,
@@ -12,7 +12,7 @@ import {
 import { getRoomGradient } from "@/stores/rooms-store";
 import { useSessionStore } from "@/stores/session-store";
 import { RoomCardMenu } from "./RoomCardMenu";
-import { formatDateRange } from "./utils";
+import { formatTripYmdRangeShortKo as formatDateRange } from "@/lib/plan/tripRange";
 
 type Props = {
   room: RoomListItem;

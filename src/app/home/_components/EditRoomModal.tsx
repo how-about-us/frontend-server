@@ -10,7 +10,7 @@ import {
   resolveCoverPhotoNameFromSearch,
 } from "@/hooks/useRoomCoverPhoto";
 import { useUpdateRoom } from "@/hooks/useRooms";
-import { roomCoverPhotoNameKey } from "@/lib/query/roomCover";
+import { roomCoverPhotoNameKey } from "@/lib/room-cover-query";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
 type Props = {

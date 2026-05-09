@@ -2,7 +2,7 @@
 
 import { useQueries } from "@tanstack/react-query";
 import { getPlaceCardPropsByGoogleId } from "@/lib/api/places";
-import { placeCardBookmarkQueryKey } from "@/lib/queryKeys/bookmarks";
+import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";

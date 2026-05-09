@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   readDestinationLatLngFromSession,
   writeDestinationLatLngToSession,
-} from "@/lib/maps/destinationCenterSessionCache";
+} from "@/lib/maps";
 
 /** 지오코드 결과 없거나 방 미선택 시 기본 줌 근처 */
 const DEFAULT_MAP_CENTER = { lat: 37.5665, lng: 126.978 };

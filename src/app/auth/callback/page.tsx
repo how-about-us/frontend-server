@@ -5,8 +5,8 @@ import { Suspense, useEffect, useRef } from "react";
 
 import { exchangeGoogleCode } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
-import { consumePendingInviteCode } from "@/lib/auth/pending-invite";
-import { fetchSessionUserWithRetry } from "@/lib/auth/session-sync";
+import { consumePendingInviteCode } from "@/lib/auth";
+import { fetchSessionUserWithRetry } from "@/lib/auth";
 import { useSessionStore } from "@/stores/session-store";
 
 function AuthCallbackContent() {

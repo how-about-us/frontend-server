@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
+import { roomSchedulesQueryKey } from "@/lib/query-keys";
 
 /**
  * 재연결·`onConnect` 직후 해당 방 관련 활성 쿼리만 다시 맞춥니다.

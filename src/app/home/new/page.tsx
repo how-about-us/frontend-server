@@ -11,7 +11,7 @@ import {
   resolveCoverPhotoNameFromPlaceId,
   resolveCoverPhotoNameFromSearch,
 } from "@/hooks/useRoomCoverPhoto";
-import { roomCoverPhotoNameKey } from "@/lib/query/roomCover";
+import { roomCoverPhotoNameKey } from "@/lib/room-cover-query";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 

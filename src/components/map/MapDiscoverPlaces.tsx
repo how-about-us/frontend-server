@@ -9,7 +9,7 @@ import {
 
 import { MapPinIcon } from "@/components/icons";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps/normalizeGooglePlaceResourceId";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";

@@ -6,17 +6,17 @@ import { useRouter } from "next/navigation";
 import { useChat } from "@/contexts/ChatContext";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
-import { roomDetailQueryKey } from "@/lib/queryKeys/rooms";
+import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
-import { ChatMessageList } from "../messages/ChatMessageList";
-import { ChatInputBar } from "../input/ChatInputBar";
+import { ChatMessageList } from "./messages/ChatMessageList";
+import { ChatInputBar } from "./ChatInputBar";
 import {
   panelVariants,
   panelTransition,
   getPanelAnimate,
-} from "../lib/chat.animations";
+} from "./chat-animations";
 
 export function ChatPanel() {
   const router = useRouter();

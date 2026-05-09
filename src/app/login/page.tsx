@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
-import { LoginErrorAlert } from "@/app/login/_components/LoginErrorAlert";
+import { LoginErrorAlert } from "@/app/login/login-error-alert";
 
 const CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??

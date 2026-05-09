@@ -5,7 +5,7 @@ import {
   getScheduleItems,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
-import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
+import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import type { PlanPlace } from "@/lib/plan/types";
 
 /** `orderIndex` 기준 정렬(비변형) */

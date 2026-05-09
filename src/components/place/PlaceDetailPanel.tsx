@@ -10,13 +10,13 @@ import { useChatActions } from "@/hooks/useChatActions";
 import type { SearchResultCardProps } from "./SearchResultCard";
 import { AddToBookmarkModal } from "./AddToBookmarkModal";
 import { AddToScheduleModal } from "./AddToScheduleModal";
-import { TABS, type Tab } from "./detail/types";
-import { usePlaceDetailData } from "./detail/usePlaceDetailData";
-import { HeroSkeleton, HeroGrid } from "./detail/HeroSection";
-import { PlaceSummaryHeader } from "./detail/PlaceSummaryHeader";
-import { HomeTab } from "./detail/HomeTab";
-import { ReviewsTab } from "./detail/ReviewsTab";
-import { PhotosTab } from "./detail/PhotosTab";
+import { TABS, type Tab } from "./types";
+import { usePlaceDetailData } from "./usePlaceDetailData";
+import { HeroSkeleton, HeroGrid } from "./HeroSection";
+import { PlaceSummaryHeader } from "./PlaceSummaryHeader";
+import { HomeTab } from "./HomeTab";
+import { ReviewsTab } from "./ReviewsTab";
+import { PhotosTab } from "./PhotosTab";
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;

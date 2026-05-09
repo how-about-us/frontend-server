@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, Star } from "lucide-react";
 
 import { getPlacePhotoUrl } from "@/lib/api/places";
-import { resolveChatMessageTypography } from "@/components/chat/lib/chatTypography";
+import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 
 export type OgPlacePreviewCardProps = {

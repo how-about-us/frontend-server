@@ -8,8 +8,8 @@ import {
   chatAiLabelMotion,
   chatTapSoft,
   chatTapTransition,
-} from "@/components/chat/lib/chat.animations";
-import { chatTypography, resolveChatMessageTypography } from "@/components/chat/lib/chatTypography";
+} from "@/components/chat/chat-animations";
+import { chatTypography, resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 
 /** UI 오버레이 전용 — 실제 textarea value 에는 넣지 않음 */

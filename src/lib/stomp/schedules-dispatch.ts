@@ -15,10 +15,11 @@ import {
 } from "@/lib/plan/scheduleStompRouteScope";
 import type { RoomSchedule } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
-import { roomSchedulesQueryKey } from "@/lib/queryKeys/roomSchedules";
-import { scheduleItemsQueryKey } from "@/lib/queryKeys/scheduleItems";
-import { removeCachesForDeletedSchedule } from "@/lib/rooms/removeCachesForDeletedSchedule";
-import { syncRoomDetailFromServer } from "@/lib/rooms/syncRoomDetailCache";
+import { roomSchedulesQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
+import {
+  removeCachesForDeletedSchedule,
+  syncRoomDetailFromServer,
+} from "@/lib/rooms";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
 import {
   consumePendingScheduleDeleteEcho,

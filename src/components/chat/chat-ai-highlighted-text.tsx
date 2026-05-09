@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { chatAiBubbleEmphasisClass } from "@/components/chat/lib/chatTypography";
+import { chatAiBubbleEmphasisClass } from "@/components/chat/chat-typography";
 
 /** `**강조**` 구간을 분리 — 구분자는 짝수 개만 강조로 처리(마크다운과 동일). */
 function splitDoubleStars(text: string): Array<{

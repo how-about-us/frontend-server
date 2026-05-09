@@ -7,7 +7,7 @@ import type {
   RoomMember,
   RoomMemberListResponse,
 } from "@/lib/api/rooms";
-import { ROOMS_QUERY_KEY, roomMembersQueryKey } from "@/lib/queryKeys/rooms";
+import { ROOMS_QUERY_KEY, roomMembersQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 
 import type { RoomMemberPayload } from "./member-events";

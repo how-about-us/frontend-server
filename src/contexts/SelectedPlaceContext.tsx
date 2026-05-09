@@ -9,7 +9,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import type { SearchResultCardProps } from "@/components/place/SearchResultCard";
+import type { SearchResultCardProps } from "@/types/place";
 
 export type SetSelectedPlaceOptions = {
   /** true면 카메라 패닝·줌(SelectedPlaceController)을 건너뜀 — 예: 지도 POI 직접 클릭 */

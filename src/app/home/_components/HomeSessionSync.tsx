@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { syncSessionUserFromServer } from "@/lib/auth/session-sync";
+import { syncSessionUserFromServer } from "@/lib/auth";
 import { useSessionStore } from "@/stores/session-store";
 
 /**

@@ -9,7 +9,7 @@ import type { RoomListItem } from "@/lib/api/rooms";
 import {
   placePhotoUrlQueryKey,
   roomCoverPhotoNameKey,
-} from "@/lib/query/roomCover";
+} from "@/lib/room-cover-query";
 
 const DEFAULT_SEARCH_CENTER = { lat: 37.5665, lng: 126.978 };
 

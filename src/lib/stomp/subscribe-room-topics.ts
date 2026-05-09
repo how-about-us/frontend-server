@@ -3,7 +3,7 @@ import type { MutableRefObject } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 
 import type { ServerChatMessage } from "@/types/chat";
-import { normalizeServerChatMessage } from "@/lib/chat/normalizeServerChatMessage";
+import { normalizeServerChatMessage } from "@/lib/chat";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
