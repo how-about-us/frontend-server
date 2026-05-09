@@ -1,6 +1,9 @@
+import { apiFetch } from "@/lib/api/client";
 import { pickProfileImageUrl } from "@/lib/api/profileImage";
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
 import type { JoinRequestListResponse, JoinRoomResponse } from "./types";
+
+export type JoinRoomApiResult = JoinRoomResponse & { httpStatus: number };
 
 function normalizeJoinRequests(
   res: JoinRequestListResponse,
@@ -24,11 +27,16 @@ export async function getJoinStatus(roomId: string): Promise<JoinRoomResponse> {
   );
 }
 
-export async function joinRoom(inviteCode: string): Promise<JoinRoomResponse> {
-  return requestJson(apiUrl("/rooms/join"), {
+export async function joinRoom(inviteCode: string): Promise<JoinRoomApiResult> {
+  const res = await apiFetch(apiUrl("/rooms/join"), {
     method: "POST",
     ...jsonBody({ inviteCode }),
-  }, { errorMessage: "입장 요청 실패" });
+  });
+  if (!res.ok) {
+    throw new Error(`입장 요청 실패: ${res.status}`);
+  }
+  const data = (await res.json()) as JoinRoomResponse;
+  return { ...data, httpStatus: res.status };
 }
 
 export async function getJoinRequests(

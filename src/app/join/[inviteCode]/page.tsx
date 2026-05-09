@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { setPendingInviteCode } from "@/lib/auth/pending-invite";
 import { useJoinRoom } from "@/hooks/useRooms";
-
-const PENDING_INVITE_KEY = "pendingInviteCode";
+import { getRoomDetail } from "@/lib/api/rooms";
+import { useSessionStore } from "@/stores/session-store";
 
 function hasSession() {
   if (typeof document === "undefined") return false;
@@ -27,18 +28,31 @@ export default function JoinPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { mutate: join } = useJoinRoom();
+  const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
+  const setCurrentRoomMeta = useSessionStore((s) => s.setCurrentRoomMeta);
 
   useEffect(() => {
     if (!inviteCode) return;
 
     if (!hasSession()) {
-      sessionStorage.setItem(PENDING_INVITE_KEY, inviteCode);
+      setPendingInviteCode(inviteCode);
       router.replace("/login");
       return;
     }
 
     join(inviteCode, {
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
+        if (data.httpStatus === 200) {
+          setCurrentRoomId(data.id);
+          try {
+            const meta = await getRoomDetail(data.id);
+            setCurrentRoomMeta(meta);
+          } catch {
+            // 메타 조회 실패해도 입장은 진행 (waiting 승인 처리와 동일)
+          }
+          router.replace("/plan");
+          return;
+        }
         router.replace(
           `/waiting?roomId=${encodeURIComponent(data.id)}&roomTitle=${encodeURIComponent(data.roomTitle)}`,
         );
@@ -47,7 +61,7 @@ export default function JoinPage() {
         setError(err instanceof Error ? err.message : "입장 요청에 실패했습니다.");
       },
     });
-  }, [inviteCode, join, router]);
+  }, [inviteCode, join, router, setCurrentRoomId, setCurrentRoomMeta]);
 
   if (error) {
     return (

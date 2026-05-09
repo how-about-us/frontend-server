@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 import { exchangeGoogleCode } from "@/lib/api/auth";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { consumePendingInviteCode } from "@/lib/auth/pending-invite";
 import { fetchSessionUserWithRetry } from "@/lib/auth/session-sync";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -13,11 +14,23 @@ function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const setUser = useSessionStore((s) => s.setUser);
 
+  // React Strict Mode (Next dev) 에서 useEffect 가 두 번 실행되면
+  // sessionStorage 의 pendingInviteCode/oauth_state 가 첫 실행에서 비워져
+  // 두 번째 실행이 home/login 으로 잘못 리다이렉트한다. 코드 교환도 1회만 시도.
+  const ranRef = useRef(false);
+
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
     const code = searchParams.get("code");
     const returnedState = searchParams.get("state");
     const savedState = sessionStorage.getItem("oauth_state");
     sessionStorage.removeItem("oauth_state");
+
+    // 인증 흐름의 어떤 결과든 pendingInviteCode 를 한 번에 소비해
+    // 다음 진입(예: 재로그인)에서 홀더 값이 남아있지 않도록 한다.
+    const pendingInviteCode = consumePendingInviteCode();
 
     if (!code || !returnedState || returnedState !== savedState) {
       router.replace("/login?error=OAuthCallback");
@@ -40,9 +53,7 @@ function AuthCallbackContent() {
           }
           setUser(me);
 
-          const pendingInviteCode = sessionStorage.getItem("pendingInviteCode");
           if (pendingInviteCode) {
-            sessionStorage.removeItem("pendingInviteCode");
             router.replace(`/join/${pendingInviteCode}`);
           } else {
             router.replace("/home");

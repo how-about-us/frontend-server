@@ -21,6 +21,8 @@ export type {
   RoomUpdateRequest,
 } from "./types";
 
+export type { JoinRoomApiResult } from "./join";
+
 export {
   createBookmarkCategory,
   deleteBookmarkCategory,
