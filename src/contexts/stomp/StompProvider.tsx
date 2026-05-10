@@ -20,6 +20,7 @@ import {
 } from "@/lib/stomp/stompPathPolicy";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
+import { ROOMS_QUERY_KEY } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import type { ServerChatMessage } from "@/types/chat";
@@ -99,6 +100,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
       session.clearCurrentRoomId();
       session.clearCurrentRoomInviteCode();
       session.clearCurrentRoomMeta();
+
+      void queryClientRef.current.invalidateQueries({
+        queryKey: ROOMS_QUERY_KEY,
+      });
 
       router.replace("/home");
     },
