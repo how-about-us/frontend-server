@@ -1,30 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
-import type { RoomMember } from "@/lib/api/rooms";
 import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { AddMemberPanel } from "./AddMemberPanel";
 import { MemberCard } from "./MemberCard";
 
-/** 방장 나가기 시 위임 대상: 멤버 목록에서 나를 제외한 첫 멤버(목록상 바로 아래에 가까운 순) */
-function pickNextHost(
-  members: RoomMember[],
-  hostUserId: number,
-): { userId: number; nickname: string } | null {
-  const others = members.filter((m) => m.userId !== hostUserId);
-  if (others.length === 0) return null;
-  const m = others[0];
-  return { userId: m.userId, nickname: m.nickname };
-}
-
 export function RoomMembersSection() {
   const router = useRouter();
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showDelegateFirstModal, setShowDelegateFirstModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [invitePanelKey, setInvitePanelKey] = useState(0);
@@ -42,8 +31,7 @@ export function RoomMembersSection() {
 
   const { mutate: kick, isPending: isKicking } = useKickMember();
   const { mutateAsync: leaveAsync, isPending: isLeaving } = useLeaveRoom();
-  const { mutate: transfer, mutateAsync: transferAsync, isPending: isTransferring } =
-    useTransferHost();
+  const { mutate: transfer, isPending: isTransferring } = useTransferHost();
 
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
@@ -51,10 +39,12 @@ export function RoomMembersSection() {
 
   const me = members.find((m) => m.userId === user?.id);
   const others = members.filter((m) => m.userId !== user?.id);
-  const nextHost =
-    user && isHost && !isMembersLoading ? pickNextHost(members, user.id) : null;
   const hostCannotLeaveAlone = Boolean(
     isHost && user && !isMembersLoading && others.length === 0,
+  );
+  /** 다른 멤버가 있으면 방장은 수동 위임 후에만 퇴장 가능 */
+  const hostNeedsManualDelegation = Boolean(
+    isHost && user && !isMembersLoading && others.length > 0,
   );
 
   function finishLeaveSession() {
@@ -72,26 +62,26 @@ export function RoomMembersSection() {
       );
       return;
     }
+    if (isHost && others.length > 0) {
+      toast.error("먼저 방장을 위임해주세요.");
+      return;
+    }
     try {
-      if (isHost) {
-        const picked = pickNextHost(members, user.id);
-        if (picked == null) {
-          toast.error(
-            "방장을 넘길 멤버가 없습니다. 여행 삭제를 이용해 주세요.",
-          );
-          return;
-        }
-        await transferAsync({
-          roomId: currentRoomId,
-          targetUserId: picked.userId,
-        });
-      }
       await leaveAsync(currentRoomId);
       finishLeaveSession();
     } catch {
       // useHttpError / 글로벌 처리 또는 서버 메시지
     }
   }
+
+  useEffect(() => {
+    if (!showDelegateFirstModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowDelegateFirstModal(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [showDelegateFirstModal]);
 
   return (
     <div className="relative flex flex-col gap-6">
@@ -292,8 +282,15 @@ export function RoomMembersSection() {
             )}
             <button
               type="button"
-              onClick={() => setShowLeaveConfirm(true)}
-              className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red"
+              disabled={isHost && isMembersLoading}
+              onClick={() => {
+                if (hostNeedsManualDelegation) {
+                  setShowDelegateFirstModal(true);
+                  return;
+                }
+                setShowLeaveConfirm(true);
+              }}
+              className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-50"
             >
               방 나가기
             </button>
@@ -305,13 +302,6 @@ export function RoomMembersSection() {
             </p>
             <p className="mb-4 text-xs leading-5 text-dark-gray">
               방을 나가면 현재 여행 플랜에 접근할 수 없게 됩니다.
-              {isHost && !hostCannotLeaveAlone && nextHost && (
-                <span className="mt-1 block font-medium text-brand-red">
-                  방장 권한이{" "}
-                  <span className="font-semibold">{nextHost.nickname}</span>님에게
-                  넘어간 뒤 나가요.
-                </span>
-              )}
               {isHost && hostCannotLeaveAlone && (
                 <span className="mt-1 block font-medium text-brand-red">
                   다른 멤버가 없으면 나갈 수 없습니다. 여행 삭제를 이용해 주세요.
@@ -322,7 +312,7 @@ export function RoomMembersSection() {
               <button
                 type="button"
                 onClick={() => setShowLeaveConfirm(false)}
-                disabled={isLeaving || isTransferring}
+                disabled={isLeaving}
                 className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700 disabled:opacity-50"
               >
                 취소
@@ -334,13 +324,13 @@ export function RoomMembersSection() {
                 }}
                 disabled={
                   isLeaving ||
-                  isTransferring ||
                   hostCannotLeaveAlone ||
+                  hostNeedsManualDelegation ||
                   (isHost && isMembersLoading)
                 }
                 className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {isLeaving || isTransferring ? "처리 중…" : "나가기"}
+                {isLeaving ? "처리 중…" : "나가기"}
               </button>
             </div>
           </div>
@@ -353,6 +343,41 @@ export function RoomMembersSection() {
           onClose={() => setShowDeleteConfirm(false)}
           onDeleted={finishLeaveSession}
         />
+      )}
+
+      {showDelegateFirstModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowDelegateFirstModal(false);
+          }}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delegate-first-title"
+            className="w-full max-w-sm rounded-2xl border border-gray-border bg-white p-6 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="delegate-first-title"
+              className="text-base font-semibold text-neutral-900"
+            >
+              먼저 방장을 위임해주세요
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-dark-gray">
+              멤버에게 방장을 넘긴 뒤 나가실 수 있어요.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowDelegateFirstModal(false)}
+              className="mt-6 w-full rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              확인
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
