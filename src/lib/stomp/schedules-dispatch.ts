@@ -73,7 +73,7 @@ type DebouncedRouteInvBucket =
   | { scope: "whole" }
   | { scope: "sources"; ids: Set<number> };
 
-/** 리오더+연속 `ITEM_UPDATED`가 같은 구간 무효화를 반복해 `/route`가 이중 패치되는 것을 줄임 */
+/** 리오더 시 같은 구간 무효화를 짧게 묶어 `/route` 이중 패치를 줄임 */
 const scheduleRouteInvalidateDebounceTimers = new Map<
   string,
   ReturnType<typeof setTimeout>
@@ -147,7 +147,7 @@ function enqueueDebouncedInvalidateScheduleRoutes(
   );
 }
 
-/** 연속 `SCHEDULE_ITEM_UPDATED` 마다 `/items` GET이 나가지 않도록 같은 일차는 한 번으로 묶음 */
+/** 연속 일정 항목 동기화(GET items)를 한 번으로 묶음 — `SCHEDULE_ITEM_UPDATED`(원격) 전용 */
 const syncSchedulePlacesFromItemsDebouncers = new Map<
   string,
   ReturnType<typeof setTimeout>
@@ -167,7 +167,6 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
     setTimeout(() => {
       syncSchedulePlacesFromItemsDebouncers.delete(mapKey);
       void (async () => {
-        const epochStore = usePlanMapDirectionsEpochStore.getState();
         try {
           const rows = await getScheduleItems(rid, sid);
           await mergeOrRefetchSchedulePlanPlacesFromItems(
@@ -176,12 +175,6 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
             sid,
             rows,
           );
-          await invalidateScheduleItemRouteForWholeSchedule(
-            queryClient,
-            rid,
-            sid,
-          );
-          epochStore.bumpForDirections(rid);
         } catch {
           //
         }
@@ -197,6 +190,7 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
  * — 일정 생성 시 `schedule-items`: 빈 일차는 `[]`로 시드해 불필요한 GET 방지
  * — `schedule-items`: 그 외 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
+ * — `SCHEDULE_ITEM_UPDATED`: 일정 목록만 동기화할 때 사용(원격 탭); 경로(`schedule-item-route`)는 무효화하지 않음
  * — 맵 polyline: 구간별 에폭(`bumpSegments`); 폴백 시 방 단위(`bumpForDirections`)
  */
 export async function dispatchRoomScheduleEvent(
@@ -352,22 +346,6 @@ export async function dispatchRoomScheduleEvent(
         event.actorUserId === me;
 
       if (actorIsMe) {
-        const newIds = readOrderedItemIdsFromScheduleItemsCache(
-          queryClient,
-          rid,
-          sid,
-        );
-        const { sources, useFallback } = collectSegmentSourcesForCreate(
-          newIds,
-          itemId,
-        );
-        enqueueDebouncedInvalidateScheduleRoutes(
-          queryClient,
-          rid,
-          sid,
-          useFallback ? [] : sources,
-          useFallback,
-        );
         return;
       }
 

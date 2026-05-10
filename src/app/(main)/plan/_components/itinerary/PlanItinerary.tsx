@@ -21,6 +21,10 @@ import {
   defaultNewItemStartTimeHmFromPlanPlaces,
   newOrderIndexAfterMove,
 } from "@/lib/plan/scheduleItemPlaces";
+import {
+  formatAdjacentScheduleConflictMessage,
+  getAdjacentScheduleConflictFlags,
+} from "@/lib/plan/scheduleAdjacentConflicts";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
@@ -196,6 +200,11 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [places],
   );
 
+  const scheduleConflictFlags = useMemo(
+    () => getAdjacentScheduleConflictFlags(places),
+    [places],
+  );
+
   const dragLocked = isAdding || isReordering || places.length < 2;
 
   return (
@@ -228,6 +237,9 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               orderBadgeColor={orderBadgeColor}
               dragDisabled={dragLocked || typeof place.itemId !== "number"}
               scheduleTimeEdit={{ roomId, scheduleId }}
+              scheduleOverlapWarning={formatAdjacentScheduleConflictMessage(
+                scheduleConflictFlags[index]!,
+              )}
               isDragging={dragFromIndex === index}
               isDropTarget={
                 dropTargetIndex === index &&

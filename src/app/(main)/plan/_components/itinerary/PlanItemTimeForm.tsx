@@ -5,7 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
-import { normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
+import {
+  normalizeStartTimeToHm,
+  SCHEDULE_STAY_DURATION_MAX_MINUTES,
+} from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
 
 import { usePlanContainerNarrow } from "../plan-container";
@@ -16,6 +19,7 @@ type PlanItemTimeFormProps = {
   itemId: number;
   startTime: string;
   durationMinutes: number;
+  scheduleOverlapWarning?: string;
 };
 
 const inputClass =
@@ -27,6 +31,7 @@ export function PlanItemTimeForm({
   itemId,
   startTime,
   durationMinutes,
+  scheduleOverlapWarning,
 }: PlanItemTimeFormProps) {
   const [timeExpanded, setTimeExpanded] = useState(false);
   const collapseWhenWide = useCallback(() => setTimeExpanded(false), []);
@@ -42,13 +47,24 @@ export function PlanItemTimeForm({
   }, [serverHm]);
 
   useEffect(() => {
-    setDurationStr(String(durationMinutes));
+    const d = durationMinutes;
+    const capped = Math.min(
+      Math.max(0, typeof d === "number" && Number.isFinite(d) ? d : 0),
+      SCHEDULE_STAY_DURATION_MAX_MINUTES,
+    );
+    setDurationStr(String(capped));
   }, [durationMinutes]);
 
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
     if (!Number.isFinite(dm) || dm < 0) {
       toast.error("체류 시간은 0 이상의 정수로 입력해 주세요.");
+      return;
+    }
+    if (dm > SCHEDULE_STAY_DURATION_MAX_MINUTES) {
+      toast.error(
+        `체류 시간은 ${SCHEDULE_STAY_DURATION_MAX_MINUTES}분 이하여야 해요.`,
+      );
       return;
     }
     if (!/^\d{2}:\d{2}$/.test(timeHm)) {
@@ -69,8 +85,28 @@ export function PlanItemTimeForm({
   }
 
   const baselineTime = normalizeStartTimeToHm(startTime);
-  const baselineDur = String(durationMinutes);
+  const baselineDur = String(
+    Math.min(
+      Math.max(
+        0,
+        typeof durationMinutes === "number" && Number.isFinite(durationMinutes)
+          ? durationMinutes
+          : 0,
+      ),
+      SCHEDULE_STAY_DURATION_MAX_MINUTES,
+    ),
+  );
   const dirty = baselineTime !== timeHm || baselineDur !== durationStr;
+
+  const overlapBanner =
+    scheduleOverlapWarning ? (
+      <p
+        role="status"
+        className="text-xs font-medium text-brand-red break-keep"
+      >
+        {scheduleOverlapWarning}
+      </p>
+    ) : null;
 
   const fields = (
     <div className="flex flex-wrap items-end gap-3">
@@ -120,9 +156,26 @@ export function PlanItemTimeForm({
           type="number"
           inputMode="numeric"
           min={0}
+          max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
           step={1}
           value={durationStr}
-          onChange={(e) => setDurationStr(e.target.value)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "") {
+              setDurationStr("");
+              return;
+            }
+            const v = parseInt(raw, 10);
+            if (!Number.isFinite(v)) {
+              setDurationStr(raw);
+              return;
+            }
+            const clamped = Math.min(
+              Math.max(0, v),
+              SCHEDULE_STAY_DURATION_MAX_MINUTES,
+            );
+            setDurationStr(String(clamped));
+          }}
           className={`w-24 ${inputClass}`}
           disabled={isPending}
         />
@@ -142,6 +195,7 @@ export function PlanItemTimeForm({
 
   return (
     <div className="mt-1 flex w-full flex-col gap-2 border-t border-gray-border/70 pt-3">
+      {overlapBanner}
       {narrowMode ? (
         <>
           <button

@@ -31,6 +31,8 @@ export type PlanPlaceCardProps = {
     roomId: string;
     scheduleId: number;
   };
+  /** 인접 일정 시간 겹침 안내 — 시간 폼에 표시 */
+  scheduleOverlapWarning?: string;
   onDragStart: (e: DragEvent<Element>) => void;
   onDragEnd: (e: DragEvent<Element>) => void;
   onDragOver: (e: DragEvent<Element>) => void;
@@ -46,6 +48,7 @@ export function PlanPlaceCard({
   isDropTarget,
   dragDisabled = false,
   scheduleTimeEdit,
+  scheduleOverlapWarning,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -251,6 +254,7 @@ export function PlanPlaceCard({
               itemId={place.itemId}
               startTime={place.startTime ?? ""}
               durationMinutes={place.durationMinutes ?? 0}
+              scheduleOverlapWarning={scheduleOverlapWarning}
             />
           </div>
         ) : null}
