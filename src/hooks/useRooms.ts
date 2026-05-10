@@ -62,7 +62,6 @@ import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
-  roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
   ROOMS_QUERY_KEY,
   roomDetailQueryKey,
@@ -603,9 +602,6 @@ export function useCreateRoomBookmark() {
       categoryId: number;
     }) => createRoomBookmark(roomId, { googlePlaceId, categoryId }),
     onSuccess: (_, { roomId, categoryId }) => {
-      queryClient.invalidateQueries({
-        queryKey: roomBookmarksQueryKey(roomId, categoryId),
-      });
       queryClient.setQueryData<BookmarkCategory[]>(
         bookmarkCategoriesQueryKey(roomId),
         (prev) => {
@@ -626,9 +622,11 @@ export type CreateRoomBookmarksInCategoriesResult = {
   skippedDuplicate: number;
   /** Stopped early; categories after this were not attempted. */
   firstHardError: Error | null;
+  /** Categories that received a successful POST (for local cache only). */
+  addedCategoryIds: number[];
 };
 
-/** Sequentially POST one bookmark per category; invalidates category + list caches once. */
+/** Sequentially POST one bookmark per category. Bookmark list refetch는 STOMP 브로드캐스트에서만 처리합니다. */
 export function useCreateRoomBookmarksInCategories() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -644,10 +642,12 @@ export function useCreateRoomBookmarksInCategories() {
       let added = 0;
       let skippedDuplicate = 0;
       let firstHardError: Error | null = null;
+      const addedCategoryIds: number[] = [];
       for (const categoryId of categoryIds) {
         try {
           await createRoomBookmark(roomId, { googlePlaceId, categoryId });
           added += 1;
+          addedCategoryIds.push(categoryId);
         } catch (e) {
           if (e instanceof HttpError && e.status === 409) {
             skippedDuplicate += 1;
@@ -657,20 +657,22 @@ export function useCreateRoomBookmarksInCategories() {
           }
         }
       }
-      return { added, skippedDuplicate, firstHardError };
+      return { added, skippedDuplicate, firstHardError, addedCategoryIds };
     },
-    onSettled: (_data, _err, { roomId, categoryIds }) => {
-      queryClient.invalidateQueries({
-        queryKey: bookmarkCategoriesQueryKey(roomId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: roomBookmarksByRoomRootQueryKey(roomId),
-      });
-      for (const cid of categoryIds) {
-        queryClient.invalidateQueries({
-          queryKey: roomBookmarksQueryKey(roomId, cid),
-        });
-      }
+    onSuccess: (result, { roomId }) => {
+      if (!result.addedCategoryIds.length) return;
+      queryClient.setQueryData<BookmarkCategory[]>(
+        bookmarkCategoriesQueryKey(roomId),
+        (prev) => {
+          if (!prev?.length) return prev;
+          const bumped = new Set(result.addedCategoryIds);
+          return prev.map((c) =>
+            bumped.has(c.categoryId)
+              ? { ...c, placeCount: c.placeCount + 1 }
+              : c,
+          );
+        },
+      );
     },
   });
 }

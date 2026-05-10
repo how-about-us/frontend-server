@@ -1,6 +1,12 @@
 import { apiFetch } from "@/lib/api/client";
 import { HttpError, isRoomBookmarkDuplicateFromBody } from "@/lib/api/errors";
-import { apiUrl, jsonBody, requestJson, requestVoid, tryParseJson } from "@/lib/api/http";
+import {
+  apiUrl,
+  jsonBody,
+  requestJson,
+  requestVoid,
+  tryParseJson,
+} from "@/lib/api/http";
 import type {
   RoomBookmark,
   RoomBookmarkCategoryPatchRequest,

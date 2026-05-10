@@ -19,11 +19,7 @@ type Props = {
   onAdded?: () => void;
 };
 
-export function AddToBookmarkModal({
-  googlePlaceId,
-  onClose,
-  onAdded,
-}: Props) {
+export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
   const roomId = useSessionStore((s) => s.currentRoomId);
   const {
     data: categories,
@@ -32,10 +28,8 @@ export function AddToBookmarkModal({
     error: categoriesErr,
     refetch,
   } = useBookmarkCategories(roomId);
-  const {
-    mutate: addBookmarksBulk,
-    isPending: isAddingBookmarks,
-  } = useCreateRoomBookmarksInCategories();
+  const { mutate: addBookmarksBulk, isPending: isAddingBookmarks } =
+    useCreateRoomBookmarksInCategories();
   const { mutate: createCategory, isPending: isCreatingCategory } =
     useCreateBookmarkCategory();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -67,10 +61,7 @@ export function AddToBookmarkModal({
     setCreateFolderModalOpen(true);
   };
 
-  const selectedAsArray = useMemo(
-    () => Array.from(selectedIds),
-    [selectedIds],
-  );
+  const selectedAsArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
 
   const notifyResult = ({
     added,
@@ -90,9 +81,7 @@ export function AddToBookmarkModal({
     }
     if (added > 0 && skippedDuplicate === 0) {
       toast.success(
-        added === 1
-          ? "보관함에 추가했어요"
-          : `${added}개 리스트에 추가했어요`,
+        added === 1 ? "보관함에 추가했어요" : `${added}개 리스트에 추가했어요`,
       );
     } else if (added > 0 && skippedDuplicate > 0) {
       toast.success(`${added}개 리스트에 추가했어요`, {
@@ -207,8 +196,8 @@ export function AddToBookmarkModal({
               "disabled:opacity-55",
             )}
           >
-            <Plus className="size-5 shrink-0 stroke-[2.25]" aria-hidden />
-            새 리스트 만들기
+            <Plus className="size-5 shrink-0 stroke-[2.25]" aria-hidden />새
+            리스트 만들기
           </button>
 
           {categoriesLoading && (
@@ -245,8 +234,8 @@ export function AddToBookmarkModal({
                 disabled={isCreatingCategory || isAddingBookmarks}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-border bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray disabled:opacity-60"
               >
-                <Plus className="size-4" strokeWidth={2.2} aria-hidden />
-                새 리스트 만들기
+                <Plus className="size-4" strokeWidth={2.2} aria-hidden />새
+                리스트 만들기
               </button>
             </div>
           )}
