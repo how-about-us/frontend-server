@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -72,7 +73,7 @@ export default function NewTripPage() {
           );
           setCurrentRoomId(room.id);
           setCurrentRoomInviteCode(room.inviteCode);
-          router.replace("/plan");
+          router.push("/plan");
         },
       },
     );
@@ -82,7 +83,12 @@ export default function NewTripPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 py-12">
       <div className="w-full max-w-xl">
         <div className="mb-10 flex justify-center">
-          <Image src="/logo.svg" alt="로고" width={140} height={20} />
+          <Link
+            href="/home"
+            className="inline-flex rounded-md outline-none ring-offset-2 transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-brand-red"
+          >
+            <Image src="/logo.svg" alt="로고" width={140} height={20} priority />
+          </Link>
         </div>
 
         <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-black">
@@ -170,6 +176,13 @@ export default function NewTripPage() {
             ? "생성 중…"
             : "계획을 시작하세요"}
         </button>
+
+        <Link
+          href="/home"
+          className="mt-4 block text-center text-sm font-medium text-dark-gray underline-offset-4 transition hover:text-neutral-900 hover:underline"
+        >
+          홈으로 돌아가기
+        </Link>
       </div>
     </div>
   );
