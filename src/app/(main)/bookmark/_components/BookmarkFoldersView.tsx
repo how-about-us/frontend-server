@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
+import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
@@ -81,8 +82,14 @@ export function BookmarkFoldersView() {
     if (modalMode === "edit" && editingFolder) {
       const categoryId = Number.parseInt(editingFolder.id, 10);
       if (!Number.isFinite(categoryId)) return;
+      const peerTitles = folders
+        .filter((f) => f.id !== editingFolder.id)
+        .map((f) => f.title);
+      const resolvedName = title.trim()
+        ? title.trim()
+        : pickUniqueUntitledBookmarkCategoryName(peerTitles);
       updateCategory(
-        { roomId, categoryId, name: title, colorCode: color },
+        { roomId, categoryId, name: resolvedName, colorCode: color },
         {
           onSuccess: () => {
             setModalOpen(false);
@@ -100,8 +107,11 @@ export function BookmarkFoldersView() {
       );
       return;
     }
+    const resolvedName = title.trim()
+      ? title.trim()
+      : pickUniqueUntitledBookmarkCategoryName(folders.map((f) => f.title));
     createCategory(
-      { roomId, name: title, colorCode: color },
+      { roomId, name: resolvedName, colorCode: color },
       {
         onSuccess: () => {
           setModalOpen(false);
@@ -272,6 +282,13 @@ export function BookmarkFoldersView() {
           mode={modalMode}
           initialFolder={editingFolder}
           busy={modalMode === "edit" ? isUpdating : isCreating}
+          untitledNameHint={pickUniqueUntitledBookmarkCategoryName(
+            modalMode === "edit" && editingFolder
+              ? folders
+                  .filter((f) => f.id !== editingFolder.id)
+                  .map((f) => f.title)
+              : folders.map((f) => f.title),
+          )}
           onClose={() => {
             setModalOpen(false);
             setEditingFolder(null);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { BookmarkFolder } from "@/types/bookmark";
+import { UNTITLED_BOOKMARK_CATEGORY_LABEL } from "@/lib/bookmark-untitled-category-name";
 
 const COLOR_PRESETS = [
   "#EAB308",
@@ -33,6 +34,8 @@ export function AddBookmarkModal({
   onClose,
   onSave,
   overlayZClass = "z-50",
+  /** 비어 있을 때 실제로 쓰이는 이름(다음 번호 반영). 없으면 기본 라벨만 표시 */
+  untitledNameHint,
 }: {
   mode: Mode;
   initialFolder: BookmarkFolder | null;
@@ -41,6 +44,7 @@ export function AddBookmarkModal({
   onSave: (payload: { title: string; color: string }) => void;
   /** 상위 모달 위에 겹칠 때만 지정 (예: `z-[65]`) */
   overlayZClass?: string;
+  untitledNameHint?: string;
 }) {
   const [title, setTitle] = useState(() => initialTitle(mode, initialFolder));
   const [color, setColor] = useState(() => initialColor(mode, initialFolder));
@@ -58,7 +62,7 @@ export function AddBookmarkModal({
     if (busy) return;
     const trimmed = title.trim();
     onSave({
-      title: trimmed || "제목 없는 북마크",
+      title: trimmed,
       color,
     });
   };
@@ -101,7 +105,7 @@ export function AddBookmarkModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="제목 없는 북마크"
+              placeholder={untitledNameHint ?? UNTITLED_BOOKMARK_CATEGORY_LABEL}
               className="w-full rounded-xl border border-gray-border px-3 py-2.5 text-sm outline-none ring-brand-red/30 focus:border-brand-red focus:ring-2"
             />
           </div>

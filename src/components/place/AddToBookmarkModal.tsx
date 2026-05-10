@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
+import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
@@ -128,8 +129,13 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
     color: string;
   }) => {
     if (!roomId || isCreatingCategory || isAddingBookmarks) return;
+    const resolvedName = title.trim()
+      ? title.trim()
+      : pickUniqueUntitledBookmarkCategoryName(
+          (categories ?? []).map((c) => c.name),
+        );
     createCategory(
-      { roomId, name: title, colorCode: color },
+      { roomId, name: resolvedName, colorCode: color },
       {
         onSuccess: (created) => {
           setCreateFolderModalOpen(false);
@@ -337,6 +343,9 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           initialFolder={null}
           overlayZClass="z-[65]"
           busy={isCreatingCategory || isAddingBookmarks}
+          untitledNameHint={pickUniqueUntitledBookmarkCategoryName(
+            (categories ?? []).map((c) => c.name),
+          )}
           onClose={() => setCreateFolderModalOpen(false)}
           onSave={handleCreateFolderSave}
         />
