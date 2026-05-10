@@ -4,6 +4,7 @@ import { getChatPanelLook } from "@/components/chat/chat-panel-look";
 import type { ChatMessageTextTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 function labelForAiStatus(status: AiRequestStatus): string {
   const labels: Record<AiRequestStatus, string> = {
@@ -132,21 +133,37 @@ export function OtherMessageGroup({
   const { typo, chrome } = getChatPanelLook(isMinimized);
   const first = messages[0];
   const groupTime = messages.findLast((m) => m.time)?.time;
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="flex gap-2">
-      <div className="flex flex-col items-center gap-1">
+      <motion.div
+        layout="position"
+        className="flex flex-col items-center gap-1"
+        transition={
+          reduceMotion ?
+            { duration: 0 }
+          : {
+              type: "tween",
+              duration: 0.18,
+              ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+      >
         <div className={cn(chrome.avatarSm, "bg-light-gray")}>
           {first.avatar && (
             <img
               src={first.avatar}
               alt={first.sender ?? ""}
-              className="h-full w-full object-cover"
+              className={cn(
+                "h-full w-full object-cover",
+                !reduceMotion && "transition-opacity duration-150 ease-out",
+              )}
             />
           )}
         </div>
         <span className={typo.metaMuted}>{first.sender}</span>
-      </div>
+      </motion.div>
       <div className="min-w-0">
         <div className="flex flex-col gap-1">
           {messages.map((msg) => (
@@ -253,10 +270,23 @@ export function AiMessageGroup({
 }) {
   const { typo, chrome } = getChatPanelLook(isMinimized);
   const groupTime = messages.findLast((m) => m.time)?.time;
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="flex gap-2">
-      <div className="flex shrink-0 flex-col items-center gap-0.5">
+      <motion.div
+        layout="position"
+        className="flex shrink-0 flex-col items-center gap-0.5"
+        transition={
+          reduceMotion ?
+            { duration: 0 }
+          : {
+              type: "tween",
+              duration: 0.18,
+              ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+      >
         <div
           className={cn(chrome.avatarSm, "bg-transparent")}
           role="img"
@@ -266,11 +296,14 @@ export function AiMessageGroup({
           <img
             src={chrome.wooriIconSrc}
             alt="WOORI"
-            className="h-full w-full object-contain"
+            className={cn(
+              "h-full w-full object-contain",
+              !reduceMotion && "transition-opacity duration-150 ease-out",
+            )}
           />
         </div>
         <span className={typo.wooriSenderLabel}>WOORI</span>
-      </div>
+      </motion.div>
 
       <div className="min-w-0">
         <div className="flex flex-col gap-1">

@@ -10,12 +10,14 @@ import type { ServerChatMessage } from "@/types/chat";
 import {
   deriveAiRequestConversationState,
   mergeServerMessageLists,
+  newestServerMessageByCreatedAt,
   normalizeFetchedRoomMessages,
   oldestServerMessageByCreatedAt,
   parseFiniteNumber,
   serverMessageToChatMessage,
   transientMessagesDuringRoomHistoryFetch,
 } from "@/lib/chat";
+import { getLastSeenMessageId, setLastSeenMessageId } from "@/lib/chat/lastSeenMessageStorage";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
 import { getRoomMessages } from "@/lib/api/rooms";
@@ -23,6 +25,10 @@ import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
 import { warmPlacePhotoQueriesFromChatHistory } from "@/lib/places/warmChatHistoryPlacePhotos";
+import {
+  hasOlderHistoryPage,
+  loadInitialRoomHistory,
+} from "@/lib/chat/initialRoomHistory";
 
 export const CHAT_MESSAGE_PAGE_SIZE = 30;
 
@@ -35,11 +41,12 @@ export type UseChatMessagesOptions = {
   fetchHistory: boolean;
 };
 
-function hasOlderHistoryPage(
-  fetchedLength: number,
-  pageSize: number,
-): boolean {
-  return fetchedLength >= pageSize;
+/** 히스토리 GET 1회 가드 — userId가 나중에 채워지면 afterId 경로로 다시 가져갈 수 있게 분리 */
+function chatHistoryGateKey(
+  uid: number | null | undefined,
+  roomId: string,
+): string {
+  return `${uid ?? "anon"}:${roomId.trim()}`;
 }
 
 export function useChatMessages(
@@ -54,6 +61,10 @@ export function useChatMessages(
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingOlder, setIsFetchingOlder] = useState(false);
+  const [hasMoreNewer, setHasMoreNewer] = useState(false);
+  const [initialScrollAnchorId, setInitialScrollAnchorId] = useState<
+    string | undefined
+  >(undefined);
   const { sendChatMessage, sendAiMessage, sendCancelAiRequest } =
     useChatActions();
 
@@ -62,6 +73,8 @@ export function useChatMessages(
   const historyFetchedRoomIdsRef = useRef<Set<string>>(new Set());
   /** 방별 과거 메시지 추가 로드 가능 여부 */
   const hasMoreByRoomRef = useRef<Map<string, boolean>>(new Map());
+  /** 방별 after 이후 더 불러올 메시지 존재 여부 */
+  const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
   const isFetchingOlderRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
   rawMessagesRef.current = rawMessages;
@@ -113,10 +126,13 @@ export function useChatMessages(
   useEffect(() => {
     if (!roomId) {
       setRawMessages([]);
+      setInitialScrollAnchorId(undefined);
       prevRoomForHistoryGateRef.current = null;
       historyFetchedRoomIdsRef.current.clear();
       hasMoreByRoomRef.current.clear();
+      hasMoreNewerByRoomRef.current.clear();
       setHasMore(true);
+      setHasMoreNewer(false);
       setIsFetchingOlder(false);
       isFetchingOlderRef.current = false;
       return;
@@ -126,7 +142,9 @@ export function useChatMessages(
       const prevR = prevRoomForHistoryGateRef.current;
       if (prevR !== null && prevR !== roomId) {
         setRawMessages([]);
+        setInitialScrollAnchorId(undefined);
         setHasMore(true);
+        setHasMoreNewer(false);
       }
       prevRoomForHistoryGateRef.current = roomId;
       return;
@@ -134,43 +152,65 @@ export function useChatMessages(
 
     prevRoomForHistoryGateRef.current = roomId;
 
-    if (historyFetchedRoomIdsRef.current.has(roomId)) {
+    const gateKey = chatHistoryGateKey(userId, roomId);
+
+    if (historyFetchedRoomIdsRef.current.has(gateKey)) {
       const hm = hasMoreByRoomRef.current.get(roomId);
       setHasMore(hm !== false);
+      const hmn = hasMoreNewerByRoomRef.current.get(roomId);
+      setHasMoreNewer(hmn === true);
+      setInitialScrollAnchorId(undefined);
       return;
     }
 
     setRawMessages([]);
     setHasMore(true);
+    setHasMoreNewer(false);
+    setInitialScrollAnchorId(undefined);
     let cancelled = false;
 
-    getRoomMessages(roomId, { size: CHAT_MESSAGE_PAGE_SIZE })
-      .then((history) => {
-        if (cancelled) return;
-        const normalizedHistory = normalizeFetchedRoomMessages(history);
-        const more = hasOlderHistoryPage(
-          normalizedHistory.length,
+    const lastSeenId =
+      userId != null ? getLastSeenMessageId(userId, roomId) : null;
+
+    void (async () => {
+      try {
+        const out = await loadInitialRoomHistory(
+          roomId,
+          lastSeenId,
           CHAT_MESSAGE_PAGE_SIZE,
         );
-        hasMoreByRoomRef.current.set(roomId, more);
-        setHasMore(more);
+        if (cancelled) return;
+
+        hasMoreByRoomRef.current.set(roomId, out.hasMoreOlder);
+        hasMoreNewerByRoomRef.current.set(roomId, out.hasMoreNewer);
+        setHasMore(out.hasMoreOlder);
+        setHasMoreNewer(out.hasMoreNewer);
+        setInitialScrollAnchorId(out.initialScrollAnchorId);
         setRawMessages((prev) =>
           mergeServerMessageLists(
-            normalizedHistory,
+            out.serverSlice,
             transientMessagesDuringRoomHistoryFetch(prev),
           ),
         );
-        historyFetchedRoomIdsRef.current.add(roomId);
-        void warmPlacePhotoQueriesFromChatHistory(queryClient, normalizedHistory);
-      })
-      .catch(() => {
+        historyFetchedRoomIdsRef.current.add(gateKey);
+        void warmPlacePhotoQueriesFromChatHistory(queryClient, out.warmHistory);
+      } catch {
         /* 실패 시 Set에 넣지 않음 → 다음 패널 오픈 시 재시도 */
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [roomId, fetchHistory, queryClient]);
+  }, [roomId, fetchHistory, queryClient, userId]);
+
+  useEffect(() => {
+    if (!fetchHistory) return;
+    if (!roomId || userId == null) return;
+    if (rawMessages.length === 0) return;
+    const newest = newestServerMessageByCreatedAt(rawMessages);
+    if (newest) setLastSeenMessageId(userId, roomId, newest.id);
+  }, [rawMessages, roomId, userId, fetchHistory]);
 
   const fetchOlderMessages = useCallback(() => {
     const rid = roomId;
@@ -210,6 +250,33 @@ export function useChatMessages(
       });
   }, [roomId, queryClient]);
 
+  const jumpToLatest = useCallback(() => {
+    const rid = roomId;
+    if (!rid) return;
+
+    void getRoomMessages(rid, { size: CHAT_MESSAGE_PAGE_SIZE })
+      .then((history) => {
+        const normalized = normalizeFetchedRoomMessages(history);
+        const more = hasOlderHistoryPage(
+          normalized.length,
+          CHAT_MESSAGE_PAGE_SIZE,
+        );
+        hasMoreByRoomRef.current.set(rid, more);
+        hasMoreNewerByRoomRef.current.set(rid, false);
+        setInitialScrollAnchorId(undefined);
+        setHasMore(more);
+        setHasMoreNewer(false);
+        setRawMessages([]);
+        queueMicrotask(() => {
+          setRawMessages(normalized);
+          void warmPlacePhotoQueriesFromChatHistory(queryClient, normalized);
+        });
+      })
+      .catch(() => {
+        /* noop */
+      });
+  }, [roomId, queryClient]);
+
   useEffect(() => {
     if (!roomId) {
       setRoomChatMessageHandler(null);
@@ -235,7 +302,10 @@ export function useChatMessages(
     sendAiMessage,
     sendCancelAiRequest,
     fetchOlderMessages,
+    jumpToLatest,
     hasMore,
+    hasMoreNewer,
     isFetchingOlder,
+    initialScrollAnchorId,
   };
 }

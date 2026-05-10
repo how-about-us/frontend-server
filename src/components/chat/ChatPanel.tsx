@@ -34,8 +34,11 @@ export function ChatPanel() {
     sendAiMessage,
     sendCancelAiRequest,
     fetchOlderMessages,
+    jumpToLatest,
     hasMore,
+    hasMoreNewer,
     isFetchingOlder,
+    initialScrollAnchorId,
   } = useChatMessages(roomId, { fetchHistory: panelOpen });
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
@@ -90,6 +93,9 @@ export function ChatPanel() {
             onLoadOlder={fetchOlderMessages}
             hasMoreOlder={hasMore}
             isLoadingOlder={isFetchingOlder}
+            hasMoreNewer={hasMoreNewer}
+            onJumpToLatest={jumpToLatest}
+            initialScrollAnchorId={initialScrollAnchorId}
           />
           <ChatInputBar
             isMinimized={isMinimized}

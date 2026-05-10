@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import type { ChatMessage } from "@/types/chat";
+import { motion, useReducedMotion } from "framer-motion";
 
 export function PlaceShareCard({
   message,
@@ -18,6 +19,7 @@ export function PlaceShareCard({
   isMinimized?: boolean;
 }) {
   const typo = resolveChatMessageTypography(isMinimized);
+  const reduceMotion = useReducedMotion();
   const place = message.place;
   const myId = useSessionStore((s) => s.user?.id);
   const { setSelectedPlace } = useSelectedPlace();
@@ -71,14 +73,29 @@ export function PlaceShareCard({
 
   return (
     <div className="flex gap-2">
-      <div className="flex flex-col items-center gap-1">
+      <motion.div
+        layout="position"
+        className="flex flex-col items-center gap-1"
+        transition={
+          reduceMotion ?
+            { duration: 0 }
+          : {
+              type: "tween",
+              duration: 0.18,
+              ease: [0.25, 0.1, 0.25, 1],
+            }
+        }
+      >
         <div className={cn(chatMessageChrome.avatarSm, "bg-light-gray")}>
           {message.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element -- 멤버 프로필 URL 가변
             <img
               src={message.avatar}
               alt={message.sender ?? ""}
-              className="h-full w-full object-cover"
+              className={cn(
+                "h-full w-full object-cover",
+                !reduceMotion && "transition-opacity duration-150 ease-out",
+              )}
             />
           ) : null}
         </div>
@@ -87,7 +104,7 @@ export function PlaceShareCard({
         >
           {message.sender}
         </span>
-      </div>
+      </motion.div>
       <div className="flex min-w-0 flex-col items-start gap-1">
         {cardButton}
         {timeRow}

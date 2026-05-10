@@ -598,6 +598,19 @@ export function oldestServerMessageByCreatedAt(
   return oldest;
 }
 
+/** 목록 중 `createdAt`이 가장 늦은 메시지 */
+export function newestServerMessageByCreatedAt(
+  msgs: ServerChatMessage[],
+): ServerChatMessage | null {
+  if (msgs.length === 0) return null;
+  let newest = msgs[0]!;
+  for (let i = 1; i < msgs.length; i++) {
+    const m = msgs[i]!;
+    if (m.createdAt.localeCompare(newest.createdAt) > 0) newest = m;
+  }
+  return newest;
+}
+
 /**
  * 초기 히스토리 GET 동안 패널에서만 잠깐 쌓이는 메시지(STOMP 등) —
  * 병합 시 서버 페이지와 함께 유지.

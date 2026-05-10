@@ -81,11 +81,6 @@ export {
   rejectJoinRequest,
 } from "./join";
 
-export {
-  getRoomMembers,
-  kickMember,
-  leaveRoom,
-  transferHost,
-} from "./members";
+export { getRoomMembers, kickMember, leaveRoom, transferHost } from "./members";
 
 export { getRoomMessages } from "./messages";

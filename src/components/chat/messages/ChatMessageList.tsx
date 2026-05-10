@@ -5,9 +5,10 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 import type { ChatMessage } from "@/types/chat";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import {
@@ -22,6 +23,7 @@ import {
   AiMessageGroup,
 } from "./ChatMessageGroup";
 import { PlaceShareCard } from "./PlaceShareCard";
+import { JumpToBottomButton } from "./JumpToBottomButton";
 
 const NEAR_BOTTOM_PX = 80;
 
@@ -32,6 +34,9 @@ export function ChatMessageList({
   onLoadOlder,
   hasMoreOlder = false,
   isLoadingOlder = false,
+  hasMoreNewer = false,
+  onJumpToLatest,
+  initialScrollAnchorId,
 }: {
   messages: ChatMessage[];
   isMinimized?: boolean;
@@ -39,6 +44,10 @@ export function ChatMessageList({
   onLoadOlder?: () => void;
   hasMoreOlder?: boolean;
   isLoadingOlder?: boolean;
+  hasMoreNewer?: boolean;
+  onJumpToLatest?: () => void;
+  /** 최초 로드 시 이 메시지로 스크롤 정렬 (없으면 최하단) */
+  initialScrollAnchorId?: string;
 }) {
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -51,6 +60,8 @@ export function ChatMessageList({
   const prevFirstIdRef = useRef<string | undefined>(undefined);
   const prevLastIdRef = useRef<string | undefined>(undefined);
   const scrollPreserveRef = useRef({ sh: 0, st: 0 });
+  const didInitialScrollRef = useRef(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   const firstId = messages[0]?.id;
   const count = messages.length;
@@ -61,6 +72,18 @@ export function ChatMessageList({
     count,
     firstId,
   );
+
+  const scrollToBottomSmooth = useCallback(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, []);
+
+  const handleJumpClick = useCallback(() => {
+    if (hasMoreNewer && onJumpToLatest) {
+      onJumpToLatest();
+    } else {
+      scrollToBottomSmooth();
+    }
+  }, [hasMoreNewer, onJumpToLatest, scrollToBottomSmooth]);
 
   const scrollToMessage = useCallback((messageId: string) => {
     const root = scrollRootRef.current;
@@ -80,6 +103,8 @@ export function ChatMessageList({
       sh: root.scrollHeight,
       st: root.scrollTop,
     };
+    const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
+    setIsAtBottom(dist < NEAR_BOTTOM_PX);
   }, []);
 
   useLayoutEffect(() => {
@@ -98,6 +123,10 @@ export function ChatMessageList({
     const lastId = messages[messages.length - 1]?.id;
     const count = messages.length;
 
+    if (prevCount > 0 && count === 0) {
+      didInitialScrollRef.current = false;
+    }
+
     const prepended = isChatHistoryPrependSnapshot(
       prevCount,
       prevFirst,
@@ -108,8 +137,20 @@ export function ChatMessageList({
     if (prepended && prevSh > 0) {
       const newSh = root.scrollHeight;
       root.scrollTop = newSh - prevSh + prevSt;
-    } else if (prevCount === 0 && count > 0) {
-      bottom?.scrollIntoView({ behavior: "auto", block: "end" });
+    } else if (prevCount === 0 && count > 0 && !didInitialScrollRef.current) {
+      didInitialScrollRef.current = true;
+      if (initialScrollAnchorId) {
+        const el = root.querySelector(
+          `[data-chat-anchor="${CSS.escape(initialScrollAnchorId)}"]`,
+        );
+        if (el instanceof HTMLElement) {
+          el.scrollIntoView({ behavior: "auto", block: "start" });
+        } else {
+          bottom?.scrollIntoView({ behavior: "auto", block: "end" });
+        }
+      } else {
+        bottom?.scrollIntoView({ behavior: "auto", block: "end" });
+      }
     } else if (count > prevCount && lastId !== prevLast && !prepended) {
       const distFromBottom =
         root.scrollHeight - root.scrollTop - root.clientHeight;
@@ -125,7 +166,9 @@ export function ChatMessageList({
       sh: root.scrollHeight,
       st: root.scrollTop,
     };
-  }, [messages]);
+    const distAfter = root.scrollHeight - root.scrollTop - root.clientHeight;
+    setIsAtBottom(distAfter < NEAR_BOTTOM_PX);
+  }, [messages, initialScrollAnchorId]);
 
   useEffect(() => {
     const root = scrollRootRef.current;
@@ -147,90 +190,90 @@ export function ChatMessageList({
   }, [onLoadOlder, hasMoreOlder, isLoadingOlder]);
 
   return (
-    <div
-      ref={scrollRootRef}
-      onScroll={handleScroll}
-      className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:#d9d9d9_transparent]",
-        isMinimized && "px-2 py-1.5",
-      )}
-    >
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <div
-        ref={topSentinelRef}
-        className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
-        aria-hidden
-      />
-      {isLoadingOlder ? (
+        ref={scrollRootRef}
+        onScroll={handleScroll}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:#d9d9d9_transparent]",
+          isMinimized && "px-2 py-1.5",
+        )}
+      >
         <div
-          className={cn(
-            "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
-            isMinimized && "mb-1.5 min-h-4 text-[10px]",
-          )}
-          aria-live="polite"
-        >
-          이전 메시지 불러오는 중…
-        </div>
-      ) : null}
-      <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
-        {groups.map((group) => {
-          const type = group[0].type;
-          const placeIsMine =
-            type === "place" &&
-            myId != null &&
-            group[0].senderUserId != null &&
-            group[0].senderUserId === myId;
-          const motionCfg = getChatMessageMotion(type, { placeIsMine });
+          ref={topSentinelRef}
+          className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
+          aria-hidden
+        />
+        {isLoadingOlder ? (
+          <div
+            className={cn(
+              "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
+              isMinimized && "mb-1.5 min-h-4 text-[10px]",
+            )}
+            aria-live="polite"
+          >
+            이전 메시지 불러오는 중…
+          </div>
+        ) : null}
+        <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
+          {groups.map((group) => {
+            const type = group[0].type;
+            const placeIsMine =
+              type === "place" &&
+              myId != null &&
+              group[0].senderUserId != null &&
+              group[0].senderUserId === myId;
+            const motionCfg = getChatMessageMotion(type, { placeIsMine });
 
-          const inner =
-            type === "system" ? (
-              <SystemMessage
-                message={group[0]}
-                isMinimized={isMinimized}
-              />
-            ) :
-            type === "place" ? (
-              <PlaceShareCard
-                message={group[0]}
-                isMinimized={isMinimized}
-              />
-            ) :
-            type === "mine" ? (
-              <MyMessageGroup
-                messages={group}
-                isMinimized={isMinimized}
-                onCancelAiRequest={onCancelAiRequest}
-              />
-            ) :
-            type === "ai" ? (
-              <AiMessageGroup
-                messages={group}
-                isMinimized={isMinimized}
-                onReplyTargetClick={scrollToMessage}
-              />
-            ) : (
-              <OtherMessageGroup
-                messages={group}
-                isMinimized={isMinimized}
-              />
+            const inner =
+              type === "system" ? (
+                <SystemMessage message={group[0]} isMinimized={isMinimized} />
+              ) : type === "place" ? (
+                <PlaceShareCard message={group[0]} isMinimized={isMinimized} />
+              ) : type === "mine" ? (
+                <MyMessageGroup
+                  messages={group}
+                  isMinimized={isMinimized}
+                  onCancelAiRequest={onCancelAiRequest}
+                />
+              ) : type === "ai" ? (
+                <AiMessageGroup
+                  messages={group}
+                  isMinimized={isMinimized}
+                  onReplyTargetClick={scrollToMessage}
+                />
+              ) : (
+                <OtherMessageGroup messages={group} isMinimized={isMinimized} />
+              );
+
+            const skipEnterMotion = Boolean(reduceMotion || isHistoryPrepend);
+
+            return (
+              <motion.div
+                key={group[0].id}
+                data-chat-anchor={group[0].id}
+                initial={skipEnterMotion ? false : motionCfg.initial}
+                animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+                transition={
+                  skipEnterMotion ? { duration: 0 } : motionCfg.transition
+                }
+              >
+                {inner}
+              </motion.div>
             );
-
-          const skipEnterMotion = Boolean(reduceMotion || isHistoryPrepend);
-
-          return (
-            <motion.div
-              key={group[0].id}
-              initial={skipEnterMotion ? false : motionCfg.initial}
-              animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
-              transition={
-                skipEnterMotion ? { duration: 0 } : motionCfg.transition
-              }
-            >
-              {inner}
-            </motion.div>
-          );
-        })}
+          })}
+        </div>
+        <div ref={bottomRef} />
       </div>
-      <div ref={bottomRef} />
+      <AnimatePresence>
+        {!isAtBottom && (
+          <JumpToBottomButton
+            key="jump-bottom"
+            isMinimized={isMinimized}
+            onClick={handleJumpClick}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
