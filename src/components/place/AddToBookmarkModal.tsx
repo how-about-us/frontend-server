@@ -4,6 +4,7 @@ import { Check, Plus, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
 import {
   useBookmarkCategories,
@@ -137,7 +138,10 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
         },
         onError: (e) => {
           toast.error(
-            e instanceof Error ? e.message : "카테고리를 만들지 못했습니다.",
+            messageForBookmarkCategorySaveError(
+              e,
+              "카테고리를 만들지 못했습니다.",
+            ),
           );
         },
       },

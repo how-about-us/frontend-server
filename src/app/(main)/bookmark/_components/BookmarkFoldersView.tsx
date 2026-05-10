@@ -3,6 +3,9 @@
 import { BookmarkPlus, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import {
   useBookmarkCategories,
   useCreateBookmarkCategory,
@@ -85,6 +88,14 @@ export function BookmarkFoldersView() {
             setModalOpen(false);
             setEditingFolder(null);
           },
+          onError: (e) => {
+            toast.error(
+              messageForBookmarkCategorySaveError(
+                e,
+                "리스트를 수정하지 못했습니다.",
+              ),
+            );
+          },
         },
       );
       return;
@@ -94,6 +105,14 @@ export function BookmarkFoldersView() {
       {
         onSuccess: () => {
           setModalOpen(false);
+        },
+        onError: (e) => {
+          toast.error(
+            messageForBookmarkCategorySaveError(
+              e,
+              "리스트를 추가하지 못했습니다.",
+            ),
+          );
         },
       },
     );

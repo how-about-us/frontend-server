@@ -20,7 +20,7 @@ export async function createBookmarkCategory(
   return requestJson(
     apiUrl(`/rooms/${roomId}/bookmark-categories`),
     { method: "POST", ...jsonBody(body) },
-    { errorMessage: "보관함 카테고리 생성 실패" },
+    { errorMessage: "보관함 카테고리 생성 실패", useHttpError: true },
   );
 }
 
@@ -32,7 +32,7 @@ export async function updateBookmarkCategory(
   return requestJson(
     apiUrl(`/rooms/${roomId}/bookmark-categories/${categoryId}`),
     { method: "PATCH", ...jsonBody(body) },
-    { errorMessage: "보관함 카테고리 수정 실패" },
+    { errorMessage: "보관함 카테고리 수정 실패", useHttpError: true },
   );
 }
 

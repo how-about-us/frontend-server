@@ -67,3 +67,15 @@ export class HttpError extends Error {
     super(message);
   }
 }
+
+/** 보관함 카테고리명 중복(HTTP 409) 시 토스트용 문구 */
+export function messageForBookmarkCategorySaveError(
+  e: unknown,
+  fallback: string,
+): string {
+  if (e instanceof HttpError && e.status === 409) {
+    return "이미 존재하는 북마크명입니다";
+  }
+  if (e instanceof Error) return e.message;
+  return fallback;
+}
