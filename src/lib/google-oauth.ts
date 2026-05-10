@@ -21,7 +21,7 @@ export function getGoogleOAuthRedirectUri(): string {
   }
   return (
     process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ??
-    "http://localhost:3000/auth/callback"
+    "http://www.howaboutus.app/auth/callback"
   );
 }
 

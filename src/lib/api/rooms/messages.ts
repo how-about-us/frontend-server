@@ -3,10 +3,11 @@ import type { RoomMessage } from "./types";
 
 export async function getRoomMessages(
   roomId: string,
-  params?: { afterId?: string; size?: number },
+  params?: { afterId?: string; beforeId?: string; size?: number },
 ): Promise<RoomMessage[]> {
   const url = new URL(apiUrl(`/rooms/${roomId}/messages`));
   if (params?.afterId) url.searchParams.set("afterId", params.afterId);
+  if (params?.beforeId) url.searchParams.set("beforeId", params.beforeId);
   if (params?.size !== undefined)
     url.searchParams.set("size", String(params.size));
 

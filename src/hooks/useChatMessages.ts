@@ -1,13 +1,20 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import {
   deriveAiRequestConversationState,
   mergeServerMessageLists,
-  normalizeMessageKind,
-  normalizeServerChatMessage,
+  normalizeFetchedRoomMessages,
+  oldestServerMessageByCreatedAt,
   parseFiniteNumber,
   serverMessageToChatMessage,
+  transientMessagesDuringRoomHistoryFetch,
 } from "@/lib/chat";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
@@ -17,6 +24,8 @@ import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
 import { warmPlacePhotoQueriesFromChatHistory } from "@/lib/places/warmChatHistoryPlacePhotos";
 
+export const CHAT_MESSAGE_PAGE_SIZE = 30;
+
 export type UseChatMessagesOptions = {
   /**
    * `false`: 패널 닫힘 — GET 없음. STOMP만 유지.
@@ -25,6 +34,13 @@ export type UseChatMessagesOptions = {
    */
   fetchHistory: boolean;
 };
+
+function hasOlderHistoryPage(
+  fetchedLength: number,
+  pageSize: number,
+): boolean {
+  return fetchedLength >= pageSize;
+}
 
 export function useChatMessages(
   roomId: string | null,
@@ -36,16 +52,19 @@ export function useChatMessages(
   const userId = useSessionStore((s) => s.user?.id);
   const { data: membersData } = useRoomMembers(roomId);
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
-  const {
-    sendChatMessage,
-    sendAiMessage,
-    sendPlaceMessage,
-    sendCancelAiRequest,
-  } = useChatActions();
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingOlder, setIsFetchingOlder] = useState(false);
+  const { sendChatMessage, sendAiMessage, sendCancelAiRequest } =
+    useChatActions();
 
   const prevRoomForHistoryGateRef = useRef<string | null>(null);
   /** 같은 탭·새로고침 전까지 `roomId`별 히스토리 GET 1회만 */
   const historyFetchedRoomIdsRef = useRef<Set<string>>(new Set());
+  /** 방별 과거 메시지 추가 로드 가능 여부 */
+  const hasMoreByRoomRef = useRef<Map<string, boolean>>(new Map());
+  const isFetchingOlderRef = useRef(false);
+  const rawMessagesRef = useRef<ServerChatMessage[]>([]);
+  rawMessagesRef.current = rawMessages;
 
   const memberMap = useMemo(() => {
     const members = membersData?.members;
@@ -96,6 +115,10 @@ export function useChatMessages(
       setRawMessages([]);
       prevRoomForHistoryGateRef.current = null;
       historyFetchedRoomIdsRef.current.clear();
+      hasMoreByRoomRef.current.clear();
+      setHasMore(true);
+      setIsFetchingOlder(false);
+      isFetchingOlderRef.current = false;
       return;
     }
 
@@ -103,6 +126,7 @@ export function useChatMessages(
       const prevR = prevRoomForHistoryGateRef.current;
       if (prevR !== null && prevR !== roomId) {
         setRawMessages([]);
+        setHasMore(true);
       }
       prevRoomForHistoryGateRef.current = roomId;
       return;
@@ -111,25 +135,31 @@ export function useChatMessages(
     prevRoomForHistoryGateRef.current = roomId;
 
     if (historyFetchedRoomIdsRef.current.has(roomId)) {
+      const hm = hasMoreByRoomRef.current.get(roomId);
+      setHasMore(hm !== false);
       return;
     }
 
     setRawMessages([]);
+    setHasMore(true);
     let cancelled = false;
 
-    getRoomMessages(roomId)
+    getRoomMessages(roomId, { size: CHAT_MESSAGE_PAGE_SIZE })
       .then((history) => {
         if (cancelled) return;
-        const normalizedHistory = history.map(
-          (row) => normalizeServerChatMessage(row) ?? row,
+        const normalizedHistory = normalizeFetchedRoomMessages(history);
+        const more = hasOlderHistoryPage(
+          normalizedHistory.length,
+          CHAT_MESSAGE_PAGE_SIZE,
         );
-        setRawMessages((prev) => {
-          const systemDuringFetch = prev.filter((m) => {
-            const k = normalizeMessageKind(m.messageType);
-            return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
-          });
-          return mergeServerMessageLists(normalizedHistory, systemDuringFetch);
-        });
+        hasMoreByRoomRef.current.set(roomId, more);
+        setHasMore(more);
+        setRawMessages((prev) =>
+          mergeServerMessageLists(
+            normalizedHistory,
+            transientMessagesDuringRoomHistoryFetch(prev),
+          ),
+        );
         historyFetchedRoomIdsRef.current.add(roomId);
         void warmPlacePhotoQueriesFromChatHistory(queryClient, normalizedHistory);
       })
@@ -140,7 +170,45 @@ export function useChatMessages(
     return () => {
       cancelled = true;
     };
-  }, [roomId, fetchHistory]);
+  }, [roomId, fetchHistory, queryClient]);
+
+  const fetchOlderMessages = useCallback(() => {
+    const rid = roomId;
+    if (!rid) return;
+    if (isFetchingOlderRef.current) return;
+    if (hasMoreByRoomRef.current.get(rid) === false) return;
+
+    const oldest = oldestServerMessageByCreatedAt(rawMessagesRef.current);
+    if (!oldest) return;
+
+    isFetchingOlderRef.current = true;
+    setIsFetchingOlder(true);
+
+    void getRoomMessages(rid, {
+      beforeId: oldest.id,
+      size: CHAT_MESSAGE_PAGE_SIZE,
+    })
+      .then((history) => {
+        const normalizedHistory = normalizeFetchedRoomMessages(history);
+        const more = hasOlderHistoryPage(
+          normalizedHistory.length,
+          CHAT_MESSAGE_PAGE_SIZE,
+        );
+        hasMoreByRoomRef.current.set(rid, more);
+        setHasMore(more);
+        setRawMessages((prev) =>
+          mergeServerMessageLists(normalizedHistory, prev),
+        );
+        void warmPlacePhotoQueriesFromChatHistory(queryClient, normalizedHistory);
+      })
+      .catch(() => {
+        /* 유지: hasMore 그대로, 다음 스크롤에서 재시도 가능 */
+      })
+      .finally(() => {
+        isFetchingOlderRef.current = false;
+        setIsFetchingOlder(false);
+      });
+  }, [roomId, queryClient]);
 
   useEffect(() => {
     if (!roomId) {
@@ -165,7 +233,9 @@ export function useChatMessages(
     messages,
     sendChatMessage,
     sendAiMessage,
-    sendPlaceMessage,
     sendCancelAiRequest,
+    fetchOlderMessages,
+    hasMore,
+    isFetchingOlder,
   };
 }

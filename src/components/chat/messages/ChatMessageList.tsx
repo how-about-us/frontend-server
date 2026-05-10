@@ -1,11 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import type { ChatMessage } from "@/types/chat";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
-import { groupConsecutiveMessages } from "../chat-message-utils";
+import {
+  groupConsecutiveMessages,
+  isChatHistoryPrependSnapshot,
+} from "../chat-message-utils";
 import { getChatMessageMotion } from "../chat-animations";
 import {
   OtherMessageGroup,
@@ -15,20 +23,44 @@ import {
 } from "./ChatMessageGroup";
 import { PlaceShareCard } from "./PlaceShareCard";
 
+const NEAR_BOTTOM_PX = 80;
+
 export function ChatMessageList({
   messages,
   isMinimized = false,
   onCancelAiRequest,
+  onLoadOlder,
+  hasMoreOlder = false,
+  isLoadingOlder = false,
 }: {
   messages: ChatMessage[];
   isMinimized?: boolean;
   onCancelAiRequest?: (requestMessageId: string) => void;
+  onLoadOlder?: () => void;
+  hasMoreOlder?: boolean;
+  isLoadingOlder?: boolean;
 }) {
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const myId = useSessionStore((s) => s.user?.id);
   const reduceMotion = useReducedMotion();
+
+  const prevCountRef = useRef(0);
+  const prevFirstIdRef = useRef<string | undefined>(undefined);
+  const prevLastIdRef = useRef<string | undefined>(undefined);
+  const scrollPreserveRef = useRef({ sh: 0, st: 0 });
+
+  const firstId = messages[0]?.id;
+  const count = messages.length;
+  /** 레이아웃 이펙트가 ref를 갱신하기 전에는 직전 스냅샷 → 과거 prepend 프레임만 집어냄 */
+  const isHistoryPrepend = isChatHistoryPrependSnapshot(
+    prevCountRef.current,
+    prevFirstIdRef.current,
+    count,
+    firstId,
+  );
 
   const scrollToMessage = useCallback((messageId: string) => {
     const root = scrollRootRef.current;
@@ -41,18 +73,104 @@ export function ChatMessageList({
     }
   }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  const handleScroll = useCallback(() => {
+    const root = scrollRootRef.current;
+    if (!root) return;
+    scrollPreserveRef.current = {
+      sh: root.scrollHeight,
+      st: root.scrollTop,
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const root = scrollRootRef.current;
+    const bottom = bottomRef.current;
+    if (!root) return;
+
+    const prevSh = scrollPreserveRef.current.sh;
+    const prevSt = scrollPreserveRef.current.st;
+
+    const prevCount = prevCountRef.current;
+    const prevFirst = prevFirstIdRef.current;
+    const prevLast = prevLastIdRef.current;
+
+    const firstId = messages[0]?.id;
+    const lastId = messages[messages.length - 1]?.id;
+    const count = messages.length;
+
+    const prepended = isChatHistoryPrependSnapshot(
+      prevCount,
+      prevFirst,
+      count,
+      firstId,
+    );
+
+    if (prepended && prevSh > 0) {
+      const newSh = root.scrollHeight;
+      root.scrollTop = newSh - prevSh + prevSt;
+    } else if (prevCount === 0 && count > 0) {
+      bottom?.scrollIntoView({ behavior: "auto", block: "end" });
+    } else if (count > prevCount && lastId !== prevLast && !prepended) {
+      const distFromBottom =
+        root.scrollHeight - root.scrollTop - root.clientHeight;
+      if (distFromBottom < NEAR_BOTTOM_PX) {
+        bottom?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
+
+    prevCountRef.current = count;
+    prevFirstIdRef.current = firstId;
+    prevLastIdRef.current = lastId;
+    scrollPreserveRef.current = {
+      sh: root.scrollHeight,
+      st: root.scrollTop,
+    };
   }, [messages]);
+
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    const sentinel = topSentinelRef.current;
+    if (!root || !sentinel || !onLoadOlder || !hasMoreOlder) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.some((e) => e.isIntersecting);
+        if (hit && !isLoadingOlder) {
+          onLoadOlder();
+        }
+      },
+      { root, rootMargin: "48px 0px 0px 0px", threshold: 0 },
+    );
+
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [onLoadOlder, hasMoreOlder, isLoadingOlder]);
 
   return (
     <div
       ref={scrollRootRef}
+      onScroll={handleScroll}
       className={cn(
         "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:#d9d9d9_transparent]",
         isMinimized && "px-2 py-1.5",
       )}
     >
+      <div
+        ref={topSentinelRef}
+        className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
+        aria-hidden
+      />
+      {isLoadingOlder ? (
+        <div
+          className={cn(
+            "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
+            isMinimized && "mb-1.5 min-h-4 text-[10px]",
+          )}
+          aria-live="polite"
+        >
+          이전 메시지 불러오는 중…
+        </div>
+      ) : null}
       <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
         {groups.map((group) => {
           const type = group[0].type;
@@ -96,13 +214,15 @@ export function ChatMessageList({
               />
             );
 
+          const skipEnterMotion = Boolean(reduceMotion || isHistoryPrepend);
+
           return (
             <motion.div
               key={group[0].id}
-              initial={reduceMotion ? false : motionCfg.initial}
+              initial={skipEnterMotion ? false : motionCfg.initial}
               animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
               transition={
-                reduceMotion ? { duration: 0 } : motionCfg.transition
+                skipEnterMotion ? { duration: 0 } : motionCfg.transition
               }
             >
               {inner}

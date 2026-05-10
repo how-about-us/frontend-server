@@ -37,6 +37,15 @@ module.exports = {
         s1: layoutTokens.width.s1,
         s2: layoutTokens.width.s2,
       },
+      keyframes: {
+        chatHistoryIn: {
+          from: { opacity: "0", transform: "translateY(-4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "chat-history-in": "chatHistoryIn 0.2s ease-out forwards",
+      },
     },
   },
 };

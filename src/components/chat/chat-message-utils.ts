@@ -1,5 +1,20 @@
 import type { ChatMessage } from "@/types/chat";
 
+/** 과거 메시지 prepend 직후 리스트 스냅샷(스크롤·모션 분기용) */
+export function isChatHistoryPrependSnapshot(
+  prevCount: number,
+  prevFirstId: string | undefined,
+  nextCount: number,
+  nextFirstId: string | undefined,
+): boolean {
+  return (
+    nextCount > prevCount &&
+    prevCount > 0 &&
+    nextFirstId !== undefined &&
+    nextFirstId !== prevFirstId
+  );
+}
+
 export function groupConsecutiveMessages(
   messages: ChatMessage[],
 ): ChatMessage[][] {

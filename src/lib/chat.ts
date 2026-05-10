@@ -576,6 +576,41 @@ export function mergeServerMessageLists(
   return [...map.values()].sort((x, y) => x.createdAt.localeCompare(y.createdAt));
 }
 
+/** GET /messages (페이징) 응답 행 → 토픽과 동일한 `ServerChatMessage[]` */
+export function normalizeFetchedRoomMessages(
+  rows: readonly unknown[],
+): ServerChatMessage[] {
+  return rows.map(
+    (row) => normalizeServerChatMessage(row) ?? (row as ServerChatMessage),
+  );
+}
+
+/** `beforeId` 커서 — 목록 중 `createdAt`이 가장 이른 메시지 */
+export function oldestServerMessageByCreatedAt(
+  msgs: ServerChatMessage[],
+): ServerChatMessage | null {
+  if (msgs.length === 0) return null;
+  let oldest = msgs[0]!;
+  for (let i = 1; i < msgs.length; i++) {
+    const m = msgs[i]!;
+    if (m.createdAt.localeCompare(oldest.createdAt) < 0) oldest = m;
+  }
+  return oldest;
+}
+
+/**
+ * 초기 히스토리 GET 동안 패널에서만 잠깐 쌓이는 메시지(STOMP 등) —
+ * 병합 시 서버 페이지와 함께 유지.
+ */
+export function transientMessagesDuringRoomHistoryFetch(
+  prev: ServerChatMessage[],
+): ServerChatMessage[] {
+  return prev.filter((m) => {
+    const k = normalizeMessageKind(m.messageType);
+    return k === "SYSTEM" || k === "PLACE_SHARE" || k === "AI_REQUEST";
+  });
+}
+
 function buildAiRequestReplyLookup(
   rawMessages: ServerChatMessage[],
 ): Map<string, AiRequestReplyLookupEntry> {
