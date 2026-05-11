@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   chatPlaceShareBannerSweepDurationSec,
 } from "@/components/chat/chat-animations";
 import { useSessionStore } from "@/stores/session-store";
+import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -34,6 +35,10 @@ export default function SearchPage() {
     typeof currentRoomId === "string" && currentRoomId.trim().length > 0;
 
   const { setSelectedPlace } = useSelectedPlace();
+  const clearSearchMapPins = useSearchMapPinsStore((s) => s.clearSearchMapPins);
+  const setSearchMapPinsFromResults = useSearchMapPinsStore(
+    (s) => s.setSearchMapPinsFromResults,
+  );
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const { sendPlaceMessage, canSend } = useChatActions();
   const { openChat } = useChat();
@@ -57,6 +62,7 @@ export default function SearchPage() {
   }, [qParam]);
 
   function handleSearch(q: string) {
+    clearSearchMapPins();
     const trimmed = q.trim();
     setQuery(trimmed);
     const { mapCenter: c } = useMapCenterStore.getState();
@@ -78,6 +84,33 @@ export default function SearchPage() {
     searchCoords?.lat ?? null,
     searchCoords?.lng ?? null,
   );
+
+  useEffect(() => {
+    const hasActiveSearch =
+      query.trim().length > 0 && searchCoords !== null;
+
+    if (
+      hasActiveSearch &&
+      !isLoading &&
+      !isError &&
+      results &&
+      results.length > 0
+    ) {
+      setSearchMapPinsFromResults(results);
+    } else {
+      clearSearchMapPins();
+    }
+  }, [
+    query,
+    searchCoords,
+    isLoading,
+    isError,
+    results,
+    setSearchMapPinsFromResults,
+    clearSearchMapPins,
+  ]);
+
+  useEffect(() => () => clearSearchMapPins(), [clearSearchMapPins]);
 
   const shareModeActive = isShareMode && hasRoom;
 
@@ -101,7 +134,7 @@ export default function SearchPage() {
       openChat();
       return;
     }
-    setSelectedPlace(result);
+    setSelectedPlace(result, { preserveMapZoom: true });
   }
 
   return (
@@ -114,6 +147,7 @@ export default function SearchPage() {
           coords={mapCenter}
           urlQuery={qParam}
           onSearch={handleSearch}
+          onClear={() => handleSearch("")}
         />
       </div>
       {shareModeActive ?

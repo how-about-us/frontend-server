@@ -29,6 +29,8 @@ type Props = {
   onPickPrediction?: (prediction: Prediction) => void;
   /** true면 검색 버튼 숨김 — 자동완성 선택만 사용 */
   pickOnly?: boolean;
+  /** 입력 지우기(X) 클릭 시 — 예: 검색 지도 핀 제거 */
+  onClear?: () => void;
   disabled?: boolean;
 };
 
@@ -38,6 +40,7 @@ export function PlacesSearchInput({
   urlQuery = "",
   onPickPrediction,
   pickOnly = false,
+  onClear,
   disabled = false,
 }: Props) {
   const placesLib = useMapsLibrary("places");
@@ -242,6 +245,7 @@ export function PlacesSearchInput({
     setInputValue("");
     setPredictions([]);
     setIsOpen(false);
+    onClear?.();
     inputRef.current?.focus();
   }
 

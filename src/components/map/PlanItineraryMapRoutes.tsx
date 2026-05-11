@@ -230,7 +230,7 @@ export function PlanItineraryMapRoutes() {
                 location: loc,
                 address: place.subtitle,
               },
-              { skipMapRecenter: true },
+              { preserveMapZoom: true },
             );
           }}
         >

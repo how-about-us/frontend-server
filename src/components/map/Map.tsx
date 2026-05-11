@@ -21,6 +21,7 @@ import {
   writeDestinationLatLngToSession,
 } from "@/lib/maps";
 import { useSessionStore } from "@/stores/session-store";
+import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapBookmarkPins } from "./MapBookmarkPins";
@@ -33,17 +34,19 @@ import type { OpenValue, RatingValue } from "./map-filters";
 
 function SelectedPlaceController() {
   const map = useMap();
-  const { selectedPlace, skipMapRecenterRef } = useSelectedPlace();
+  const { selectedPlace, placeSelectionCameraRef } = useSelectedPlace();
 
   useEffect(() => {
     if (!map || !selectedPlace?.location) return;
-    if (skipMapRecenterRef.current) {
-      skipMapRecenterRef.current = false;
-      return;
-    }
+    const mode = placeSelectionCameraRef.current;
+    placeSelectionCameraRef.current = "full";
+
+    if (mode === "none") return;
     map.panTo(selectedPlace.location);
-    map.setZoom(16);
-  }, [map, selectedPlace?.location, skipMapRecenterRef]);
+    if (mode === "full") {
+      map.setZoom(16);
+    }
+  }, [map, selectedPlace?.location, placeSelectionCameraRef]);
 
   return null;
 }
@@ -100,6 +103,47 @@ function DestinationPanController({
   }, [map, geocodingLib, roomId, destination]);
 
   return null;
+}
+
+function MapSearchResultPins() {
+  const pins = useSearchMapPinsStore((s) => s.pins);
+  const { selectedPlace, setSelectedPlace } = useSelectedPlace();
+  const selectedPlaceId = selectedPlace?.googlePlaceId?.trim() ?? "";
+
+  return (
+    <>
+      {pins
+        .filter((p) => p.googlePlaceId !== selectedPlaceId)
+        .map((pin) => (
+          <AdvancedMarker
+            key={pin.googlePlaceId}
+            position={{ lat: pin.lat, lng: pin.lng }}
+            onClick={(e) => {
+              e.stop();
+              setSelectedPlace({
+                name: pin.name,
+                category: "",
+                rating: null,
+                googlePlaceId: pin.googlePlaceId,
+                location: { lat: pin.lat, lng: pin.lng },
+              }, { preserveMapZoom: true });
+            }}
+          >
+            <div className="flex cursor-pointer flex-col items-center">
+              <span className="block scale-110 drop-shadow-lg text-brand-red">
+                <MapPinIcon size={44} />
+              </span>
+              <div
+                className="mt-0.5 max-w-[min(10rem,calc(100vw-2rem))] truncate rounded-md bg-black/72 px-1.5 py-0.5 text-center text-[11px] font-semibold leading-tight tracking-tight text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)]"
+                title={pin.name}
+              >
+                {pin.name}
+              </div>
+            </div>
+          </AdvancedMarker>
+        ))}
+    </>
+  );
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -187,6 +231,8 @@ export default function Map() {
           />
 
           <MapBookmarkPins roomId={currentRoomId} enabled={showBookmarkPins} />
+
+          <MapSearchResultPins />
 
           {selectedPlace?.location && (
             <AdvancedMarker

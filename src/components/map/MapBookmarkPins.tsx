@@ -137,7 +137,7 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
                   fromBookmark: true,
                   bookmarkCategoryColor: row.colorCode,
                 },
-                { skipMapRecenter: true },
+                { preserveMapZoom: true },
               );
             }}
           >

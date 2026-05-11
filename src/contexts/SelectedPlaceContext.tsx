@@ -11,9 +11,17 @@ import {
 } from "react";
 import type { SearchResultCardProps } from "@/types/place";
 
+/** 장소 선택 직후 SelectedPlaceController가 적용하는 카메라 동작 */
+export type PlaceSelectionCamera = "full" | "pan-only" | "none";
+
 export type SetSelectedPlaceOptions = {
-  /** true면 카메라 패닝·줌(SelectedPlaceController)을 건너뜀 — 예: 지도 POI 직접 클릭 */
+  /** true면 카메라 변경 없음 — 예: 지도 내장 POI 직접 클릭 */
   skipMapRecenter?: boolean;
+  /**
+   * true면 현재 줌은 유지한 채 장소 위치로 패닝만 함 — 예: 지도 위 핀 클릭.
+   * `skipMapRecenter: true`이면 무시됩니다.
+   */
+  preserveMapZoom?: boolean;
 };
 
 type SelectedPlaceContextType = {
@@ -22,28 +30,34 @@ type SelectedPlaceContextType = {
     place: SearchResultCardProps | null,
     options?: SetSelectedPlaceOptions,
   ) => void;
-  skipMapRecenterRef: MutableRefObject<boolean>;
+  placeSelectionCameraRef: MutableRefObject<PlaceSelectionCamera>;
 };
 
 const SelectedPlaceContext = createContext<SelectedPlaceContextType>({
   selectedPlace: null,
   setSelectedPlace: () => {},
-  skipMapRecenterRef: { current: false },
+  placeSelectionCameraRef: { current: "full" },
 });
 
 export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
   const [selectedPlace, setSelectedPlaceState] =
     useState<SearchResultCardProps | null>(null);
-  const skipMapRecenterRef = useRef(false);
+  const placeSelectionCameraRef = useRef<PlaceSelectionCamera>("full");
 
   const setSelectedPlace = useCallback(
     (place: SearchResultCardProps | null, options?: SetSelectedPlaceOptions) => {
       if (place === null) {
-        skipMapRecenterRef.current = false;
+        placeSelectionCameraRef.current = "full";
         setSelectedPlaceState(null);
         return;
       }
-      skipMapRecenterRef.current = options?.skipMapRecenter === true;
+      if (options?.skipMapRecenter === true) {
+        placeSelectionCameraRef.current = "none";
+      } else if (options?.preserveMapZoom === true) {
+        placeSelectionCameraRef.current = "pan-only";
+      } else {
+        placeSelectionCameraRef.current = "full";
+      }
       setSelectedPlaceState(place);
     },
     [],
@@ -51,7 +65,7 @@ export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <SelectedPlaceContext.Provider
-      value={{ selectedPlace, setSelectedPlace, skipMapRecenterRef }}
+      value={{ selectedPlace, setSelectedPlace, placeSelectionCameraRef }}
     >
       {children}
     </SelectedPlaceContext.Provider>

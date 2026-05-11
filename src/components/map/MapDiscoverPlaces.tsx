@@ -82,7 +82,7 @@ function DiscoverMarkerPin({
             googlePlaceId: legacyId,
             location: loc.toJSON(),
           },
-          { skipMapRecenter: true },
+          { preserveMapZoom: true },
         );
       }}
     >
