@@ -78,6 +78,81 @@ export function normalizeGooglePlaceResourceId(id: string): string {
   return id.startsWith(prefix) ? id.slice(prefix.length) : id;
 }
 
+/** 구면 거리 (미터) — 지도 bounds 중심↔모서리 등 간단한 반경 추정용 */
+export function haversineMeters(
+  a: google.maps.LatLngLiteral,
+  b: google.maps.LatLngLiteral,
+): number {
+  const R = 6371000;
+  const φ1 = (a.lat * Math.PI) / 180;
+  const φ2 = (b.lat * Math.PI) / 180;
+  const Δφ = ((b.lat - a.lat) * Math.PI) / 180;
+  const Δλ = ((b.lng - a.lng) * Math.PI) / 180;
+  const sinΔφ = Math.sin(Δφ / 2);
+  const sinΔλ = Math.sin(Δλ / 2);
+  const x =
+    sinΔφ * sinΔφ + Math.cos(φ1) * Math.cos(φ2) * sinΔλ * sinΔλ;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(Math.max(0, 1 - x)));
+}
+
+/**
+ * 현재 뷰포트(bounds)에 비해 장소 검색 반경이 과하게 넓어지지 않도록 하는 값.
+ * 중심→북동 모서리(외접원) 대신 중심에서 각 변까지의 거리 중 최소(내접에 가깝게)를 쓴다.
+ */
+export function viewportSearchRadiusMetersFromBounds(
+  center: google.maps.LatLngLiteral,
+  bounds: google.maps.LatLngBoundsLiteral,
+): number {
+  const toNorth = haversineMeters(center, {
+    lat: bounds.north,
+    lng: center.lng,
+  });
+  const toSouth = haversineMeters(center, {
+    lat: bounds.south,
+    lng: center.lng,
+  });
+  const toEast = haversineMeters(center, {
+    lat: center.lat,
+    lng: bounds.east,
+  });
+  const toWest = haversineMeters(center, {
+    lat: center.lat,
+    lng: bounds.west,
+  });
+  return Math.min(toNorth, toSouth, toEast, toWest);
+}
+
+/** `GET /places/search` 에 전달하는 반경 상한 (미터) */
+export const PLACES_SEARCH_RADIUS_CAP_METERS = 8000;
+
+export function cappedPlacesSearchRadiusMeters(
+  viewportRadiusMeters: number | null | undefined,
+): number {
+  const raw =
+    viewportRadiusMeters ?? PLACES_SEARCH_RADIUS_CAP_METERS;
+  return Math.min(
+    PLACES_SEARCH_RADIUS_CAP_METERS,
+    Math.max(1, Math.round(raw)),
+  );
+}
+
+/** 지도 이동·줌 변경 시 「현 위치 검색」 버튼 노출 여부 */
+export function shouldSuggestPlacesSearchRecenter(params: {
+  mapCenter: google.maps.LatLngLiteral;
+  snapshotCenter: google.maps.LatLngLiteral;
+  snapshotRadiusMeters: number;
+  zoom: number | null;
+  snapshotZoom: number | null;
+}): boolean {
+  const dist = haversineMeters(params.mapCenter, params.snapshotCenter);
+  const threshold = Math.max(200, params.snapshotRadiusMeters * 0.1);
+  const zoomDelta =
+    params.zoom != null && params.snapshotZoom != null
+      ? Math.abs(params.zoom - params.snapshotZoom)
+      : 0;
+  return dist > threshold || zoomDelta >= 1;
+}
+
 function toGmTravelMode(
   modeRaw: string | undefined,
 ): google.maps.TravelMode {

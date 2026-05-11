@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
@@ -9,7 +9,9 @@ import { toast } from "sonner";
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { cappedPlacesSearchRadiusMeters } from "@/lib/maps";
 import { useMapCenterStore } from "@/stores/map-center-store";
+import { useSearchRecenterStore } from "@/stores/search-recenter-store";
 import {
   usePlacesSearch,
   type PlaceSearchResult,
@@ -40,39 +42,92 @@ export default function SearchPage() {
     (s) => s.setSearchMapPinsFromResults,
   );
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
+  const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
   const { sendPlaceMessage, canSend } = useChatActions();
   const { openChat } = useChat();
 
   const [query, setQuery] = useState("");
-  // 검색 버튼을 누른 시점의 좌표만 사용 — 지도 이동으로 재요청되지 않음
+  /** 마지막 검색·재검색 시점의 지도 중심 — 드래그만으로는 바뀌지 않음 */
   const [searchCoords, setSearchCoords] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+  /** 뷰포트 반경(m)을 상한 적용한 값 — `GET /places/search` radius */
+  const [searchRadius, setSearchRadius] = useState<number | undefined>(
+    undefined,
+  );
+
+  const commitSearchAtCurrentView = useCallback(
+    (trimmedQuery: string) => {
+      const trimmed = trimmedQuery.trim();
+      const { clearSearchSnapshot, setSearchSnapshot } =
+        useSearchRecenterStore.getState();
+
+      if (!trimmed.length) {
+        clearSearchSnapshot();
+        setSearchCoords(null);
+        setSearchRadius(undefined);
+        return;
+      }
+
+      clearSearchMapPins();
+      const { mapCenter: c, zoom: z, radiusMeters: rm } =
+        useMapCenterStore.getState();
+      const radius = cappedPlacesSearchRadiusMeters(rm);
+
+      if (!c) {
+        clearSearchSnapshot();
+        setSearchCoords(null);
+        setSearchRadius(undefined);
+        return;
+      }
+
+      setSearchSnapshot({
+        center: { lat: c.lat, lng: c.lng },
+        zoom: z,
+        radius,
+      });
+      setSearchCoords({ lat: c.lat, lng: c.lng });
+      setSearchRadius(radius);
+    },
+    [clearSearchMapPins],
+  );
 
   useLayoutEffect(() => {
     if (!qParam) {
       setQuery("");
-      setSearchCoords(null);
+      commitSearchAtCurrentView("");
       return;
     }
     setQuery(qParam);
-    const { mapCenter: c } = useMapCenterStore.getState();
-    setSearchCoords(c ? { lat: c.lat, lng: c.lng } : null);
-  }, [qParam]);
+    commitSearchAtCurrentView(qParam);
+  }, [qParam, commitSearchAtCurrentView]);
+
+  /** 지도 준비 전 URL 진입(`?q=`) 시, 카메라 동기화 후 첫 검색 스냅샷 */
+  useEffect(() => {
+    if (!qParam) return;
+    if (!mapCenter) return;
+    if (searchCoords !== null) return;
+    commitSearchAtCurrentView(qParam);
+  }, [qParam, mapCenter, searchCoords, commitSearchAtCurrentView]);
 
   function handleSearch(q: string) {
-    clearSearchMapPins();
     const trimmed = q.trim();
     setQuery(trimmed);
-    const { mapCenter: c } = useMapCenterStore.getState();
-    setSearchCoords(c ? { lat: c.lat, lng: c.lng } : null);
+    commitSearchAtCurrentView(trimmed);
 
     const params = new URLSearchParams(searchParams.toString());
     if (trimmed) params.set("q", trimmed);
     else params.delete("q");
     router.replace(`/search?${params.toString()}`, { scroll: false });
   }
+
+  useEffect(() => {
+    if (recenterRequestId === 0) return;
+    const trimmed = query.trim();
+    if (!trimmed.length) return;
+    commitSearchAtCurrentView(trimmed);
+  }, [recenterRequestId, query, commitSearchAtCurrentView]);
 
   const {
     data: results,
@@ -83,6 +138,7 @@ export default function SearchPage() {
     query,
     searchCoords?.lat ?? null,
     searchCoords?.lng ?? null,
+    searchCoords !== null ? searchRadius : undefined,
   );
 
   useEffect(() => {
@@ -103,6 +159,7 @@ export default function SearchPage() {
   }, [
     query,
     searchCoords,
+    searchRadius,
     isLoading,
     isError,
     results,
@@ -110,7 +167,13 @@ export default function SearchPage() {
     clearSearchMapPins,
   ]);
 
-  useEffect(() => () => clearSearchMapPins(), [clearSearchMapPins]);
+  useEffect(
+    () => () => {
+      clearSearchMapPins();
+      useSearchRecenterStore.getState().clearSearchSnapshot();
+    },
+    [clearSearchMapPins],
+  );
 
   const shareModeActive = isShareMode && hasRoom;
 

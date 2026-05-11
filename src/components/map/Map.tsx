@@ -11,20 +11,22 @@ import {
 } from "@vis.gl/react-google-maps";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useMapCenterStore } from "@/stores/map-center-store";
+import {
+  readDestinationLatLngFromSession,
+  viewportSearchRadiusMetersFromBounds,
+  writeDestinationLatLngToSession,
+} from "@/lib/maps";
 import {
   DESTINATION_MAP_ZOOM,
   useTripMapBootstrap,
 } from "@/hooks/useTripMapBootstrap";
-import {
-  readDestinationLatLngFromSession,
-  writeDestinationLatLngToSession,
-} from "@/lib/maps";
+import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapBookmarkPins } from "./MapBookmarkPins";
+import { MapSearchHereButton } from "./MapSearchHereButton";
 import { MapDiscoverToolbar } from "./MapDiscoverToolbar";
 import { MapDiscoverPlaces } from "./MapDiscoverPlaces";
 import { PlanItineraryMapRoutes } from "./PlanItineraryMapRoutes";
@@ -150,7 +152,7 @@ function MapSearchResultPins() {
 
 export default function Map() {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
-  const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
+  const setMapCamera = useMapCenterStore((s) => s.setMapCamera);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
@@ -212,9 +214,18 @@ export default function Map() {
           fullscreenControl={false}
           clickableIcons={selectedCategoryId == null}
           onClick={handleMapClick}
-          onCameraChanged={(ev) =>
-            setMapCenter({ lat: ev.detail.center.lat, lng: ev.detail.center.lng })
-          }
+          onCameraChanged={(ev) => {
+            const { center, zoom, bounds } = ev.detail;
+            const radiusMeters = viewportSearchRadiusMetersFromBounds(
+              center,
+              bounds,
+            );
+            setMapCamera({
+              mapCenter: { lat: center.lat, lng: center.lng },
+              zoom,
+              radiusMeters,
+            });
+          }}
         >
           <SelectedPlaceController />
           <DestinationPanController
@@ -271,26 +282,29 @@ export default function Map() {
       />
 
       {!bootstrap.ready ? null : (
-        <div className="pointer-events-none absolute right-4 top-4 z-[16]">
-          <button
-            type="button"
-            onClick={() => setShowBookmarkPins((v) => !v)}
-            aria-pressed={showBookmarkPins}
-            aria-label={
-              showBookmarkPins
-                ? "보관함 장소 표시 끄기"
-                : "보관함 장소 표시 켜기"
-            }
-            title="보관함 장소 표시"
-            className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full shadow-md ring-2 ring-black/5 transition ${
-              showBookmarkPins
-                ? "bg-brand-red text-white"
-                : "bg-white text-dark-gray hover:bg-gray-50"
-            }`}
-          >
-            <Bookmark className="h-5 w-5" strokeWidth={2.2} aria-hidden />
-          </button>
-        </div>
+        <>
+          <MapSearchHereButton />
+          <div className="pointer-events-none absolute right-4 top-4 z-[16]">
+            <button
+              type="button"
+              onClick={() => setShowBookmarkPins((v) => !v)}
+              aria-pressed={showBookmarkPins}
+              aria-label={
+                showBookmarkPins
+                  ? "보관함 장소 표시 끄기"
+                  : "보관함 장소 표시 켜기"
+              }
+              title="보관함 장소 표시"
+              className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full shadow-md ring-2 ring-black/5 transition ${
+                showBookmarkPins
+                  ? "bg-brand-red text-white"
+                  : "bg-white text-dark-gray hover:bg-gray-50"
+              }`}
+            >
+              <Bookmark className="h-5 w-5" strokeWidth={2.2} aria-hidden />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
