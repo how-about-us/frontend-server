@@ -1,4 +1,4 @@
-import { HeaderBar, LeftSection, SideBar } from "@/components/layout";
+import { HeaderBar, LeftSection, MainContentScrollArea, SideBar } from "@/components/layout";
 import { JoinRequestsPoller } from "@/components/layout/JoinRequestsPoller";
 import { MainRoomGate } from "@/components/layout/MainRoomGate";
 import { ChatPanel } from "@/components/chat";
@@ -20,9 +20,7 @@ export default function MainLayout({
               <HeaderBar />
               <section className="flex h-full w-auto overflow-hidden">
                 <SideBar />
-                <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent] pt-6">
-                  {children}
-                </div>
+                <MainContentScrollArea>{children}</MainContentScrollArea>
               </section>
             </LeftSection>
 

@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { useStompContext } from "@/contexts/StompContext";
 import { toast } from "sonner";
@@ -18,7 +19,6 @@ import {
   createRoomSchedule,
   createScheduleItem,
   deleteScheduleItem,
-  getScheduleItems,
   reorderScheduleItem,
   updateScheduleItem,
   deleteRoomBookmark,
@@ -54,10 +54,8 @@ import {
 } from "@/lib/api/rooms";
 import {
   applyRoomScheduleItemToPlanPlaces,
-  buildChainedStartPatchesForReorder,
   fetchScheduleItemsAsPlanPlaces,
-  mergeOrRefetchSchedulePlanPlacesFromItems,
-  sortRoomScheduleItemsByOrder,
+  syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
@@ -260,7 +258,9 @@ export function useDeleteScheduleItem() {
 
 export function useReorderScheduleItem() {
   const queryClient = useQueryClient();
-  return useMutation({
+  const [isChainedTimeSyncPending, setIsChainedTimeSyncPending] =
+    useState(false);
+  const mutation = useMutation({
     mutationFn: (vars: {
       roomId: string;
       scheduleId: number;
@@ -273,54 +273,32 @@ export function useReorderScheduleItem() {
         vars.itemId,
         vars.body,
       ),
+    onMutate: () => {
+      setIsChainedTimeSyncPending(true);
+    },
+    onError: () => {
+      setIsChainedTimeSyncPending(false);
+    },
     onSuccess: async (items, { roomId, scheduleId }) => {
-      const rid = roomId.trim();
-      if (!rid.length) return;
-      await mergeOrRefetchSchedulePlanPlacesFromItems(
-        queryClient,
-        roomId,
-        scheduleId,
-        items,
-      );
-
-      const patches = buildChainedStartPatchesForReorder(items);
-      if (patches.length === 0) return;
-
-      const snapshot = sortRoomScheduleItemsByOrder(items);
-      const byItemId = new Map(snapshot.map((it) => [it.itemId, it]));
-
       try {
-        for (const p of patches) {
-          const updated = await updateScheduleItem(rid, scheduleId, p.itemId, {
-            startTime: p.startTime,
-            durationMinutes: p.durationMinutes,
-          });
-          byItemId.set(updated.itemId, updated);
-        }
-      } catch {
-        toast.error("순서에 맞게 시작 시간을 바꾸지 못했어요.");
-        try {
-          const fresh = await getScheduleItems(rid, scheduleId);
-          await mergeOrRefetchSchedulePlanPlacesFromItems(
-            queryClient,
-            roomId,
-            scheduleId,
-            fresh,
-          );
-        } catch {
-          //
-        }
-        return;
+        await syncPlanPlacesAfterReorderSuccess(
+          queryClient,
+          roomId,
+          scheduleId,
+          items,
+        );
+      } finally {
+        setIsChainedTimeSyncPending(false);
       }
-
-      await mergeOrRefetchSchedulePlanPlacesFromItems(
-        queryClient,
-        roomId,
-        scheduleId,
-        sortRoomScheduleItemsByOrder([...byItemId.values()]),
-      );
     },
   });
+
+  return {
+    ...mutation,
+    /** 리오더 요청 + 시작 시각 연쇄 PATCH까지(캐시가 일관될 때까지) */
+    isReorderSettling:
+      mutation.isPending || isChainedTimeSyncPending,
+  };
 }
 
 export function useUpdateRoom() {

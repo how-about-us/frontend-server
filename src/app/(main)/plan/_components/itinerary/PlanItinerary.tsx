@@ -91,8 +91,10 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   );
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
-  const { mutateAsync: reorderMutate, isPending: isReordering } =
-    useReorderScheduleItem();
+  const {
+    mutateAsync: reorderMutate,
+    isReorderSettling,
+  } = useReorderScheduleItem();
 
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -205,7 +207,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [places],
   );
 
-  const dragLocked = isAdding || isReordering || places.length < 2;
+  const dragLocked = isAdding || isReorderSettling || places.length < 2;
 
   return (
     <div>
@@ -237,9 +239,13 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               orderBadgeColor={orderBadgeColor}
               dragDisabled={dragLocked || typeof place.itemId !== "number"}
               scheduleTimeEdit={{ roomId, scheduleId }}
-              scheduleOverlapWarning={formatAdjacentScheduleConflictMessage(
-                scheduleConflictFlags[index]!,
-              )}
+              scheduleOverlapWarning={
+                isReorderSettling ?
+                  undefined
+                : formatAdjacentScheduleConflictMessage(
+                    scheduleConflictFlags[index]!,
+                  )
+              }
               isDragging={dragFromIndex === index}
               isDropTarget={
                 dropTargetIndex === index &&

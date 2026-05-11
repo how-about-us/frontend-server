@@ -41,7 +41,7 @@ const HeaderBar = () => {
   return (
     <header className="border-b-2 border-brand-red">
       <div className="flex items-center">
-        <div className="flex w-13 shrink-0 flex-col items-center justify-center py-1.5">
+        <div className="relative flex w-13 shrink-0 flex-col items-center justify-center py-1.5">
           <Link
             href="/home"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-dark-gray transition-colors hover:bg-light-gray"
@@ -49,8 +49,12 @@ const HeaderBar = () => {
           >
             <Home className="h-6 w-6" strokeWidth={2} aria-hidden />
           </Link>
+          <div
+            className="pointer-events-none absolute right-0 top-1/2 h-8 w-px -translate-y-1/2 bg-gray-border"
+            aria-hidden
+          />
         </div>
-        <div className="flex min-w-0 flex-1 items-center justify-between gap-2 py-1 pr-2">
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-2 px-5 py-1 pr-2">
           <div className="min-w-0 bg-white py-1.5">
             {currentRoom ? (
               <>

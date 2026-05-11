@@ -7,7 +7,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Client } from "@stomp/stompjs";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
-import { invalidateRoomQueriesAfterStompReconnect } from "@/lib/stomp/invalidateRoomQueriesAfterStompReconnect";
 import { pathDefersRoomStompRoomTopics } from "@/lib/stomp/stompPathPolicy";
 import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
@@ -79,7 +78,6 @@ export function useStompClientLifecycleEffect({
       const rid = currentRoomIdRef.current?.trim() ?? "";
       if (rid && !pathDefersRoomStompRoomTopics(pathnameRef.current)) {
         subscribeToRoomTopics(client, rid);
-        invalidateRoomQueriesAfterStompReconnect(queryClientRef.current, rid);
       }
     };
 

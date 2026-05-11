@@ -1,8 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { getPlaceDetail } from "@/lib/api/places";
 import {
   getScheduleItems,
+  updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
@@ -155,6 +157,63 @@ export function buildChainedStartPatchesForReorder(
   }
 
   return patches;
+}
+
+/**
+ * 리오더 API 성공 직후: 순서를 캐시에 반영한 뒤, 필요하면 시작 시각 연쇄 PATCH 후 최종 머지.
+ */
+export async function syncPlanPlacesAfterReorderSuccess(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  items: RoomScheduleItem[],
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+
+  await mergeOrRefetchSchedulePlanPlacesFromItems(
+    queryClient,
+    roomId,
+    scheduleId,
+    items,
+  );
+
+  const patches = buildChainedStartPatchesForReorder(items);
+  if (patches.length === 0) return;
+
+  const snapshot = sortRoomScheduleItemsByOrder(items);
+  const byItemId = new Map(snapshot.map((it) => [it.itemId, it]));
+
+  try {
+    for (const p of patches) {
+      const updated = await updateScheduleItem(rid, scheduleId, p.itemId, {
+        startTime: p.startTime,
+        durationMinutes: p.durationMinutes,
+      });
+      byItemId.set(updated.itemId, updated);
+    }
+  } catch {
+    toast.error("순서에 맞게 시작 시간을 바꾸지 못했어요.");
+    try {
+      const fresh = await getScheduleItems(rid, scheduleId);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        roomId,
+        scheduleId,
+        fresh,
+      );
+    } catch {
+      //
+    }
+    return;
+  }
+
+  await mergeOrRefetchSchedulePlanPlacesFromItems(
+    queryClient,
+    roomId,
+    scheduleId,
+    sortRoomScheduleItemsByOrder([...byItemId.values()]),
+  );
 }
 
 /** 화면 순서 유지 `PlanPlace[]` 기준: 마지막 카드 시작 + 1시간, 없으면 슬롯 폴백. */
