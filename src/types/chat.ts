@@ -63,6 +63,8 @@ export interface ChatMessage {
   time?: string;
   /** CHAT · 장소 공유 카드에서 아바타·발신자 표시에 사용 */
   avatar?: string;
+  /** 멤버 목록에 없을 때(방 나감 등) UI에서 '(알 수 없음)'·금지 아이콘 오버레이 */
+  senderNotInRoom?: boolean;
   /** CHAT(mine/other) 그룹핑 · 장소 공유 좌우 정렬 — senderId 기준 */
   senderUserId?: number;
   /** PLACE_SHARE 타입일 때만 사용 — OG 카드 렌더 및 클릭 시 지도/디테일 패널 연동 */

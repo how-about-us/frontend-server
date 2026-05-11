@@ -103,6 +103,8 @@ export function useChatMessages(
     [rawMessages],
   );
 
+  const roomMembersResolved = Boolean(membersData);
+
   const messages = useMemo(
     () =>
       rawMessages.map((m) =>
@@ -112,6 +114,7 @@ export function useChatMessages(
           memberMap,
           fulfilledAiRequestIds,
           aiRequestReplyLookup,
+          roomMembersResolved,
         ),
       ),
     [
@@ -120,6 +123,7 @@ export function useChatMessages(
       memberMap,
       fulfilledAiRequestIds,
       aiRequestReplyLookup,
+      roomMembersResolved,
     ],
   );
 

@@ -10,6 +10,7 @@ import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import type { ChatMessage } from "@/types/chat";
 import { motion, useReducedMotion } from "framer-motion";
+import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
 
 export function PlaceShareCard({
   message,
@@ -86,19 +87,13 @@ export function PlaceShareCard({
             }
         }
       >
-        <div className={cn(chatMessageChrome.avatarSm, "bg-light-gray")}>
-          {message.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element -- 멤버 프로필 URL 가변
-            <img
-              src={message.avatar}
-              alt={message.sender ?? ""}
-              className={cn(
-                "h-full w-full object-cover",
-                !reduceMotion && "transition-opacity duration-150 ease-out",
-              )}
-            />
-          ) : null}
-        </div>
+        <ChatMemberAvatarRing
+          chromeAvatarClassName={chatMessageChrome.avatarSm}
+          avatarUrl={message.avatar}
+          alt={message.sender ?? ""}
+          senderNotInRoom={message.senderNotInRoom}
+          reduceMotion={reduceMotion}
+        />
         <span
           className={cn("max-w-[4rem] truncate text-center", typo.metaMuted)}
         >

@@ -5,6 +5,7 @@ import type { ChatMessageTextTypography } from "@/components/chat/chat-typograph
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
 
 function labelForAiStatus(status: AiRequestStatus): string {
   const labels: Record<AiRequestStatus, string> = {
@@ -150,18 +151,13 @@ export function OtherMessageGroup({
             }
         }
       >
-        <div className={cn(chrome.avatarSm, "bg-light-gray")}>
-          {first.avatar && (
-            <img
-              src={first.avatar}
-              alt={first.sender ?? ""}
-              className={cn(
-                "h-full w-full object-cover",
-                !reduceMotion && "transition-opacity duration-150 ease-out",
-              )}
-            />
-          )}
-        </div>
+        <ChatMemberAvatarRing
+          chromeAvatarClassName={chrome.avatarSm}
+          avatarUrl={first.avatar}
+          alt={first.sender ?? ""}
+          senderNotInRoom={first.senderNotInRoom}
+          reduceMotion={reduceMotion}
+        />
         <span className={typo.metaMuted}>{first.sender}</span>
       </motion.div>
       <div className="min-w-0">
