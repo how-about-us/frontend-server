@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type MutableRefObject,
 } from "react";
 import type { ChatMessage } from "@/types/chat";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -26,6 +27,18 @@ import { PlaceShareCard } from "./PlaceShareCard";
 import { JumpToBottomButton } from "./JumpToBottomButton";
 
 const NEAR_BOTTOM_PX = 80;
+
+function syncFollowTailFromScrollRoot(
+  root: HTMLDivElement,
+  followTailRef: MutableRefObject<boolean>,
+) {
+  const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
+  followTailRef.current = dist < NEAR_BOTTOM_PX;
+}
+
+function scrollRootToBottomInstant(root: HTMLDivElement) {
+  root.scrollTop = Math.max(0, root.scrollHeight - root.clientHeight);
+}
 
 export function ChatMessageList({
   messages,
@@ -58,9 +71,10 @@ export function ChatMessageList({
 
   const prevCountRef = useRef(0);
   const prevFirstIdRef = useRef<string | undefined>(undefined);
-  const prevLastIdRef = useRef<string | undefined>(undefined);
   const scrollPreserveRef = useRef({ sh: 0, st: 0 });
   const didInitialScrollRef = useRef(false);
+  /** 사용자가 직접 스크롤할 때만 갱신. 레이아웃만 바뀌어 dist가 커져도 끊기지 않게 함 */
+  const followTailRef = useRef(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const firstId = messages[0]?.id;
@@ -78,6 +92,7 @@ export function ChatMessageList({
   }, []);
 
   const handleJumpClick = useCallback(() => {
+    followTailRef.current = true;
     if (hasMoreNewer && onJumpToLatest) {
       onJumpToLatest();
     } else {
@@ -104,7 +119,9 @@ export function ChatMessageList({
       st: root.scrollTop,
     };
     const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
-    setIsAtBottom(dist < NEAR_BOTTOM_PX);
+    const near = dist < NEAR_BOTTOM_PX;
+    followTailRef.current = near;
+    setIsAtBottom(near);
   }, []);
 
   useLayoutEffect(() => {
@@ -117,10 +134,8 @@ export function ChatMessageList({
 
     const prevCount = prevCountRef.current;
     const prevFirst = prevFirstIdRef.current;
-    const prevLast = prevLastIdRef.current;
 
     const firstId = messages[0]?.id;
-    const lastId = messages[messages.length - 1]?.id;
     const count = messages.length;
 
     if (prevCount > 0 && count === 0) {
@@ -151,23 +166,26 @@ export function ChatMessageList({
       } else {
         bottom?.scrollIntoView({ behavior: "auto", block: "end" });
       }
-    } else if (count > prevCount && lastId !== prevLast && !prepended) {
-      const distFromBottom =
-        root.scrollHeight - root.scrollTop - root.clientHeight;
-      if (distFromBottom < NEAR_BOTTOM_PX) {
-        bottom?.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+      syncFollowTailFromScrollRoot(root, followTailRef);
+    } else if (followTailRef.current && !prepended && count > 0) {
+      scrollRootToBottomInstant(root);
     }
 
     prevCountRef.current = count;
     prevFirstIdRef.current = firstId;
-    prevLastIdRef.current = lastId;
     scrollPreserveRef.current = {
       sh: root.scrollHeight,
       st: root.scrollTop,
     };
     const distAfter = root.scrollHeight - root.scrollTop - root.clientHeight;
     setIsAtBottom(distAfter < NEAR_BOTTOM_PX);
+    requestAnimationFrame(() => {
+      const r = scrollRootRef.current;
+      if (!r) return;
+      const d = r.scrollHeight - r.scrollTop - r.clientHeight;
+      setIsAtBottom(d < NEAR_BOTTOM_PX);
+      scrollPreserveRef.current = { sh: r.scrollHeight, st: r.scrollTop };
+    });
   }, [messages, initialScrollAnchorId]);
 
   useEffect(() => {

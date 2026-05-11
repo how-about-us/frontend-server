@@ -19,6 +19,19 @@ import type {
 } from "@/types/chat";
 import { cn } from "@/lib/utils";
 
+/** 메타에 `placeId: 이유` 형태로 붙어 오는 경우 본문만 남김 */
+function reasonTextWithoutLeadingPlaceId(
+  reason: string,
+  placeId: string,
+): string {
+  const r = reason.trim();
+  const id = placeId.trim();
+  if (r.length === 0 || id.length === 0) return r;
+  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const stripped = r.replace(new RegExp(`^${escaped}\\s*:\\s*`), "").trim();
+  return stripped.length > 0 ? stripped : r;
+}
+
 function AiRecommendedPlaceRow({
   place,
   isMinimized,
@@ -49,6 +62,10 @@ function AiRecommendedPlaceRow({
       ? place.userRatingCount
       : (enriched?.userRatingCount ?? null);
 
+  const reasonDisplay = place.reason
+    ? reasonTextWithoutLeadingPlaceId(place.reason, place.placeId)
+    : "";
+
   function handleClick() {
     setMapCenter({ lat: place.lat, lng: place.lng });
     setSelectedPlace({
@@ -74,7 +91,7 @@ function AiRecommendedPlaceRow({
         isMinimized={isMinimized}
         onClick={handleClick}
       />
-      {place.reason ? (
+      {reasonDisplay ? (
         <p
           className={cn(
             "max-w-[260px]",
@@ -82,7 +99,7 @@ function AiRecommendedPlaceRow({
             chatAiBubblePlaceRecommendationReasonClass(isMinimized),
           )}
         >
-          <AiHighlightedText text={place.reason} />
+          <AiHighlightedText text={reasonDisplay} />
         </p>
       ) : null}
     </div>

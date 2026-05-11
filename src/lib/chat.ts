@@ -217,6 +217,20 @@ function pickString(...vals: unknown[]): string | undefined {
   return undefined;
 }
 
+/** 백엔드가 `reason`에 `googlePlaceId: 본문` 형태로 붙이는 경우 본문만 남김 */
+function stripLeadingPlaceIdFromReason(
+  reason: string,
+  placeId: string,
+): string {
+  const r = reason.trim();
+  const pid = placeId.trim();
+  if (r.length === 0 || pid.length === 0) return r;
+  if (!r.startsWith(pid)) return r;
+  const afterId = r.slice(pid.length);
+  if (!afterId.startsWith(":")) return r;
+  return afterId.slice(1).trimStart();
+}
+
 function parseOneRecommendedPlace(raw: unknown): AiRecommendedPlace | null {
   if (!isRecord(raw)) return null;
   const placeId =
@@ -236,7 +250,12 @@ function parseOneRecommendedPlace(raw: unknown): AiRecommendedPlace | null {
   const address =
     pickString(raw.address, raw.formattedAddress, raw.formatted_address) ??
     "";
-  const reason = pickString(raw.reason);
+  const reasonRaw = pickString(raw.reason);
+  let reasonOut: string | undefined;
+  if (reasonRaw !== undefined) {
+    const t = stripLeadingPlaceIdFromReason(reasonRaw, placeId).trim();
+    if (t.length > 0) reasonOut = t;
+  }
   const primaryType = pickString(raw.primaryType, raw.primary_type);
   const googleMapsUri = pickString(
     raw.googleMapsUri,
@@ -275,7 +294,7 @@ function parseOneRecommendedPlace(raw: unknown): AiRecommendedPlace | null {
     ...(rating !== undefined && Number.isFinite(rating) ? { rating } : {}),
     ...(userRatingCount !== undefined ? { userRatingCount } : {}),
     ...(primaryType ? { primaryType } : {}),
-    ...(reason ? { reason } : {}),
+    ...(reasonOut ? { reason: reasonOut } : {}),
     ...(googleMapsUri ? { googleMapsUri } : {}),
   };
 }
