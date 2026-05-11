@@ -60,7 +60,7 @@ export default function NewTripPage() {
 
     createRoom(
       {
-        title: title.trim(),
+        title: title.trim().slice(0, TITLE_MAX_LENGTH),
         destination: destination.trim(),
         startDate: startDate || new Date().toISOString().split("T")[0],
         endDate: endDate || new Date().toISOString().split("T")[0],
@@ -107,7 +107,9 @@ export default function NewTripPage() {
               type="text"
               value={title}
               maxLength={TITLE_MAX_LENGTH}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) =>
+                setTitle(e.target.value.slice(0, TITLE_MAX_LENGTH))
+              }
               placeholder="예: 봄 일본 여행, 하와이 신혼여행"
               className="w-full text-sm text-dark-gray outline-none placeholder:text-light-gray"
               autoFocus
