@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { BookmarkFolder } from "@/types/bookmark";
 import { UNTITLED_BOOKMARK_CATEGORY_LABEL } from "@/lib/bookmark-untitled-category-name";
 
+const TITLE_MAX_LENGTH = 50;
+
 const COLOR_PRESETS = [
   "#EAB308",
   "#14B8A6",
@@ -18,7 +20,9 @@ const COLOR_PRESETS = [
 type Mode = "create" | "edit";
 
 function initialTitle(mode: Mode, initialFolder: BookmarkFolder | null) {
-  if (mode === "edit" && initialFolder) return initialFolder.title;
+  if (mode === "edit" && initialFolder) {
+    return initialFolder.title.slice(0, TITLE_MAX_LENGTH);
+  }
   return "";
 }
 
@@ -102,18 +106,29 @@ export function AddBookmarkModal({
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           <div>
-            <label
-              htmlFor="bookmark-title"
-              className="mb-1.5 block text-sm font-medium text-neutral-900"
-            >
-              제목
-            </label>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <label
+                htmlFor="bookmark-title"
+                className="block text-sm font-medium text-neutral-900"
+              >
+                제목
+              </label>
+              <span
+                id="bookmark-title-counter"
+                className="shrink-0 text-xs tabular-nums text-dark-gray"
+                aria-live="polite"
+              >
+                {title.length}/{TITLE_MAX_LENGTH}
+              </span>
+            </div>
             <input
               id="bookmark-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={TITLE_MAX_LENGTH}
               placeholder={untitledNameHint ?? UNTITLED_BOOKMARK_CATEGORY_LABEL}
+              aria-describedby="bookmark-title-counter"
               className="w-full rounded-xl border border-gray-border px-3 py-2.5 text-sm outline-none ring-brand-red/30 focus:border-brand-red focus:ring-2"
             />
           </div>
