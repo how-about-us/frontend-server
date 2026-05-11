@@ -405,6 +405,9 @@ export function useJoinRequests(
     queryKey: joinRequestsQueryKey(roomId),
     queryFn: () => getJoinRequests(roomId!),
     enabled: !!roomId && userEnabled,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 

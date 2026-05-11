@@ -1,5 +1,5 @@
 import { HeaderBar, LeftSection, MainContentScrollArea, SideBar } from "@/components/layout";
-import { JoinRequestsPoller } from "@/components/layout/JoinRequestsPoller";
+import { JoinRequestsHostBadgeSync } from "@/components/layout/JoinRequestsHostBadgeSync";
 import { MainRoomGate } from "@/components/layout/MainRoomGate";
 import { ChatPanel } from "@/components/chat";
 import { MapWithDetailPanel } from "@/components/map";
@@ -13,7 +13,7 @@ export default function MainLayout({
   return (
     <MainChromeProviders>
       <MainRoomGate>
-        <JoinRequestsPoller />
+        <JoinRequestsHostBadgeSync />
         <main className="h-screen">
           <div className="relative mx-auto flex h-full w-full overflow-hidden rounded-none bg-white">
             <LeftSection>
