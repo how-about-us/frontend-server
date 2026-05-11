@@ -36,6 +36,8 @@ export function AddBookmarkModal({
   overlayZClass = "z-50",
   /** 비어 있을 때 실제로 쓰이는 이름(다음 번호 반영). 없으면 기본 라벨만 표시 */
   untitledNameHint,
+  /** 서버/저장 오류 시 인라인 표시 (토스트 대신) */
+  formError = null,
 }: {
   mode: Mode;
   initialFolder: BookmarkFolder | null;
@@ -45,6 +47,7 @@ export function AddBookmarkModal({
   /** 상위 모달 위에 겹칠 때만 지정 (예: `z-[65]`) */
   overlayZClass?: string;
   untitledNameHint?: string;
+  formError?: string | null;
 }) {
   const [title, setTitle] = useState(() => initialTitle(mode, initialFolder));
   const [color, setColor] = useState(() => initialColor(mode, initialFolder));
@@ -91,6 +94,11 @@ export function AddBookmarkModal({
         <p className="mt-1 text-sm text-dark-gray">
           이름과 리본 색상을 선택하세요.
         </p>
+        {formError ? (
+          <p className="mt-3 text-sm text-brand-red" role="alert">
+            {formError}
+          </p>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           <div>

@@ -2,7 +2,6 @@
 
 import { Check, Plus, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
@@ -79,25 +78,25 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       firstHardError: Error | null;
     }) => {
       if (firstHardError) {
-        toast.error(firstHardError.message);
+        const parts = [firstHardError.message];
         if (added > 0) {
-          toast.message(`추가한 리스트는 ${added}개예요`);
+          parts.push(`추가한 리스트는 ${added}개예요`);
         }
+        setSubmitFeedback({
+          message: parts.join(" "),
+          variant: "error",
+        });
         return;
       }
-      if (added > 0 && skippedDuplicate === 0) {
-        toast.success(
-          added === 1 ? "보관함에 추가했어요" : `${added}개 리스트에 추가했어요`,
-        );
-      } else if (added > 0 && skippedDuplicate > 0) {
+      if (added > 0 && skippedDuplicate > 0) {
         setSubmitFeedback({
           message: `${added}개 리스트에 추가했어요. ${skippedDuplicate}개 리스트에는 이미 이 장소가 있어요.`,
           variant: "neutral",
         });
       } else if (added === 0 && skippedDuplicate > 0) {
         setSubmitFeedback({
-          message: "모든 선택 리스트에 이미 추가되어 있어요.",
-          variant: "neutral",
+          message: "해당 장소가 모든 선택 카테고리에 이미 추가되어 있어요.",
+          variant: "error",
         });
       }
     },
@@ -156,12 +155,14 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           setSelectedIds((prev) => new Set(prev).add(created.categoryId));
         },
         onError: (e) => {
-          toast.error(
-            messageForBookmarkCategorySaveError(
+          setCreateFolderModalOpen(false);
+          setSubmitFeedback({
+            message: messageForBookmarkCategorySaveError(
               e,
               "카테고리를 만들지 못했습니다.",
             ),
-          );
+            variant: "error",
+          });
         },
       },
     );

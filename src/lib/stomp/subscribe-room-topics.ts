@@ -5,7 +5,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import { normalizeServerChatMessage } from "@/lib/chat";
 import { useChatUnreadStore } from "@/stores/chat-unread-store";
-import { dispatchRoomBookmarksToast } from "@/lib/stomp/bookmarks-dispatch";
+import { applyRoomBookmarkStompMessage } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
@@ -63,7 +63,7 @@ export function subscribeRoomStompTopics(
     (message) => {
       void (async () => {
         try {
-          await dispatchRoomBookmarksToast(
+          await applyRoomBookmarkStompMessage(
             queryClientRef.current,
             message.body,
           );

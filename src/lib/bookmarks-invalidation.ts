@@ -43,6 +43,10 @@ export async function invalidateRoomBookmarkQueries(
         queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
         refetchType: "all",
       });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(rid),
+        refetchType: "all",
+      });
       break;
 
     case "BOOKMARK_UPDATED":
@@ -57,6 +61,10 @@ export async function invalidateRoomBookmarkQueries(
         queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
         refetchType: "all",
       });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(rid),
+        refetchType: "all",
+      });
       break;
 
     case "BOOKMARK_DELETED":
@@ -68,6 +76,10 @@ export async function invalidateRoomBookmarkQueries(
       });
       await queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
+        refetchType: "all",
+      });
+      await queryClient.invalidateQueries({
+        queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
       });
       break;

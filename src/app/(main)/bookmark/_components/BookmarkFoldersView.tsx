@@ -3,7 +3,6 @@
 import { BookmarkPlus, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
@@ -44,6 +43,7 @@ export function BookmarkFoldersView() {
     null,
   );
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [folderFormError, setFolderFormError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const closeMenu = useCallback(() => setMenuOpenId(null), []);
@@ -63,6 +63,7 @@ export function BookmarkFoldersView() {
   }, [menuOpenId, closeMenu]);
 
   const openCreate = () => {
+    setFolderFormError(null);
     setModalKey((k) => k + 1);
     setModalMode("create");
     setEditingFolder(null);
@@ -71,6 +72,7 @@ export function BookmarkFoldersView() {
 
   const openEdit = (folder: BookmarkFolder) => {
     closeMenu();
+    setFolderFormError(null);
     setModalKey((k) => k + 1);
     setModalMode("edit");
     setEditingFolder(folder);
@@ -79,6 +81,7 @@ export function BookmarkFoldersView() {
 
   const handleSave = ({ title, color }: { title: string; color: string }) => {
     if (!roomId) return;
+    setFolderFormError(null);
     if (modalMode === "edit" && editingFolder) {
       const categoryId = Number.parseInt(editingFolder.id, 10);
       if (!Number.isFinite(categoryId)) return;
@@ -96,7 +99,7 @@ export function BookmarkFoldersView() {
             setEditingFolder(null);
           },
           onError: (e) => {
-            toast.error(
+            setFolderFormError(
               messageForBookmarkCategorySaveError(
                 e,
                 "리스트를 수정하지 못했습니다.",
@@ -117,7 +120,7 @@ export function BookmarkFoldersView() {
           setModalOpen(false);
         },
         onError: (e) => {
-          toast.error(
+          setFolderFormError(
             messageForBookmarkCategorySaveError(
               e,
               "리스트를 추가하지 못했습니다.",
@@ -292,8 +295,10 @@ export function BookmarkFoldersView() {
           onClose={() => {
             setModalOpen(false);
             setEditingFolder(null);
+            setFolderFormError(null);
           }}
           onSave={handleSave}
+          formError={folderFormError}
         />
       )}
     </div>
