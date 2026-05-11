@@ -1,3 +1,3 @@
-import { requiredEnv } from "@/lib/required-env";
+import { clientEnv } from "@/lib/client-env";
 
-export const API_BASE = requiredEnv("NEXT_PUBLIC_API_BASE_URL");
+export const API_BASE = clientEnv.NEXT_PUBLIC_API_BASE_URL;

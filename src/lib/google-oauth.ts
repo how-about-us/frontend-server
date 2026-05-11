@@ -1,4 +1,4 @@
-import { requiredEnv } from "@/lib/required-env";
+import { clientEnv } from "@/lib/client-env";
 
 /**
  * Google OAuth authorize URL 및 콜백 redirect_uri 공통 처리.
@@ -10,7 +10,7 @@ export const GOOGLE_AUTH_CALLBACK_PATH = "/auth/callback";
 export const OAUTH_STATE_SESSION_KEY = "oauth_state";
 
 export function resolveGoogleClientId(): string {
-  return requiredEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID");
+  return clientEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 }
 
 /** 브라우저: 현재 origin 기준 콜백 URL. SSR 시 NEXT_PUBLIC_GOOGLE_REDIRECT_URI 필수. */
@@ -18,7 +18,7 @@ export function getGoogleOAuthRedirectUri(): string {
   if (typeof window !== "undefined") {
     return `${window.location.origin}${GOOGLE_AUTH_CALLBACK_PATH}`;
   }
-  return requiredEnv("NEXT_PUBLIC_GOOGLE_REDIRECT_URI");
+  return clientEnv.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
 }
 
 export function buildGoogleAuthorizationUrl(): string {
