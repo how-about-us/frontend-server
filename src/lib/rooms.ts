@@ -108,17 +108,39 @@ export type RoomAccessVerdict = "ok" | "forbidden" | "error";
  * Persist된 `currentRoomId` 등이 서버에서 여전히 유효한지 확인합니다.
  * 네트워크 오류 등은 `"error"`로 두고 스토어는 건드리지 않습니다.
  */
+const VALIDATE_ROOM_ACCESS_FORBIDDEN_RETRIES = 3;
+const VALIDATE_ROOM_ACCESS_RETRY_BASE_MS = 400;
+
+/** 승인 직후 `GET /rooms/:id` 일시 403 등과의 레이스를 줄이기 위해 forbidden 시 짧게 재시도합니다. */
 export async function validateRoomAccess(
   roomId: string,
 ): Promise<RoomAccessVerdict> {
   const rid = roomId.trim();
   if (!rid.length) return "error";
-  try {
-    const res = await apiFetch(apiUrl(`/rooms/${rid}`));
-    if (res.ok) return "ok";
-    if (res.status === 403 || res.status === 404) return "forbidden";
-    return "error";
-  } catch {
-    return "error";
+
+  const delayAfterAttempt = async (attempt: number) => {
+    if (attempt < VALIDATE_ROOM_ACCESS_FORBIDDEN_RETRIES - 1) {
+      await new Promise((r) =>
+        setTimeout(r, VALIDATE_ROOM_ACCESS_RETRY_BASE_MS * (attempt + 1)),
+      );
+    }
+  };
+
+  for (let attempt = 0; attempt < VALIDATE_ROOM_ACCESS_FORBIDDEN_RETRIES; attempt++) {
+    try {
+      const res = await apiFetch(apiUrl(`/rooms/${rid}`));
+      if (res.ok) return "ok";
+      if (res.status === 403 || res.status === 404) {
+        if (attempt < VALIDATE_ROOM_ACCESS_FORBIDDEN_RETRIES - 1) {
+          await delayAfterAttempt(attempt);
+          continue;
+        }
+        return "forbidden";
+      }
+      return "error";
+    } catch {
+      await delayAfterAttempt(attempt);
+    }
   }
+  return "error";
 }

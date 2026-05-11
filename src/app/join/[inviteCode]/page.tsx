@@ -8,6 +8,7 @@ import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { setPendingInviteCode } from "@/lib/auth";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
+import { planPathForRoom } from "@/lib/join-room-workflow";
 import { useSessionStore } from "@/stores/session-store";
 
 function hasSession() {
@@ -50,7 +51,7 @@ export default function JoinPage() {
           } catch {
             // 메타 조회 실패해도 입장은 진행 (waiting 승인 처리와 동일)
           }
-          router.replace("/plan");
+          router.replace(planPathForRoom(data.id));
           return;
         }
         router.replace(

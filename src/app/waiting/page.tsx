@@ -7,9 +7,13 @@ import { RefreshCw } from "lucide-react";
 
 import { useCheckJoinStatus } from "@/hooks/useRooms";
 import { getRoomDetail, HttpError } from "@/lib/api/rooms";
+import {
+  joinStatusForWaitingUi,
+  planPathForRoom,
+} from "@/lib/join-room-workflow";
 import { useSessionStore } from "@/stores/session-store";
 
-type JoinStatusResult = "PENDING" | "APPROVED" | "REJECTED" | null;
+type WaitingCheckState = ReturnType<typeof joinStatusForWaitingUi> | null;
 
 function WaitingContent() {
   const router = useRouter();
@@ -21,7 +25,7 @@ function WaitingContent() {
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const setCurrentRoomMeta = useSessionStore((s) => s.setCurrentRoomMeta);
 
-  const [statusResult, setStatusResult] = useState<JoinStatusResult>(null);
+  const [statusResult, setStatusResult] = useState<WaitingCheckState>(null);
   const [fetchError, setFetchError] = useState(false);
 
   const { mutate: checkStatus, isPending: isChecking } = useCheckJoinStatus();
@@ -32,9 +36,9 @@ function WaitingContent() {
 
     checkStatus(roomId, {
       onSuccess: async (data) => {
-        const status = data.status.toUpperCase() as JoinStatusResult;
-        setStatusResult(status);
-        if (status === "APPROVED") {
+        const uiStatus = joinStatusForWaitingUi(data);
+        setStatusResult(uiStatus);
+        if (uiStatus === "APPROVED") {
           setCurrentRoomId(data.id);
           try {
             const meta = await getRoomDetail(data.id);
@@ -42,7 +46,7 @@ function WaitingContent() {
           } catch {
             // 메타 조회 실패해도 입장은 진행
           }
-          router.replace("/plan");
+          router.replace(planPathForRoom(data.id));
         }
       },
       onError: (err) => {
