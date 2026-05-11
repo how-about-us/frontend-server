@@ -13,11 +13,7 @@ export function resolveGoogleClientId(): string {
   return clientEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 }
 
-/** 브라우저: 현재 origin 기준 콜백 URL. SSR 시 NEXT_PUBLIC_GOOGLE_REDIRECT_URI 필수. */
 export function getGoogleOAuthRedirectUri(): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}${GOOGLE_AUTH_CALLBACK_PATH}`;
-  }
   return clientEnv.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
 }
 
