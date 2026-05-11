@@ -13,6 +13,7 @@ import {
   approveJoinRequest,
   createBookmarkCategory,
   createRoomBookmark,
+  createRoomBookmarks,
   createRoom,
   createRoomSchedule,
   createScheduleItem,
@@ -626,7 +627,7 @@ export type CreateRoomBookmarksInCategoriesResult = {
   addedCategoryIds: number[];
 };
 
-/** Sequentially POST one bookmark per category. Bookmark list refetch는 STOMP 브로드캐스트에서만 처리합니다. */
+/** POST 한 번으로 `googlePlaceId` + `categoryIds` 배열 전달. Bookmark list refetch는 STOMP 브로드캐스트에서만 처리합니다. */
 export function useCreateRoomBookmarksInCategories() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -639,25 +640,36 @@ export function useCreateRoomBookmarksInCategories() {
       googlePlaceId: string;
       categoryIds: number[];
     }): Promise<CreateRoomBookmarksInCategoriesResult> => {
-      let added = 0;
-      let skippedDuplicate = 0;
-      let firstHardError: Error | null = null;
-      const addedCategoryIds: number[] = [];
-      for (const categoryId of categoryIds) {
-        try {
-          await createRoomBookmark(roomId, { googlePlaceId, categoryId });
-          added += 1;
-          addedCategoryIds.push(categoryId);
-        } catch (e) {
-          if (e instanceof HttpError && e.status === 409) {
-            skippedDuplicate += 1;
-          } else {
-            firstHardError = e instanceof Error ? e : new Error(String(e));
-            break;
-          }
+      try {
+        const bookmarks = await createRoomBookmarks(roomId, {
+          googlePlaceId,
+          categoryIds,
+        });
+        const addedCategoryIds = bookmarks.map((b) => b.categoryId);
+        const added = bookmarks.length;
+        const skippedDuplicate = Math.max(0, categoryIds.length - added);
+        return {
+          added,
+          skippedDuplicate,
+          firstHardError: null,
+          addedCategoryIds,
+        };
+      } catch (e) {
+        if (e instanceof HttpError && e.status === 409) {
+          return {
+            added: 0,
+            skippedDuplicate: categoryIds.length,
+            firstHardError: null,
+            addedCategoryIds: [],
+          };
         }
+        return {
+          added: 0,
+          skippedDuplicate: 0,
+          firstHardError: e instanceof Error ? e : new Error(String(e)),
+          addedCategoryIds: [],
+        };
       }
-      return { added, skippedDuplicate, firstHardError, addedCategoryIds };
     },
     onSuccess: (result, { roomId }) => {
       if (!result.addedCategoryIds.length) return;

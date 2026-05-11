@@ -8,6 +8,7 @@ export type {
   JoinRequestListResponse,
   JoinRoomResponse,
   RoomBookmark,
+  RoomBookmarkBulkCreateRequest,
   RoomBookmarkCategoryPatchRequest,
   RoomBookmarkCreateRequest,
   RoomCreateRequest,
@@ -32,6 +33,7 @@ export {
 
 export {
   createRoomBookmark,
+  createRoomBookmarks,
   deleteRoomBookmark,
   getRoomBookmarks,
   patchRoomBookmarkCategory,

@@ -34,7 +34,10 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
     useCreateRoomBookmarksInCategories();
   const { mutate: createCategory, isPending: isCreatingCategory } =
     useCreateBookmarkCategory();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitFeedback, setSubmitFeedback] = useState<{
+    message: string;
+    variant: "error" | "neutral";
+  } | null>(null);
   const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
   const [createFolderModalKey, setCreateFolderModalKey] = useState(0);
   const [selectedIds, setSelectedIds] = useState(() => new Set<number>());
@@ -46,7 +49,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       else next.add(categoryId);
       return next;
     });
-    setSubmitError(null);
+    setSubmitFeedback(null);
   }, []);
 
   useEffect(() => {
@@ -65,42 +68,52 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
 
   const selectedAsArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
 
-  const notifyResult = ({
-    added,
-    skippedDuplicate,
-    firstHardError,
-  }: {
-    added: number;
-    skippedDuplicate: number;
-    firstHardError: Error | null;
-  }) => {
-    if (firstHardError) {
-      toast.error(firstHardError.message);
-      if (added > 0) {
-        toast.message(`추가한 리스트는 ${added}개예요`);
+  const notifyResult = useCallback(
+    ({
+      added,
+      skippedDuplicate,
+      firstHardError,
+    }: {
+      added: number;
+      skippedDuplicate: number;
+      firstHardError: Error | null;
+    }) => {
+      if (firstHardError) {
+        toast.error(firstHardError.message);
+        if (added > 0) {
+          toast.message(`추가한 리스트는 ${added}개예요`);
+        }
+        return;
       }
-      return;
-    }
-    if (added > 0 && skippedDuplicate === 0) {
-      toast.success(
-        added === 1 ? "보관함에 추가했어요" : `${added}개 리스트에 추가했어요`,
-      );
-    } else if (added > 0 && skippedDuplicate > 0) {
-      toast.success(`${added}개 리스트에 추가했어요`, {
-        description: `${skippedDuplicate}개 리스트에는 이미 이 장소가 있어요`,
-      });
-    } else if (added === 0 && skippedDuplicate > 0) {
-      toast.message("모든 선택 리스트에 이미 추가되어 있어요");
-    }
-  };
+      if (added > 0 && skippedDuplicate === 0) {
+        toast.success(
+          added === 1 ? "보관함에 추가했어요" : `${added}개 리스트에 추가했어요`,
+        );
+      } else if (added > 0 && skippedDuplicate > 0) {
+        setSubmitFeedback({
+          message: `${added}개 리스트에 추가했어요. ${skippedDuplicate}개 리스트에는 이미 이 장소가 있어요.`,
+          variant: "neutral",
+        });
+      } else if (added === 0 && skippedDuplicate > 0) {
+        setSubmitFeedback({
+          message: "모든 선택 리스트에 이미 추가되어 있어요.",
+          variant: "neutral",
+        });
+      }
+    },
+    [],
+  );
 
   const handleConfirmAdd = () => {
     if (!roomId || isAddingBookmarks) return;
     if (selectedAsArray.length === 0) {
-      setSubmitError("리스트를 하나 이상 선택해 주세요.");
+      setSubmitFeedback({
+        message: "리스트를 하나 이상 선택해 주세요.",
+        variant: "error",
+      });
       return;
     }
-    setSubmitError(null);
+    setSubmitFeedback(null);
     addBookmarksBulk(
       {
         roomId,
@@ -113,7 +126,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           if (result.added > 0) {
             onAdded?.();
           }
-          if (!result.firstHardError) {
+          if (!result.firstHardError && result.skippedDuplicate === 0) {
             onClose();
           }
         },
@@ -139,7 +152,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       {
         onSuccess: (created) => {
           setCreateFolderModalOpen(false);
-          setSubmitError(null);
+          setSubmitFeedback(null);
           setSelectedIds((prev) => new Set(prev).add(created.categoryId));
         },
         onError: (e) => {
@@ -305,9 +318,16 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
             </ul>
           )}
 
-          {submitError && (
-            <p className="border-t border-gray-border px-5 py-3 text-center text-sm text-brand-red">
-              {submitError}
+          {submitFeedback && (
+            <p
+              className={cn(
+                "border-t border-gray-border px-5 py-3 text-center text-sm",
+                submitFeedback.variant === "error"
+                  ? "text-brand-red"
+                  : "text-dark-gray",
+              )}
+            >
+              {submitFeedback.message}
             </p>
           )}
         </div>

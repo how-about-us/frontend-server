@@ -1,5 +1,9 @@
 import { apiFetch } from "@/lib/api/client";
-import { HttpError, isRoomBookmarkDuplicateFromBody } from "@/lib/api/errors";
+import {
+  HttpError,
+  isRoomBookmarkDuplicateFromBody,
+  readUserFacingMessageFromApiBody,
+} from "@/lib/api/errors";
 import {
   apiUrl,
   jsonBody,
@@ -9,9 +13,24 @@ import {
 } from "@/lib/api/http";
 import type {
   RoomBookmark,
+  RoomBookmarkBulkCreateRequest,
   RoomBookmarkCategoryPatchRequest,
   RoomBookmarkCreateRequest,
 } from "./types";
+
+function normalizeBookmarksResponse(body: unknown): RoomBookmark[] {
+  if (Array.isArray(body)) return body as RoomBookmark[];
+  if (body !== null && typeof body === "object") {
+    const bookmarks = (body as Record<string, unknown>).bookmarks;
+    if (Array.isArray(bookmarks)) return bookmarks as RoomBookmark[];
+    const data = (body as Record<string, unknown>).data;
+    if (Array.isArray(data)) return data as RoomBookmark[];
+    if ("bookmarkId" in body && typeof (body as RoomBookmark).bookmarkId === "number") {
+      return [body as RoomBookmark];
+    }
+  }
+  return [];
+}
 
 export async function getRoomBookmarks(
   roomId: string,
@@ -24,10 +43,10 @@ export async function getRoomBookmarks(
   });
 }
 
-export async function createRoomBookmark(
+export async function createRoomBookmarks(
   roomId: string,
-  body: RoomBookmarkCreateRequest,
-): Promise<RoomBookmark> {
+  body: RoomBookmarkBulkCreateRequest,
+): Promise<RoomBookmark[]> {
   const res = await apiFetch(apiUrl(`/rooms/${roomId}/bookmarks`), {
     method: "POST",
     ...jsonBody(body),
@@ -37,19 +56,39 @@ export async function createRoomBookmark(
 
   if (!res.ok) {
     if (isRoomBookmarkDuplicateFromBody(parsed)) {
-      throw new HttpError(409, "이미 북마크에 추가된 장소입니다");
+      throw new HttpError(
+        409,
+        readUserFacingMessageFromApiBody(parsed) ??
+          "이미 북마크에 추가된 장소입니다",
+      );
     }
     const msg =
-      parsed !== null &&
+      readUserFacingMessageFromApiBody(parsed) ??
+      (parsed !== null &&
       typeof parsed === "object" &&
       "message" in parsed &&
       typeof (parsed as { message: unknown }).message === "string"
         ? (parsed as { message: string }).message
-        : `보관함 항목 추가 실패: ${res.status}`;
+        : `보관함 항목 추가 실패: ${res.status}`);
     throw new Error(msg);
   }
 
-  return parsed as RoomBookmark;
+  return normalizeBookmarksResponse(parsed);
+}
+
+export async function createRoomBookmark(
+  roomId: string,
+  body: RoomBookmarkCreateRequest,
+): Promise<RoomBookmark> {
+  const list = await createRoomBookmarks(roomId, {
+    googlePlaceId: body.googlePlaceId,
+    categoryIds: [body.categoryId],
+  });
+  const first = list[0];
+  if (!first) {
+    throw new HttpError(409, "이미 북마크에 추가된 장소입니다");
+  }
+  return first;
 }
 
 export async function patchRoomBookmarkCategory(

@@ -138,6 +138,12 @@ export type RoomBookmarkCreateRequest = {
   categoryId: number;
 };
 
+/** POST /rooms/:roomId/bookmarks — 여러 카테고리에 동일 장소를 한 번에 추가 */
+export type RoomBookmarkBulkCreateRequest = {
+  googlePlaceId: string;
+  categoryIds: number[];
+};
+
 export type RoomBookmarkCategoryPatchRequest = {
   categoryId: number;
 };
