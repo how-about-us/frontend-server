@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE =
-  process.env.API_BASE_URL ?? "https://api.howaboutus.app";
+import { requiredEnv } from "@/lib/required-env";
+
+const API_BASE = requiredEnv("API_BASE_URL");
 
 export async function POST(request: NextRequest) {
   const backendRes = await fetch(`${API_BASE}/auth/refresh`, {

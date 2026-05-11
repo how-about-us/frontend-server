@@ -1,3 +1,5 @@
+import { requiredEnv } from "@/lib/required-env";
+
 /**
  * Google OAuth authorize URL 및 콜백 redirect_uri 공통 처리.
  * redirect_uri는 로그인을 연 호스트(www / apex)와 맞춰야 sessionStorage oauth_state가 유효하다.
@@ -7,22 +9,16 @@ export const GOOGLE_AUTH_CALLBACK_PATH = "/auth/callback";
 
 export const OAUTH_STATE_SESSION_KEY = "oauth_state";
 
-const DEFAULT_GOOGLE_CLIENT_ID =
-  "813204192877-5ueflcpjqdd9cpntpnkrmjgnro1mc4rr.apps.googleusercontent.com";
-
 export function resolveGoogleClientId(): string {
-  return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? DEFAULT_GOOGLE_CLIENT_ID;
+  return requiredEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID");
 }
 
-/** 브라우저: 현재 origin 기준 콜백 URL. SSR·프리렌더 시 env/로컬 기본값. */
+/** 브라우저: 현재 origin 기준 콜백 URL. SSR 시 NEXT_PUBLIC_GOOGLE_REDIRECT_URI 필수. */
 export function getGoogleOAuthRedirectUri(): string {
   if (typeof window !== "undefined") {
     return `${window.location.origin}${GOOGLE_AUTH_CALLBACK_PATH}`;
   }
-  return (
-    process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ??
-    "http://www.howaboutus.app/auth/callback"
-  );
+  return requiredEnv("NEXT_PUBLIC_GOOGLE_REDIRECT_URI");
 }
 
 export function buildGoogleAuthorizationUrl(): string {

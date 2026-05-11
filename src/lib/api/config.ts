@@ -1,2 +1,3 @@
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.howaboutus.app";
+import { requiredEnv } from "@/lib/required-env";
+
+export const API_BASE = requiredEnv("NEXT_PUBLIC_API_BASE_URL");
