@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Ban } from "lucide-react";
+import { User } from "lucide-react";
 
 export function ChatMemberAvatarRing({
   avatarUrl,
@@ -12,32 +13,43 @@ export function ChatMemberAvatarRing({
 }: {
   avatarUrl?: string;
   alt: string;
-  chromeAvatarClassName: string;
+  /** 방을 나간 타인 — 사진이 있어도 기본 프로필 플레이스홀더 오버레이 */
   senderNotInRoom?: boolean;
+  chromeAvatarClassName: string;
   reduceMotion: boolean | null;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [avatarUrl]);
+
+  const showImage = Boolean(avatarUrl?.trim()) && !imgFailed;
+  const showPlaceholderOverlay =
+    Boolean(senderNotInRoom) || !showImage;
+
   return (
     <div className={cn(chromeAvatarClassName, "relative bg-light-gray")}>
-      {avatarUrl ? (
+      {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element -- 멤버 프로필 URL 가변
         <img
           src={avatarUrl}
           alt={alt}
           className={cn(
             "h-full w-full object-cover",
-            senderNotInRoom && "brightness-[0.88]",
             !reduceMotion && "transition-opacity duration-150 ease-out",
           )}
+          onError={() => setImgFailed(true)}
         />
       ) : null}
-      {senderNotInRoom ? (
+      {showPlaceholderOverlay ? (
         <span
-          className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit] bg-black/30"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[inherit] bg-[#ebebeb]"
           aria-hidden
         >
-          <Ban
-            className="h-[52%] w-[52%] text-white drop-shadow-md"
-            strokeWidth={2.4}
+          <User
+            className="h-[58%] w-[58%] text-[#bfbfbf]"
+            strokeWidth={1.35}
           />
         </span>
       ) : null}

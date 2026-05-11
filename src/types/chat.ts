@@ -58,12 +58,13 @@ export interface AiPlaceRecommendationHeading {
 export interface ChatMessage {
   id: string;
   type: ChatMessageType;
+  /** 멤버·메타에 닉이 없거나 방 나간 타인 등 `(알 수 없음)` 포함 */
   sender?: string;
   text: string;
   time?: string;
   /** CHAT · 장소 공유 카드에서 아바타·발신자 표시에 사용 */
   avatar?: string;
-  /** 멤버 목록에 없을 때(방 나감 등) UI에서 '(알 수 없음)'·금지 아이콘 오버레이 */
+  /** 멤버 목록에 없을 때(방 나감) — 프로필은 URL이 있어도 플레이스홀더 오버레이 */
   senderNotInRoom?: boolean;
   /** CHAT(mine/other) 그룹핑 · 장소 공유 좌우 정렬 — senderId 기준 */
   senderUserId?: number;

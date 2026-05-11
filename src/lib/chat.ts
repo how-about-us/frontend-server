@@ -557,6 +557,22 @@ function senderNotInRoomFromMemberMap(
   return !memberMap.has(senderUserId);
 }
 
+function resolveChatDisplayAvatarUrl(
+  memberProfileUrl: string | null | undefined,
+  metaAvatar: string | null,
+): string | undefined {
+  if (
+    typeof memberProfileUrl === "string" &&
+    memberProfileUrl.trim().length > 0
+  ) {
+    return memberProfileUrl.trim();
+  }
+  if (metaAvatar != null && metaAvatar.trim().length > 0) {
+    return metaAvatar.trim();
+  }
+  return undefined;
+}
+
 function formatQuotePreview(content: string, maxLen = 96): string {
   const oneLine = content.replace(/\s+/g, " ").trim();
   if (oneLine.length <= maxLen) return oneLine || "질문";
@@ -812,10 +828,17 @@ export function serverMessageToChatMessage(
       senderUserId,
       isMine,
     );
-    const displayNick = notInRoom
-      ? CHAT_UNKNOWN_SENDER_LABEL
-      : member?.nickname?.trim() ||
-        (metaNick.length > 0 ? metaNick : undefined);
+    const rawNick =
+      member?.nickname?.trim() ||
+      (metaNick.length > 0 ? metaNick : "");
+    const displayNick =
+      notInRoom || rawNick.length === 0 ?
+        CHAT_UNKNOWN_SENDER_LABEL
+      : rawNick;
+    const avatar = resolveChatDisplayAvatarUrl(
+      member?.profileImageUrl,
+      metaAvatar,
+    );
 
     if (place) {
       return {
@@ -825,7 +848,7 @@ export function serverMessageToChatMessage(
         time,
         sender: displayNick,
         senderUserId,
-        avatar: member?.profileImageUrl ?? metaAvatar ?? undefined,
+        avatar,
         ...(notInRoom ? { senderNotInRoom: true as const } : {}),
         place,
       };
@@ -896,10 +919,17 @@ export function serverMessageToChatMessage(
       senderUserId,
       isMine,
     );
-    const displayNick = notInRoom
-      ? CHAT_UNKNOWN_SENDER_LABEL
-      : member?.nickname?.trim() ||
-        (metaNick.length > 0 ? metaNick : undefined);
+    const rawNick =
+      member?.nickname?.trim() ||
+      (metaNick.length > 0 ? metaNick : "");
+    const displayNick =
+      notInRoom || rawNick.length === 0 ?
+        CHAT_UNKNOWN_SENDER_LABEL
+      : rawNick;
+    const avatar = resolveChatDisplayAvatarUrl(
+      member?.profileImageUrl,
+      metaAvatar,
+    );
 
     const aiReqMeta =
       kind === "AI_REQUEST" ? parseAiRequestUiMeta(msg) : null;
@@ -911,7 +941,7 @@ export function serverMessageToChatMessage(
       type: isMine ? "mine" : "other",
       sender: displayNick,
       senderUserId,
-      avatar: member?.profileImageUrl ?? metaAvatar ?? undefined,
+      avatar,
       ...(notInRoom ? { senderNotInRoom: true as const } : {}),
       text: msg.content,
       time,
