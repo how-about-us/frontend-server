@@ -22,12 +22,26 @@ export function groupConsecutiveMessages(
   let current: ChatMessage[] = [];
 
   for (const msg of messages) {
-    if (msg.type === "system" || msg.type === "place") {
+    if (msg.type === "place") {
       if (current.length) {
         groups.push(current);
         current = [];
       }
       groups.push([msg]);
+      continue;
+    }
+
+    if (msg.type === "system") {
+      if (current.length) {
+        groups.push(current);
+        current = [];
+      }
+      const tail = groups[groups.length - 1];
+      if (tail && tail[0]?.type === "system") {
+        tail.push(msg);
+      } else {
+        groups.push([msg]);
+      }
       continue;
     }
 

@@ -20,6 +20,9 @@ module.exports = {
         "dark-gray": "#6a7282",
         "gray-border": "#e5e7eb",
         "bubble-gray": "#f1f1f1",
+        /** AI 응답 말풍선 — 밝은 뉴트럴 서피스에 진한 글자 (WCAG 대비용), 상대방 회색 말풍선과 톤 구분 */
+        "ai-bubble": "#ebf1f5",
+        "ai-bubble-border": "#c9d4df",
         "muted-brown": "#695656",
         "gray-300": "#e2e8f0",
       },

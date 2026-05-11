@@ -5,32 +5,21 @@ import { useQuery } from "@tanstack/react-query";
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
 import {
-  chatAiBubbleBlockSubtitleClass,
-  chatAiBubbleBlockTitleClass,
+  chatAiBubblePlaceRecommendationEmphasisClass,
+  chatAiBubblePlaceRecommendationHeadingSubtitleClass,
+  chatAiBubblePlaceRecommendationHeadingTitleClass,
   chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { aiRecommendedPlaceEnrichmentQueryKey } from "@/lib/query-keys";
 import { resolvePlaceCardEnrichmentFromPlaceId } from "@/lib/places/placeCardEnrichment";
 import { useMapCenterStore } from "@/stores/map-center-store";
+import { stripRecommendedPlaceReasonPrefix } from "@/lib/recommended-place-reason";
 import type {
   AiPlaceRecommendationHeading,
   AiRecommendedPlace,
 } from "@/types/chat";
 import { cn } from "@/lib/utils";
-
-/** 메타에 `placeId: 이유` 형태로 붙어 오는 경우 본문만 남김 */
-function reasonTextWithoutLeadingPlaceId(
-  reason: string,
-  placeId: string,
-): string {
-  const r = reason.trim();
-  const id = placeId.trim();
-  if (r.length === 0 || id.length === 0) return r;
-  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const stripped = r.replace(new RegExp(`^${escaped}\\s*:\\s*`), "").trim();
-  return stripped.length > 0 ? stripped : r;
-}
 
 function AiRecommendedPlaceRow({
   place,
@@ -63,7 +52,7 @@ function AiRecommendedPlaceRow({
       : (enriched?.userRatingCount ?? null);
 
   const reasonDisplay = place.reason
-    ? reasonTextWithoutLeadingPlaceId(place.reason, place.placeId)
+    ? stripRecommendedPlaceReasonPrefix(place.reason, place.placeId)
     : "";
 
   function handleClick() {
@@ -99,7 +88,10 @@ function AiRecommendedPlaceRow({
             chatAiBubblePlaceRecommendationReasonClass(isMinimized),
           )}
         >
-          <AiHighlightedText text={reasonDisplay} />
+          <AiHighlightedText
+            text={reasonDisplay}
+            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
+          />
         </p>
       ) : null}
     </div>
@@ -119,24 +111,31 @@ export function AiRecommendedPlacesList({
 }) {
   if (!places.length) return null;
 
-  const titleCls = chatAiBubbleBlockTitleClass(isMinimized);
-  const subtitleCls = chatAiBubbleBlockSubtitleClass(isMinimized);
+  const titleCls = chatAiBubblePlaceRecommendationHeadingTitleClass(isMinimized);
+  const subtitleCls =
+    chatAiBubblePlaceRecommendationHeadingSubtitleClass(isMinimized);
 
   return (
     <div
       className={cn(
-        "mt-2 flex flex-col gap-2 border-t border-white/20 pt-2",
+        "mt-2 flex flex-col gap-2 border-t border-slate-300/80 pt-2",
         className,
       )}
     >
       {heading?.title ? (
         <div className={titleCls}>
-          <AiHighlightedText text={heading.title} />
+          <AiHighlightedText
+            text={heading.title}
+            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
+          />
         </div>
       ) : null}
       {heading?.subtitle ? (
         <div className={subtitleCls}>
-          <AiHighlightedText text={heading.subtitle} />
+          <AiHighlightedText
+            text={heading.subtitle}
+            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
+          />
         </div>
       ) : null}
       <div className="flex flex-col gap-4">

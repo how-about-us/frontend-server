@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Search } from "lucide-react";
 import { ChatEnterIcon } from "@/components/icons";
@@ -9,11 +9,12 @@ import {
   chatTapSoft,
   chatTapTransition,
 } from "@/components/chat/chat-animations";
-import { chatTypography, resolveChatMessageTypography } from "@/components/chat/chat-typography";
+import {
+  chatTypography,
+  resolveChatMessageTypography,
+} from "@/components/chat/chat-typography";
+import { CHAT_AI_MENTION_LABEL } from "@/components/chat/chat-constants";
 import { cn } from "@/lib/utils";
-
-/** UI 오버레이 전용 — 실제 textarea value 에는 넣지 않음 */
-const AI_LABEL = "@AI";
 
 interface ChatInputBarProps {
   isMinimized: boolean;
@@ -21,6 +22,11 @@ interface ChatInputBarProps {
   onSendAi: (content: string) => void;
   onPlusClick?: () => void;
   plusDisabled?: boolean;
+}
+
+function mentionSuffixMatchesAi(valueFromAt: string): boolean {
+  const t = valueFromAt.toLowerCase();
+  return t.length === 0 || "ai".startsWith(t);
 }
 
 export function ChatInputBar({
@@ -32,13 +38,63 @@ export function ChatInputBar({
 }: ChatInputBarProps) {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [message, setMessage] = useState("");
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionAnchor, setMentionAnchor] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputShellRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
+
+  const updateMentionFromDom = useCallback(
+    (v: string, cursor: number, aiOn: boolean) => {
+      if (aiOn) {
+        setMentionOpen(false);
+        setMentionAnchor(null);
+        return;
+      }
+      if (cursor < 1 || v[cursor - 1] !== "@") {
+        setMentionOpen(false);
+        setMentionAnchor(null);
+        return;
+      }
+      const atPos = cursor - 1;
+      const prevOk =
+        atPos === 0 || (atPos > 0 && /\s/.test(v.charAt(atPos - 1)));
+      if (!prevOk) {
+        setMentionOpen(false);
+        setMentionAnchor(null);
+        return;
+      }
+      const afterAt = v.slice(atPos + 1, cursor);
+      if (!mentionSuffixMatchesAi(afterAt)) {
+        setMentionOpen(false);
+        setMentionAnchor(null);
+        return;
+      }
+      setMentionOpen(true);
+      setMentionAnchor(atPos);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!mentionOpen) return;
+    function onDocMouseDown(ev: MouseEvent) {
+      const shell = inputShellRef.current;
+      if (shell && !shell.contains(ev.target as Node)) {
+        setMentionOpen(false);
+        setMentionAnchor(null);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [mentionOpen]);
 
   function toggleAi() {
     setAiEnabled((prev) => {
       const next = !prev;
       if (next) {
+        setMentionOpen(false);
+        setMentionAnchor(null);
         setTimeout(() => {
           const el = inputRef.current;
           if (el) {
@@ -64,12 +120,52 @@ export function ChatInputBar({
     });
   }
 
+  function pickMentionAi() {
+    if (mentionAnchor === null) return;
+    const el = inputRef.current;
+    if (!el) return;
+    const v = el.value;
+    const caret = el.selectionStart ?? v.length;
+    const before = v.slice(0, mentionAnchor);
+    const after = v.slice(caret);
+    const merged = before + after;
+    setMessage(merged);
+    setMentionOpen(false);
+    setMentionAnchor(null);
+    setAiEnabled(true);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = before.length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setMessage(e.target.value);
+    const el = e.target;
+    const v = el.value;
+    const cursor = el.selectionStart ?? v.length;
+
+    if (!aiEnabled && /^@ai(\s+|$)/i.test(v)) {
+      const rest = v.replace(/^@ai\s*/i, "");
+      setAiEnabled(true);
+      setMentionOpen(false);
+      setMentionAnchor(null);
+      setMessage(rest);
+      requestAnimationFrame(() => {
+        const t = inputRef.current;
+        if (t) {
+          const pos = rest.length;
+          t.setSelectionRange(pos, pos);
+        }
+      });
+      return;
+    }
+
+    setMessage(v);
+    updateMentionFromDom(v, cursor, aiEnabled);
   }
 
   function handleSend() {
-    // IME 조합 후 React state 반영 타이밍과 맞추려면 DOM 값이 더 정확할 수 있음
     const raw = inputRef.current?.value ?? message;
     const trimmed = raw.trim();
     if (!trimmed) return;
@@ -79,12 +175,45 @@ export function ChatInputBar({
 
     setMessage("");
     setAiEnabled(false);
+    setMentionOpen(false);
+    setMentionAnchor(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Escape" && mentionOpen) {
+      e.preventDefault();
+      setMentionOpen(false);
+      setMentionAnchor(null);
+      return;
+    }
+
+    if (e.key === "Backspace" && aiEnabled) {
+      const el = inputRef.current;
+      const ne = e.nativeEvent;
+      if (ne.isComposing || ne.keyCode === 229) return;
+      if (!el) return;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? 0;
+      /** 맨 앞에서 한 칸 지우기 → @ai 오버레이 해제, 일반 필드에 `@a`만 남김(멘션 이어쓰기) */
+      if (start === 0 && start === end) {
+        e.preventDefault();
+        setAiEnabled(false);
+        setMentionAnchor(0);
+        setMentionOpen(true);
+        setMessage("@a");
+        requestAnimationFrame(() => {
+          const t = inputRef.current;
+          if (t) {
+            t.focus();
+            t.setSelectionRange(2, 2);
+          }
+        });
+        return;
+      }
+    }
+
     if (e.key !== "Enter" || e.shiftKey) return;
 
-    // 한글 등 IME: Enter로 조합 확정 중일 때는 전송하지 않음 — 마지막 글자 중복 등 방지
     const ne = e.nativeEvent;
     if (ne.isComposing || ne.keyCode === 229) return;
 
@@ -100,7 +229,10 @@ export function ChatInputBar({
       className="flex shrink-0 flex-col border-t border-gray-300"
       style={{ height: isMinimized ? "100px" : "90px" }}
     >
-      <div className="relative min-h-0 flex-1 px-4 pb-1 pt-3">
+      <div
+        ref={inputShellRef}
+        className="relative min-h-0 flex-1 px-4 pb-1 pt-3"
+      >
         <AnimatePresence>
           {aiEnabled && (
             <motion.span
@@ -121,15 +253,50 @@ export function ChatInputBar({
                 reduceMotion ? { duration: 0 } : chatAiLabelMotion.transition
               }
             >
-              {AI_LABEL}
+              {CHAT_AI_MENTION_LABEL}
             </motion.span>
           )}
         </AnimatePresence>
+        {mentionOpen && !aiEnabled ?
+          <div
+            className="absolute left-4 right-4 top-full z-20 mt-0.5 overflow-hidden rounded-lg border border-gray-border bg-white py-1 shadow-md"
+          >
+            <button
+              type="button"
+              onMouseDown={(ev) => ev.preventDefault()}
+              onClick={() => pickMentionAi()}
+              aria-label={`${CHAT_AI_MENTION_LABEL}로 AI 질문 모드 적용`}
+              className={cn(
+                "flex w-full items-center px-3 py-2 text-left transition hover:bg-light-gray",
+                isMinimized ? "text-[11px]" : "text-xs",
+              )}
+            >
+              <span className="font-medium text-brand-green">{CHAT_AI_MENTION_LABEL}</span>
+              <span className="ml-2 text-dark-gray">AI에게 질문하기</span>
+            </button>
+          </div>
+        : null}
         <textarea
           ref={inputRef}
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onClick={(e) => {
+            const el = e.currentTarget;
+            updateMentionFromDom(
+              el.value,
+              el.selectionStart ?? el.value.length,
+              aiEnabled,
+            );
+          }}
+          onSelect={(e) => {
+            const el = e.currentTarget;
+            updateMentionFromDom(
+              el.value,
+              el.selectionStart ?? el.value.length,
+              aiEnabled,
+            );
+          }}
           placeholder="메시지를 입력하세요."
           className={cn(
             "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
@@ -161,9 +328,7 @@ export function ChatInputBar({
             )}
           >
             <Search
-              className={cn(
-                isMinimized ? "h-4 w-4" : "h-5 w-5",
-              )}
+              className={cn(isMinimized ? "h-4 w-4" : "h-5 w-5")}
               strokeWidth={2}
               aria-hidden
             />
@@ -179,7 +344,7 @@ export function ChatInputBar({
                 : "bg-light-gray text-black/40"
             }`}
           >
-            <span className={typo.input}>{AI_LABEL}</span>
+            <span className={typo.input}>{CHAT_AI_MENTION_LABEL}</span>
             {aiEnabled && (
               <Check
                 className={cn(isMinimized ? "h-3 w-3" : "h-3.5 w-3.5")}

@@ -1,11 +1,12 @@
-import type { AiRequestStatus, ChatMessage } from "@/types/chat";
-import { AiResponseBubble } from "@/components/chat/messages/AiResponseBubble";
+import { CHAT_AI_MENTION_LABEL } from "@/components/chat/chat-constants";
 import { getChatPanelLook } from "@/components/chat/chat-panel-look";
+import { AiResponseBubble } from "@/components/chat/messages/AiResponseBubble";
+import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
 import type { ChatMessageTextTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
+import type { AiRequestStatus, ChatMessage } from "@/types/chat";
 import { Loader2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
 
 function labelForAiStatus(status: AiRequestStatus): string {
   const labels: Record<AiRequestStatus, string> = {
@@ -101,7 +102,7 @@ function BubbleMessageText({
   if (!msg.isAiRequest) return msg.text;
   return (
     <>
-      <span className={typo.aiRequestBubblePrefix}>@AI</span>
+      <span className={typo.aiRequestBubblePrefix}>{CHAT_AI_MENTION_LABEL}</span>
       {msg.text ? (
         <>
           {" "}
@@ -284,16 +285,19 @@ export function AiMessageGroup({
         }
       >
         <div
-          className={cn(chrome.avatarSm, "bg-transparent")}
+          className={cn(
+            chrome.avatarSm,
+            "bg-white shadow-sm ring-1 ring-gray-border",
+          )}
           role="img"
           aria-label="WOORI"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- public 정적 SVG */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- public 정적 SVG(내장 래스터) */}
           <img
             src={chrome.wooriIconSrc}
             alt="WOORI"
             className={cn(
-              "h-full w-full object-contain",
+              "h-full w-full object-contain p-1",
               !reduceMotion && "transition-opacity duration-150 ease-out",
             )}
           />

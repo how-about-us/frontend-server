@@ -25,7 +25,7 @@ export function AiConversationSummaryContent({
   const mentionListCls = chatAiBubbleMutedListClass(isMinimized);
 
   return (
-    <div className="mt-2 space-y-3 border-t border-white/20 pt-2">
+    <div className="mt-2 space-y-3 border-t border-slate-300/80 pt-2">
       <div className={titleCls}>
         <AiHighlightedText text={summary.title} />
       </div>
@@ -55,15 +55,15 @@ export function AiConversationSummaryContent({
           <ul className={mentionListCls}>
             {summary.mentionedPlaces.map((mp, idx) => (
               <li key={`${mp.name}-${idx}`}>
-                <span className="font-medium text-white/95">{mp.name}</span>
+                <span className="font-medium text-gray-900">{mp.name}</span>
                 {mp.source ? (
-                  <span className="text-[9px] text-white/55">
+                  <span className="text-[9px] text-gray-500">
                     {" "}
                     · {mp.source}
                   </span>
                 ) : null}
                 {mp.note ? (
-                  <span className="mt-0.5 block text-white/70">
+                  <span className="mt-0.5 block text-gray-600">
                     <AiHighlightedText text={mp.note} />
                   </span>
                 ) : null}

@@ -84,7 +84,6 @@ export function ChatPanel() {
             onMinimize={minimizeChat}
             onClose={closeChat}
           />
-          <div className="h-px bg-black/[0.08]" />
           <ChatMessageList
             key={rid || "no-room"}
             messages={messages}

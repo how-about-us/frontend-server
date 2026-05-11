@@ -23,7 +23,7 @@ export function AiHighlightedText({
 }: {
   text: string;
   className?: string;
-  /** 기본: 채팅 녹색 말풍선용 은은한 크림 강조 (`chatAiBubbleEmphasisClass`) */
+  /** 기본: AI 응답 말풍선용 강조 (`chatAiBubbleEmphasisClass`) */
   emphasisClassName?: string;
 }) {
   const parts = splitDoubleStars(text);

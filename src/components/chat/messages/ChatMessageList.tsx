@@ -213,7 +213,7 @@ export function ChatMessageList({
         ref={scrollRootRef}
         onScroll={handleScroll}
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-brand-green/8 px-3 py-2 [scrollbar-color:#d9d9d9_transparent]",
+          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2 [scrollbar-color:#cbd5e1_transparent]",
           isMinimized && "px-2 py-1.5",
         )}
       >
@@ -245,7 +245,20 @@ export function ChatMessageList({
 
             const inner =
               type === "system" ? (
-                <SystemMessage message={group[0]} isMinimized={isMinimized} />
+                <div
+                  className={cn(
+                    "flex flex-col items-center",
+                    isMinimized ? "gap-0.5" : "gap-1",
+                  )}
+                >
+                  {group.map((m) => (
+                    <SystemMessage
+                      key={m.id}
+                      message={m}
+                      isMinimized={isMinimized}
+                    />
+                  ))}
+                </div>
               ) : type === "place" ? (
                 <PlaceShareCard message={group[0]} isMinimized={isMinimized} />
               ) : type === "mine" ? (
