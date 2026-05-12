@@ -244,11 +244,11 @@ export function ChatInputBar({
               style={{ paddingLeft: chatTypography.aiOverlayInset }}
               initial={reduceMotion ? false : chatAiLabelMotion.initial}
               animate={
-                reduceMotion ?
-                  { opacity: 1, x: 0 }
-                : chatAiLabelMotion.animate
+                reduceMotion ? { opacity: 1, x: 0 } : chatAiLabelMotion.animate
               }
-              exit={reduceMotion ? { opacity: 0, x: 0 } : chatAiLabelMotion.exit}
+              exit={
+                reduceMotion ? { opacity: 0, x: 0 } : chatAiLabelMotion.exit
+              }
               transition={
                 reduceMotion ? { duration: 0 } : chatAiLabelMotion.transition
               }
@@ -257,10 +257,8 @@ export function ChatInputBar({
             </motion.span>
           )}
         </AnimatePresence>
-        {mentionOpen && !aiEnabled ?
-          <div
-            className="absolute left-4 right-4 top-full z-20 mt-0.5 overflow-hidden rounded-lg border border-gray-border bg-white py-1 shadow-md"
-          >
+        {mentionOpen && !aiEnabled ? (
+          <div className="absolute left-4 right-4 top-full z-20 mt-0.5 overflow-hidden rounded-lg border border-gray-border bg-white py-1 shadow-md">
             <button
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
@@ -271,13 +269,16 @@ export function ChatInputBar({
                 isMinimized ? "text-[11px]" : "text-xs",
               )}
             >
-              <span className="font-medium text-brand-green">{CHAT_AI_MENTION_LABEL}</span>
+              <span className="font-medium text-brand-green">
+                {CHAT_AI_MENTION_LABEL}
+              </span>
               <span className="ml-2 text-dark-gray">AI에게 질문하기</span>
             </button>
           </div>
-        : null}
+        ) : null}
         <textarea
           ref={inputRef}
+          rows={2}
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -299,7 +300,8 @@ export function ChatInputBar({
           }}
           placeholder="메시지를 입력하세요."
           className={cn(
-            "h-full w-full resize-none bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
+            "box-border max-h-[8rem] h-full w-full resize-none overflow-y-auto bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
+            isMinimized ? "min-h-[1.75rem]" : "min-h-[2.75rem]",
             typo.input,
           )}
           style={
@@ -310,10 +312,7 @@ export function ChatInputBar({
         />
       </div>
       <div
-        className={cn(
-          "flex shrink-0 items-center justify-between px-1 pb-2",
-          isMinimized ? "pt-0.5" : "pt-1",
-        )}
+        className={cn("flex shrink-0 items-center justify-between px-1 pb-2")}
       >
         <div className="flex min-w-0 items-center gap-1">
           <button
@@ -352,7 +351,7 @@ export function ChatInputBar({
               />
             )}
           </motion.button>
-          {aiEnabled ?
+          {aiEnabled ? (
             <>
               <motion.button
                 type="button"
@@ -381,7 +380,7 @@ export function ChatInputBar({
                 대화 요약
               </motion.button>
             </>
-          : null}
+          ) : null}
         </div>
         <motion.button
           type="button"
