@@ -25,6 +25,7 @@ import {
 } from "@/components/chat/chat-animations";
 import { useSessionStore } from "@/stores/session-store";
 import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
+import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -145,9 +146,13 @@ export default function SearchPage() {
       results &&
       results.length > 0
     ) {
+      useMapPinsFocusStore.getState().claimFocus("search");
       setSearchMapPinsFromResults(results);
     } else {
       clearSearchMapPins();
+      if (!hasActiveSearch) {
+        useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
+      }
     }
   }, [
     query,
@@ -163,6 +168,7 @@ export default function SearchPage() {
   useEffect(
     () => () => {
       clearSearchMapPins();
+      useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
       useSearchRecenterStore.getState().clearSearchSnapshot();
     },
     [clearSearchMapPins],

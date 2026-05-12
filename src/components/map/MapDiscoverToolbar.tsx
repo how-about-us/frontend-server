@@ -26,7 +26,7 @@ export function MapDiscoverToolbar({
   setOpenNow,
 }: MapDiscoverToolbarProps) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-[15] mt-4 max-w-full overflow-x-hidden px-4">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-[15] mt-4 max-w-full overflow-visible px-4">
       <AnimatePresence mode="wait" initial={false}>
         {selectedCategoryId == null ? (
           <motion.div

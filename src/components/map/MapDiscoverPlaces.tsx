@@ -21,6 +21,11 @@ import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
 
 import type { DiscoverMapSnapshot } from "@/stores/search-recenter-store";
 import { useSearchRecenterStore } from "@/stores/search-recenter-store";
+import {
+  discoverPinWriteStillValid,
+  useMapPinsFocusStore,
+} from "@/stores/map-pins-focus-store";
+import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
@@ -113,6 +118,7 @@ export function MapDiscoverPlaces({
   const geometryLib = useMapsLibrary("geometry");
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
+  const pinsFocus = useMapPinsFocusStore((s) => s.focus);
 
   const [markers, setMarkers] = useState<DiscoverMarker[]>([]);
 
@@ -125,17 +131,28 @@ export function MapDiscoverPlaces({
       categoryId: string,
       ratingVal: RatingValue,
       openVal: OpenValue,
+      writeEpoch: number,
     ) => {
       const seq = ++searchSeqRef.current;
 
       if (!placesLib) {
-        if (seq === searchSeqRef.current) setMarkers([]);
+        if (
+          discoverPinWriteStillValid(writeEpoch)
+          && seq === searchSeqRef.current
+        ) {
+          setMarkers([]);
+        }
         return;
       }
 
       const cat = MAP_PLACE_CATEGORIES.find((c) => c.id === categoryId);
       if (!cat) {
-        if (seq === searchSeqRef.current) setMarkers([]);
+        if (
+          discoverPinWriteStillValid(writeEpoch)
+          && seq === searchSeqRef.current
+        ) {
+          setMarkers([]);
+        }
         return;
       }
 
@@ -196,6 +213,8 @@ export function MapDiscoverPlaces({
 
         if (seq !== searchSeqRef.current) return;
 
+        if (!discoverPinWriteStillValid(writeEpoch)) return;
+
         setMarkers(
           list.map((p) => ({
             id: p.id,
@@ -205,11 +224,26 @@ export function MapDiscoverPlaces({
           })),
         );
       } catch {
-        if (seq === searchSeqRef.current) setMarkers([]);
+        if (
+          !discoverPinWriteStillValid(writeEpoch)
+          || seq !== searchSeqRef.current
+        ) {
+          return;
+        }
+        setMarkers([]);
       }
     },
     [placesLib],
   );
+
+  /** Search가 맵 핀 소유 시 디스커버 마커 비우기·비행 응답 무효화 */
+  useEffect(() => {
+    if (pinsFocus === "discover") return;
+    searchSeqRef.current += 1;
+    queueMicrotask(() => {
+      setMarkers([]);
+    });
+  }, [pinsFocus]);
 
   /** 카테고리 종료 시 정리 또는 카테고리·필터 변경 시 스냅샷 규칙에 따라 검색 */
   useEffect(() => {
@@ -220,6 +254,7 @@ export function MapDiscoverPlaces({
         setMarkers([]);
       });
       useSearchRecenterStore.getState().clearDiscoverSnapshot();
+      useMapPinsFocusStore.getState().releaseFocus();
       return;
     }
 
@@ -233,8 +268,16 @@ export function MapDiscoverPlaces({
       if (!snap) return;
       prevCategoryIdRef.current = selectedCategoryId;
       useSearchRecenterStore.getState().setDiscoverSnapshot(snap);
+      const epoch = useMapPinsFocusStore.getState().claimFocus("discover");
+      useSearchMapPinsStore.getState().clearSearchMapPins();
       queueMicrotask(() => {
-        void runDiscoverSearch(snap, selectedCategoryId, rating, openNow);
+        void runDiscoverSearch(
+          snap,
+          selectedCategoryId,
+          rating,
+          openNow,
+          epoch,
+        );
       });
       return;
     }
@@ -242,12 +285,15 @@ export function MapDiscoverPlaces({
     const existing =
       useSearchRecenterStore.getState().discoverSnapshot;
     if (!existing) return;
+    const epochFilter = useMapPinsFocusStore.getState().claimFocus("discover");
+    useSearchMapPinsStore.getState().clearSearchMapPins();
     queueMicrotask(() => {
       void runDiscoverSearch(
         existing,
         selectedCategoryId,
         rating,
         openNow,
+        epochFilter,
       );
     });
   }, [
@@ -267,12 +313,15 @@ export function MapDiscoverPlaces({
     const snapshot = buildDiscoverSnapshotFromGoogleMap(map, geometryLib);
     if (!snapshot) return;
     useSearchRecenterStore.getState().setDiscoverSnapshot(snapshot);
+    const epochRecenter = useMapPinsFocusStore.getState().claimFocus("discover");
+    useSearchMapPinsStore.getState().clearSearchMapPins();
     queueMicrotask(() => {
       void runDiscoverSearch(
         snapshot,
         selectedCategoryId,
         rating,
         openNow,
+        epochRecenter,
       );
     });
   }, [
@@ -295,15 +344,16 @@ export function MapDiscoverPlaces({
 
   return (
     <>
-      {markers.map((m) => (
-        <DiscoverMarkerPin
-          key={m.id}
-          marker={m}
-          selectedNormalized={selectedNormalized}
-          categoryLabel={categoryLabel}
-          setSelectedPlace={setSelectedPlace}
-        />
-      ))}
+      {pinsFocus === "discover"
+        && markers.map((m) => (
+          <DiscoverMarkerPin
+            key={m.id}
+            marker={m}
+            selectedNormalized={selectedNormalized}
+            categoryLabel={categoryLabel}
+            setSelectedPlace={setSelectedPlace}
+          />
+        ))}
     </>
   );
 }

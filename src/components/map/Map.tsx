@@ -23,6 +23,7 @@ import {
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
+import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
@@ -110,8 +111,11 @@ function DestinationPanController({
 
 function MapSearchResultPins() {
   const pins = useSearchMapPinsStore((s) => s.pins);
+  const pinsFocus = useMapPinsFocusStore((s) => s.focus);
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const selectedPlaceId = selectedPlace?.googlePlaceId?.trim() ?? "";
+
+  if (pinsFocus !== "search") return null;
 
   return (
     <>
@@ -185,39 +189,40 @@ export default function Map() {
   };
 
   return (
-    <div className="relative h-full min-h-0 w-full min-w-0 overflow-hidden">
-      {!bootstrap.ready ? (
-        <div
-          className="h-full w-full bg-[#e8e6e3]"
-          aria-busy="true"
-          aria-label="지도 위치 불러오는 중"
-        />
-      ) : (
-        <GoogleMap
-          defaultCenter={bootstrap.center}
-          defaultZoom={bootstrap.zoom}
-          mapId="DEMO_MAP_ID"
-          gestureHandling="greedy"
-          disableDefaultUI
-          zoomControl
-          streetViewControl={false}
-          mapTypeControl={false}
-          fullscreenControl={false}
-          clickableIcons={selectedCategoryId == null}
-          onClick={handleMapClick}
-          onCameraChanged={(ev) => {
-            const { center, zoom, bounds } = ev.detail;
-            const radiusMeters = viewportSearchRadiusMetersFromBounds(
-              center,
-              bounds,
-            );
-            setMapCamera({
-              mapCenter: { lat: center.lat, lng: center.lng },
-              zoom,
-              radiusMeters,
-            });
-          }}
-        >
+    <div className="relative h-full min-h-0 w-full min-w-0">
+      <div className="absolute inset-0 min-h-0 overflow-hidden">
+        {!bootstrap.ready ? (
+          <div
+            className="h-full w-full bg-[#e8e6e3]"
+            aria-busy="true"
+            aria-label="지도 위치 불러오는 중"
+          />
+        ) : (
+          <GoogleMap
+            defaultCenter={bootstrap.center}
+            defaultZoom={bootstrap.zoom}
+            mapId="DEMO_MAP_ID"
+            gestureHandling="greedy"
+            disableDefaultUI
+            zoomControl
+            streetViewControl={false}
+            mapTypeControl={false}
+            fullscreenControl={false}
+            clickableIcons={selectedCategoryId == null}
+            onClick={handleMapClick}
+            onCameraChanged={(ev) => {
+              const { center, zoom, bounds } = ev.detail;
+              const radiusMeters = viewportSearchRadiusMetersFromBounds(
+                center,
+                bounds,
+              );
+              setMapCamera({
+                mapCenter: { lat: center.lat, lng: center.lng },
+                zoom,
+                radiusMeters,
+              });
+            }}
+          >
           <SelectedPlaceController />
           <DestinationPanController
             roomId={currentRoomId}
@@ -260,8 +265,9 @@ export default function Map() {
               </span>
             </AdvancedMarker>
           )}
-        </GoogleMap>
-      )}
+          </GoogleMap>
+        )}
+      </div>
 
       <MapDiscoverToolbar
         selectedCategoryId={selectedCategoryId}

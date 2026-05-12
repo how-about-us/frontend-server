@@ -2,14 +2,41 @@
 
 import { shouldSuggestPlacesSearchRecenter } from "@/lib/maps";
 import { useMapCenterStore } from "@/stores/map-center-store";
+import type { DiscoverMapSnapshot } from "@/stores/search-recenter-store";
 import { useSearchRecenterStore } from "@/stores/search-recenter-store";
+import type { MapCenterCoords } from "@/stores/map-center-store";
 
 type UsePlacesSearchHereVisibleParams = {
-  /** Discover 모드 카테고리 선택 시 문자열 ID, 미선택이면 null */
   discoverCategoryId: string | null;
 };
 
-/** 텍스트 검색 스냅샷 또는 Discover 스냅샷 중 하나라도 현재 카메라와 벌어지면 true */
+function chipsDiscoverRecenterEligible(
+  discoverCategoryId: string | null,
+  discoverSnapshot: DiscoverMapSnapshot | null,
+  mapCenter: MapCenterCoords,
+  zoom: number | null,
+): boolean {
+  const chipChosen =
+    typeof discoverCategoryId === "string"
+    && discoverCategoryId.trim().length > 0;
+
+  /** 칩 미선택이면 디스커버 재센터 없음 — 텍스트 검색은 별도 */
+  if (!chipChosen || discoverSnapshot == null) return false;
+
+  return shouldSuggestPlacesSearchRecenter({
+    mapCenter,
+    snapshotCenter: discoverSnapshot.center,
+    snapshotRadiusMeters: discoverSnapshot.radius,
+    zoom,
+    snapshotZoom: discoverSnapshot.zoom,
+  });
+}
+
+/**
+ * 맵 하단 「이 위치 검색」 표시 여부:
+ * - 텍스트 검색: `searchSnapshot`만 필요(칩과 무관)
+ * - 카테고리 디스커버: 칩 선택 + 디스커버 스냅샷 + 카메라 이탈 시에만
+ */
 export function usePlacesSearchHereVisible({
   discoverCategoryId,
 }: UsePlacesSearchHereVisibleParams): boolean {
@@ -19,11 +46,6 @@ export function usePlacesSearchHereVisible({
   const discoverSnapshot = useSearchRecenterStore((s) => s.discoverSnapshot);
 
   if (!mapCenter) return false;
-
-  const discoverActive =
-    typeof discoverCategoryId === "string"
-    && discoverCategoryId.trim().length > 0
-    && discoverSnapshot != null;
 
   const suggestFromSearchSnapshot =
     searchSnapshot != null
@@ -35,16 +57,12 @@ export function usePlacesSearchHereVisible({
       snapshotZoom: searchSnapshot.zoom,
     });
 
-  const suggestFromDiscover =
-    discoverActive
-    && discoverSnapshot != null
-    && shouldSuggestPlacesSearchRecenter({
-      mapCenter,
-      snapshotCenter: discoverSnapshot.center,
-      snapshotRadiusMeters: discoverSnapshot.radius,
-      zoom,
-      snapshotZoom: discoverSnapshot.zoom,
-    });
+  const suggestFromDiscoverChip = chipsDiscoverRecenterEligible(
+    discoverCategoryId,
+    discoverSnapshot,
+    mapCenter,
+    zoom,
+  );
 
-  return suggestFromSearchSnapshot || suggestFromDiscover;
+  return suggestFromSearchSnapshot || suggestFromDiscoverChip;
 }
