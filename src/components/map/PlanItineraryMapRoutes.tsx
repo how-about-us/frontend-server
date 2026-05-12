@@ -3,13 +3,13 @@
 /// <reference types="google.maps" />
 
 import { AdvancedMarker, Polyline } from "@vis.gl/react-google-maps";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useMemo, type JSX } from "react";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
-  fetchPlanItineraryMapPathsBundle,
   buildPlanItineraryRouteArrowIcons,
+  fetchOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
 import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
@@ -17,10 +17,9 @@ import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import { displayPositionsForOverlappingStops } from "@/lib/plan/planItineraryMapMarkerOffset";
 import {
   flattenPlanItinerarySegmentsFromPlaces,
-  planItinerarySegmentPathRecordKey,
 } from "@/lib/plan/planItineraryMapSegments";
 import {
-  planItineraryMapPathQueryKey,
+  planItinerarySegmentMapPathQueryKey,
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
@@ -80,8 +79,6 @@ export function PlanItineraryMapRoutes() {
   );
   const fallbackRouteStroke = "#f12d33";
 
-  const queryClient = useQueryClient();
-
   const placesQueries = useQueries({
     queries: orderedScheduleIdsForQueries.map((scheduleId) => ({
       queryKey: scheduleItemsQueryKey(rid || null, scheduleId),
@@ -104,42 +101,39 @@ export function PlanItineraryMapRoutes() {
     buckets,
   );
 
-  const segmentEpochSignature = useMemo(() => {
-    if (rid.length === 0 || segments.length === 0) return "";
-    return [...segments]
-      .map((seg) => {
-        const k = planMapSegmentEpochStoreKey(
+  const pathsPerSegmentQueries = useQueries({
+    queries: segments.map((seg) => {
+      const epochKey = planMapSegmentEpochStoreKey(
+        rid,
+        seg.scheduleId,
+        seg.segmentSourceItemId,
+      );
+      const segmentEpoch = epochBySegmentKey[epochKey] ?? 0;
+
+      return {
+        queryKey: planItinerarySegmentMapPathQueryKey(
           rid,
           seg.scheduleId,
           seg.segmentSourceItemId,
-        );
-        return `${k}\u0001${epochBySegmentKey[k] ?? 0}`;
-      })
-      .sort()
-      .join("|");
-  }, [rid, segments, epochBySegmentKey]);
-
-  const pathsBundleQuery = useQuery({
-    queryKey: planItineraryMapPathQueryKey(
-      rid,
-      orderedScheduleIdsForQueries,
-      directionsEpoch,
-      segmentEpochSignature,
-    ),
-    queryFn: () =>
-      fetchPlanItineraryMapPathsBundle(queryClient, rid, orderedScheduleIdsForQueries),
-    enabled: rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
-    staleTime: Infinity,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    retry: false,
+          seg.originPlaceId,
+          seg.destPlaceId,
+          seg.travelModeCanon,
+          directionsEpoch,
+          segmentEpoch,
+        ),
+        queryFn: () => fetchOrientedPlanItinerarySegmentPath(seg),
+        enabled: rid.length > 0 && segments.length > 0,
+        staleTime: Infinity,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        retry: false,
+      };
+    }),
   });
-
-  const pathByKey = pathsBundleQuery.data;
 
   const polylines: Array<JSX.Element> = [];
   segments.forEach((seg, segIdx) => {
-    const pts = pathByKey?.[planItinerarySegmentPathRecordKey(seg)];
+    const pts = pathsPerSegmentQueries[segIdx]?.data;
     if (!pts?.length) return;
 
     const segEpochKey = planMapSegmentEpochStoreKey(

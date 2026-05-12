@@ -50,15 +50,3 @@ export function flattenPlanItinerarySegmentsFromPlaces(
   return segments;
 }
 
-/** `plan-itinerary-map-path` 캐시 Record 키 (쿼리 키에는 넣지 않음). */
-export function planItinerarySegmentPathRecordKey(
-  seg: PlanItinerarySegmentDescriptor,
-): string {
-  return [
-    seg.scheduleId,
-    seg.segmentSourceItemId,
-    seg.originPlaceId,
-    seg.destPlaceId,
-    seg.travelModeCanon,
-  ].join("\u0001");
-}

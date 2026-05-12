@@ -63,23 +63,31 @@ export function aiRecommendedPlaceEnrichmentQueryKey(googlePlaceId: string) {
   return [AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT, id] as const;
 }
 
-// ─── Plan itinerary map path ─────────────────────────────────────────────────
+// ─── Plan itinerary map path (per segment, Google Directions JS) ─────────────
 
 const PLAN_ITINERARY_MAP_PATH_CACHE_VERSION = "orient-v1" as const;
 
-export function planItineraryMapPathQueryKey(
+export function planItinerarySegmentMapPathQueryKey(
   rid: string,
-  orderedScheduleIds: number[],
-  directionsEpoch: number,
-  segmentEpochSignature: string,
+  scheduleId: number,
+  segmentSourceItemId: number,
+  originPlaceId: string,
+  destPlaceId: string,
+  travelModeCanon: string,
+  roomDirectionsEpoch: number,
+  segmentEpoch: number,
 ) {
   return [
-    "plan-itinerary-map-path",
+    "plan-itinerary-map-segment-path",
     PLAN_ITINERARY_MAP_PATH_CACHE_VERSION,
     rid,
-    orderedScheduleIds,
-    directionsEpoch,
-    segmentEpochSignature,
+    scheduleId,
+    segmentSourceItemId,
+    originPlaceId.trim(),
+    destPlaceId.trim(),
+    travelModeCanon,
+    roomDirectionsEpoch,
+    segmentEpoch,
   ] as const;
 }
 
