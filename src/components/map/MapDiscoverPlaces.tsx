@@ -12,13 +12,18 @@ import {
   googlePlacesJsLocalizedText,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
+import {
+  boundsInstanceFromDiscoverSnapshot,
+  buildDiscoverSnapshotFromGoogleMap,
+} from "@/lib/map-viewport-commit";
 
 import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
 
+import type { DiscoverMapSnapshot } from "@/stores/search-recenter-store";
+import { useSearchRecenterStore } from "@/stores/search-recenter-store";
+
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
-
-const DEBOUNCE_MS = 420;
 
 /** Places API(New) field mask — camelCase 프로퍼티명과 동일 */
 const NEARBY_FIELDS: string[] = [
@@ -107,130 +112,179 @@ export function MapDiscoverPlaces({
   const placesLib = useMapsLibrary("places");
   const geometryLib = useMapsLibrary("geometry");
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
+  const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
 
   const [markers, setMarkers] = useState<DiscoverMarker[]>([]);
 
   const searchSeqRef = useRef(0);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCategoryIdRef = useRef<string | null>(null);
 
-  const runDiscoverSearch = useCallback(async () => {
-    const seq = ++searchSeqRef.current;
+  const runDiscoverSearch = useCallback(
+    async (
+      snapshot: DiscoverMapSnapshot,
+      categoryId: string,
+      ratingVal: RatingValue,
+      openVal: OpenValue,
+    ) => {
+      const seq = ++searchSeqRef.current;
 
-    if (!map || !placesLib || !selectedCategoryId) {
-      if (seq === searchSeqRef.current) setMarkers([]);
-      return;
-    }
-
-    const bounds = map.getBounds();
-    if (!bounds) return;
-
-    const cat = MAP_PLACE_CATEGORIES.find((c) => c.id === selectedCategoryId);
-    if (!cat) {
-      if (seq === searchSeqRef.current) setMarkers([]);
-      return;
-    }
-
-    const Place = placesLib.Place;
-
-    try {
-      let places: google.maps.places.Place[];
-
-      if (openNow === "open") {
-        // Nearby Search에는 isOpenNow 없음 → Text Search로 서버 측 "현재 영업" 제한
-        const textRequest: google.maps.places.SearchByTextRequest = {
-          fields: NEARBY_FIELDS,
-          textQuery: cat.searchQuery,
-          includedType: cat.googlePlaceTypeHint,
-          useStrictTypeFiltering: true,
-          locationRestriction: bounds.toJSON(),
-          isOpenNow: true,
-          maxResultCount: 20,
-          language: "ko",
-        };
-        if (rating !== "all") {
-          textRequest.minRating = Number(rating);
-        }
-        const res = await Place.searchByText(textRequest);
-        places = res.places;
-      } else {
-        if (!geometryLib) return;
-        const center = bounds.getCenter();
-        const ne = bounds.getNorthEast();
-        const radius = geometryLib.spherical.computeDistanceBetween(center, ne);
-        const request: google.maps.places.SearchNearbyRequest = {
-          fields: NEARBY_FIELDS,
-          includedPrimaryTypes: [cat.googlePlaceTypeHint],
-          locationRestriction: {
-            center: center.toJSON(),
-            radius,
-          },
-          maxResultCount: 20,
-          language: "ko",
-        };
-        const res = await Place.searchNearby(request);
-        places = res.places;
+      if (!placesLib) {
+        if (seq === searchSeqRef.current) setMarkers([]);
+        return;
       }
 
-      if (seq !== searchSeqRef.current) return;
+      const cat = MAP_PLACE_CATEGORIES.find((c) => c.id === categoryId);
+      if (!cat) {
+        if (seq === searchSeqRef.current) setMarkers([]);
+        return;
+      }
 
-      const list = places.filter((p) => {
-        const loc = p.location;
-        if (!loc) return false;
-        if (!bounds.contains(loc)) return false;
-        if (!matchesRatingFilter(rating, p.rating)) return false;
-        return true;
+      const filterBounds =
+        boundsInstanceFromDiscoverSnapshot(snapshot.bounds);
+
+      const Place = placesLib.Place;
+
+      try {
+        let places: google.maps.places.Place[];
+
+        if (openVal === "open") {
+          // Nearby Search에는 isOpenNow 없음 → Text Search로 서버 측 "현재 영업" 제한
+          const textRequest: google.maps.places.SearchByTextRequest = {
+            fields: NEARBY_FIELDS,
+            textQuery: cat.searchQuery,
+            includedType: cat.googlePlaceTypeHint,
+            useStrictTypeFiltering: true,
+            locationRestriction: snapshot.bounds,
+            isOpenNow: true,
+            maxResultCount: 20,
+            language: "ko",
+          };
+          if (ratingVal !== "all") {
+            textRequest.minRating = Number(ratingVal);
+          }
+          const res = await Place.searchByText(textRequest);
+          places = res.places;
+        } else {
+          const radius =
+            snapshot.radius > 0
+              ? snapshot.radius
+              : 1;
+
+          const request: google.maps.places.SearchNearbyRequest = {
+            fields: NEARBY_FIELDS,
+            includedPrimaryTypes: [cat.googlePlaceTypeHint],
+            locationRestriction: {
+              center: snapshot.center,
+              radius,
+            },
+            maxResultCount: 20,
+            language: "ko",
+          };
+          const res = await Place.searchNearby(request);
+          places = res.places;
+        }
+
+        if (seq !== searchSeqRef.current) return;
+
+        const list = places.filter((p) => {
+          const loc = p.location;
+          if (!loc) return false;
+          if (!filterBounds.contains(loc)) return false;
+          if (!matchesRatingFilter(ratingVal, p.rating)) return false;
+          return true;
+        });
+
+        if (seq !== searchSeqRef.current) return;
+
+        setMarkers(
+          list.map((p) => ({
+            id: p.id,
+            position: p.location!.toJSON(),
+            title: googlePlacesJsLocalizedText(p.displayName),
+            place: p,
+          })),
+        );
+      } catch {
+        if (seq === searchSeqRef.current) setMarkers([]);
+      }
+    },
+    [placesLib],
+  );
+
+  /** 카테고리 종료 시 정리 또는 카테고리·필터 변경 시 스냅샷 규칙에 따라 검색 */
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      prevCategoryIdRef.current = null;
+      searchSeqRef.current += 1;
+      queueMicrotask(() => {
+        setMarkers([]);
       });
-
-      if (seq !== searchSeqRef.current) return;
-
-      setMarkers(
-        list.map((p) => ({
-          id: p.id,
-          position: p.location!.toJSON(),
-          title: googlePlacesJsLocalizedText(p.displayName),
-          place: p,
-        })),
-      );
-    } catch {
-      if (seq === searchSeqRef.current) setMarkers([]);
+      useSearchRecenterStore.getState().clearDiscoverSnapshot();
+      return;
     }
+
+    if (!map || !placesLib || !geometryLib) return;
+
+    const catChanged =
+      prevCategoryIdRef.current !== selectedCategoryId;
+
+    if (catChanged) {
+      const snap = buildDiscoverSnapshotFromGoogleMap(map, geometryLib);
+      if (!snap) return;
+      prevCategoryIdRef.current = selectedCategoryId;
+      useSearchRecenterStore.getState().setDiscoverSnapshot(snap);
+      queueMicrotask(() => {
+        void runDiscoverSearch(snap, selectedCategoryId, rating, openNow);
+      });
+      return;
+    }
+
+    const existing =
+      useSearchRecenterStore.getState().discoverSnapshot;
+    if (!existing) return;
+    queueMicrotask(() => {
+      void runDiscoverSearch(
+        existing,
+        selectedCategoryId,
+        rating,
+        openNow,
+      );
+    });
   }, [
-    map,
-    placesLib,
-    geometryLib,
     selectedCategoryId,
     rating,
     openNow,
+    map,
+    placesLib,
+    geometryLib,
+    runDiscoverSearch,
   ]);
 
-  const scheduleSearch = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      debounceRef.current = null;
-      void runDiscoverSearch();
-    }, DEBOUNCE_MS);
-  }, [runDiscoverSearch]);
-
+  /** 검색 페이지와 동일하게 `현 위치 검색` 버튼 → discover 스냅샷 갱신·재조회 */
   useEffect(() => {
-    if (!selectedCategoryId) {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      searchSeqRef.current += 1;
-      setMarkers([]);
-    }
-  }, [selectedCategoryId]);
-
-  useEffect(() => {
-    if (!map || !placesLib) return;
-    const idleListener = map.addListener("idle", scheduleSearch);
-    return () => {
-      idleListener.remove();
-    };
-  }, [map, placesLib, scheduleSearch]);
-
-  /** 평점·영업 필터 변경 시 현재 뷰 기준으로 마커를 다시 조회 */
-  useEffect(() => {
-    scheduleSearch();
-  }, [selectedCategoryId, rating, openNow, scheduleSearch]);
+    if (recenterRequestId === 0) return;
+    if (!selectedCategoryId || !map || !placesLib || !geometryLib) return;
+    const snapshot = buildDiscoverSnapshotFromGoogleMap(map, geometryLib);
+    if (!snapshot) return;
+    useSearchRecenterStore.getState().setDiscoverSnapshot(snapshot);
+    queueMicrotask(() => {
+      void runDiscoverSearch(
+        snapshot,
+        selectedCategoryId,
+        rating,
+        openNow,
+      );
+    });
+  }, [
+    recenterRequestId,
+    selectedCategoryId,
+    rating,
+    openNow,
+    map,
+    placesLib,
+    geometryLib,
+    runDiscoverSearch,
+  ]);
 
   const selectedNormalized = selectedPlace?.googlePlaceId
     ? normalizeGooglePlaceResourceId(selectedPlace.googlePlaceId)

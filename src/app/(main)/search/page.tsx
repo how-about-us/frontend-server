@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { cappedPlacesSearchRadiusMeters } from "@/lib/maps";
+import { buildSearchMapSnapshotFromMapCenterStore } from "@/lib/map-viewport-commit";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSearchRecenterStore } from "@/stores/search-recenter-store";
 import {
@@ -71,24 +71,17 @@ export default function SearchPage() {
       }
 
       clearSearchMapPins();
-      const { mapCenter: c, zoom: z, radiusMeters: rm } =
-        useMapCenterStore.getState();
-      const radius = cappedPlacesSearchRadiusMeters(rm);
-
-      if (!c) {
+      const snapshot = buildSearchMapSnapshotFromMapCenterStore();
+      if (!snapshot) {
         clearSearchSnapshot();
         setSearchCoords(null);
         setSearchRadius(undefined);
         return;
       }
 
-      setSearchSnapshot({
-        center: { lat: c.lat, lng: c.lng },
-        zoom: z,
-        radius,
-      });
-      setSearchCoords({ lat: c.lat, lng: c.lng });
-      setSearchRadius(radius);
+      setSearchSnapshot(snapshot);
+      setSearchCoords(snapshot.center);
+      setSearchRadius(snapshot.radius);
     },
     [clearSearchMapPins],
   );

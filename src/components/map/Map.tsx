@@ -274,7 +274,7 @@ export default function Map() {
 
       {!bootstrap.ready ? null : (
         <>
-          <MapSearchHereButton />
+          <MapSearchHereButton discoverCategoryId={selectedCategoryId} />
           <div className="pointer-events-none absolute right-4 top-4 z-[16]">
             <button
               type="button"
