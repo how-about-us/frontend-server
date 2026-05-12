@@ -7,9 +7,13 @@ import {
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
 
-import { MapPinIcon } from "@/components/icons";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps";
+import {
+  googlePlacesJsLocalizedText,
+  normalizeGooglePlaceResourceId,
+} from "@/lib/maps";
+
+import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
 
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
@@ -75,9 +79,12 @@ function DiscoverMarkerPin({
         if (!loc) return;
         setSelectedPlace(
           {
-            name: p.displayName ?? "장소",
+            name:
+              googlePlacesJsLocalizedText(p.displayName).trim()
+              || "장소",
             category:
-              p.primaryTypeDisplayName?.trim() || categoryLabel,
+              googlePlacesJsLocalizedText(p.primaryTypeDisplayName).trim()
+              || categoryLabel,
             rating: p.rating ?? null,
             googlePlaceId: legacyId,
             location: loc.toJSON(),
@@ -86,9 +93,7 @@ function DiscoverMarkerPin({
         );
       }}
     >
-      <span className="block scale-90 text-brand-red drop-shadow-md">
-        <MapPinIcon size={36} />
-      </span>
+      <MapPinWithPlaceName name={m.title} />
     </AdvancedMarker>
   );
 }
@@ -182,7 +187,7 @@ export function MapDiscoverPlaces({
         list.map((p) => ({
           id: p.id,
           position: p.location!.toJSON(),
-          title: p.displayName ?? "",
+          title: googlePlacesJsLocalizedText(p.displayName),
           place: p,
         })),
       );

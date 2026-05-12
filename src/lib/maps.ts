@@ -78,6 +78,21 @@ export function normalizeGooglePlaceResourceId(id: string): string {
   return id.startsWith(prefix) ? id.slice(prefix.length) : id;
 }
 
+/** Places API(New) JS — `displayName` 등 문자열 또는 `LocalizedText`(text) 처리 */
+export function googlePlacesJsLocalizedText(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim();
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "text" in value &&
+    typeof (value as { text?: unknown }).text === "string"
+  ) {
+    return ((value as { text: string }).text ?? "").trim();
+  }
+  return "";
+}
+
 /** 구면 거리 (미터) — 지도 bounds 중심↔모서리 등 간단한 반경 추정용 */
 export function haversineMeters(
   a: google.maps.LatLngLiteral,
