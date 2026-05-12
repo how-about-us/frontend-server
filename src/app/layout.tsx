@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "우리어때",
   description: "실시간 협업 여행 플래너",
+  icons: {
+    icon: "/우리어때.png",
+    apple: "/우리어때.png",
+    shortcut: "/우리어때.png",
+  },
 };
 
 export default function RootLayout({
