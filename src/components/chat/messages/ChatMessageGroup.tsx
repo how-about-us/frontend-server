@@ -287,7 +287,7 @@ export function AiMessageGroup({
         <div
           className={cn(
             chrome.avatarSm,
-            "bg-white shadow-sm ring-1 ring-gray-border",
+            "bg-white",
           )}
           role="img"
           aria-label="WOORI"

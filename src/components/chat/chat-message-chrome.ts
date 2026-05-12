@@ -10,7 +10,8 @@ export const chatMessageChrome = {
     "border border-ai-bubble-border bg-ai-bubble text-gray-900 shadow-sm shadow-slate-900/5",
   systemPill:
     "max-w-[min(100%,20rem)] rounded-full bg-black/25 px-4 py-2 text-center text-white",
-  avatarSm: "h-10 w-10 shrink-0 overflow-hidden rounded-xl",
+  avatarSm:
+    "h-10 w-10 shrink-0 overflow-hidden rounded-xl shadow-sm ring-1 ring-gray-border",
   wooriIconSrc: "/woori.svg",
 } as const;
 
