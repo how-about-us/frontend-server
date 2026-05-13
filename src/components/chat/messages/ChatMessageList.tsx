@@ -76,6 +76,8 @@ export function ChatMessageList({
   /** 사용자가 직접 스크롤할 때만 갱신. 레이아웃만 바뀌어 dist가 커져도 끊기지 않게 함 */
   const followTailRef = useRef(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  /** 하단 부드러운 스크롤 중엔 바가 너무 일찍 사라지지 않게 함 */
+  const [smoothJumpToBottom, setSmoothJumpToBottom] = useState(false);
 
   const firstId = messages[0]?.id;
   const count = messages.length;
@@ -96,6 +98,7 @@ export function ChatMessageList({
     if (hasMoreNewer && onJumpToLatest) {
       onJumpToLatest();
     } else {
+      setSmoothJumpToBottom(true);
       scrollToBottomSmooth();
     }
   }, [hasMoreNewer, onJumpToLatest, scrollToBottomSmooth]);
@@ -207,13 +210,31 @@ export function ChatMessageList({
     return () => obs.disconnect();
   }, [onLoadOlder, hasMoreOlder, isLoadingOlder]);
 
+  useEffect(() => {
+    if (!smoothJumpToBottom) return;
+    const root = scrollRootRef.current;
+    if (!root) return;
+    const finish = () => setSmoothJumpToBottom(false);
+    root.addEventListener("scrollend", finish);
+    const t = window.setTimeout(finish, 800);
+    return () => {
+      root.removeEventListener("scrollend", finish);
+      window.clearTimeout(t);
+    };
+  }, [smoothJumpToBottom]);
+
+  const showScrollbar = !isAtBottom || smoothJumpToBottom;
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={scrollRootRef}
         onScroll={handleScroll}
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2 [scrollbar-color:#cbd5e1_transparent]",
+          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2",
+          showScrollbar
+            ? "[scrollbar-color:#cbd5e1_transparent]"
+            : "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           isMinimized && "px-2 py-1.5",
         )}
       >
