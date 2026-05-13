@@ -70,6 +70,8 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const clientRef = useRef<Client | null>(null);
   const roomTopicsUnsubRef = useRef<(() => void) | null>(null);
   const userRoomsQueueUnsubRef = useRef<(() => void) | null>(null);
+  /** pathname-only 재구독과 실제 방 전환을 구분해 `chatCnt`를 불필요하게 리셋하지 않음 */
+  const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
   const [connectionState, setConnectionState] = useState<StompConnectionState>({
     client: null,
@@ -83,6 +85,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const unsubscribeRoomTopics = useCallback(() => {
     detachRoomTopicsOnly();
+    lastSubscribedRoomIdRef.current = null;
     useChatUnreadStore.getState().resetChatCnt();
   }, [detachRoomTopicsOnly]);
 
@@ -139,7 +142,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
-      useChatUnreadStore.getState().resetChatCnt();
+      if (lastSubscribedRoomIdRef.current !== rid) {
+        useChatUnreadStore.getState().resetChatCnt();
+      }
+      lastSubscribedRoomIdRef.current = rid;
       detachRoomTopicsOnly();
       forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
