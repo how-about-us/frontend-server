@@ -65,6 +65,11 @@ export function writeDestinationLatLngToSession(
   saveAll(all);
 }
 
+/** `google.maps.Map` minZoom — 전 세계 한 화면 이하 축소 방지 */
+export const MAP_MIN_ZOOM = 3;
+/** `google.maps.Map` maxZoom — 로드맵에서 흔한 상한 */
+export const MAP_MAX_ZOOM = 21;
+
 /** Google Places 리소스 id(`places/…`) 접두를 제거한 레거시 id */
 export function normalizeGooglePlaceResourceId(id: string): string {
   const prefix = "places/";

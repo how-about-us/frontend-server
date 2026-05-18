@@ -12,6 +12,8 @@ import {
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
+  MAP_MAX_ZOOM,
+  MAP_MIN_ZOOM,
   readDestinationLatLngFromSession,
   viewportSearchRadiusMetersFromBounds,
   writeDestinationLatLngToSession,
@@ -201,6 +203,8 @@ export default function Map() {
           <GoogleMap
             defaultCenter={bootstrap.center}
             defaultZoom={bootstrap.zoom}
+            minZoom={MAP_MIN_ZOOM}
+            maxZoom={MAP_MAX_ZOOM}
             mapId="DEMO_MAP_ID"
             gestureHandling="greedy"
             disableDefaultUI
