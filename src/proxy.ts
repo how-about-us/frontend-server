@@ -16,7 +16,7 @@ function isProtectedPath(pathname: string) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
 
