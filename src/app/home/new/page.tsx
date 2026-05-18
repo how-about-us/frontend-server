@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
+
+import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCreateRoom } from "@/hooks/useRooms";
 import { resolveCoverPhotoNameFromSearch } from "@/hooks/useRoomCoverPhoto";
@@ -87,7 +88,7 @@ export default function NewTripPage() {
             href="/home"
             className="inline-flex rounded-md outline-none ring-offset-2 transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-brand-red"
           >
-            <Image src="/logo.svg" alt="로고" width={140} height={20} priority />
+            <BrandLogo alt="로고" width={140} height={20} />
           </Link>
         </div>
 

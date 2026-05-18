@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { RefreshCw } from "lucide-react";
+
+import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCheckJoinStatus } from "@/hooks/useRooms";
 import { getRoomDetail, HttpError } from "@/lib/api/rooms";
@@ -69,14 +70,7 @@ function WaitingContent() {
         aria-hidden
       />
 
-      <Image
-        src="/logo.svg"
-        alt=""
-        width={160}
-        height={26}
-        className="relative h-7 w-auto"
-        priority
-      />
+      <BrandLogo alt="" width={160} height={26} />
 
       <div className="relative w-full max-w-sm rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.10)] backdrop-blur-sm">
         {/* 아이콘 */}

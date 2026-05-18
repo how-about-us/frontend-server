@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { logout } from "@/lib/api/auth";
@@ -50,13 +52,7 @@ export function HomeHeader() {
   return (
     <header className="sticky top-0 z-10 border-b border-gray-border bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-        <Image
-          src="/logo.svg"
-          alt="로고"
-          width={140}
-          height={20}
-          className="h-5 w-auto"
-        />
+        <BrandLogo alt="로고" width={140} height={20} />
 
         <div ref={profileRef} className="relative">
           <button

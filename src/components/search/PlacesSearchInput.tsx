@@ -11,7 +11,13 @@ import { createPortal } from "react-dom";
 import { Search, MapPin, X } from "lucide-react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
 
-type Prediction = google.maps.places.AutocompletePrediction;
+import { useDebouncedPlacePredictions } from "@/hooks/useDebouncedPlacePredictions";
+import {
+  circleLocationBias,
+  PlacePredictionInlineDescription,
+} from "@/lib/placesAutocompleteSuggest";
+
+type Prediction = google.maps.places.PlacePrediction;
 
 type MenuGeometry = {
   top: number;
@@ -25,7 +31,7 @@ type Props = {
   onSearch: (query: string) => void;
   /** URL `q` — 칩·공유 링크 등에서 오는 검색어와 입력창 동기화 */
   urlQuery?: string;
-  /** 드롭다운에서 항목 선택 시 (플랜 장소 추가 등). 설정 시 `place_id`로 처리 가능 */
+  /** 드롭다운에서 항목 선택 시 (플랜 장소 추가 등) */
   onPickPrediction?: (prediction: Prediction) => void;
   /** true면 검색 버튼 숨김 — 자동완성 선택만 사용 */
   pickOnly?: boolean;
@@ -45,19 +51,48 @@ export function PlacesSearchInput({
 }: Props) {
   const placesLib = useMapsLibrary("places");
 
+  const buildRequest = useCallback(
+    (
+      input: string,
+      sessionToken: google.maps.places.AutocompleteSessionToken,
+    ): google.maps.places.AutocompleteRequest => ({
+      input,
+      language: "ko",
+      sessionToken,
+      ...(coords &&
+        Number.isFinite(coords.lat) &&
+        Number.isFinite(coords.lng) && {
+          locationBias: circleLocationBias(
+            { lat: coords.lat, lng: coords.lng },
+            50_000,
+          ),
+        }),
+    }),
+    [coords],
+  );
+
+  const {
+    predictions,
+    isOpen,
+    setIsOpen,
+    activeIndex,
+    setActiveIndex,
+    scheduleFetch,
+    invalidateSession,
+    clearSuggestionUi,
+  } = useDebouncedPlacePredictions({
+    placesLibReady: !!placesLib,
+    minInputLength: 2,
+    disabled,
+    buildRequest,
+  });
+
   const [inputValue, setInputValue] = useState("");
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [isOpen, setIsOpen] = useState(false);
   const [menuGeometry, setMenuGeometry] = useState<MenuGeometry | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownListRef = useRef<HTMLUListElement>(null);
-  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(
-    null,
-  );
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateMenuGeometry = useCallback(() => {
     const el = containerRef.current;
@@ -74,7 +109,6 @@ export function PlacesSearchInput({
     const spaceBelow = window.innerHeight - r.bottom - margin;
     const spaceAbove = r.top - margin;
 
-    /** 뷰포트에서 더 넓은 쪽으로 열기 — 일정 맨 아래 입력은 보통 위쪽이 더 넓음 */
     const openDown = spaceBelow >= spaceAbove;
 
     const avail = Math.max(0, (openDown ? spaceBelow : spaceAbove) - gap);
@@ -108,11 +142,6 @@ export function PlacesSearchInput({
   }, [isOpen, predictions.length]);
 
   useEffect(() => {
-    if (!placesLib) return;
-    serviceRef.current = new placesLib.AutocompleteService();
-  }, [placesLib]);
-
-  useEffect(() => {
     setInputValue(urlQuery);
   }, [urlQuery]);
 
@@ -139,77 +168,35 @@ export function PlacesSearchInput({
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const fetchPredictions = useCallback(
-    (value: string) => {
-      if (disabled) {
-        setPredictions([]);
-        setIsOpen(false);
-        return;
-      }
-      if (!serviceRef.current || value.trim().length < 2) {
-        setPredictions([]);
-        setIsOpen(false);
-        return;
-      }
-
-      const request: google.maps.places.AutocompletionRequest = {
-        input: value,
-        language: "ko",
-        ...(coords && {
-          locationBias: {
-            center: new google.maps.LatLng(coords.lat, coords.lng),
-            radius: 50_000,
-          },
-        }),
-      };
-
-      serviceRef.current.getPlacePredictions(request, (results, status) => {
-        if (
-          status === google.maps.places.PlacesServiceStatus.OK &&
-          results?.length
-        ) {
-          setPredictions(results);
-          setIsOpen(true);
-          setActiveIndex(-1);
-        } else {
-          setPredictions([]);
-          setIsOpen(false);
-        }
-      });
-    },
-    [coords, disabled],
-  );
+  }, [setIsOpen]);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     setInputValue(value);
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchPredictions(value), 250);
+    scheduleFetch(value);
   }
 
   function commitSearch(query: string) {
     const trimmed = query.trim();
     if (!trimmed) return;
+    invalidateSession();
     setInputValue(trimmed);
-    setIsOpen(false);
-    setPredictions([]);
+    clearSuggestionUi();
     onSearch(trimmed);
   }
 
   function handleSelectPrediction(prediction: Prediction) {
     if (onPickPrediction) {
       onPickPrediction(prediction);
+      invalidateSession();
       setInputValue("");
-      setIsOpen(false);
-      setPredictions([]);
+      clearSuggestionUi();
       setActiveIndex(-1);
       setMenuGeometry(null);
       return;
     }
-    const text = prediction.structured_formatting.main_text;
+    const text =
+      prediction.mainText?.text.trim() || prediction.text.text.trim();
     commitSearch(text);
   }
 
@@ -242,51 +229,11 @@ export function PlacesSearchInput({
   }
 
   function handleClear() {
+    invalidateSession();
+    clearSuggestionUi();
     setInputValue("");
-    setPredictions([]);
-    setIsOpen(false);
     onClear?.();
     inputRef.current?.focus();
-  }
-
-  function renderDescription(prediction: Prediction) {
-    const { main_text, main_text_matched_substrings, secondary_text } =
-      prediction.structured_formatting;
-
-    const parts: React.ReactNode[] = [];
-    let cursor = 0;
-    for (const match of main_text_matched_substrings ?? []) {
-      if (match.offset > cursor) {
-        parts.push(
-          <span key={`pre-${match.offset}`}>
-            {main_text.slice(cursor, match.offset)}
-          </span>,
-        );
-      }
-      parts.push(
-        <span
-          key={`match-${match.offset}`}
-          className="font-semibold text-brand-green"
-        >
-          {main_text.slice(match.offset, match.offset + match.length)}
-        </span>,
-      );
-      cursor = match.offset + match.length;
-    }
-    if (cursor < main_text.length) {
-      parts.push(<span key="tail">{main_text.slice(cursor)}</span>);
-    }
-
-    return (
-      <>
-        <span className="text-[13px] text-[#111827]">{parts}</span>
-        {secondary_text && (
-          <span className="ml-1.5 truncate text-[11px] text-[#9ca3af]">
-            {secondary_text}
-          </span>
-        )}
-      </>
-    );
   }
 
   const dropdown =
@@ -310,7 +257,7 @@ export function PlacesSearchInput({
           >
             {predictions.map((prediction, i) => (
               <li
-                key={prediction.place_id}
+                key={prediction.placeId}
                 role="option"
                 aria-selected={i === activeIndex}
                 onMouseDown={(e) => {
@@ -324,7 +271,12 @@ export function PlacesSearchInput({
               >
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-[#9ca3af]" />
                 <span className="flex min-w-0 flex-1 items-baseline gap-0 truncate">
-                  {renderDescription(prediction)}
+                  <PlacePredictionInlineDescription
+                    prediction={prediction}
+                    matchClassName="font-semibold text-brand-green"
+                    primaryTextClassName="text-[13px] text-[#111827]"
+                    secondaryTextClassName="ml-1.5 truncate text-[11px] text-[#9ca3af]"
+                  />
                 </span>
               </li>
             ))}
@@ -336,7 +288,7 @@ export function PlacesSearchInput({
   return (
     <div ref={containerRef} className="relative">
       <form onSubmit={handleSubmit} className="flex items-center gap-1">
-        <div className="w-full relative left-1 flex px-1 items-center">
+        <div className="relative left-1 flex w-full items-center px-1">
           <Search className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray" />
           <input
             ref={inputRef}
@@ -350,7 +302,7 @@ export function PlacesSearchInput({
             autoComplete="off"
             className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-sm outline-none placeholder:text-[#99A1AF] focus:border-brand-green focus:ring-1 focus:ring-brand-green disabled:cursor-not-allowed disabled:opacity-60"
           />
-          {inputValue && (
+          {inputValue ? (
             <button
               type="button"
               onClick={handleClear}
@@ -359,7 +311,7 @@ export function PlacesSearchInput({
             >
               <X className="h-3.5 w-3.5" />
             </button>
-          )}
+          ) : null}
         </div>
         {!pickOnly ? (
           <button

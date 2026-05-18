@@ -100,8 +100,8 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
   const handlePickPrediction = useCallback(
-    async (prediction: google.maps.places.AutocompletePrediction) => {
-      const googlePlaceId = prediction.place_id;
+    async (prediction: google.maps.places.PlacePrediction) => {
+      const googlePlaceId = prediction.placeId;
       if (!googlePlaceId) {
         toast.error("장소 식별 정보를 찾을 수 없어요.");
         return;

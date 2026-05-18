@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 type SearchHereFloatingButtonProps = {
   visible: boolean;
@@ -18,13 +18,14 @@ export function SearchHereFloatingButton({
       <button
         type="button"
         onClick={onPress}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-gray-border bg-white px-4 py-2.5 text-sm font-semibold text-dark-gray shadow-md ring-2 ring-black/5 transition hover:bg-gray-50"
+        className="pointer-events-auto inline-flex items-center gap-1 rounded-full border-3 border-brand-red bg-white px-3 py-2 text-xs font-semibold text-dark-gray shadow-md transition hover:bg-gray-50"
       >
-        <Search
-          className="h-4 w-4 shrink-0 text-brand-green"
+        <RefreshCw
+          className="h-4 w-4 shrink-0 text-brand-red"
           strokeWidth={2.2}
+          aria-hidden
         />
-        현 위치 검색
+        현 위치에서 검색
       </button>
     </div>
   );

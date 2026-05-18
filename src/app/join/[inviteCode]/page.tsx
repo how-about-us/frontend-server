@@ -2,7 +2,8 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
+
+import { BrandLogo } from "@/components/BrandLogo";
 
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { setPendingInviteCode } from "@/lib/auth";
@@ -67,7 +68,7 @@ export default function JoinPage() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
-        <Image src="/logo.svg" alt="" width={160} height={26} className="h-7 w-auto" />
+        <BrandLogo alt="" width={160} height={26} />
         <div className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
           <p className="mb-1 font-semibold text-brand-red">입장 요청 실패</p>
           <p className="text-sm text-dark-gray">{error}</p>
@@ -84,7 +85,7 @@ export default function JoinPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
-      <Image src="/logo.svg" alt="" width={160} height={26} className="h-7 w-auto" />
+      <BrandLogo alt="" width={160} height={26} />
       <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
       <p className="text-sm text-dark-gray">입장 요청 중…</p>
     </div>

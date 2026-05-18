@@ -4,12 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MapPin, X } from "lucide-react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
 
-type Prediction = google.maps.places.AutocompletePrediction;
+import { useDebouncedPlacePredictions } from "@/hooks/useDebouncedPlacePredictions";
+import {
+  DESTINATION_INCLUDED_PRIMARY_TYPES,
+  PlacePredictionInlineDescription,
+} from "@/lib/placesAutocompleteSuggest";
+
+type Prediction = google.maps.places.PlacePrediction;
 
 type Props = {
   value: string;
   onChange: (value: string) => void;
-  /** Autocomplete에서 항목을 고르면 `place_id` 포함. 타이핑·지우기 시 `null`. */
+  /** Autocomplete에서 항목을 고르면 `placeId` 포함. 타이핑·지우기 시 `null`. */
   onResolvedPlace?: (
     place: { description: string; placeId: string } | null,
   ) => void;
@@ -18,8 +24,8 @@ type Props = {
 };
 
 /**
- * 구글 Places Autocomplete 기반 목적지 검색 인풋.
- * types: ['(regions)'] 로 국가 · 행정구역 · 도시 단위만 노출합니다.
+ * Google Places Autocomplete Data API 기반 목적지 검색.
+ * `includedPrimaryTypes`로 지역·행정구역·국가 등(레거시 `(regions)`에 대응).
  */
 export function DestinationSearchInput({
   value,
@@ -30,29 +36,51 @@ export function DestinationSearchInput({
 }: Props) {
   const placesLib = useMapsLibrary("places");
 
+  const buildRequest = useCallback(
+    (
+      input: string,
+      sessionToken: google.maps.places.AutocompleteSessionToken,
+    ): google.maps.places.AutocompleteRequest => ({
+      input,
+      language: "ko",
+      includedPrimaryTypes: [...DESTINATION_INCLUDED_PRIMARY_TYPES],
+      sessionToken,
+    }),
+    [],
+  );
+
+  const {
+    predictions,
+    isOpen,
+    setIsOpen,
+    activeIndex,
+    setActiveIndex,
+    scheduleFetch,
+    invalidateSession,
+    clearSuggestionUi,
+  } = useDebouncedPlacePredictions({
+    placesLibReady: !!placesLib,
+    minInputLength: 1,
+    buildRequest,
+  });
+
   const [inputValue, setInputValue] = useState(value);
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const [isOpen, setIsOpen] = useState(false);
   const [committed, setCommitted] = useState(!!value);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!placesLib) return;
-    serviceRef.current = new placesLib.AutocompleteService();
-  }, [placesLib]);
 
   // sync external reset (e.g. clear button from parent)
   useEffect(() => {
     if (!value) {
-      setInputValue("");
-      setCommitted(false);
+      queueMicrotask(() => {
+        setInputValue("");
+        setCommitted(false);
+        invalidateSession();
+        clearSuggestionUi();
+      });
     }
-  }, [value]);
+  }, [value, invalidateSession, clearSuggestionUi]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -61,42 +89,12 @@ export function DestinationSearchInput({
         !containerRef.current.contains(e.target as Node)
       ) {
         setIsOpen(false);
-        // restore committed value if user blurs without selecting
         if (!committed) setInputValue(value);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [committed, value]);
-
-  const fetchPredictions = useCallback((query: string) => {
-    if (!serviceRef.current || query.trim().length < 1) {
-      setPredictions([]);
-      setIsOpen(false);
-      return;
-    }
-
-    serviceRef.current.getPlacePredictions(
-      {
-        input: query,
-        language: "ko",
-        types: ["(regions)"],
-      },
-      (results, status) => {
-        if (
-          status === google.maps.places.PlacesServiceStatus.OK &&
-          results?.length
-        ) {
-          setPredictions(results);
-          setIsOpen(true);
-          setActiveIndex(-1);
-        } else {
-          setPredictions([]);
-          setIsOpen(false);
-        }
-      },
-    );
-  }, []);
+  }, [committed, setIsOpen, value]);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value;
@@ -104,29 +102,27 @@ export function DestinationSearchInput({
     setCommitted(false);
     onChange("");
     onResolvedPlace?.(null);
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchPredictions(v), 250);
+    scheduleFetch(v);
   }
 
   function handleSelect(prediction: Prediction) {
-    const label = prediction.description;
+    const label = prediction.text.text;
     setInputValue(label);
     onChange(label);
     setCommitted(true);
-    onResolvedPlace?.({ description: label, placeId: prediction.place_id });
-    setPredictions([]);
-    setIsOpen(false);
+    onResolvedPlace?.({ description: label, placeId: prediction.placeId });
+    invalidateSession();
+    clearSuggestionUi();
     setActiveIndex(-1);
   }
 
   function handleClear() {
+    invalidateSession();
+    clearSuggestionUi();
     setInputValue("");
     onChange("");
     setCommitted(false);
     onResolvedPlace?.(null);
-    setPredictions([]);
-    setIsOpen(false);
     inputRef.current?.focus();
   }
 
@@ -149,42 +145,6 @@ export function DestinationSearchInput({
     }
   }
 
-  function renderLabel(prediction: Prediction) {
-    const { main_text, main_text_matched_substrings, secondary_text } =
-      prediction.structured_formatting;
-
-    const parts: React.ReactNode[] = [];
-    let cursor = 0;
-    for (const match of main_text_matched_substrings ?? []) {
-      if (match.offset > cursor) {
-        parts.push(
-          <span key={`pre-${match.offset}`}>
-            {main_text.slice(cursor, match.offset)}
-          </span>,
-        );
-      }
-      parts.push(
-        <span key={`m-${match.offset}`} className="font-semibold text-brand-red">
-          {main_text.slice(match.offset, match.offset + match.length)}
-        </span>,
-      );
-      cursor = match.offset + match.length;
-    }
-    if (cursor < main_text.length)
-      parts.push(<span key="tail">{main_text.slice(cursor)}</span>);
-
-    return (
-      <>
-        <span className="text-[13px] text-black">{parts}</span>
-        {secondary_text && (
-          <span className="ml-1.5 truncate text-[11px] text-light-gray">
-            {secondary_text}
-          </span>
-        )}
-      </>
-    );
-  }
-
   return (
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2">
@@ -201,7 +161,7 @@ export function DestinationSearchInput({
           autoFocus={autoFocus}
           className="w-full text-sm text-dark-gray outline-none placeholder:text-light-gray"
         />
-        {inputValue && (
+        {inputValue ? (
           <button
             type="button"
             onClick={handleClear}
@@ -210,17 +170,17 @@ export function DestinationSearchInput({
           >
             <X size={14} />
           </button>
-        )}
+        ) : null}
       </div>
 
-      {isOpen && predictions.length > 0 && (
+      {isOpen && predictions.length > 0 ? (
         <ul
           role="listbox"
           className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-gray-border bg-white shadow-lg"
         >
           {predictions.map((p, i) => (
             <li
-              key={p.place_id}
+              key={p.placeId}
               role="option"
               aria-selected={i === activeIndex}
               onMouseDown={() => handleSelect(p)}
@@ -231,12 +191,17 @@ export function DestinationSearchInput({
             >
               <MapPin size={13} className="shrink-0 text-light-gray" />
               <span className="flex min-w-0 flex-1 items-baseline truncate">
-                {renderLabel(p)}
+                <PlacePredictionInlineDescription
+                  prediction={p}
+                  matchClassName="font-semibold text-brand-red"
+                  primaryTextClassName="text-[13px] text-black"
+                  secondaryTextClassName="ml-1.5 truncate text-[11px] text-light-gray"
+                />
               </span>
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </div>
   );
 }

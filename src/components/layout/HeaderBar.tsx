@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Home } from "lucide-react";
 import { useMemo } from "react";
+
+import { BrandLogo } from "@/components/BrandLogo";
 
 import { useRoomsList } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
@@ -78,7 +79,7 @@ const HeaderBar = () => {
               </span>
             )}
           </div>
-          <Image alt="logo" src="/logo.svg" width={150} height={20} />
+          <BrandLogo alt="logo" width={150} height={20} />
         </div>
       </div>
     </header>
