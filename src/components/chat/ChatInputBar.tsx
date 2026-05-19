@@ -29,6 +29,35 @@ function mentionSuffixMatchesAi(valueFromAt: string): boolean {
   return t.length === 0 || "ai".startsWith(t);
 }
 
+/** 고정 인풋바 높이 — 텍스트 2줄(line-height 1.5) + 버튼 행 */
+const CHAT_INPUT_BAR_HEIGHT = {
+  default: 100,
+  minimized: 110,
+} as const;
+
+function scrollInputToCaret(el: HTMLTextAreaElement) {
+  const caret = el.selectionStart ?? el.value.length;
+  const atEnd = caret >= el.value.length;
+  if (atEnd) {
+    el.scrollTop = el.scrollHeight;
+    return;
+  }
+  const style = getComputedStyle(el);
+  const lineHeight =
+    Number.parseFloat(style.lineHeight) ||
+    Number.parseFloat(style.fontSize) * 1.5;
+  const before = el.value.slice(0, caret);
+  const lineIndex = before.split("\n").length - 1;
+  const targetTop = lineIndex * lineHeight;
+  const viewBottom = el.scrollTop + el.clientHeight;
+  const lineBottom = targetTop + lineHeight;
+  if (targetTop < el.scrollTop) {
+    el.scrollTop = targetTop;
+  } else if (lineBottom > viewBottom) {
+    el.scrollTop = lineBottom - el.clientHeight;
+  }
+}
+
 export function ChatInputBar({
   isMinimized,
   onSendChat,
@@ -163,6 +192,10 @@ export function ChatInputBar({
 
     setMessage(v);
     updateMentionFromDom(v, cursor, aiEnabled);
+    requestAnimationFrame(() => {
+      const t = inputRef.current;
+      if (t) scrollInputToCaret(t);
+    });
   }
 
   function handleSend() {
@@ -227,18 +260,22 @@ export function ChatInputBar({
   return (
     <div
       className="flex shrink-0 flex-col border-t border-gray-300"
-      style={{ height: isMinimized ? "100px" : "90px" }}
+      style={{
+        height: isMinimized
+          ? CHAT_INPUT_BAR_HEIGHT.minimized
+          : CHAT_INPUT_BAR_HEIGHT.default,
+      }}
     >
       <div
         ref={inputShellRef}
-        className="relative min-h-0 flex-1 px-4 pb-1 pt-3"
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-2"
       >
         <AnimatePresence>
           {aiEnabled && (
             <motion.span
               key="ai-overlay"
               className={cn(
-                "pointer-events-none absolute left-0 top-3",
+                "pointer-events-none absolute left-0 top-2",
                 typo.inputAiLabel,
               )}
               style={{ paddingLeft: chatTypography.aiOverlayInset }}
@@ -278,7 +315,7 @@ export function ChatInputBar({
         ) : null}
         <textarea
           ref={inputRef}
-          rows={2}
+          rows={1}
           value={message}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -300,9 +337,8 @@ export function ChatInputBar({
           }}
           placeholder="메시지를 입력하세요."
           className={cn(
-            "box-border max-h-[8rem] h-full w-full resize-none overflow-y-auto bg-transparent text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
-            isMinimized ? "min-h-[1.75rem]" : "min-h-[2.75rem]",
-            typo.input,
+            "box-border min-h-0 w-full flex-1 resize-none overflow-y-auto bg-transparent py-1 leading-normal text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
+            isMinimized ? "text-[11px]" : "text-xs",
           )}
           style={
             aiEnabled
@@ -312,7 +348,9 @@ export function ChatInputBar({
         />
       </div>
       <div
-        className={cn("flex shrink-0 items-center justify-between px-1 pb-2")}
+        className={cn(
+          "flex shrink-0 items-center justify-between px-1 pb-1.5 pt-0.5",
+        )}
       >
         <div className="flex min-w-0 items-center gap-1">
           <button
