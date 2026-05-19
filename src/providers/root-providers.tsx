@@ -44,7 +44,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
     [],
   );
 
-  /** `skipHydration` 세션 스토어 — rehydrate 후 `users/me`로 플래그 쿠키·persist 정합 */
+  /** `skipHydration` 세션 스토어 — rehydrate(`currentRoomId`만) 후 `users/me`로 메모리 `user` 정합 */
   useEffect(() => {
     void (async () => {
       await useSessionStore.persist?.rehydrate?.();

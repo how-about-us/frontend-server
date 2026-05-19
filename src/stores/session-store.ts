@@ -10,10 +10,23 @@ export interface SessionUser {
   provider: string;
 }
 
+/** localStorage persist v1 — PII(`user`) 없음 */
+type PersistedSessionV1 = {
+  currentRoomId: string | null;
+};
+
+type PersistedSessionV0 = {
+  user?: SessionUser | null;
+  currentRoomId?: string | null;
+};
+
 interface SessionStore {
   user: SessionUser | null;
   setUser: (user: SessionUser) => void;
   clearUser: () => void;
+  /** `reconcileClientSession` 완료 후 true — persist 대상 아님 */
+  sessionReady: boolean;
+  setSessionReady: (ready: boolean) => void;
   /** 마지막으로 입장한 방 ID — localStorage에 저장되어 새로고침 후에도 유지됩니다. */
   currentRoomId: string | null;
   setCurrentRoomId: (id: string) => void;
@@ -39,11 +52,14 @@ export const useSessionStore = create<SessionStore>()(
       clearUser: () =>
         set({
           user: null,
+          sessionReady: false,
           currentRoomId: null,
           currentRoomInviteCode: null,
           currentRoomMeta: null,
           pendingJoinRequestsCount: 0,
         }),
+      sessionReady: false,
+      setSessionReady: (ready) => set({ sessionReady: ready }),
       currentRoomId: null,
       setCurrentRoomId: (id) => set({ currentRoomId: id }),
       clearCurrentRoomId: () => set({ currentRoomId: null }),
@@ -59,11 +75,18 @@ export const useSessionStore = create<SessionStore>()(
     }),
     {
       name: "hau:session",
+      version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        user: state.user,
         currentRoomId: state.currentRoomId,
       }),
+      migrate: (persisted, version): PersistedSessionV1 => {
+        if (version === 0) {
+          const old = persisted as PersistedSessionV0;
+          return { currentRoomId: old.currentRoomId ?? null };
+        }
+        return persisted as PersistedSessionV1;
+      },
       /** 자동 hydrate와 첫 렌더·Gate 타이밍 경쟁을 피함 — 클라에서만 `rehydrate()` 호출 */
       skipHydration: true,
     },

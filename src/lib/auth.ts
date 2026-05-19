@@ -71,7 +71,8 @@ export async function fetchSessionUserWithRetry(
 }
 
 /**
- * Zustand rehydrate 이후 HttpOnly 세션·persist `user`/`currentRoomId`를 맞춥니다.
+ * Zustand rehydrate 이후 HttpOnly 세션·`users/me`로 메모리 `user`를 맞춥니다.
+ * persist에는 `currentRoomId`만 저장됩니다.
  * `/auth/callback` 은 OAuth 핸들러가 전담하므로 건너뜁니다.
  */
 export async function reconcileClientSession(): Promise<void> {
@@ -80,21 +81,27 @@ export async function reconcileClientSession(): Promise<void> {
   const path = window.location.pathname;
   if (path.startsWith("/auth/callback")) return;
 
-  const prevUser = useSessionStore.getState().user;
-  const user = await fetchSessionUser();
+  useSessionStore.getState().setSessionReady(false);
 
-  if (user) {
-    if (prevUser != null && prevUser.id !== user.id) {
-      clearUserScopedBrowserStorage();
-      useSessionStore.getState().clearUser();
+  try {
+    const prevUser = useSessionStore.getState().user;
+    const user = await fetchSessionUser();
+
+    if (user) {
+      if (prevUser != null && prevUser.id !== user.id) {
+        clearUserScopedBrowserStorage();
+        useSessionStore.getState().clearUser();
+      }
+      useSessionStore.getState().setUser(user);
+      return;
     }
-    useSessionStore.getState().setUser(user);
-    return;
-  }
 
-  tearDownClientSession();
-  if (isProtectedAppPath(path)) {
-    window.location.replace("/login");
+    tearDownClientSession();
+    if (isProtectedAppPath(path)) {
+      window.location.replace("/login");
+    }
+  } finally {
+    useSessionStore.getState().setSessionReady(true);
   }
 }
 

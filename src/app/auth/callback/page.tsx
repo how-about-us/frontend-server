@@ -17,6 +17,7 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useSessionStore((s) => s.setUser);
+  const setSessionReady = useSessionStore((s) => s.setSessionReady);
 
   // React Strict Mode (Next dev) 에서 useEffect 가 두 번 실행되면
   // sessionStorage 의 pendingInviteCode/oauth_state 가 첫 실행에서 비워져
@@ -51,6 +52,7 @@ function AuthCallbackContent() {
             return;
           }
           setUser(me);
+          setSessionReady(true);
 
           if (pendingInviteCode) {
             router.replace(`/join/${pendingInviteCode}`);
@@ -64,7 +66,7 @@ function AuthCallbackContent() {
       .catch(() => {
         router.replace("/login?error=OAuthCallback");
       });
-  }, [searchParams, router, setUser]);
+  }, [searchParams, router, setUser, setSessionReady]);
 
   return <AuthFlowSpinner />;
 }

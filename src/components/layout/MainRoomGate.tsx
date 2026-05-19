@@ -21,8 +21,8 @@ function isLegacyPlanRoomPath(pathname: string): boolean {
  * 인증은 미들웨어(`GET /api/auth/session` → HttpOnly 쿠키 검증)에서 처리합니다.
  * (main) 안에서는 선택된 방이 없으면 `/home`으로 보냅니다.
  *
- * 세션 병합은 루트 `AppRootProviders`의 `rehydrate()` 이후에만 판단합니다.
- * 프로필 서버 동기화는 `/home`의 `HomeSessionSync`에서 수행합니다.
+ * `currentRoomId`는 루트 `AppRootProviders`의 `rehydrate()` 이후에만 판단합니다.
+ * 프로필(`user`)은 persist하지 않으며, 루트 `reconcileClientSession`(`users/me`)으로 메모리에만 둡니다.
  */
 export function MainRoomGate({ children }: { children: ReactNode }) {
   const router = useRouter();
