@@ -1,6 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { ROOM_COVER_PERSIST_STORAGE_KEY } from "@/lib/room-cover-query";
+import {
+  clearCurrentRoomIdSessionStorage,
+  removeLegacySessionPersistLocalStorage,
+} from "@/lib/session-room-storage";
 import { useSessionStore } from "@/stores/session-store";
 
 const CHAT_LAST_SEEN_PREFIX = "hau:chat:lastSeen:v1:";
@@ -61,6 +65,8 @@ export function clearPersistedQueryClientCache(): void {
 export function tearDownClientSession(options?: {
   queryClient?: QueryClient;
 }): void {
+  clearCurrentRoomIdSessionStorage();
+  removeLegacySessionPersistLocalStorage();
   useSessionStore.getState().clearUser();
   clearUserScopedBrowserStorage();
   options?.queryClient?.clear();

@@ -26,7 +26,7 @@ type LifecycleOpts = {
   teardownConnectedClient: () => void;
   clientRef: MutableRefObject<Client | null>;
   userRoomsQueueUnsubRef: MutableRefObject<(() => void) | null>;
-  currentRoomIdRef: MutableRefObject<string | null>;
+  getResolvedRoomId: () => string | null;
   pathnameRef: MutableRefObject<string>;
   forcedExitConsumedRef: MutableRefObject<boolean>;
   queryClientRef: MutableRefObject<QueryClient>;
@@ -43,7 +43,7 @@ export function useStompClientLifecycleEffect({
   teardownConnectedClient,
   clientRef,
   userRoomsQueueUnsubRef,
-  currentRoomIdRef,
+  getResolvedRoomId,
   pathnameRef,
   forcedExitConsumedRef,
   queryClientRef,
@@ -71,11 +71,11 @@ export function useStompClientLifecycleEffect({
       userRoomsQueueUnsubRef.current?.();
       userRoomsQueueUnsubRef.current = subscribeUserRoomsQueue(client, {
         queryClientRef,
-        getCurrentRoomId: () => currentRoomIdRef.current?.trim() ?? null,
+        getCurrentRoomId: getResolvedRoomId,
         notifyForcedRoomExit,
       });
 
-      const rid = currentRoomIdRef.current?.trim() ?? "";
+      const rid = getResolvedRoomId();
       if (rid && !pathDefersRoomStompRoomTopics(pathnameRef.current)) {
         subscribeToRoomTopics(client, rid);
       }
@@ -95,6 +95,7 @@ export function useStompClientLifecycleEffect({
       teardownConnectedClient();
     };
   }, [
+    getResolvedRoomId,
     notifyForcedRoomExit,
     stompEligible,
     subscribeToRoomTopics,
@@ -105,7 +106,8 @@ export function useStompClientLifecycleEffect({
 
 type RoomTopicsOpts = {
   pathname: string;
-  currentRoomId: string | null;
+  resolvedRoomId: string | null;
+  connected: boolean;
   clientRef: MutableRefObject<Client | null>;
   detachRoomTopicsOnly: () => void;
   subscribeToRoomTopics: (client: Client, roomId: string) => void;
@@ -115,7 +117,8 @@ type RoomTopicsOpts = {
 /** 방·경로 변경 시 방 토픽 구독을 맞춥니다 (`pathDefersRoomStompRoomTopics` 포함). */
 export function useStompRoomTopicsResyncEffect({
   pathname,
-  currentRoomId,
+  resolvedRoomId,
+  connected,
   clientRef,
   detachRoomTopicsOnly,
   subscribeToRoomTopics,
@@ -123,20 +126,21 @@ export function useStompRoomTopicsResyncEffect({
 }: RoomTopicsOpts): void {
   useEffect(() => {
     const client = clientRef.current;
-    if (!client?.connected) return;
+    if (!client?.connected || !connected) return;
 
     if (pathDefersRoomStompRoomTopics(pathname)) {
       detachRoomTopicsOnly();
       return;
     }
 
-    if (currentRoomId) {
-      subscribeToRoomTopics(client, currentRoomId);
+    if (resolvedRoomId) {
+      subscribeToRoomTopics(client, resolvedRoomId);
     } else {
       unsubscribeRoomTopics();
     }
   }, [
-    currentRoomId,
+    connected,
+    resolvedRoomId,
     detachRoomTopicsOnly,
     pathname,
     subscribeToRoomTopics,

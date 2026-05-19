@@ -1,6 +1,11 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 import type { RoomDetail } from "@/lib/api/rooms";
+import {
+  clearCurrentRoomIdSessionStorage,
+  readCurrentRoomIdFromSessionStorage,
+  removeLegacySessionPersistLocalStorage,
+  writeCurrentRoomIdToSessionStorage,
+} from "@/lib/session-room-storage";
 
 export interface SessionUser {
   id: number;
@@ -10,24 +15,14 @@ export interface SessionUser {
   provider: string;
 }
 
-/** localStorage persist v1 — PII(`user`) 없음 */
-type PersistedSessionV1 = {
-  currentRoomId: string | null;
-};
-
-type PersistedSessionV0 = {
-  user?: SessionUser | null;
-  currentRoomId?: string | null;
-};
-
 interface SessionStore {
   user: SessionUser | null;
   setUser: (user: SessionUser) => void;
   clearUser: () => void;
-  /** `reconcileClientSession` 완료 후 true — persist 대상 아님 */
+  /** `reconcileClientSession` 완료 후 true */
   sessionReady: boolean;
   setSessionReady: (ready: boolean) => void;
-  /** 마지막으로 입장한 방 ID — localStorage에 저장되어 새로고침 후에도 유지됩니다. */
+  /** 현재 방 ID — 메모리 + sessionStorage(탭 수명), localStorage persist 없음 */
   currentRoomId: string | null;
   setCurrentRoomId: (id: string) => void;
   clearCurrentRoomId: () => void;
@@ -44,51 +39,57 @@ interface SessionStore {
   setPendingJoinRequestsCount: (count: number) => void;
 }
 
-export const useSessionStore = create<SessionStore>()(
-  persist(
-    (set) => ({
+export const useSessionStore = create<SessionStore>()((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  clearUser: () => {
+    clearCurrentRoomIdSessionStorage();
+    set({
       user: null,
-      setUser: (user) => set({ user }),
-      clearUser: () =>
-        set({
-          user: null,
-          sessionReady: false,
-          currentRoomId: null,
-          currentRoomInviteCode: null,
-          currentRoomMeta: null,
-          pendingJoinRequestsCount: 0,
-        }),
       sessionReady: false,
-      setSessionReady: (ready) => set({ sessionReady: ready }),
       currentRoomId: null,
-      setCurrentRoomId: (id) => set({ currentRoomId: id }),
-      clearCurrentRoomId: () => set({ currentRoomId: null }),
       currentRoomInviteCode: null,
-      setCurrentRoomInviteCode: (code) => set({ currentRoomInviteCode: code }),
-      clearCurrentRoomInviteCode: () => set({ currentRoomInviteCode: null }),
       currentRoomMeta: null,
-      setCurrentRoomMeta: (meta) => set({ currentRoomMeta: meta }),
-      clearCurrentRoomMeta: () => set({ currentRoomMeta: null }),
       pendingJoinRequestsCount: 0,
-      setPendingJoinRequestsCount: (count) =>
-        set({ pendingJoinRequestsCount: count }),
-    }),
-    {
-      name: "hau:session",
-      version: 1,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        currentRoomId: state.currentRoomId,
-      }),
-      migrate: (persisted, version): PersistedSessionV1 => {
-        if (version === 0) {
-          const old = persisted as PersistedSessionV0;
-          return { currentRoomId: old.currentRoomId ?? null };
-        }
-        return persisted as PersistedSessionV1;
-      },
-      /** 자동 hydrate와 첫 렌더·Gate 타이밍 경쟁을 피함 — 클라에서만 `rehydrate()` 호출 */
-      skipHydration: true,
-    },
-  ),
-);
+    });
+  },
+  sessionReady: false,
+  setSessionReady: (ready) => set({ sessionReady: ready }),
+  currentRoomId: null,
+  setCurrentRoomId: (id) => {
+    const trimmed = typeof id === "string" ? id.trim() : "";
+    if (trimmed.length > 0) {
+      writeCurrentRoomIdToSessionStorage(trimmed);
+      set({ currentRoomId: trimmed });
+    } else {
+      clearCurrentRoomIdSessionStorage();
+      set({ currentRoomId: null });
+    }
+  },
+  clearCurrentRoomId: () => {
+    clearCurrentRoomIdSessionStorage();
+    set({ currentRoomId: null });
+  },
+  currentRoomInviteCode: null,
+  setCurrentRoomInviteCode: (code) => set({ currentRoomInviteCode: code }),
+  clearCurrentRoomInviteCode: () => set({ currentRoomInviteCode: null }),
+  currentRoomMeta: null,
+  setCurrentRoomMeta: (meta) => set({ currentRoomMeta: meta }),
+  clearCurrentRoomMeta: () => set({ currentRoomMeta: null }),
+  pendingJoinRequestsCount: 0,
+  setPendingJoinRequestsCount: (count) =>
+    set({ pendingJoinRequestsCount: count }),
+}));
+
+/** 레거시 LS 제거 후 sessionStorage 방 ID를 Zustand에 동기 시드 */
+export function bootstrapCurrentRoomFromSessionStorage(): void {
+  if (typeof window === "undefined") return;
+  removeLegacySessionPersistLocalStorage();
+  const roomId = readCurrentRoomIdFromSessionStorage();
+  if (!roomId) return;
+
+  const { currentRoomId, setCurrentRoomId } = useSessionStore.getState();
+  if (currentRoomId?.trim() !== roomId) {
+    setCurrentRoomId(roomId);
+  }
+}

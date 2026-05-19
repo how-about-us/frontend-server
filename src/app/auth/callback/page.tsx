@@ -5,7 +5,10 @@ import { Suspense, useEffect, useRef } from "react";
 
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
-import { consumePendingInviteCode, fetchSessionUserWithRetry } from "@/lib/auth";
+import {
+  consumePendingInviteCode,
+  fetchSessionUserWithRetry,
+} from "@/lib/auth";
 import { tearDownClientSession } from "@/lib/client-storage";
 import {
   getGoogleOAuthRedirectUri,
@@ -73,9 +76,7 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense
-      fallback={<AuthFlowSpinner />}
-    >
+    <Suspense fallback={<AuthFlowSpinner />}>
       <AuthCallbackContent />
     </Suspense>
   );

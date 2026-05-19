@@ -15,7 +15,6 @@ import {
   dehydrateRoomCoverOnly,
 } from "@/lib/room-cover-query";
 import { createQueryClient } from "@/lib/query-client";
-import { useSessionStore } from "@/stores/session-store";
 
 const ROOM_COVER_PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14;
 
@@ -44,12 +43,9 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
     [],
   );
 
-  /** `skipHydration` 세션 스토어 — rehydrate(`currentRoomId`만) 후 `users/me`로 메모리 `user` 정합 */
+  /** `users/me`로 메모리 `user` 정합 (방 ID는 위 동기 부팅에서 이미 시드) */
   useEffect(() => {
-    void (async () => {
-      await useSessionStore.persist?.rehydrate?.();
-      await reconcileClientSession();
-    })();
+    void reconcileClientSession();
   }, []);
 
   useEffect(() => {

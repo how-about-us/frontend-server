@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense, useLayoutEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
+import { PlanPageView } from "../_components/itinerary/PlanPageView";
 import { useSessionStore } from "@/stores/session-store";
 
-function PlanRoomMigrateContent() {
+function PlanRoomPageContent() {
   const params = useParams();
-  const router = useRouter();
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
 
   const raw = params.roomId;
@@ -15,21 +15,22 @@ function PlanRoomMigrateContent() {
     typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
 
   useLayoutEffect(() => {
-    if (roomId) setCurrentRoomId(roomId);
-    router.replace("/plan");
-  }, [roomId, router, setCurrentRoomId]);
+    if (roomId.trim().length > 0) {
+      setCurrentRoomId(roomId);
+    }
+  }, [roomId, setCurrentRoomId]);
 
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center pl-6 pr-6">
-      <p className="text-sm text-dark-gray">플래너로 이동 중…</p>
-    </div>
-  );
+  if (!roomId.trim().length) {
+    return null;
+  }
+
+  return <PlanPageView />;
 }
 
-export default function PlanRoomLegacyPage() {
+export default function PlanRoomPage() {
   return (
     <Suspense fallback={null}>
-      <PlanRoomMigrateContent />
+      <PlanRoomPageContent />
     </Suspense>
   );
 }

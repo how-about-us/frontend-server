@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { RoomListItem } from "@/lib/api/rooms";
+import { planPathForRoom } from "@/lib/join-room-workflow";
 import { isHostRole } from "@/lib/rooms";
 import {
   usePlacePhotoUrlQuery,
@@ -53,7 +54,7 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
       </div>
 
       <Link
-        href="/plan"
+        href={planPathForRoom(room.id)}
         className="mt-2 block"
         onClick={() => setCurrentRoomId(room.id)}
       >

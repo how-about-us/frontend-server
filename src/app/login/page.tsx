@@ -69,11 +69,7 @@ function LoginPageContent() {
       <div className="relative w-full max-w-[600px] rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
-            <BrandLogo
-              alt=""
-              width={200}
-              height={32}
-            />
+            <BrandLogo alt="" />
             <p className="text-sm leading-relaxed text-dark-gray">
               Google 계정으로 로그인하고 여행 계획을 이어가세요.
             </p>

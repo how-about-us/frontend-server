@@ -70,7 +70,7 @@ function WaitingContent() {
         aria-hidden
       />
 
-      <BrandLogo alt="" width={160} height={26} />
+      <BrandLogo alt="" />
 
       <div className="relative w-full max-w-sm rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.10)] backdrop-blur-sm">
         {/* 아이콘 */}

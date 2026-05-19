@@ -7,6 +7,7 @@ import { useChat } from "@/hooks/useChat";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { getRoomDetail } from "@/lib/api/rooms";
 import { roomDetailQueryKey } from "@/lib/query-keys";
+import { useCurrentRoomId } from "@/hooks/use-room-id";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
@@ -23,7 +24,7 @@ export function ChatPanel() {
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const isMinimized = chatState === "minimized";
   const panelOpen = chatState !== "closed";
-  const roomId = useSessionStore((s) => s.currentRoomId);
+  const { roomId } = useCurrentRoomId();
   const sessionRoomTitle = useSessionStore((s) => s.currentRoomMeta?.title);
   const { data: membersData } = useRoomMembers(roomId);
   const onlineCount =

@@ -1,4 +1,3 @@
-import { apiFetch } from "@/lib/api/client";
 import { API_BASE } from "@/lib/api/config";
 import { isProtectedAppPath } from "@/lib/auth-session";
 import {
@@ -9,7 +8,7 @@ import type { SessionUser } from "@/stores/session-store";
 import { useSessionStore } from "@/stores/session-store";
 
 /**
- * `apiFetch` 없이 GET /users/me — `apiFetch`의 401→refresh 재귀를 피할 때 사용.
+ * `apiFetch` 없이 GET /users/me — 401 시 refresh·/login 리다이렉트 루프를 피할 때 사용.
  */
 export async function fetchSessionUserRaw(): Promise<SessionUser | null> {
   const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
@@ -47,12 +46,6 @@ export function consumePendingInviteCode(): string | null {
   return value;
 }
 
-async function fetchSessionUser(): Promise<SessionUser | null> {
-  const res = await apiFetch(`${API_BASE}/users/me`);
-  if (!res.ok) return null;
-  return res.json() as Promise<SessionUser>;
-}
-
 /**
  * OAuth 직후 쿠키가 잡히기 전 짧은 레이스를 흡수하기 위한 재시도.
  */
@@ -61,7 +54,7 @@ export async function fetchSessionUserWithRetry(
   baseDelayMs = 350,
 ): Promise<SessionUser | null> {
   for (let i = 0; i < attempts; i++) {
-    const user = await fetchSessionUser();
+    const user = await fetchSessionUserRaw();
     if (user) return user;
     if (i < attempts - 1) {
       await new Promise((r) => setTimeout(r, baseDelayMs * (i + 1)));
@@ -70,22 +63,29 @@ export async function fetchSessionUserWithRetry(
   return null;
 }
 
+const RECONCILE_SKIP_PATH_PREFIXES = ["/auth/callback", "/login"] as const;
+
+function shouldSkipReconcileClientSession(pathname: string): boolean {
+  return RECONCILE_SKIP_PATH_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
 /**
- * Zustand rehydrate 이후 HttpOnly 세션·`users/me`로 메모리 `user`를 맞춥니다.
- * persist에는 `currentRoomId`만 저장됩니다.
- * `/auth/callback` 은 OAuth 핸들러가 전담하므로 건너뜁니다.
+ * HttpOnly 세션·`users/me`로 메모리 `user`를 맞춥니다.
+ * `/auth/callback`·`/login` 은 OAuth·초대 흐름을 위해 건너뜁니다.
  */
 export async function reconcileClientSession(): Promise<void> {
   if (typeof window === "undefined") return;
 
   const path = window.location.pathname;
-  if (path.startsWith("/auth/callback")) return;
+  if (shouldSkipReconcileClientSession(path)) return;
 
   useSessionStore.getState().setSessionReady(false);
 
   try {
     const prevUser = useSessionStore.getState().user;
-    const user = await fetchSessionUser();
+    const user = await fetchSessionUserRaw();
 
     if (user) {
       if (prevUser != null && prevUser.id !== user.id) {
@@ -103,9 +103,4 @@ export async function reconcileClientSession(): Promise<void> {
   } finally {
     useSessionStore.getState().setSessionReady(true);
   }
-}
-
-/** @deprecated `reconcileClientSession` 사용 */
-export async function syncSessionUserFromServer(): Promise<void> {
-  await reconcileClientSession();
 }

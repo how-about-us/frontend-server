@@ -79,7 +79,7 @@ const HeaderBar = () => {
               </span>
             )}
           </div>
-          <BrandLogo alt="logo" width={150} height={20} />
+          <BrandLogo alt="logo" />
         </div>
       </div>
     </header>

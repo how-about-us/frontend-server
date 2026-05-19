@@ -2,19 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { hasAuthenticatedSession } from "@/lib/auth-server";
-
-function isProtectedPath(pathname: string) {
-  if (pathname === "/") return true;
-  const prefixes = [
-    "/home",
-    "/plan",
-    "/bookmark",
-    "/search",
-    "/settings",
-    "/waiting",
-  ];
-  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-}
+import { isProtectedAppPath } from "@/lib/auth-session";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,7 +15,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!isProtectedPath(pathname)) {
+  if (!isProtectedAppPath(pathname)) {
     return NextResponse.next();
   }
 

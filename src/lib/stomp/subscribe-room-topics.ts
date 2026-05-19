@@ -121,6 +121,8 @@ export function subscribeRoomStompTopics(
 
   const stopSessionPresencePing = startSessionPresencePing(client);
 
+  void dispatchRoomPresence(queryClientRef.current, subscribedRoomId);
+
   return () => {
     stopSessionPresencePing();
     membersSub.unsubscribe();

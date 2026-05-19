@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
+import { useCurrentRoomId } from "@/hooks/use-room-id";
 import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { AddMemberPanel } from "./AddMemberPanel";
@@ -21,7 +22,7 @@ export function RoomMembersSection() {
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
   const user = useSessionStore((s) => s.user);
-  const currentRoomId = useSessionStore((s) => s.currentRoomId);
+  const { roomId: currentRoomId } = useCurrentRoomId();
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
   const clearCurrentRoomInviteCode = useSessionStore((s) => s.clearCurrentRoomInviteCode);
   const clearCurrentRoomMeta = useSessionStore((s) => s.clearCurrentRoomMeta);

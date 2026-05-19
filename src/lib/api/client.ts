@@ -19,6 +19,15 @@ async function tryRefresh(): Promise<boolean> {
 
 function clearSessionAndRedirect() {
   tearDownClientSession();
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  if (
+    path === "/login" ||
+    path.startsWith("/join/") ||
+    path.startsWith("/auth/")
+  ) {
+    return;
+  }
   window.location.replace("/login");
 }
 
