@@ -5,20 +5,11 @@ import { useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
-import { setPendingInviteCode } from "@/lib/auth";
+import { checkClientAuthenticated, setPendingInviteCode } from "@/lib/auth";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
 import { planPathForRoom } from "@/lib/join-room-workflow";
 import { useSessionStore } from "@/stores/session-store";
-
-function hasSession() {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => {
-    const [k, v] = c.trim().split("=");
-    return k === AUTH_SESSION_COOKIE && v === "1";
-  });
-}
 
 export default function JoinPage() {
   const params = useParams();
@@ -36,13 +27,19 @@ export default function JoinPage() {
   useEffect(() => {
     if (!inviteCode) return;
 
-    if (!hasSession()) {
-      setPendingInviteCode(inviteCode);
-      router.replace("/login");
-      return;
-    }
+    let cancelled = false;
 
-    join(inviteCode, {
+    void (async () => {
+      const authenticated = await checkClientAuthenticated();
+      if (cancelled) return;
+
+      if (!authenticated) {
+        setPendingInviteCode(inviteCode);
+        router.replace("/login");
+        return;
+      }
+
+      join(inviteCode, {
       onSuccess: async (data) => {
         if (data.httpStatus === 200) {
           setCurrentRoomId(data.id);
@@ -63,6 +60,11 @@ export default function JoinPage() {
         setError(err instanceof Error ? err.message : "입장 요청에 실패했습니다.");
       },
     });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [inviteCode, join, router, setCurrentRoomId, setCurrentRoomMeta]);
 
   if (error) {

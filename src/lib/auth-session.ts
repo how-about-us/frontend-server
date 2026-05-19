@@ -1,2 +1,15 @@
-/** 클라이언트·미들웨어에서 동일하게 쓰는 세션 쿠키 이름 (실제 OAuth 연동 전 임시 플래그). */
-export const AUTH_SESSION_COOKIE = "how-about-us-session";
+/** `proxy.ts` 보호 경로와 동일 — reconcile 실패 시 로그인 리다이렉트 판단용 */
+export function isProtectedAppPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  const prefixes = [
+    "/home",
+    "/plan",
+    "/bookmark",
+    "/search",
+    "/settings",
+    "/waiting",
+  ];
+  return prefixes.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}

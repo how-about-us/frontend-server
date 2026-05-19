@@ -6,9 +6,11 @@ import { useRef, useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { logout } from "@/lib/api/auth";
+import { tearDownClientSession } from "@/lib/client-storage";
 import { useSessionStore } from "@/stores/session-store";
 
 function UserAvatar({
@@ -35,17 +37,16 @@ function UserAvatar({
 
 export function HomeHeader() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(profileRef, () => setOpen(false));
 
   const user = useSessionStore((s) => s.user);
-  const clearUser = useSessionStore((s) => s.clearUser);
 
   const handleLogout = async () => {
     await logout();
-    document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
-    clearUser();
+    tearDownClientSession({ queryClient });
     router.replace("/login");
   };
 

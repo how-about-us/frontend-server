@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { hasAuthenticatedSession } from "@/lib/auth-server";
 
 function isProtectedPath(pathname: string) {
   if (pathname === "/") return true;
@@ -16,9 +16,9 @@ function isProtectedPath(pathname: string) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = request.cookies.get(AUTH_SESSION_COOKIE)?.value === "1";
+  const hasSession = await hasAuthenticatedSession(request);
 
   if (pathname === "/login") {
     if (hasSession) {

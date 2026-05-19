@@ -5,8 +5,8 @@ import { Suspense, useEffect, useRef } from "react";
 
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
 import { consumePendingInviteCode, fetchSessionUserWithRetry } from "@/lib/auth";
+import { tearDownClientSession } from "@/lib/client-storage";
 import {
   getGoogleOAuthRedirectUri,
   OAUTH_STATE_SESSION_KEY,
@@ -44,14 +44,9 @@ function AuthCallbackContent() {
     exchangeGoogleCode(code, getGoogleOAuthRedirectUri())
       .then(async (result) => {
         if (result.ok) {
-          const maxAge = 60 * 60 * 24 * 365;
-          const secure = location.protocol === "https:" ? "; Secure" : "";
-          document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
-
           const me = await fetchSessionUserWithRetry();
           if (!me) {
-            document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax${secure}`;
-            useSessionStore.getState().clearUser();
+            tearDownClientSession();
             router.replace("/login?error=OAuthCallback");
             return;
           }

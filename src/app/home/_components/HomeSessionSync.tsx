@@ -3,12 +3,11 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { syncSessionUserFromServer } from "@/lib/auth";
 import { useSessionStore } from "@/stores/session-store";
 
 /**
- * `/home/*` 진입 시 persist 병합 후 서버 `users/me`와 `user`를 한 번 맞춥니다.
- * (루트에서는 rehydrate·쿠키 불일치 정리만 수행)
+ * `/home/*` — Zustand persist rehydrate 완료까지 자식 렌더를 지연합니다.
+ * `users/me` 동기화는 루트 `AppRootProviders`의 `reconcileClientSession`에서 수행합니다.
  */
 export function HomeSessionSync({ children }: { children: ReactNode }) {
   const [persistResolved, setPersistResolved] = useState(false);
@@ -28,10 +27,9 @@ export function HomeSessionSync({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  useEffect(() => {
-    if (!persistResolved) return;
-    void syncSessionUserFromServer();
-  }, [persistResolved]);
+  if (!persistResolved) {
+    return null;
+  }
 
   return <>{children}</>;
 }

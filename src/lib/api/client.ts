@@ -1,5 +1,5 @@
 import { fetchSessionUserRaw } from "@/lib/auth";
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { tearDownClientSession } from "@/lib/client-storage";
 import { useSessionStore } from "@/stores/session-store";
 import { refreshToken } from "./auth";
 
@@ -18,8 +18,7 @@ async function tryRefresh(): Promise<boolean> {
 }
 
 function clearSessionAndRedirect() {
-  document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
-  useSessionStore.getState().clearUser();
+  tearDownClientSession();
   window.location.replace("/login");
 }
 

@@ -18,7 +18,7 @@ function isLegacyPlanRoomPath(pathname: string): boolean {
 }
 
 /**
- * 인증은 미들웨어(`AUTH_SESSION_COOKIE`)에서 처리합니다.
+ * 인증은 미들웨어(`GET /api/auth/session` → HttpOnly 쿠키 검증)에서 처리합니다.
  * (main) 안에서는 선택된 방이 없으면 `/home`으로 보냅니다.
  *
  * 세션 병합은 루트 `AppRootProviders`의 `rehydrate()` 이후에만 판단합니다.

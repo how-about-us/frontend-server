@@ -1,6 +1,10 @@
 import { apiFetch } from "@/lib/api/client";
 import { API_BASE } from "@/lib/api/config";
-import { AUTH_SESSION_COOKIE } from "@/lib/auth-session";
+import { isProtectedAppPath } from "@/lib/auth-session";
+import {
+  clearUserScopedBrowserStorage,
+  tearDownClientSession,
+} from "@/lib/client-storage";
 import type { SessionUser } from "@/stores/session-store";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -11,6 +15,16 @@ export async function fetchSessionUserRaw(): Promise<SessionUser | null> {
   const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json() as Promise<SessionUser>;
+}
+
+/** 클라이언트 — HttpOnly 세션 검증 (`GET /api/auth/session`) */
+export async function checkClientAuthenticated(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const res = await fetch("/api/auth/session", {
+    credentials: "include",
+    cache: "no-store",
+  });
+  return res.ok;
 }
 
 /**
@@ -31,14 +45,6 @@ export function consumePendingInviteCode(): string | null {
   const value = sessionStorage.getItem(PENDING_INVITE_KEY);
   if (value) sessionStorage.removeItem(PENDING_INVITE_KEY);
   return value;
-}
-
-function hasAuthSessionCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((c) => {
-    const [k, v] = c.trim().split("=");
-    return k === AUTH_SESSION_COOKIE && v === "1";
-  });
 }
 
 async function fetchSessionUser(): Promise<SessionUser | null> {
@@ -64,23 +70,35 @@ export async function fetchSessionUserWithRetry(
   return null;
 }
 
-export async function syncSessionUserFromServer(): Promise<void> {
-  if (!hasAuthSessionCookie()) return;
+/**
+ * Zustand rehydrate 이후 HttpOnly 세션·persist `user`/`currentRoomId`를 맞춥니다.
+ * `/auth/callback` 은 OAuth 핸들러가 전담하므로 건너뜁니다.
+ */
+export async function reconcileClientSession(): Promise<void> {
+  if (typeof window === "undefined") return;
 
+  const path = window.location.pathname;
+  if (path.startsWith("/auth/callback")) return;
+
+  const prevUser = useSessionStore.getState().user;
   const user = await fetchSessionUser();
+
   if (user) {
+    if (prevUser != null && prevUser.id !== user.id) {
+      clearUserScopedBrowserStorage();
+      useSessionStore.getState().clearUser();
+    }
     useSessionStore.getState().setUser(user);
+    return;
+  }
+
+  tearDownClientSession();
+  if (isProtectedAppPath(path)) {
+    window.location.replace("/login");
   }
 }
 
-export function clearStalePersistedSessionIfNoAuthCookie(): void {
-  if (!hasAuthSessionCookie()) {
-    const path =
-      typeof window !== "undefined" ? window.location.pathname : "";
-    if (path.startsWith("/auth/callback")) return;
-    const { user } = useSessionStore.getState();
-    if (user != null) {
-      useSessionStore.getState().clearUser();
-    }
-  }
+/** @deprecated `reconcileClientSession` 사용 */
+export async function syncSessionUserFromServer(): Promise<void> {
+  await reconcileClientSession();
 }
