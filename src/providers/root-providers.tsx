@@ -13,6 +13,7 @@ import { reconcileClientSession } from "@/lib/auth";
 import {
   ROOM_COVER_PERSIST_STORAGE_KEY,
   dehydrateRoomCoverOnly,
+  getRoomCoverPersistStorage,
 } from "@/lib/room-cover-query";
 import { createQueryClient } from "@/lib/query-client";
 
@@ -31,7 +32,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
     () =>
       ({
         persister: createSyncStoragePersister({
-          storage: typeof window !== "undefined" ? window.localStorage : null,
+          storage: getRoomCoverPersistStorage(),
           key: ROOM_COVER_PERSIST_STORAGE_KEY,
           throttleTime: 1000,
         }),

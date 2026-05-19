@@ -13,7 +13,13 @@ export function placePhotoUrlQueryKey(photoName: string) {
   return ["places", "photoUrl", n] as const;
 }
 
+/** React Query persist 키 — `sessionStorage` 전용(임시). 탭 닫으면 소멸. */
 export const ROOM_COVER_PERSIST_STORAGE_KEY = "how-about-us-rq-room-cover";
+
+export function getRoomCoverPersistStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  return window.sessionStorage;
+}
 
 function shouldPersistRoomCoverQuery(query: Query): boolean {
   const key = query.queryKey;

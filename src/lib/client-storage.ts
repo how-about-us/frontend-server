@@ -55,7 +55,7 @@ export function clearUserScopedBrowserStorage(userId?: number): void {
 export function clearPersistedQueryClientCache(): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.removeItem(ROOM_COVER_PERSIST_STORAGE_KEY);
+    sessionStorage.removeItem(ROOM_COVER_PERSIST_STORAGE_KEY);
   } catch {
     /* ignore */
   }
