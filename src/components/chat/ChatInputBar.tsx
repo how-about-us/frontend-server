@@ -302,7 +302,7 @@ export function ChatInputBar({
               onClick={() => pickMentionAi()}
               aria-label={`${CHAT_AI_MENTION_LABEL}로 AI 질문 모드 적용`}
               className={cn(
-                "flex w-full items-center px-3 py-2 text-left transition hover:bg-light-gray",
+                "flex w-full cursor-pointer items-center px-3 py-2 text-left transition hover:bg-light-gray",
                 isMinimized ? "text-[11px]" : "text-xs",
               )}
             >
@@ -360,7 +360,7 @@ export function ChatInputBar({
             aria-label="검색에서 장소 선택 시 이 방 채팅으로 보냅니다"
             title="장소를 검색해서 고르면 채팅으로 전송돼요"
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-full text-dark-gray transition-colors hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
+              "flex shrink-0 cursor-pointer items-center justify-center rounded-full text-dark-gray transition-colors hover:bg-light-gray disabled:cursor-not-allowed disabled:opacity-40",
               isMinimized ? "h-8 w-8" : "h-9 w-9",
             )}
           >
@@ -375,7 +375,7 @@ export function ChatInputBar({
             onClick={toggleAi}
             whileTap={reduceMotion ? undefined : chatTapSoft}
             transition={chatTapTransition}
-            className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 transition-colors ${
+            className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors ${
               aiEnabled
                 ? "bg-brand-green text-white"
                 : "bg-light-gray text-black/40"
@@ -398,7 +398,7 @@ export function ChatInputBar({
                 transition={chatTapTransition}
                 aria-label="입력란에 장소 추천 요청 문구 넣기"
                 className={cn(
-                  "shrink-0 rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
+                  "shrink-0 cursor-pointer rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
                   isMinimized ? "text-[10px]" : "text-[11px]",
                 )}
               >
@@ -411,7 +411,7 @@ export function ChatInputBar({
                 transition={chatTapTransition}
                 aria-label="입력란에 대화 요약 요청 문구 넣기"
                 className={cn(
-                  "shrink-0 rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
+                  "shrink-0 cursor-pointer rounded-lg border border-gray-border bg-white px-2 py-1 text-black/80 transition hover:bg-light-gray",
                   isMinimized ? "text-[10px]" : "text-[11px]",
                 )}
               >
@@ -425,7 +425,7 @@ export function ChatInputBar({
           onClick={handleSend}
           whileTap={reduceMotion ? undefined : chatTapSoft}
           transition={chatTapTransition}
-          className="flex items-center gap-2 px-2 py-2 transition hover:opacity-80"
+          className="flex cursor-pointer items-center gap-2 px-2 py-2 transition hover:opacity-80"
         >
           <ChatEnterIcon
             className={hasContent ? "text-brand-red" : "text-light-gray"}

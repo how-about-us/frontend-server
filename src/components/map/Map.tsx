@@ -296,7 +296,7 @@ export default function Map() {
                   : "보관함 장소 표시 켜기"
               }
               title="보관함 장소 표시"
-              className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full shadow-md ring-2 ring-black/5 transition ${
+              className={`pointer-events-auto flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow-md ring-2 ring-black/5 transition ${
                 showBookmarkPins
                   ? "bg-brand-red text-white"
                   : "bg-white text-dark-gray hover:bg-gray-50"

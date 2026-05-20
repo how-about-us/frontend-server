@@ -96,7 +96,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
             <button
               type="button"
               onClick={() => refetch()}
-              className="text-sm font-medium text-neutral-900 underline"
+              className="cursor-pointer text-sm font-medium text-neutral-900 underline"
             >
               다시 시도
             </button>

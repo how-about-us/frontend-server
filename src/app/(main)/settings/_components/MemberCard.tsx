@@ -69,7 +69,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
   }, [open]);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-gray-50">
+    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <Avatar
@@ -117,7 +117,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
         <div ref={menuRef} className="relative flex-shrink-0">
           <button
             onClick={() => setOpen((v) => !v)}
-            className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors ${
+            className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border transition-colors ${
               open
                 ? "border-gray-300 bg-gray-100 text-gray-700"
                 : "border-transparent text-dark-gray hover:border-gray-border hover:bg-gray-50"
@@ -138,7 +138,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
                   onTransfer(member.id);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
               >
                 <svg
                   width="12"
@@ -161,7 +161,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
                   onKick(member.id);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-brand-red transition-colors hover:bg-brand-red/5"
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-xs font-medium text-brand-red transition-colors hover:bg-brand-red/5"
               >
                 <svg
                   width="12"

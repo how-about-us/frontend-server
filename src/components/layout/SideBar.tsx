@@ -30,7 +30,7 @@ function SideBar() {
       {/* chat - 최상단, brand-red rounded-r 사각형 */}
       <button
         onClick={openChat}
-        className={`relative flex w-20 items-center justify-center rounded-br-2xl py-2 transition hover:opacity-80 ${
+        className={`relative flex w-20 cursor-pointer items-center justify-center rounded-br-2xl py-2 transition hover:opacity-80 ${
           isChatActive ? "bg-brand-red/80" : "bg-brand-red"
         }`}
         aria-label="sidebar-chat"

@@ -43,7 +43,7 @@ export function MapCategoryChips({
             whileHover={{ scale: 1.02 }}
             transition={mapChipSpring}
             className={cn(
-              "flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-white px-3 py-1.5 text-xs font-medium text-black shadow-md transition-[background-color,border-color] duration-200 ease-out hover:bg-gray-50",
+              "flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-transparent bg-white px-3 py-1.5 text-xs font-medium text-black shadow-md transition-[background-color,border-color] duration-200 ease-out hover:bg-gray-50",
               active && "border-brand-green bg-brand-green/10 text-brand-green",
             )}
           >

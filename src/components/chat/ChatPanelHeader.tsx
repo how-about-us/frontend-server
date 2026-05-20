@@ -60,7 +60,7 @@ export function ChatPanelHeader({
       >
         <button
           onClick={isMinimized ? onMaximize : onMinimize}
-          className="rounded-full p-1.5 text-white transition hover:bg-white/15"
+          className="cursor-pointer rounded-full p-1.5 text-white transition hover:bg-white/15"
           aria-label={isMinimized ? "최대화" : "최소화"}
         >
           {isMinimized ? (
@@ -71,7 +71,7 @@ export function ChatPanelHeader({
         </button>
         <button
           onClick={onClose}
-          className="rounded-full p-1.5 text-white transition hover:bg-white/15"
+          className="cursor-pointer rounded-full p-1.5 text-white transition hover:bg-white/15"
           aria-label="채팅 닫기"
         >
           <Minus className="h-4 w-4" strokeWidth={3} aria-hidden />

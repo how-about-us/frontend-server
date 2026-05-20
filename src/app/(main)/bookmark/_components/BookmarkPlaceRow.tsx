@@ -100,7 +100,7 @@ export function BookmarkPlaceRow({
             });
           }}
           disabled={busy}
-          className="rounded-lg p-2 text-dark-gray cursor-pointer"
+          className="rounded-lg p-2 text-dark-gray cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="장소 메뉴"
           aria-expanded={menuOpen}
         >
@@ -117,7 +117,7 @@ export function BookmarkPlaceRow({
                 <button
                   type="button"
                   role="menuitem"
-                  className="block w-full px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:opacity-50"
+                  className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={busy}
                   onClick={() => setMenuPhase("pickCategory")}
                 >
@@ -126,7 +126,7 @@ export function BookmarkPlaceRow({
                 <button
                   type="button"
                   role="menuitem"
-                  className="block w-full px-4 py-2.5 text-left text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
+                  className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={busy}
                   onClick={handleDelete}
                 >
@@ -137,7 +137,7 @@ export function BookmarkPlaceRow({
               <>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-1 px-3 py-2 text-left text-sm font-medium text-neutral-800 hover:bg-bubble-gray"
+                  className="flex w-full cursor-pointer items-center gap-1 px-3 py-2 text-left text-sm font-medium text-neutral-800 hover:bg-bubble-gray"
                   onClick={() => setMenuPhase("main")}
                 >
                   <ChevronLeft className="size-4 shrink-0" />
@@ -154,7 +154,7 @@ export function BookmarkPlaceRow({
                       key={c.categoryId}
                       type="button"
                       role="menuitem"
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:opacity-50"
+                      className="flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={busy}
                       onClick={() => handleMoveTo(c.categoryId)}
                     >

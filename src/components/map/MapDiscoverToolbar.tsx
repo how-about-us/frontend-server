@@ -55,7 +55,7 @@ export function MapDiscoverToolbar({
               type="button"
               onClick={() => onSelectCategory(null)}
               aria-label="카테고리 닫기"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-dark-gray shadow-md transition hover:bg-gray-50"
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-dark-gray shadow-md transition hover:bg-gray-50"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>

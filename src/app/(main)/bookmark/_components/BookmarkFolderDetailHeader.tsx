@@ -37,7 +37,7 @@ export function BookmarkFolderDetailHeader({
           <button
             type="button"
             onClick={onEditClick}
-            className="shrink-0 rounded-lg p-2.5 text-neutral-700 transition-colors hover:bg-bubble-gray"
+            className="shrink-0 cursor-pointer rounded-lg p-2.5 text-neutral-700 transition-colors hover:bg-bubble-gray"
             aria-label="장소 목록 편집"
           >
             <SquarePen className="size-6" strokeWidth={2} />

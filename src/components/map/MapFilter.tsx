@@ -37,7 +37,7 @@ export default function MapFilter({
         aria-pressed={isOpenOnly}
         onClick={() => setOpenNow(isOpenOnly ? "all" : "open")}
         className={cn(
-          "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition",
+          "shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition",
           isOpenOnly
             ? "bg-white text-brand-green ring-2 ring-brand-green ring-offset-1"
             : "bg-white text-black hover:bg-gray-50",

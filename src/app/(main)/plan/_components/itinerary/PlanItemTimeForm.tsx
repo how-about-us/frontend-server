@@ -184,7 +184,7 @@ export function PlanItemTimeForm({
         type="button"
         onClick={() => void handleSave()}
         disabled={isPending || !dirty}
-        className="rounded-lg bg-brand-green px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        className="cursor-pointer rounded-lg bg-brand-green px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isPending ? "저장 중…" : "저장"}
       </button>
@@ -200,7 +200,7 @@ export function PlanItemTimeForm({
         <>
           <button
             type="button"
-            className="flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-dark-gray transition hover:bg-gray-border/25"
+            className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg py-1 text-left text-dark-gray transition hover:bg-gray-border/25"
             aria-expanded={timeExpanded}
             onClick={() => setTimeExpanded((o) => !o)}
           >

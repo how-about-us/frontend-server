@@ -310,7 +310,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => router.replace("/search")}
-              className="ml-auto shrink-0 rounded-md border border-brand-red/45 bg-white/92 px-2.5 py-1.5 text-[11px] font-medium text-dark-gray shadow-sm hover:bg-white"
+              className="ml-auto shrink-0 cursor-pointer rounded-md border border-brand-red/45 bg-white/92 px-2.5 py-1.5 text-[11px] font-medium text-dark-gray shadow-sm hover:bg-white"
             >
               취소
             </button>

@@ -26,7 +26,7 @@ export function JumpToBottomButton({
         onClick={onClick}
         aria-label="가장 아래로 이동"
         className={cn(
-          "pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-black/[0.08] bg-white text-black/80 shadow-md transition hover:bg-light-gray",
+          "pointer-events-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-black/[0.08] bg-white text-black/80 shadow-md transition hover:bg-light-gray",
           isMinimized && "h-8 w-8",
         )}
       >

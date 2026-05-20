@@ -71,7 +71,7 @@ export function AiResponseBubble({
       <button
         type="button"
         className={cn(
-          "w-full max-w-full border-b border-slate-300/90 bg-slate-200/55 text-left text-gray-900 hover:bg-slate-200/75",
+          "w-full max-w-full cursor-pointer border-b border-slate-300/90 bg-slate-200/55 text-left text-gray-900 hover:bg-slate-200/75",
           isMinimized ? "rounded-t-lg px-2.5 py-1" : "rounded-t-xl px-3 py-1.5",
         )}
         onClick={() => onReplyTargetClick?.(reply.requestMessageId)}

@@ -97,7 +97,7 @@ export function RoomMembersSection() {
                 return !open;
               });
             }}
-            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`inline-flex cursor-pointer items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
               showInvitePanel
                 ? "border-brand-red bg-brand-red/5 text-brand-red"
                 : "border-gray-border text-dark-gray hover:border-gray-400"
@@ -211,7 +211,7 @@ export function RoomMembersSection() {
                       <button
                         onClick={() => setTransferTargetId(null)}
                         disabled={isTransferring}
-                        className="flex-1 rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:opacity-40"
+                        className="flex-1 cursor-pointer rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         취소
                       </button>
@@ -224,7 +224,7 @@ export function RoomMembersSection() {
                           );
                         }}
                         disabled={isTransferring}
-                        className="flex-1 rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                        className="flex-1 cursor-pointer rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {isTransferring ? "처리 중…" : "위임"}
                       </button>
@@ -242,7 +242,7 @@ export function RoomMembersSection() {
                       <button
                         onClick={() => setKickTargetId(null)}
                         disabled={isKicking}
-                        className="flex-1 rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:opacity-40"
+                        className="flex-1 cursor-pointer rounded-lg border border-gray-border py-1.5 text-xs font-medium text-dark-gray transition-colors hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         취소
                       </button>
@@ -255,7 +255,7 @@ export function RoomMembersSection() {
                           );
                         }}
                         disabled={isKicking}
-                        className="flex-1 rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                        className="flex-1 cursor-pointer rounded-lg bg-brand-red py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {isKicking ? "처리 중…" : "추방"}
                       </button>
@@ -276,7 +276,7 @@ export function RoomMembersSection() {
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red transition-colors hover:bg-brand-red/5"
+                className="w-full cursor-pointer rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red transition-colors hover:bg-brand-red/5"
               >
                 여행 삭제
               </button>
@@ -291,7 +291,7 @@ export function RoomMembersSection() {
                 }
                 setShowLeaveConfirm(true);
               }}
-              className="w-full rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-50"
             >
               방 나가기
             </button>
@@ -314,7 +314,7 @@ export function RoomMembersSection() {
                 type="button"
                 onClick={() => setShowLeaveConfirm(false)}
                 disabled={isLeaving}
-                className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700 disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 취소
               </button>
@@ -329,7 +329,7 @@ export function RoomMembersSection() {
                   hostNeedsManualDelegation ||
                   (isHost && isMembersLoading)
                 }
-                className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLeaving ? "처리 중…" : "나가기"}
               </button>
@@ -373,7 +373,7 @@ export function RoomMembersSection() {
             <button
               type="button"
               onClick={() => setShowDelegateFirstModal(false)}
-              className="mt-6 w-full rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="mt-6 w-full cursor-pointer rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               확인
             </button>

@@ -144,7 +144,7 @@ export function AddBookmarkModal({
                   type="button"
                   title={hex}
                   onClick={() => setColor(hex)}
-                  className="size-9 rounded-full border-2 transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50"
+                  className="size-9 cursor-pointer rounded-full border-2 transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50"
                   style={{
                     backgroundColor: hex,
                     borderColor: color === hex ? "#171717" : "transparent",
@@ -177,14 +177,14 @@ export function AddBookmarkModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray"
+              className="flex-1 cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-95 disabled:opacity-60"
+              className="flex-1 cursor-pointer rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {mode === "edit" ? "저장" : "추가"}
             </button>

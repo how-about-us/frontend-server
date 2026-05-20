@@ -181,7 +181,7 @@ export function BookmarkFoldersView() {
         <button
           type="button"
           onClick={() => refetch()}
-          className="text-sm font-medium text-neutral-900 underline"
+          className="cursor-pointer text-sm font-medium text-neutral-900 underline"
         >
           다시 시도
         </button>
@@ -195,7 +195,7 @@ export function BookmarkFoldersView() {
         type="button"
         onClick={openCreate}
         disabled={isCreating || isUpdating}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red py-3 text-base font-bold text-white shadow-md transition-opacity hover:opacity-95 active:opacity-90 disabled:opacity-60"
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-brand-red py-3 text-base font-bold text-white shadow-md transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새 북마크
         추가
@@ -237,7 +237,7 @@ export function BookmarkFoldersView() {
                         )
                       }
                       disabled={rowMenuBusy(folder.id)}
-                      className="rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray disabled:opacity-50"
+                      className="cursor-pointer rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label="메뉴"
                     >
                       <MoreHorizontal className="size-5" />
@@ -250,7 +250,7 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
-                          className="block w-full px-4 py-2 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:opacity-50"
+                          className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={
                             isRowDeleting(folder.id) || isRowUpdating(folder.id)
                           }
@@ -261,7 +261,7 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
-                          className="block w-full px-4 py-2 text-left text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
+                          className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={
                             isRowDeleting(folder.id) || isRowUpdating(folder.id)
                           }

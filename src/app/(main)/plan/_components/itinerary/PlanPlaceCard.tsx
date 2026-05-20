@@ -308,7 +308,7 @@ function PlanScheduleItemDeleteButton({
     <button
       type="button"
       className={cn(
-        "-mr-1 -mt-0.5 shrink-0 rounded-lg p-1.5 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40",
+        "-mr-1 -mt-0.5 shrink-0 cursor-pointer rounded-lg p-1.5 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40",
         gridPlacementClassName,
       )}
       aria-label="일정에서 삭제"

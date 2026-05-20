@@ -75,7 +75,7 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
         <span className="text-sm font-semibold text-gray-800">멤버 초대</span>
         <button
           onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded-md text-dark-gray transition-colors hover:bg-gray-100"
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-dark-gray transition-colors hover:bg-gray-100"
           aria-label="닫기"
         >
           <svg
@@ -114,7 +114,7 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
             type="button"
             onClick={handleCopy}
             disabled={!inviteUrl}
-            className={`flex-shrink-0 rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
+            className={`flex-shrink-0 cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               copied
                 ? "border-brand-green bg-brand-green/10 text-brand-green"
                 : "border-gray-border bg-white text-dark-gray hover:border-gray-400"
@@ -128,7 +128,7 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
           type="button"
           onClick={handleRegenerate}
           disabled={isRegenerating}
-          className="flex items-center gap-1.5 self-start text-xs text-dark-gray transition-colors hover:text-black disabled:opacity-40"
+          className="flex cursor-pointer items-center gap-1.5 self-start text-xs text-dark-gray transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
           <RefreshCw
             size={12}

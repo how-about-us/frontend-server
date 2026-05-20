@@ -88,7 +88,7 @@ export function PlanDaySection({
           aria-expanded={expanded}
           aria-controls={`${panelId}-panel`}
           onClick={toggle}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left transition-colors hover:bg-bubble-gray/60"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left transition-colors hover:bg-bubble-gray/60"
         >
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-gray-900">{title}</h2>
@@ -115,7 +115,7 @@ export function PlanDaySection({
               e.stopPropagation();
               onRequestDeleteSchedule();
             }}
-            className="shrink-0 self-center rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray/60"
+            className="shrink-0 cursor-pointer self-center rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray/60"
           >
             <Trash2 className="h-5 w-5" aria-hidden />
           </button>

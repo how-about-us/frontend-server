@@ -80,7 +80,7 @@ function AiRequestMetaRow({
         <button
           type="button"
           className={cn(
-            "shrink-0 underline underline-offset-2 hover:opacity-90",
+            "shrink-0 cursor-pointer underline underline-offset-2 hover:opacity-90",
             "text-neutral-700",
           )}
           onClick={() => onCancelRequest(ar.requestMessageId)}

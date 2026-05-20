@@ -24,7 +24,7 @@ export function PlanTravelTimeCollapsed({
       >
         <button
           type="button"
-          className="text-xs text-brand-green underline-offset-2 hover:underline"
+          className="cursor-pointer text-xs text-brand-green underline-offset-2 hover:underline"
           onClick={onShowDirections}
         >
           길찾기 표시
