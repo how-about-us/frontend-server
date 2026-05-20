@@ -8,6 +8,7 @@ import { Calendar } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCreateRoom } from "@/hooks/useRooms";
+import { formatDateYmd } from "@/lib/plan/tripRange";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
@@ -26,12 +27,18 @@ export default function NewTripPage() {
   );
   const { mutate: createRoom, isPending, error } = useCreateRoom();
 
+  const todayYmd = formatDateYmd(new Date());
+  const endDateMin =
+    startDate && startDate > todayYmd ? startDate : todayYmd;
+
   const dateRangeInvalid =
     Boolean(startDate && endDate && endDate < startDate);
 
   const canSubmit =
     title.trim() &&
     destination.trim() &&
+    startDate &&
+    endDate &&
     !isPending &&
     !dateRangeInvalid;
 
@@ -42,8 +49,8 @@ export default function NewTripPage() {
       {
         title: title.trim().slice(0, TITLE_MAX_LENGTH),
         destination: destination.trim(),
-        startDate: startDate || new Date().toISOString().split("T")[0],
-        endDate: endDate || new Date().toISOString().split("T")[0],
+        startDate,
+        endDate,
       },
       {
         onSuccess: (room) => {
@@ -101,15 +108,14 @@ export default function NewTripPage() {
           </div>
 
           <div className="rounded-2xl border-2 border-gray-border bg-white px-5 py-4 transition focus-within:border-brand-red">
-            <p className="mb-2.5 text-sm font-bold text-dark-gray">
-              날짜 (선택 사항)
-            </p>
+            <p className="mb-2.5 text-sm font-bold text-dark-gray">날짜</p>
             <div className="flex items-center gap-3">
               <label className="flex flex-1 cursor-pointer items-center gap-2">
                 <Calendar size={15} className="shrink-0 text-dark-gray" />
                 <input
                   type="date"
                   value={startDate}
+                  min={todayYmd}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="w-full text-sm text-dark-gray outline-none"
                 />
@@ -120,6 +126,7 @@ export default function NewTripPage() {
                 <input
                   type="date"
                   value={endDate}
+                  min={endDateMin}
                   onChange={(e) => setEndDate(e.target.value)}
                   className="w-full text-sm text-dark-gray outline-none"
                 />
