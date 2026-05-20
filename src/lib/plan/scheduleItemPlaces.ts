@@ -268,6 +268,59 @@ export function applyRoomScheduleItemToPlanPlaces(
   return found ? out : null;
 }
 
+async function planPlaceFromScheduleItem(
+  item: RoomScheduleItem,
+): Promise<PlanPlace> {
+  try {
+    const detail = await getPlaceDetail(item.googlePlaceId);
+    const firstPhoto = detail.photoNames[0];
+    return {
+      id: `item-${item.itemId}`,
+      itemId: item.itemId,
+      googlePlaceId: item.googlePlaceId,
+      location: detail.location,
+      title: detail.name,
+      subtitle: detail.formattedAddress,
+      photoName: firstPhoto?.trim() || undefined,
+      startTime: item.startTime,
+      durationMinutes: item.durationMinutes,
+      travelMode: item.travelMode,
+    };
+  } catch {
+    return {
+      id: `item-${item.itemId}`,
+      itemId: item.itemId,
+      googlePlaceId: item.googlePlaceId,
+      title: "장소 정보를 불러올 수 없음",
+      subtitle: item.googlePlaceId,
+      startTime: item.startTime,
+      durationMinutes: item.durationMinutes,
+      travelMode: item.travelMode,
+    };
+  }
+}
+
+/** POST 응답으로 `schedule-items` 캐시에 새 항목을 반영합니다(GET items 생략). */
+export async function appendCreatedScheduleItemToPlanPlaces(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  created: RoomScheduleItem,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+  const prev = queryClient.getQueryData<PlanPlace[]>(key) ?? [];
+  if (prev.some((p) => p.itemId === created.itemId)) return;
+
+  const newPlace = await planPlaceFromScheduleItem(created);
+  const without = prev.filter((p) => p.itemId !== created.itemId);
+  const idx = Math.max(0, Math.min(created.orderIndex, without.length));
+  const next = [...without];
+  next.splice(idx, 0, newPlace);
+  queryClient.setQueryData(key, next);
+}
+
 /** 드래그를 `toIndex` 자리에 놓았을 때 PATCH에 넣을 `newOrderIndex`(0-based) */
 export function newOrderIndexAfterMove(
   fromIndex: number,
@@ -291,37 +344,5 @@ export async function fetchScheduleItemsAsPlanPlaces(
 ): Promise<PlanPlace[]> {
   const items = await getScheduleItems(roomId, scheduleId);
   const sorted = sortRoomScheduleItemsByOrder(items);
-  return Promise.all(
-    sorted.map(async (item) => {
-      try {
-        const detail = await getPlaceDetail(item.googlePlaceId);
-        const firstPhoto = detail.photoNames[0];
-        const place: PlanPlace = {
-          id: `item-${item.itemId}`,
-          itemId: item.itemId,
-          googlePlaceId: item.googlePlaceId,
-          location: detail.location,
-          title: detail.name,
-          subtitle: detail.formattedAddress,
-          photoName: firstPhoto?.trim() || undefined,
-          startTime: item.startTime,
-          durationMinutes: item.durationMinutes,
-          travelMode: item.travelMode,
-        };
-        return place;
-      } catch {
-        const place: PlanPlace = {
-          id: `item-${item.itemId}`,
-          itemId: item.itemId,
-          googlePlaceId: item.googlePlaceId,
-          title: "장소 정보를 불러올 수 없음",
-          subtitle: item.googlePlaceId,
-          startTime: item.startTime,
-          durationMinutes: item.durationMinutes,
-          travelMode: item.travelMode,
-        };
-        return place;
-      }
-    }),
-  );
+  return Promise.all(sorted.map((item) => planPlaceFromScheduleItem(item)));
 }

@@ -1,12 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-import { getScheduleItems } from "@/lib/api/rooms";
 import { useCreateScheduleItem, useRoomSchedules } from "@/hooks/useRooms";
-import { defaultNewItemStartTimeHmFromScheduleItems } from "@/lib/plan/scheduleItemPlaces";
+import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
+import { scheduleItemsQueryKey } from "@/lib/query-keys";
+import type { PlanPlace } from "@/lib/plan/types";
 import {
   formatKoreanDateLabel,
   parseLocalYmd,
@@ -35,6 +37,7 @@ export function AddToScheduleModal({
     refetch,
   } = useRoomSchedules(rid.length > 0 ? rid : null);
 
+  const queryClient = useQueryClient();
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
 
@@ -51,12 +54,15 @@ export function AddToScheduleModal({
   async function pickDay(scheduleId: number) {
     if (!rid || isAdding) return;
     try {
-      const items = await getScheduleItems(rid, scheduleId);
+      const cached =
+        queryClient.getQueryData<PlanPlace[]>(
+          scheduleItemsQueryKey(rid, scheduleId),
+        ) ?? [];
       await createItem({
         roomId: rid,
         scheduleId,
         googlePlaceId,
-        startTimeHm: defaultNewItemStartTimeHmFromScheduleItems(items),
+        startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(cached),
       });
       toast.success("일정에 추가했어요.");
       onAdded?.();

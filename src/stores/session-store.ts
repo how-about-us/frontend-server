@@ -3,7 +3,6 @@ import type { RoomDetail } from "@/lib/api/rooms";
 import {
   clearCurrentRoomIdSessionStorage,
   readCurrentRoomIdFromSessionStorage,
-  removeLegacySessionPersistLocalStorage,
   writeCurrentRoomIdToSessionStorage,
 } from "@/lib/session-room-storage";
 
@@ -22,7 +21,7 @@ interface SessionStore {
   /** `reconcileClientSession` 완료 후 true */
   sessionReady: boolean;
   setSessionReady: (ready: boolean) => void;
-  /** 현재 방 ID — 메모리 + sessionStorage(탭 수명), localStorage persist 없음 */
+  /** 현재 방 ID — 메모리 + sessionStorage(탭 수명) */
   currentRoomId: string | null;
   setCurrentRoomId: (id: string) => void;
   clearCurrentRoomId: () => void;
@@ -81,10 +80,9 @@ export const useSessionStore = create<SessionStore>()((set) => ({
     set({ pendingJoinRequestsCount: count }),
 }));
 
-/** 레거시 LS 제거 후 sessionStorage 방 ID를 Zustand에 동기 시드 */
+/** sessionStorage 방 ID를 Zustand에 동기 시드 */
 export function bootstrapCurrentRoomFromSessionStorage(): void {
   if (typeof window === "undefined") return;
-  removeLegacySessionPersistLocalStorage();
   const roomId = readCurrentRoomIdFromSessionStorage();
   if (!roomId) return;
 

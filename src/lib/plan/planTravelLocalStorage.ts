@@ -53,7 +53,7 @@ function routeBodyOk(b: unknown): b is ScheduleItemRouteResponse {
 
 /**
  * 일정 지문 — `itemId` 순서와 장소 정체성(Place ID·좌표)을 포함해
- * 순서만 같고 장소만 바뀐 경우에도 LS·경로 캐시가 엇나가지 않게 합니다.
+ * 순서만 같고 장소만 바뀐 경우에도 sessionStorage 경로 캐시가 엇나가지 않게 합니다.
  */
 export function schedulePlacesFingerprint(places: PlanPlace[]): string {
   const parts: string[] = [];
@@ -74,7 +74,7 @@ export function schedulePlacesFingerprint(places: PlanPlace[]): string {
   return parts.join("|");
 }
 
-/** 해당 일차 경로·이동수단 LS 항목 일괄 제거 */
+/** 해당 일차 경로·이동수단 sessionStorage 항목 일괄 제거 */
 export function clearPersistedScheduleRoutesForSchedule(
   roomId: string,
   scheduleId: number,
@@ -85,8 +85,8 @@ export function clearPersistedScheduleRoutesForSchedule(
   const prefixRoute = `${NS_ROUTE}:${rid}:${scheduleId}:`;
   const prefixMode = `${NS_MODE}:${rid}:${scheduleId}:`;
   const toRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
     if (!k) continue;
     if (k.startsWith(prefixRoute) || k.startsWith(prefixMode)) {
       toRemove.push(k);
@@ -94,7 +94,7 @@ export function clearPersistedScheduleRoutesForSchedule(
   }
   for (const k of toRemove) {
     try {
-      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
     } catch {
       /* quota */
     }
@@ -103,9 +103,9 @@ export function clearPersistedScheduleRoutesForSchedule(
 
 /**
  * @returns `undefined` — 캐시 없음/불일치
- * @returns `null` — LS에 “경로 없음(204)”이 저장됨
+ * @returns `null` — sessionStorage에 “경로 없음(204)”이 저장됨
  */
-export function readScheduleRouteFromLocalStorage(
+export function readScheduleRouteFromSessionStorage(
   roomId: string,
   scheduleId: number,
   segmentSourceItemId: number,
@@ -114,7 +114,7 @@ export function readScheduleRouteFromLocalStorage(
 ): ScheduleItemRouteResponse | null | undefined {
   if (typeof window === "undefined" || !expectedFp) return undefined;
   try {
-    const raw = localStorage.getItem(
+    const raw = sessionStorage.getItem(
       routeStorageKey(roomId, scheduleId, segmentSourceItemId, travelMode),
     );
     if (!raw) return undefined;
@@ -128,7 +128,7 @@ export function readScheduleRouteFromLocalStorage(
   }
 }
 
-export function writeScheduleRouteToLocalStorage(
+export function writeScheduleRouteToSessionStorage(
   roomId: string,
   scheduleId: number,
   segmentSourceItemId: number,
@@ -145,12 +145,12 @@ export function writeScheduleRouteToLocalStorage(
       travelMode,
     );
     if (data === null) {
-      localStorage.setItem(
+      sessionStorage.setItem(
         key,
         JSON.stringify({ fp, kind: "empty" } satisfies PersistedRouteV1),
       );
     } else {
-      localStorage.setItem(
+      sessionStorage.setItem(
         key,
         JSON.stringify({
           fp,
@@ -164,7 +164,7 @@ export function writeScheduleRouteToLocalStorage(
   }
 }
 
-export function readTravelModeFromLocalStorage(
+export function readTravelModeFromSessionStorage(
   roomId: string,
   scheduleId: number,
   segmentSourceItemId: number,
@@ -172,7 +172,7 @@ export function readTravelModeFromLocalStorage(
 ): ScheduleTravelModeValue | undefined {
   if (typeof window === "undefined" || !expectedFp) return undefined;
   try {
-    const raw = localStorage.getItem(
+    const raw = sessionStorage.getItem(
       modeStorageKey(roomId, scheduleId, segmentSourceItemId),
     );
     if (!raw) return undefined;
@@ -187,7 +187,7 @@ export function readTravelModeFromLocalStorage(
   }
 }
 
-export function writeTravelModeToLocalStorage(
+export function writeTravelModeToSessionStorage(
   roomId: string,
   scheduleId: number,
   segmentSourceItemId: number,
@@ -196,7 +196,7 @@ export function writeTravelModeToLocalStorage(
 ): void {
   if (typeof window === "undefined" || !fp) return;
   try {
-    localStorage.setItem(
+    sessionStorage.setItem(
       modeStorageKey(roomId, scheduleId, segmentSourceItemId),
       JSON.stringify({
         fp,

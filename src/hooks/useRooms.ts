@@ -53,6 +53,7 @@ import {
   type RoomSchedule,
 } from "@/lib/api/rooms";
 import {
+  appendCreatedScheduleItemToPlanPlaces,
   applyRoomScheduleItemToPlanPlaces,
   fetchScheduleItemsAsPlanPlaces,
   syncPlanPlacesAfterReorderSuccess,
@@ -198,6 +199,7 @@ export function useSchedulePlanPlaces(
 }
 
 export function useCreateScheduleItem() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
@@ -210,6 +212,14 @@ export function useCreateScheduleItem() {
         startTime: vars.startTimeHm,
         durationMinutes: 60,
       }),
+    onSuccess: async (created, { roomId, scheduleId }) => {
+      await appendCreatedScheduleItemToPlanPlaces(
+        queryClient,
+        roomId,
+        scheduleId,
+        created,
+      );
+    },
   });
 }
 

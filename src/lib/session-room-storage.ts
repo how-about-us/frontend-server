@@ -1,10 +1,7 @@
 import { roomIdFromPlanPathname } from "@/lib/plan-room-path";
 
-/** Zustand `currentRoomId` — 탭 수명 sessionStorage (localStorage persist 아님) */
+/** Zustand `currentRoomId` — 탭 수명 sessionStorage */
 export const SESSION_CURRENT_ROOM_ID_KEY = "hau:session:currentRoomId:v1";
-
-/** 레거시 Zustand persist 키 — 부팅·tearDown 시 제거 */
-export const LEGACY_SESSION_PERSIST_KEY = "hau:session";
 
 export function readCurrentRoomIdFromSessionStorage(): string | null {
   if (typeof window === "undefined") return null;
@@ -33,15 +30,6 @@ export function clearCurrentRoomIdSessionStorage(): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(SESSION_CURRENT_ROOM_ID_KEY);
-  } catch {
-    /* ignore */
-  }
-}
-
-export function removeLegacySessionPersistLocalStorage(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(LEGACY_SESSION_PERSIST_KEY);
   } catch {
     /* ignore */
   }
@@ -82,4 +70,3 @@ export function resolveRoomIdFromPathname(
     roomIdFromPlanPathname(pathname),
   );
 }
-

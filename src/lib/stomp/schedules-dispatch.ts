@@ -266,11 +266,22 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEM_CREATED": {
-      await queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(rid, sid),
-        refetchType: "active",
-      });
-      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      const me = useSessionStore.getState().user?.id;
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId;
+      const cachedIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const cacheHasNewItem = cachedIds?.includes(event.itemId) ?? false;
+
+      if (!actorIsMe || !cacheHasNewItem) {
+        await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      }
+
       const newIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,
