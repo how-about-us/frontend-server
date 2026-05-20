@@ -26,7 +26,7 @@ export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 shadow backdrop-blur-sm transition hover:bg-white"
+        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-2 border-gray-border bg-white/90 transition hover:border-brand-red/40 hover:bg-bubble-gray hover:shadow-sm"
         aria-label="더보기"
       >
         <MoreHorizontal size={13} className="text-dark-gray" />
@@ -41,7 +41,7 @@ export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
               setOpen(false);
               onEdit(room);
             }}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
+            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
           >
             <Pencil size={13} />
             수정하기
@@ -53,7 +53,7 @@ export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
               setOpen(false);
               onDelete(room);
             }}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-red transition hover:bg-bubble-gray"
+            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-red transition hover:bg-bubble-gray"
           >
             <Trash2 size={13} />
             삭제하기
