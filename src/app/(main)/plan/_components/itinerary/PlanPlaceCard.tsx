@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
-import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_WIDE_TW } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";

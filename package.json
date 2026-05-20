@@ -10,10 +10,8 @@
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
-    "@tanstack/query-sync-storage-persister": "^5.100.9",
     "@tanstack/react-query": "^5.95.2",
     "@tanstack/react-query-devtools": "^5.95.2",
-    "@tanstack/react-query-persist-client": "^5.100.9",
     "@vis.gl/react-google-maps": "^1.8.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

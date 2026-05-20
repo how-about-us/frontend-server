@@ -26,7 +26,6 @@ import {
   bootstrapCurrentRoomFromSessionStorage,
   useSessionStore,
 } from "@/stores/session-store";
-import { useChatUnreadStore } from "@/stores/chat-unread-store";
 import type { ServerChatMessage } from "@/types/chat";
 
 import {
@@ -81,7 +80,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const clientRef = useRef<Client | null>(null);
   const roomTopicsUnsubRef = useRef<(() => void) | null>(null);
   const userRoomsQueueUnsubRef = useRef<(() => void) | null>(null);
-  /** pathname-only 재구독과 실제 방 전환을 구분해 `chatCnt`를 불필요하게 리셋하지 않음 */
+  /** pathname-only 재구독과 실제 방 전환을 구분 */
   const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
   const [connectionState, setConnectionState] = useState<StompConnectionState>({
@@ -97,7 +96,6 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const unsubscribeRoomTopics = useCallback(() => {
     detachRoomTopicsOnly();
     lastSubscribedRoomIdRef.current = null;
-    useChatUnreadStore.getState().resetChatCnt();
   }, [detachRoomTopicsOnly]);
 
   const handleForcedRoomExit = useCallback(
@@ -154,9 +152,8 @@ export function StompProvider({ children }: { children: ReactNode }) {
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
       if (lastSubscribedRoomIdRef.current !== rid) {
-        useChatUnreadStore.getState().resetChatCnt();
+        lastSubscribedRoomIdRef.current = rid;
       }
-      lastSubscribedRoomIdRef.current = rid;
       detachRoomTopicsOnly();
       forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(

@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Calendar } from "lucide-react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCreateRoom } from "@/hooks/useRooms";
-import { resolveCoverPhotoNameFromSearch } from "@/hooks/useRoomCoverPhoto";
-import { resolveCoverPhotoNameFromPlaceId } from "@/lib/places/placeCardEnrichment";
-import { roomCoverPhotoNameKey } from "@/lib/room-cover-query";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
@@ -19,13 +15,10 @@ const TITLE_MAX_LENGTH = 20;
 
 export default function NewTripPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [isResolvingCover, setIsResolvingCover] = useState(false);
 
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const setCurrentRoomInviteCode = useSessionStore(
@@ -40,24 +33,10 @@ export default function NewTripPage() {
     title.trim() &&
     destination.trim() &&
     !isPending &&
-    !isResolvingCover &&
     !dateRangeInvalid;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit || dateRangeInvalid) return;
-    setIsResolvingCover(true);
-    let photoName: string | null = null;
-    try {
-      const destTrimmed = destination.trim();
-      if (selectedPlaceId) {
-        photoName = await resolveCoverPhotoNameFromPlaceId(selectedPlaceId);
-      }
-      if (!photoName) {
-        photoName = await resolveCoverPhotoNameFromSearch(destTrimmed);
-      }
-    } finally {
-      setIsResolvingCover(false);
-    }
 
     createRoom(
       {
@@ -68,10 +47,6 @@ export default function NewTripPage() {
       },
       {
         onSuccess: (room) => {
-          queryClient.setQueryData(
-            roomCoverPhotoNameKey(room.id, room.destination),
-            photoName,
-          );
           setCurrentRoomId(room.id);
           setCurrentRoomInviteCode(room.inviteCode);
           router.push("/plan");
@@ -122,9 +97,6 @@ export default function NewTripPage() {
             <DestinationSearchInput
               value={destination}
               onChange={setDestination}
-              onResolvedPlace={(place) =>
-                setSelectedPlaceId(place?.placeId ?? null)
-              }
             />
           </div>
 
@@ -175,9 +147,7 @@ export default function NewTripPage() {
           disabled={!canSubmit}
           className="mt-8 w-full rounded-full bg-brand-red py-4 text-base font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isPending || isResolvingCover
-            ? "생성 중…"
-            : "계획을 시작하세요"}
+          {isPending ? "생성 중…" : "계획을 시작하세요"}
         </button>
 
         <Link

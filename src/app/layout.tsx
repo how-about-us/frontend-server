@@ -9,12 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "우리어때",
+  title: "우때",
   description: "실시간 협업 여행 플래너",
   icons: {
-    icon: "/우리어때.svg",
-    apple: "/우리어때.svg",
-    shortcut: "/우리어때.svg",
+    icon: "/우때.svg",
+    apple: "/우때.svg",
+    shortcut: "/우때.svg",
   },
 };
 

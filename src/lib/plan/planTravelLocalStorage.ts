@@ -41,9 +41,7 @@ type PersistedModeV1 = {
   mode: string;
 };
 
-function routeBodyOk(
-  b: unknown,
-): b is ScheduleItemRouteResponse {
+function routeBodyOk(b: unknown): b is ScheduleItemRouteResponse {
   if (!b || typeof b !== "object") return false;
   const o = b as Record<string, unknown>;
   return (

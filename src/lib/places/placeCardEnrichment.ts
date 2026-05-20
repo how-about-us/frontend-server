@@ -31,11 +31,3 @@ export async function resolvePlaceCardEnrichmentFromPlaceId(
     return null;
   }
 }
-
-/** Autocomplete/룸 목적지: place 상세에서 첫 사진 리소스 이름 */
-export async function resolveCoverPhotoNameFromPlaceId(
-  googlePlaceId: string,
-): Promise<string | null> {
-  const enriched = await resolvePlaceCardEnrichmentFromPlaceId(googlePlaceId);
-  return enriched?.photoName ?? null;
-}

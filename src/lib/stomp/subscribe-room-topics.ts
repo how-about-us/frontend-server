@@ -4,7 +4,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import type { ServerChatMessage } from "@/types/chat";
 import { normalizeServerChatMessage } from "@/lib/chat";
-import { useChatUnreadStore } from "@/stores/chat-unread-store";
+import { roomUnreadCountQueryKey } from "@/lib/query-keys";
 import { applyRoomBookmarkStompMessage } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
@@ -36,7 +36,6 @@ export function subscribeRoomStompTopics(
   options: SubscribeRoomStompTopicsOptions,
 ): RoomTopicsUnsubscriber {
   const subscribedRoomId = roomId.trim();
-  const messageIdsSeenForUnread = new Set<string>();
 
   const membersSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/members`,
@@ -109,10 +108,9 @@ export function subscribeRoomStompTopics(
         const msg = normalizeServerChatMessage(parsed);
         if (!msg) return;
         options.onRoomChatMessage?.(msg);
-        if (!messageIdsSeenForUnread.has(msg.id)) {
-          messageIdsSeenForUnread.add(msg.id);
-          useChatUnreadStore.getState().incrementFromMessage(msg);
-        }
+        void queryClientRef.current.invalidateQueries({
+          queryKey: roomUnreadCountQueryKey(subscribedRoomId),
+        });
       } catch {
         // malformed payload — ignore
       }

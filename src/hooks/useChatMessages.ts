@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import {
@@ -17,7 +11,6 @@ import {
   serverMessageToChatMessage,
   transientMessagesDuringRoomHistoryFetch,
 } from "@/lib/chat";
-import { getLastSeenMessageId, setLastSeenMessageId } from "@/lib/chat/lastSeenMessageStorage";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionStore } from "@/stores/session-store";
 import { getRoomMessages } from "@/lib/api/rooms";
@@ -25,6 +18,7 @@ import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
 import { warmPlacePhotoQueriesFromChatHistory } from "@/lib/places/warmChatHistoryPlacePhotos";
+import { roomUnreadCountQueryKey } from "@/lib/query-keys";
 import {
   hasOlderHistoryPage,
   loadInitialRoomHistory,
@@ -55,7 +49,7 @@ export function useChatMessages(
 ) {
   const { fetchHistory } = options;
   const queryClient = useQueryClient();
-  const { setRoomChatMessageHandler } = useStompContext();
+  const { client, connected, setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
   const { data: membersData } = useRoomMembers(roomId);
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
@@ -77,7 +71,30 @@ export function useChatMessages(
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
   const isFetchingOlderRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
+  const lastPublishedReadIdRef = useRef<string | null>(null);
   rawMessagesRef.current = rawMessages;
+
+  const markMessagesRead = useCallback(
+    (messageId?: string) => {
+      const rid = roomId?.trim();
+      if (!rid || !client || !connected) return;
+
+      const id =
+        messageId?.trim() ||
+        newestServerMessageByCreatedAt(rawMessagesRef.current)?.id;
+      if (!id || id === lastPublishedReadIdRef.current) return;
+
+      lastPublishedReadIdRef.current = id;
+      client.publish({
+        destination: `/app/rooms/${rid}/messages/read`,
+        body: JSON.stringify({ lastReadMessageId: id }),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: roomUnreadCountQueryKey(rid),
+      });
+    },
+    [client, connected, roomId, queryClient],
+  );
 
   const memberMap = useMemo(() => {
     const members = membersData?.members;
@@ -139,6 +156,7 @@ export function useChatMessages(
       setHasMoreNewer(false);
       setIsFetchingOlder(false);
       isFetchingOlderRef.current = false;
+      lastPublishedReadIdRef.current = null;
       return;
     }
 
@@ -173,14 +191,11 @@ export function useChatMessages(
     setInitialScrollAnchorId(undefined);
     let cancelled = false;
 
-    const lastSeenId =
-      userId != null ? getLastSeenMessageId(userId, roomId) : null;
-
     void (async () => {
       try {
         const out = await loadInitialRoomHistory(
           roomId,
-          lastSeenId,
+          null,
           CHAT_MESSAGE_PAGE_SIZE,
         );
         if (cancelled) return;
@@ -198,6 +213,12 @@ export function useChatMessages(
         );
         historyFetchedRoomIdsRef.current.add(gateKey);
         void warmPlacePhotoQueriesFromChatHistory(queryClient, out.warmHistory);
+
+        const newest = newestServerMessageByCreatedAt(out.serverSlice);
+        if (newest) {
+          lastPublishedReadIdRef.current = null;
+          markMessagesRead(newest.id);
+        }
       } catch {
         /* 실패 시 Set에 넣지 않음 → 다음 패널 오픈 시 재시도 */
       }
@@ -206,15 +227,7 @@ export function useChatMessages(
     return () => {
       cancelled = true;
     };
-  }, [roomId, fetchHistory, queryClient, userId]);
-
-  useEffect(() => {
-    if (!fetchHistory) return;
-    if (!roomId || userId == null) return;
-    if (rawMessages.length === 0) return;
-    const newest = newestServerMessageByCreatedAt(rawMessages);
-    if (newest) setLastSeenMessageId(userId, roomId, newest.id);
-  }, [rawMessages, roomId, userId, fetchHistory]);
+  }, [roomId, fetchHistory, queryClient, userId, markMessagesRead]);
 
   const fetchOlderMessages = useCallback(() => {
     const rid = roomId;
@@ -243,7 +256,10 @@ export function useChatMessages(
         setRawMessages((prev) =>
           mergeServerMessageLists(normalizedHistory, prev),
         );
-        void warmPlacePhotoQueriesFromChatHistory(queryClient, normalizedHistory);
+        void warmPlacePhotoQueriesFromChatHistory(
+          queryClient,
+          normalizedHistory,
+        );
       })
       .catch(() => {
         /* 유지: hasMore 그대로, 다음 스크롤에서 재시도 가능 */
@@ -311,5 +327,6 @@ export function useChatMessages(
     hasMoreNewer,
     isFetchingOlder,
     initialScrollAnchorId,
+    markMessagesRead,
   };
 }

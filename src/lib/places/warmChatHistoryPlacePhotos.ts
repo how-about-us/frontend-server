@@ -6,7 +6,7 @@ import {
   collectPlacePhotoNamesFromServerMessages,
 } from "@/lib/chat";
 import { resolvePlaceCardEnrichmentFromPlaceId } from "@/lib/places/placeCardEnrichment";
-import { placePhotoUrlQueryKey } from "@/lib/room-cover-query";
+import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
 import type { ServerChatMessage } from "@/types/chat";
 
 /**
@@ -26,7 +26,8 @@ export async function warmPlacePhotoQueriesFromChatHistory(
   );
   for (const r of backfillResults) {
     if (r.status !== "fulfilled" || !r.value?.photoName) continue;
-    const pn = typeof r.value.photoName === "string" ? r.value.photoName.trim() : "";
+    const pn =
+      typeof r.value.photoName === "string" ? r.value.photoName.trim() : "";
     if (pn.length > 0) names.add(pn);
   }
 

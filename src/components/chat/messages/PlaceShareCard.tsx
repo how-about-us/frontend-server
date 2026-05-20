@@ -1,6 +1,6 @@
 "use client";
 
-import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
@@ -78,13 +78,13 @@ export function PlaceShareCard({
         layout="position"
         className="flex flex-col items-center gap-1"
         transition={
-          reduceMotion ?
-            { duration: 0 }
-          : {
-              type: "tween",
-              duration: 0.18,
-              ease: [0.25, 0.1, 0.25, 1],
-            }
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                type: "tween",
+                duration: 0.18,
+                ease: [0.25, 0.1, 0.25, 1],
+              }
         }
       >
         <ChatMemberAvatarRing

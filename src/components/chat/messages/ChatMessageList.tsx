@@ -50,6 +50,7 @@ export function ChatMessageList({
   hasMoreNewer = false,
   onJumpToLatest,
   initialScrollAnchorId,
+  onAtBottom,
 }: {
   messages: ChatMessage[];
   isMinimized?: boolean;
@@ -61,6 +62,8 @@ export function ChatMessageList({
   onJumpToLatest?: () => void;
   /** 최초 로드 시 이 메시지로 스크롤 정렬 (없으면 최하단) */
   initialScrollAnchorId?: string;
+  /** 스크롤이 하단 근처일 때 읽음 처리 */
+  onAtBottom?: () => void;
 }) {
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -125,7 +128,8 @@ export function ChatMessageList({
     const near = dist < NEAR_BOTTOM_PX;
     followTailRef.current = near;
     setIsAtBottom(near);
-  }, []);
+    if (near) onAtBottom?.();
+  }, [onAtBottom]);
 
   useLayoutEffect(() => {
     const root = scrollRootRef.current;

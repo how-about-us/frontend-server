@@ -2,7 +2,7 @@
 
 import { MapPin, Star } from "lucide-react";
 
-import { usePlacePhotoUrlQuery } from "@/hooks/useRoomCoverPhoto";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +48,7 @@ export function OgPlacePreviewCard({
           isMinimized ? "h-[72px] w-[72px]" : "h-[88px] w-[88px]",
         )}
       >
-        {imageUrl ?
+        {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- 동적 장소 사진 URL (원격 패턴 비고정)
           <img
             src={imageUrl}
@@ -56,7 +56,8 @@ export function OgPlacePreviewCard({
             className="h-full w-full object-cover"
             loading="lazy"
           />
-        : <div className="flex h-full w-full items-center justify-center">
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
             <MapPin
               className={cn(
                 "text-gray-300",
@@ -64,7 +65,7 @@ export function OgPlacePreviewCard({
               )}
             />
           </div>
-        }
+        )}
       </div>
       <div
         className={cn(
@@ -72,9 +73,7 @@ export function OgPlacePreviewCard({
           isMinimized ? "gap-0.5 px-2 py-1.5" : "gap-1 px-3 py-2",
         )}
       >
-        <div className={cn("truncate", typo.placeTitle)}>
-          {name}
-        </div>
+        <div className={cn("truncate", typo.placeTitle)}>{name}</div>
         <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0">
           <Star
             className={cn(
@@ -83,17 +82,17 @@ export function OgPlacePreviewCard({
             )}
           />
           <span className={typo.placeRating}>
-            {rating != null && Number.isFinite(rating) ?
-              rating.toFixed(1)
-            : "-"}
+            {rating != null && Number.isFinite(rating)
+              ? rating.toFixed(1)
+              : "-"}
           </span>
-          {userRatingCount != null && Number.isFinite(userRatingCount) ?
+          {userRatingCount != null && Number.isFinite(userRatingCount) ? (
             <span className={cn("shrink-0", typo.placeAddress)}>
               ({Math.round(userRatingCount).toLocaleString()})
             </span>
-          : null}
+          ) : null}
         </div>
-        {formattedAddress ?
+        {formattedAddress ? (
           <div className="flex items-center gap-1">
             <MapPin
               className={cn(
@@ -105,7 +104,7 @@ export function OgPlacePreviewCard({
               {formattedAddress}
             </span>
           </div>
-        : null}
+        ) : null}
       </div>
     </button>
   );

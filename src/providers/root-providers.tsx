@@ -1,23 +1,15 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { useEffect, useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
 import { reconcileClientSession } from "@/lib/auth";
-import {
-  ROOM_COVER_PERSIST_STORAGE_KEY,
-  dehydrateRoomCoverOnly,
-  getRoomCoverPersistStorage,
-} from "@/lib/room-cover-query";
 import { createQueryClient } from "@/lib/query-client";
-
-const ROOM_COVER_PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14;
 
 /**
  * 전역 레이아웃용 Provider 순서 —
@@ -27,22 +19,6 @@ const ROOM_COVER_PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 14;
  */
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
-
-  const persistOptions = useMemo(
-    () =>
-      ({
-        persister: createSyncStoragePersister({
-          storage: getRoomCoverPersistStorage(),
-          key: ROOM_COVER_PERSIST_STORAGE_KEY,
-          throttleTime: 1000,
-        }),
-        maxAge: ROOM_COVER_PERSIST_MAX_AGE_MS,
-        dehydrateOptions: {
-          shouldDehydrateQuery: dehydrateRoomCoverOnly,
-        },
-      }) as const,
-    [],
-  );
 
   /** `users/me`로 메모리 `user` 정합 (방 ID는 위 동기 부팅에서 이미 시드) */
   useEffect(() => {
@@ -68,7 +44,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+    <QueryClientProvider client={queryClient}>
       <StompProvider>
         <GoogleMapsProvider>
           {children}
@@ -76,6 +52,6 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
         </GoogleMapsProvider>
       </StompProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 }

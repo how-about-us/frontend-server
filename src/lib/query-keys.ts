@@ -63,6 +63,24 @@ export function aiRecommendedPlaceEnrichmentQueryKey(googlePlaceId: string) {
   return [AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT, id] as const;
 }
 
+// ─── Place photos ────────────────────────────────────────────────────────────
+
+const PLACE_PHOTO_QUERY_GC_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** `usePlacePhotoUrlQuery` — 같은 `photoName`에 대해 불필요한 `GET /places/photos` 재호출 방지 */
+export const placePhotoUrlQueryDefaults = {
+  staleTime: Infinity,
+  gcTime: PLACE_PHOTO_QUERY_GC_MS,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+} as const;
+
+export function placePhotoUrlQueryKey(photoName: string) {
+  const n = typeof photoName === "string" ? photoName.trim() : "";
+  return ["places", "photoUrl", n] as const;
+}
+
 // ─── Plan itinerary map path (per segment, Google Directions JS) ─────────────
 
 const PLAN_ITINERARY_MAP_PATH_CACHE_VERSION = "orient-v1" as const;
@@ -106,6 +124,10 @@ export function roomDetailQueryKey(roomId: string) {
 
 export function roomMembersQueryKey(roomId: string | null) {
   return ["room-members", roomId] as const;
+}
+
+export function roomUnreadCountQueryKey(roomId: string | null) {
+  return ["room-unread-count", roomId] as const;
 }
 
 export function joinRequestsQueryKey(roomId: string | null) {

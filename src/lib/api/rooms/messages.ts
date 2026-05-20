@@ -15,3 +15,15 @@ export async function getRoomMessages(
     errorMessage: "메시지 목록 조회 실패",
   });
 }
+
+export async function getRoomUnreadCount(
+  roomId: string,
+): Promise<{ unreadCount: number }> {
+  return requestJson(
+    apiUrl(`/rooms/${roomId}/messages/unread-count`),
+    undefined,
+    {
+      errorMessage: "안읽은 메시지 수 조회 실패",
+    },
+  );
+}
