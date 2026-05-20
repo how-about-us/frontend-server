@@ -50,10 +50,7 @@ export function ChatPanel() {
     enabled: rid.length > 0,
   });
 
-  const title =
-    sessionRoomTitle?.trim() ||
-    roomDetail?.title?.trim() ||
-    "채팅";
+  const title = sessionRoomTitle?.trim() || roomDetail?.title?.trim() || "채팅";
 
   function handlePlusClick() {
     if (!rid) return;

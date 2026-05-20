@@ -6,7 +6,6 @@ import { MapPin } from "lucide-react";
 import { RoomListItem } from "@/lib/api/rooms";
 import { planPathForRoom } from "@/lib/join-room-workflow";
 import { isHostRole } from "@/lib/rooms";
-import { useRoomUnreadCount } from "@/hooks/useRooms";
 import { getRoomGradient } from "@/stores/rooms-store";
 import { useSessionStore } from "@/stores/session-store";
 import { RoomCardMenu } from "./RoomCardMenu";
@@ -21,10 +20,6 @@ type Props = {
 export function RoomCard({ room, onEdit, onDelete }: Props) {
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const gradient = getRoomGradient(room.id);
-
-  const { data: unreadData } = useRoomUnreadCount(room.id);
-  const unreadCount = unreadData?.unreadCount ?? 0;
-  const unreadLabel = unreadCount >= 100 ? "99+" : String(unreadCount);
 
   const dateStr = formatDateRange(room.startDate, room.endDate);
   const planPath = planPathForRoom(room.id);
@@ -58,12 +53,6 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
             ) : null}
           </div>
         </div>
-
-        {unreadCount > 0 ? (
-          <span className="absolute bottom-3 right-3 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-red px-1.5 text-[10px] font-bold text-white">
-            {unreadLabel}
-          </span>
-        ) : null}
       </Link>
 
       {isHostRole(room.role) ? (

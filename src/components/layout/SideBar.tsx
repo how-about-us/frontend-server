@@ -35,11 +35,7 @@ function SideBar() {
         }`}
         aria-label="sidebar-chat"
       >
-        <img
-          src="/chat.svg"
-          alt=""
-          className="h-9 w-9 brightness-0 invert"
-        />
+        <img src="/chat.svg" alt="" className="h-9 w-9 brightness-0 invert" />
 
         <SidebarChatUnreadBadge />
       </button>

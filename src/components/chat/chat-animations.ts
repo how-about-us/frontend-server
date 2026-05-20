@@ -57,8 +57,7 @@ export function getChatMessageMotion(
   }
 
   const fromRight =
-    type === "mine" ||
-    (type === "place" && Boolean(options?.placeIsMine));
+    type === "mine" || (type === "place" && Boolean(options?.placeIsMine));
 
   if (fromRight) {
     return {
@@ -74,7 +73,11 @@ export function getChatMessageMotion(
 }
 
 export const chatTapSoft = { scale: 0.96 };
-export const chatTapTransition = { type: "spring", stiffness: 500, damping: 28 } as const;
+export const chatTapTransition = {
+  type: "spring",
+  stiffness: 500,
+  damping: 28,
+} as const;
 
 export const chatAiLabelMotion = {
   initial: { opacity: 0, x: -6 },
@@ -88,4 +91,3 @@ export const chatPlaceShareBannerSweepDurationSec = 2.7 as const;
 
 /** 같은 배너 배경 레드 글로우(밝아졌다 어두워졌다) 펄스 주기(s) */
 export const chatPlaceShareBannerGlowDurationSec = 2.35 as const;
-

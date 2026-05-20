@@ -17,8 +17,8 @@ import { getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
+import { useChatMessageRead } from "@/hooks/useChatMessageRead";
 import { warmPlacePhotoQueriesFromChatHistory } from "@/lib/places/warmChatHistoryPlacePhotos";
-import { roomUnreadCountQueryKey } from "@/lib/query-keys";
 import {
   hasOlderHistoryPage,
   loadInitialRoomHistory,
@@ -49,7 +49,7 @@ export function useChatMessages(
 ) {
   const { fetchHistory } = options;
   const queryClient = useQueryClient();
-  const { client, connected, setRoomChatMessageHandler } = useStompContext();
+  const { setRoomChatMessageHandler } = useStompContext();
   const userId = useSessionStore((s) => s.user?.id);
   const { data: membersData } = useRoomMembers(roomId);
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
@@ -71,30 +71,14 @@ export function useChatMessages(
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
   const isFetchingOlderRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
-  const lastPublishedReadIdRef = useRef<string | null>(null);
   rawMessagesRef.current = rawMessages;
 
-  const markMessagesRead = useCallback(
-    (messageId?: string) => {
-      const rid = roomId?.trim();
-      if (!rid || !client || !connected) return;
-
-      const id =
-        messageId?.trim() ||
-        newestServerMessageByCreatedAt(rawMessagesRef.current)?.id;
-      if (!id || id === lastPublishedReadIdRef.current) return;
-
-      lastPublishedReadIdRef.current = id;
-      client.publish({
-        destination: `/app/rooms/${rid}/messages/read`,
-        body: JSON.stringify({ lastReadMessageId: id }),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: roomUnreadCountQueryKey(rid),
-      });
-    },
-    [client, connected, roomId, queryClient],
-  );
+  const { markMessagesRead, resetReadDedup, onIncomingMessage } =
+    useChatMessageRead({
+      roomId,
+      panelOpen: fetchHistory,
+      rawMessagesRef,
+    });
 
   const memberMap = useMemo(() => {
     const members = membersData?.members;
@@ -156,7 +140,6 @@ export function useChatMessages(
       setHasMoreNewer(false);
       setIsFetchingOlder(false);
       isFetchingOlderRef.current = false;
-      lastPublishedReadIdRef.current = null;
       return;
     }
 
@@ -216,7 +199,7 @@ export function useChatMessages(
 
         const newest = newestServerMessageByCreatedAt(out.serverSlice);
         if (newest) {
-          lastPublishedReadIdRef.current = null;
+          resetReadDedup();
           markMessagesRead(newest.id);
         }
       } catch {
@@ -227,7 +210,14 @@ export function useChatMessages(
     return () => {
       cancelled = true;
     };
-  }, [roomId, fetchHistory, queryClient, userId, markMessagesRead]);
+  }, [
+    roomId,
+    fetchHistory,
+    queryClient,
+    userId,
+    markMessagesRead,
+    resetReadDedup,
+  ]);
 
   const fetchOlderMessages = useCallback(() => {
     const rid = roomId;
@@ -304,6 +294,7 @@ export function useChatMessages(
     }
 
     const handler = (msg: ServerChatMessage) => {
+      const isNew = !rawMessagesRef.current.some((m) => m.id === msg.id);
       setRawMessages((prev) => {
         const i = prev.findIndex((m) => m.id === msg.id);
         if (i < 0) return [...prev, msg];
@@ -311,10 +302,11 @@ export function useChatMessages(
         next[i] = msg;
         return next;
       });
+      onIncomingMessage(msg, isNew);
     };
     setRoomChatMessageHandler(handler);
     return () => setRoomChatMessageHandler(null);
-  }, [roomId, setRoomChatMessageHandler]);
+  }, [roomId, setRoomChatMessageHandler, onIncomingMessage]);
 
   return {
     messages,

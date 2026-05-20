@@ -1,16 +1,16 @@
 import { create } from "zustand";
 
-/** 채팅 패널 UI(메인 크롬) */
+/** 채팅 패널 UI 크롬 (열림·최소화·닫힘) */
 export type ChatState = "closed" | "minimized" | "maximized";
 
-interface ChatUnreadStore {
+interface ChatPanelStore {
   chatState: ChatState;
   openChat: () => void;
   minimizeChat: () => void;
   closeChat: () => void;
 }
 
-export const useChatUnreadStore = create<ChatUnreadStore>((set) => ({
+export const useChatPanelStore = create<ChatPanelStore>((set) => ({
   chatState: "closed",
   openChat: () => set({ chatState: "maximized" }),
   minimizeChat: () => set({ chatState: "minimized" }),

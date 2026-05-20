@@ -30,7 +30,6 @@ import {
   getJoinStatus,
   getRoomBookmarks,
   getRoomMembers,
-  getRoomUnreadCount,
   getRoomSchedules,
   patchRoomBookmarkCategory,
   getRooms,
@@ -66,7 +65,6 @@ import {
   ROOMS_QUERY_KEY,
   roomDetailQueryKey,
   roomMembersQueryKey,
-  roomUnreadCountQueryKey,
   roomSchedulesQueryKey,
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
@@ -361,16 +359,6 @@ export function useDeleteRoom() {
 export function useRegenerateInviteCode() {
   return useMutation({
     mutationFn: (roomId: string) => regenerateInviteCode(roomId),
-  });
-}
-
-export function useRoomUnreadCount(roomId: string | null) {
-  const id = roomId?.trim() ?? "";
-  return useQuery({
-    queryKey: roomUnreadCountQueryKey(id || null),
-    queryFn: () => getRoomUnreadCount(id),
-    enabled: id.length > 0,
-    staleTime: 30_000,
   });
 }
 

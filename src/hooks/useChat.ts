@@ -2,13 +2,13 @@
 
 import { useShallow } from "zustand/react/shallow";
 
-import type { ChatState } from "@/stores/chat-unread-store";
-import { useChatUnreadStore } from "@/stores/chat-unread-store";
+import type { ChatState } from "@/stores/chat-panel-store";
+import { useChatPanelStore } from "@/stores/chat-panel-store";
 
 export type { ChatState };
 
 export function useChat() {
-  return useChatUnreadStore(
+  return useChatPanelStore(
     useShallow((s) => ({
       chatState: s.chatState,
       openChat: s.openChat,
