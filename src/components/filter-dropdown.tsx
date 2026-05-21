@@ -5,6 +5,8 @@ import { useRef, useState } from "react";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { cn } from "@/lib/utils";
 
+import { mapChipButtonClassName } from "@/components/map/map-chip-button";
+
 export type FilterOption<T extends string> = { label: string; value: T };
 
 interface FilterDropdownProps<T extends string> {
@@ -32,18 +34,13 @@ export function FilterDropdown<T extends string>({
       <button
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition",
-          isActive
-            ? "bg-brand-green text-white"
-            : "bg-white text-black hover:bg-gray-50",
+          "flex items-center gap-1",
+          mapChipButtonClassName(isActive),
         )}
       >
         <span>{isActive ? selectedLabel : label}</span>
         <svg
-          className={cn(
-            "h-3 w-3 transition-transform",
-            open && "rotate-180",
-          )}
+          className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
           viewBox="0 0 12 12"
           fill="none"
           stroke="currentColor"
@@ -67,7 +64,7 @@ export function FilterDropdown<T extends string>({
               className={cn(
                 "w-full cursor-pointer px-3 py-2 text-left text-xs transition hover:bg-gray-50",
                 value === opt.value
-                  ? "font-semibold text-brand-green"
+                  ? "font-semibold text-brand-red"
                   : "text-black",
               )}
             >

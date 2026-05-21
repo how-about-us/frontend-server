@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { RoomListItem } from "@/lib/api/rooms";
 import { RoomCard } from "./RoomCard";
 
@@ -54,12 +52,6 @@ export function RoomGrid({
         <p className="mt-1 text-xs text-light-gray">
           새 여행 계획을 만들어 시작해보세요
         </p>
-        <Link
-          href="/home/new"
-          className="mt-4 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-        >
-          + 새 여행 계획
-        </Link>
       </div>
     );
   }

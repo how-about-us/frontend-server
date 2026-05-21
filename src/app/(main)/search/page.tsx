@@ -204,7 +204,7 @@ export default function SearchPage() {
       <SetSectionMaxWidth value="s1" />
 
       {/* 검색 입력 */}
-      <div className="shrink-0 border-b border-gray-border pl-4 pr-3 pb-4">
+      <div className="shrink-0 pl-4 pr-3 pb-4">
         <PlacesSearchInput
           coords={mapCenter}
           urlQuery={qParam}
@@ -350,15 +350,18 @@ export default function SearchPage() {
           </div>
         )}
 
-        {results &&
-          results.length > 0 &&
-          results.map((result, i) => (
-            <SearchResultCard
-              key={result.googlePlaceId ?? i}
-              {...result}
-              onClick={() => handleCardClick(result)}
-            />
-          ))}
+        {results && results.length > 0 && (
+          <div className="flex flex-col gap-3 px-4 py-4 pb-6">
+            {results.map((result, i) => (
+              <SearchResultCard
+                key={result.googlePlaceId ?? i}
+                {...result}
+                variant="card"
+                onClick={() => handleCardClick(result)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -76,19 +76,17 @@ export function PlanDaySection({
 
   return (
     <section
-      className="bg-white"
+      className="overflow-hidden rounded-2xl border border-gray-border bg-white"
       aria-label={subtitle ? `${title} ${subtitle}` : title}
     >
-      <div
-        className={`relative flex w-full items-stretch gap-0.5 py-3.5 ${!expanded ? "border-b border-gray-border" : ""}`}
-      >
+      <div className="relative flex w-full items-stretch gap-0.5 px-4 py-3.5">
         <button
           type="button"
           id={`${panelId}-trigger`}
           aria-expanded={expanded}
           aria-controls={`${panelId}-panel`}
           onClick={toggle}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left transition-colors hover:bg-bubble-gray/60"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
         >
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-gray-900">{title}</h2>

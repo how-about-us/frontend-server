@@ -1,5 +1,9 @@
+import { Check } from "lucide-react";
+
 import { FilterDropdown } from "@/components/filter-dropdown";
 import { cn } from "@/lib/utils";
+
+import { mapChipButtonClassName } from "./map-chip-button";
 
 import {
   RATING_OPTIONS,
@@ -37,12 +41,13 @@ export default function MapFilter({
         aria-pressed={isOpenOnly}
         onClick={() => setOpenNow(isOpenOnly ? "all" : "open")}
         className={cn(
-          "shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition",
-          isOpenOnly
-            ? "bg-white text-brand-green ring-2 ring-brand-green ring-offset-1"
-            : "bg-white text-black hover:bg-gray-50",
+          "inline-flex items-center gap-1",
+          mapChipButtonClassName(!isOpenOnly),
         )}
       >
+        {isOpenOnly ? (
+          <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+        ) : null}
         영업 중
       </button>
     </div>

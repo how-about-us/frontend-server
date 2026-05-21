@@ -21,6 +21,7 @@ type Props = {
   ) => void;
   placeholder?: string;
   autoFocus?: boolean;
+  showLeadingIcon?: boolean;
 };
 
 /**
@@ -33,6 +34,7 @@ export function DestinationSearchInput({
   onResolvedPlace,
   placeholder = "예: 도쿄, 파리, 제주도",
   autoFocus = false,
+  showLeadingIcon = true,
 }: Props) {
   const placesLib = useMapsLibrary("places");
 
@@ -148,7 +150,9 @@ export function DestinationSearchInput({
   return (
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2">
-        <MapPin size={15} className="shrink-0 text-dark-gray" />
+        {showLeadingIcon ? (
+          <MapPin size={15} className="shrink-0 text-dark-gray" />
+        ) : null}
         <input
           ref={inputRef}
           type="text"

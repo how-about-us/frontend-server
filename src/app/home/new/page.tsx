@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Calendar } from "lucide-react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -13,10 +12,53 @@ import {
   isTripDurationWithinLimit,
   MAX_TRIP_DAYS,
 } from "@/lib/plan/tripRange";
+import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
 const TITLE_MAX_LENGTH = 20;
+
+const DATE_INPUT_CLASS =
+  "relative w-full cursor-pointer border-0 bg-transparent p-0 pl-7 text-sm outline-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-datetime-edit]:text-inherit";
+
+type DateFieldProps = {
+  id: string;
+  value: string;
+  min?: string;
+  onChange: (value: string) => void;
+};
+
+function DateField({ id, value, min, onChange }: DateFieldProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = (e: React.MouseEvent) => {
+    e.preventDefault();
+    inputRef.current?.showPicker?.();
+  };
+
+  return (
+    <label
+      htmlFor={id}
+      onClick={openPicker}
+      className="relative flex flex-1 cursor-pointer items-center"
+    >
+      <input
+        id={id}
+        ref={inputRef}
+        type="date"
+        value={value}
+        min={min}
+        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+          onChange(e.target.value)
+        }
+        className={cn(
+          DATE_INPUT_CLASS,
+          value ? "text-dark-gray" : "text-light-gray",
+        )}
+      />
+    </label>
+  );
+}
 
 export default function NewTripPage() {
   const router = useRouter();
@@ -32,17 +74,15 @@ export default function NewTripPage() {
   const { mutate: createRoom, isPending, error } = useCreateRoom();
 
   const todayYmd = formatDateYmd(new Date());
-  const endDateMin =
-    startDate && startDate > todayYmd ? startDate : todayYmd;
+  const endDateMin = startDate && startDate > todayYmd ? startDate : todayYmd;
 
-  const dateRangeInvalid =
-    Boolean(startDate && endDate && endDate < startDate);
+  const dateRangeInvalid = Boolean(startDate && endDate && endDate < startDate);
 
   const tripDurationInvalid = Boolean(
     startDate &&
-      endDate &&
-      !dateRangeInvalid &&
-      !isTripDurationWithinLimit(startDate, endDate),
+    endDate &&
+    !dateRangeInvalid &&
+    !isTripDurationWithinLimit(startDate, endDate),
   );
 
   const canSubmit =
@@ -82,11 +122,11 @@ export default function NewTripPage() {
             href="/home"
             className="inline-flex rounded-md outline-none ring-offset-2 transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-brand-red"
           >
-            <BrandLogo alt="로고" />
+            <BrandLogo alt="로고" style={{ width: 116, height: 66 }} />
           </Link>
         </div>
 
-        <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-black">
+        <h1 className="mb-8 text-center text-2xl font-bold tracking-tight text-black">
           새로운 여행 계획하기
         </h1>
 
@@ -116,33 +156,26 @@ export default function NewTripPage() {
             <DestinationSearchInput
               value={destination}
               onChange={setDestination}
+              showLeadingIcon={false}
             />
           </div>
 
           <div className="rounded-2xl border-2 border-gray-border bg-white px-5 py-4 transition focus-within:border-brand-red">
-            <p className="mb-2.5 text-sm font-bold text-dark-gray">날짜</p>
+            <p className="mb-1.5 text-sm font-bold text-black">날짜</p>
             <div className="flex items-center gap-3">
-              <label className="flex flex-1 cursor-pointer items-center gap-2">
-                <Calendar size={15} className="shrink-0 text-dark-gray" />
-                <input
-                  type="date"
-                  value={startDate}
-                  min={todayYmd}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full text-sm text-dark-gray outline-none"
-                />
-              </label>
+              <DateField
+                id="trip-start-date"
+                value={startDate}
+                min={todayYmd}
+                onChange={setStartDate}
+              />
               <span className="select-none text-light-gray">|</span>
-              <label className="flex flex-1 cursor-pointer items-center gap-2">
-                <Calendar size={15} className="shrink-0 text-dark-gray" />
-                <input
-                  type="date"
-                  value={endDate}
-                  min={endDateMin}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full text-sm text-dark-gray outline-none"
-                />
-              </label>
+              <DateField
+                id="trip-end-date"
+                value={endDate}
+                min={endDateMin}
+                onChange={setEndDate}
+              />
             </div>
             {dateRangeInvalid && (
               <p className="mt-2 text-xs text-brand-red">

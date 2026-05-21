@@ -16,16 +16,24 @@ export function SearchResultCard({
   address,
   onClick,
   className,
-}: SearchResultCardProps & { onClick?: () => void; className?: string }) {
+  variant = "list",
+}: SearchResultCardProps & {
+  onClick?: () => void;
+  className?: string;
+  variant?: "list" | "card";
+}) {
   return (
     <article
       className={cn(
-        "flex items-center gap-3 border-b border-gray-border bg-white px-4 py-2 transition-colors hover:bg-gray-50 active:bg-gray-100",
+        "flex items-center gap-3 bg-white transition-colors",
+        variant === "card"
+          ? "cursor-pointer rounded-2xl border border-gray-border px-4 py-3 shadow-sm hover:bg-gray-50 active:bg-bubble-gray/60"
+          : "border-b border-gray-border px-4 py-2 hover:bg-gray-50 active:bg-gray-100",
         className,
       )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
-      style={onClick ? { cursor: "pointer" } : undefined}
+      style={onClick && variant === "list" ? { cursor: "pointer" } : undefined}
     >
       {/* Text content */}
       <div className="min-w-0 flex-1">
