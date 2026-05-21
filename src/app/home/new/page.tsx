@@ -8,7 +8,11 @@ import { Calendar } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCreateRoom } from "@/hooks/useRooms";
-import { formatDateYmd } from "@/lib/plan/tripRange";
+import {
+  formatDateYmd,
+  isTripDurationWithinLimit,
+  MAX_TRIP_DAYS,
+} from "@/lib/plan/tripRange";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 
@@ -34,16 +38,24 @@ export default function NewTripPage() {
   const dateRangeInvalid =
     Boolean(startDate && endDate && endDate < startDate);
 
+  const tripDurationInvalid = Boolean(
+    startDate &&
+      endDate &&
+      !dateRangeInvalid &&
+      !isTripDurationWithinLimit(startDate, endDate),
+  );
+
   const canSubmit =
     title.trim() &&
     destination.trim() &&
     startDate &&
     endDate &&
     !isPending &&
-    !dateRangeInvalid;
+    !dateRangeInvalid &&
+    !tripDurationInvalid;
 
   const handleSubmit = () => {
-    if (!canSubmit || dateRangeInvalid) return;
+    if (!canSubmit || dateRangeInvalid || tripDurationInvalid) return;
 
     createRoom(
       {
@@ -135,6 +147,11 @@ export default function NewTripPage() {
             {dateRangeInvalid && (
               <p className="mt-2 text-xs text-brand-red">
                 종료일은 시작일 이후여야 해요.
+              </p>
+            )}
+            {tripDurationInvalid && (
+              <p className="mt-2 text-xs text-brand-red">
+                여행 기간은 최대 {MAX_TRIP_DAYS}일까지예요.
               </p>
             )}
           </div>

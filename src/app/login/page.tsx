@@ -71,7 +71,7 @@ function LoginPageContent() {
           <div className="flex flex-col items-center gap-3">
             <BrandLogo alt="" style={{ width: 116, height: 66 }} />
             <p className="text-sm leading-relaxed text-dark-gray">
-              Google 계정으로 로그인하고 여행 계획을 이어가세요.
+              로그인하고 여행 계획을 이어가세요!
             </p>
           </div>
 

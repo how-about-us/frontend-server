@@ -22,8 +22,7 @@ export default function HomePage() {
       <HomeHeader />
 
       <main className="mx-auto max-w-5xl px-6 py-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">나의 여행 계획</h1>
+        <div className="flex items-center justify-end">
           <Link
             href="/home/new"
             className="flex items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"

@@ -80,7 +80,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       if (firstHardError) {
         const parts = [firstHardError.message];
         if (added > 0) {
-          parts.push(`추가한 리스트는 ${added}개예요`);
+          parts.push(`추가한 북마크는 ${added}개예요`);
         }
         setSubmitFeedback({
           message: parts.join(" "),
@@ -90,7 +90,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       }
       if (added > 0 && skippedDuplicate > 0) {
         setSubmitFeedback({
-          message: `${added}개 리스트에 추가했어요. ${skippedDuplicate}개 리스트에는 이미 이 장소가 있어요.`,
+          message: `${added}개 북마크에 추가했어요. ${skippedDuplicate}개 북마크에는 이미 이 장소가 있어요.`,
           variant: "neutral",
         });
       } else if (added === 0 && skippedDuplicate > 0) {
@@ -107,7 +107,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
     if (!roomId || isAddingBookmarks) return;
     if (selectedAsArray.length === 0) {
       setSubmitFeedback({
-        message: "리스트를 하나 이상 선택해 주세요.",
+        message: "북마크를 하나 이상 선택해 주세요.",
         variant: "error",
       });
       return;
@@ -205,8 +205,8 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           >
             북마크에 추가
           </h2>
-          <p className="mt-1 text-sm text-dark-gray">
-            담을 리스트를 선택한 뒤 추가를 눌러 주세요.
+          <p className="mt-1 text-xs leading-relaxed text-dark-gray break-keep text-pretty">
+            북마크를 선택한 뒤 추가해 주세요.
           </p>
         </div>
 
@@ -220,8 +220,8 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
               "disabled:opacity-55",
             )}
           >
-            <Plus className="size-5 shrink-0 stroke-[2.25]" aria-hidden />새
-            리스트 만들기
+            <Plus className="size-4 shrink-0 stroke-[2.25]" aria-hidden />
+            <span className="break-keep">새 북마크 만들기</span>
           </button>
 
           {categoriesLoading && (
@@ -248,9 +248,9 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           )}
 
           {categories && categories.length === 0 && !categoriesLoading && (
-            <div className="px-5 py-6 text-center">
-              <p className="text-sm text-dark-gray">
-                북마크 리스트가 없습니다. 새로 만들어 주세요.
+            <div className="px-5 py-8 text-center">
+              <p className="text-xs leading-relaxed text-dark-gray break-keep text-pretty">
+                아직 북마크가 없어요.
               </p>
             </div>
           )}
@@ -268,7 +268,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
                       type="button"
                       disabled={isAddingBookmarks}
                       aria-pressed={sel}
-                      aria-label={`${c.name} 리스트에서 ${sel ? "선택 해제" : "선택"}`}
+                      aria-label={`${c.name} 북마크에서 ${sel ? "선택 해제" : "선택"}`}
                       onClick={() => toggleCategory(c.categoryId)}
                       className={cn(
                         "flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-black/[0.02]",

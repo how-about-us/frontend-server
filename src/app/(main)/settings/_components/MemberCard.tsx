@@ -85,9 +85,6 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
           <span className="truncate text-sm font-medium text-gray-800">
             {member.name}
           </span>
-          {member.isCurrentUser && (
-            <span className="text-xs text-dark-gray">(나)</span>
-          )}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-1">
           <span

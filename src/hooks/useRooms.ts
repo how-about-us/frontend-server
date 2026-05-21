@@ -60,6 +60,10 @@ import {
 } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
+  isTripDurationWithinLimit,
+  MAX_TRIP_DAYS,
+} from "@/lib/plan/tripRange";
+import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
   roomBookmarksQueryKey,
@@ -90,6 +94,9 @@ export function useCreateRoom() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: RoomCreateRequest) => {
+      if (!isTripDurationWithinLimit(data.startDate, data.endDate)) {
+        throw new Error(`여행 기간은 최대 ${MAX_TRIP_DAYS}일까지예요.`);
+      }
       const room = await createRoom(data);
       await seedRoomSchedules(room.id, data.startDate, data.endDate);
       return room;

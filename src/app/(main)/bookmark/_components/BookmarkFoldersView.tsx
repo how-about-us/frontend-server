@@ -102,7 +102,7 @@ export function BookmarkFoldersView() {
             setFolderFormError(
               messageForBookmarkCategorySaveError(
                 e,
-                "리스트를 수정하지 못했습니다.",
+                "북마크를 수정하지 못했습니다.",
               ),
             );
           },
@@ -123,7 +123,7 @@ export function BookmarkFoldersView() {
           setFolderFormError(
             messageForBookmarkCategorySaveError(
               e,
-              "리스트를 추가하지 못했습니다.",
+              "북마크를 추가하지 못했습니다.",
             ),
           );
         },

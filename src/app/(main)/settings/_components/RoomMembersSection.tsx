@@ -86,10 +86,8 @@ export function RoomMembersSection() {
 
   return (
     <div className="relative flex flex-col gap-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-800">멤버 관리</h2>
-        {isHost && (
+      {isHost && (
+        <div className="flex items-center justify-end">
           <button
             onClick={() => {
               setShowInvitePanel((open) => {
@@ -116,8 +114,8 @@ export function RoomMembersSection() {
             </svg>
             멤버 초대
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 멤버 초대 패널 */}
       {showInvitePanel && currentRoomId && (
