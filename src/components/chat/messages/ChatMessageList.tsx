@@ -227,19 +227,15 @@ export function ChatMessageList({
     };
   }, [smoothJumpToBottom]);
 
-  const showScrollbar = !isAtBottom || smoothJumpToBottom;
-
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={scrollRootRef}
         onScroll={handleScroll}
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white px-3 py-2",
-          showScrollbar
-            ? "[scrollbar-color:#cbd5e1_transparent]"
-            : "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          isMinimized && "px-2 py-1.5",
+          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white py-2 pl-3 pr-0.9",
+          "[scrollbar-gutter:stable] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent",
+          isMinimized && "py-1.5 pl-2 pr-0.7",
         )}
       >
         <div

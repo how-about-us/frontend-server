@@ -42,9 +42,7 @@ function AiRequestMetaRow({
       <div
         className={cn(
           "mt-1 flex max-w-full text-xs",
-          isOwnMessage ?
-            "w-auto self-end justify-end"
-          : "w-full justify-start",
+          isOwnMessage ? "w-auto self-end justify-end" : "w-full justify-start",
           typo.metaMuted,
         )}
       >
@@ -57,9 +55,7 @@ function AiRequestMetaRow({
     <div
       className={cn(
         "mt-1 flex max-w-full flex-row flex-wrap items-center gap-x-2 gap-y-1 text-xs",
-        isOwnMessage ?
-          "w-auto self-end justify-end"
-        : "w-full justify-start",
+        isOwnMessage ? "w-auto self-end justify-end" : "w-full justify-start",
         typo.metaMuted,
       )}
     >
@@ -102,7 +98,9 @@ function BubbleMessageText({
   if (!msg.isAiRequest) return msg.text;
   return (
     <>
-      <span className={typo.aiRequestBubblePrefix}>{CHAT_AI_MENTION_LABEL}</span>
+      <span className={typo.aiRequestBubblePrefix}>
+        {CHAT_AI_MENTION_LABEL}
+      </span>
       {msg.text ? (
         <>
           {" "}
@@ -143,13 +141,13 @@ export function OtherMessageGroup({
         layout="position"
         className="flex flex-col items-center gap-1"
         transition={
-          reduceMotion ?
-            { duration: 0 }
-          : {
-              type: "tween",
-              duration: 0.18,
-              ease: [0.25, 0.1, 0.25, 1],
-            }
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                type: "tween",
+                duration: 0.18,
+                ease: [0.25, 0.1, 0.25, 1],
+              }
         }
       >
         <ChatMemberAvatarRing
@@ -179,11 +177,7 @@ export function OtherMessageGroup({
                 <BubbleMessageText msg={msg} typo={typo} />
               </div>
               {msg.isAiRequest ? (
-                <AiRequestMetaRow
-                  msg={msg}
-                  typo={typo}
-                  isOwnMessage={false}
-                />
+                <AiRequestMetaRow msg={msg} typo={typo} isOwnMessage={false} />
               ) : null}
             </div>
           ))}
@@ -275,20 +269,17 @@ export function AiMessageGroup({
         layout="position"
         className="flex shrink-0 flex-col items-center gap-0.5"
         transition={
-          reduceMotion ?
-            { duration: 0 }
-          : {
-              type: "tween",
-              duration: 0.18,
-              ease: [0.25, 0.1, 0.25, 1],
-            }
+          reduceMotion
+            ? { duration: 0 }
+            : {
+                type: "tween",
+                duration: 0.18,
+                ease: [0.25, 0.1, 0.25, 1],
+              }
         }
       >
         <div
-          className={cn(
-            chrome.avatarSm,
-            "bg-white",
-          )}
+          className={cn(chrome.avatarSm, "bg-white")}
           role="img"
           aria-label="WOORI"
         >
