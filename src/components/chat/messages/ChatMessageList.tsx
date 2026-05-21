@@ -79,8 +79,10 @@ export function ChatMessageList({
   /** 사용자가 직접 스크롤할 때만 갱신. 레이아웃만 바뀌어 dist가 커져도 끊기지 않게 함 */
   const followTailRef = useRef(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  /** 하단 부드러운 스크롤 중엔 바가 너무 일찍 사라지지 않게 함 */
+  /** 하단으로 부드럽게 이동 중 상태 정리용 */
   const [smoothJumpToBottom, setSmoothJumpToBottom] = useState(false);
+  /** 맨 아래(자동 스크롤)일 때는 숨기고, 사용자가 위로 스크롤했을 때만 표시 */
+  const showScrollbar = !isAtBottom;
 
   const firstId = messages[0]?.id;
   const count = messages.length;
@@ -233,9 +235,9 @@ export function ChatMessageList({
         ref={scrollRootRef}
         onScroll={handleScroll}
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto bg-white py-2 pl-3 pr-0.9",
-          "[scrollbar-gutter:stable] [scrollbar-color:#cbd5e1_transparent] [&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent",
-          isMinimized && "py-1.5 pl-2 pr-0.7",
+          "chat-message-list-scroll flex min-h-0 flex-1 flex-col bg-white px-3 py-2",
+          showScrollbar && "chat-message-list-scroll--bars-visible",
+          isMinimized && "px-2 py-1.5",
         )}
       >
         <div
