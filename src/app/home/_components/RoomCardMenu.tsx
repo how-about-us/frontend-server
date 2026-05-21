@@ -5,6 +5,7 @@ import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { RoomListItem } from "@/lib/api/rooms";
+import { cn } from "@/lib/utils";
 
 type Props = {
   room: RoomListItem;
@@ -26,10 +27,17 @@ export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-2 border-gray-border bg-white/90 transition hover:border-brand-red/40 hover:bg-bubble-gray hover:shadow-sm"
+        className={cn(
+          "flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-2 bg-white/90 transition [&_svg]:transition",
+          "hover:border-brand-red hover:bg-brand-red [&_svg]:text-dark-gray hover:[&_svg]:text-white",
+          open
+            ? "border-brand-red bg-brand-red [&_svg]:text-white"
+            : "border-gray-border",
+        )}
         aria-label="더보기"
+        aria-expanded={open}
       >
-        <MoreHorizontal size={13} className="text-dark-gray" />
+        <MoreHorizontal size={13} className="transition" />
       </button>
 
       {open && (

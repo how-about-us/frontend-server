@@ -1,15 +1,17 @@
 import { Check } from "lucide-react";
 
 import { FilterDropdown } from "@/components/filter-dropdown";
-import { cn } from "@/lib/utils";
-
-import { mapChipButtonClassName } from "./map-chip-button";
+import {
+  mapFilterChipActiveFilledClassName,
+  mapFilterChipInactiveClassName,
+} from "./map-chip-button";
 
 import {
   RATING_OPTIONS,
   type OpenValue,
   type RatingValue,
 } from "./map-filters";
+import { cn } from "@/lib/utils";
 
 type MapFilterProps = {
   rating: RatingValue;
@@ -42,11 +44,17 @@ export default function MapFilter({
         onClick={() => setOpenNow(isOpenOnly ? "all" : "open")}
         className={cn(
           "inline-flex items-center gap-1",
-          mapChipButtonClassName(!isOpenOnly),
+          isOpenOnly
+            ? mapFilterChipActiveFilledClassName()
+            : mapFilterChipInactiveClassName(),
         )}
       >
         {isOpenOnly ? (
-          <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+          <Check
+            className="h-3.5 w-3.5 shrink-0"
+            strokeWidth={2.5}
+            aria-hidden
+          />
         ) : null}
         영업 중
       </button>

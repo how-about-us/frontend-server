@@ -103,7 +103,7 @@ export function RoomMembersSection() {
               });
             }}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full py-2 text-sm font-semibold shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+              "inline-flex cursor-pointer items-center gap-1.5 rounded-full text-sm font-semibold shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
               pageToolbarButtonPaddingClass,
               showInvitePanel
                 ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50"

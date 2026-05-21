@@ -27,7 +27,7 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
   const handleNavigate = () => setCurrentRoomId(room.id);
 
   return (
-    <div className="group relative">
+    <div className="relative">
       <Link
         href={planPath}
         onClick={handleNavigate}

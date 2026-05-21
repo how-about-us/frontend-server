@@ -5,7 +5,10 @@ import { useRef, useState } from "react";
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { cn } from "@/lib/utils";
 
-import { mapChipButtonClassName } from "@/components/map/map-chip-button";
+import {
+  mapFilterChipActiveRingClassName,
+  mapFilterChipInactiveClassName,
+} from "@/components/map/map-chip-button";
 
 export type FilterOption<T extends string> = { label: string; value: T };
 
@@ -35,7 +38,9 @@ export function FilterDropdown<T extends string>({
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
           "flex items-center gap-1",
-          mapChipButtonClassName(isActive),
+          isActive
+            ? mapFilterChipActiveRingClassName()
+            : mapFilterChipInactiveClassName(),
         )}
       >
         <span>{isActive ? selectedLabel : label}</span>

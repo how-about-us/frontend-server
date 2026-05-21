@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { useRoomsList } from "@/hooks/useRooms";
-import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
+import {
+  pageToolbarButtonIconClass,
+  pageToolbarButtonIconStroke,
+  pageToolbarButtonPaddingClass,
+} from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 import { RoomListItem } from "@/lib/api/rooms";
 import { HomeHeader } from "./_components/HomeHeader";
@@ -28,11 +33,16 @@ export default function HomePage() {
           <Link
             href="/home/new"
             className={cn(
-              "flex items-center gap-1.5 rounded-full bg-brand-red py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90",
+              "flex items-center gap-1.5 rounded-full bg-brand-red text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
               pageToolbarButtonPaddingClass,
             )}
           >
-            + 새 여행 계획
+            <Plus
+              className={pageToolbarButtonIconClass}
+              strokeWidth={pageToolbarButtonIconStroke}
+              aria-hidden
+            />
+            새 여행 계획
           </Link>
         </div>
 

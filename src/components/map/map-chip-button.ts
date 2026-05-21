@@ -1,9 +1,36 @@
 import { cn } from "@/lib/utils";
 
+const mapChipButtonBaseClass =
+  "shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition-[background-color,color,opacity,box-shadow] duration-200";
+
+/** 지도 필터 칩 — 미적용(전체·영업 중 off) */
+export function mapFilterChipInactiveClassName() {
+  return cn(
+    mapChipButtonBaseClass,
+    "bg-white text-gray ring-2 ring-light-gray ring-offset-1 hover:bg-gray-50 active:opacity-90",
+  );
+}
+
+/** 지도 필터 칩 — 값 선택됨(평점 등) */
+export function mapFilterChipActiveRingClassName() {
+  return cn(
+    mapChipButtonBaseClass,
+    "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50 active:opacity-90",
+  );
+}
+
+/** 지도 필터 칩 — 토글 on(영업 중) */
+export function mapFilterChipActiveFilledClassName() {
+  return cn(
+    mapChipButtonBaseClass,
+    "bg-brand-red text-white hover:opacity-95 active:opacity-90",
+  );
+}
+
 /** 기본: 앱 primary(red/white). active: 흰 배경 + red ring으로 선택 구분 */
 export function mapChipButtonClassName(active: boolean) {
   return cn(
-    "shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium shadow-md transition-[background-color,color,opacity,box-shadow] duration-200",
+    mapChipButtonBaseClass,
     active
       ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50 active:opacity-90"
       : "bg-brand-red text-white hover:opacity-95 active:opacity-90",

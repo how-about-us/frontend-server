@@ -199,7 +199,7 @@ export function BookmarkFoldersView() {
           onClick={openCreate}
           disabled={isCreating || isUpdating}
           className={cn(
-            "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+            "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
             pageToolbarButtonPaddingClass,
           )}
         >
