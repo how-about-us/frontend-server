@@ -15,12 +15,14 @@ export function BookmarkFolderDetailHeader({
 }) {
   return (
     <div className="shrink-0 border-b border-gray-border px-6 pb-5">
-      <Link
-        href={BOOKMARK_LIST_PATH}
-        className="flex w-full items-center justify-center rounded-full border-2 border-brand-red bg-bubble-gray py-3 text-base font-semibold text-brand-red shadow-md transition-opacity hover:opacity-90 active:opacity-85"
-      >
-        목록으로 돌아가기
-      </Link>
+      <div className="flex justify-end">
+        <Link
+          href={BOOKMARK_LIST_PATH}
+          className="inline-flex items-center justify-center rounded-full border-2 border-brand-red bg-bubble-gray px-4 py-2 text-sm font-semibold text-brand-red shadow-sm transition-opacity hover:opacity-95 active:opacity-90"
+        >
+          목록으로 돌아가기
+        </Link>
+      </div>
       <div className="mt-6 flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <FolderRibbonIcon color={folder.color} variant="header" />

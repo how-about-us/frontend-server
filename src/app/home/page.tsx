@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useRoomsList } from "@/hooks/useRooms";
+import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
+import { cn } from "@/lib/utils";
 import { RoomListItem } from "@/lib/api/rooms";
 import { HomeHeader } from "./_components/HomeHeader";
 import { RoomGrid } from "./_components/RoomGrid";
@@ -25,7 +27,10 @@ export default function HomePage() {
         <div className="flex items-center justify-end">
           <Link
             href="/home/new"
-            className="flex items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+            className={cn(
+              "flex items-center gap-1.5 rounded-full bg-brand-red py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90",
+              pageToolbarButtonPaddingClass,
+            )}
           >
             + 새 여행 계획
           </Link>

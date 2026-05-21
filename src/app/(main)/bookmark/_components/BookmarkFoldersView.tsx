@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
+import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useBookmarkCategories,
@@ -13,6 +14,7 @@ import {
   useUpdateBookmarkCategory,
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+import { cn } from "@/lib/utils";
 import type { BookmarkFolder } from "@/types/bookmark";
 import { useBookmarkFolders } from "../context";
 import { bookmarkFolderPath } from "../routes";
@@ -196,7 +198,10 @@ export function BookmarkFoldersView() {
           type="button"
           onClick={openCreate}
           disabled={isCreating || isUpdating}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className={cn(
+            "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+            pageToolbarButtonPaddingClass,
+          )}
         >
           <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새
           북마크 추가

@@ -94,14 +94,15 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
 
       <div className="flex flex-col gap-3 p-4">
         <p className="text-xs text-dark-gray">
-          아래 초대 링크를 복사해 멤버를 초대하세요. 패널을 열 때마다 새 링크로
-          갱신됩니다.
+          아래 초대 링크를 복사해 멤버를 초대하세요.
         </p>
 
         <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center rounded-lg border border-gray-border bg-white px-3 py-2">
             {inviteUrl ? (
-              <span className="truncate text-xs text-dark-gray">{inviteUrl}</span>
+              <span className="truncate text-xs text-dark-gray">
+                {inviteUrl}
+              </span>
             ) : (
               <span className="truncate text-xs text-light-gray">
                 {isRegenerating

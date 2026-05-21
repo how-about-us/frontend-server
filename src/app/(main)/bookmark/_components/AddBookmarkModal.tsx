@@ -93,11 +93,8 @@ export function AddBookmarkModal({
           id="bookmark-modal-title"
           className="text-lg font-semibold text-neutral-900"
         >
-          {mode === "edit" ? "북마크 편집" : "새 북마크"}
+          {mode === "edit" ? "북마크 편집" : "새 북마크 추가"}
         </h2>
-        <p className="mt-1 text-sm text-dark-gray">
-          이름과 리본 색상을 선택하세요.
-        </p>
         {formError ? (
           <p className="mt-3 text-sm text-brand-red" role="alert">
             {formError}

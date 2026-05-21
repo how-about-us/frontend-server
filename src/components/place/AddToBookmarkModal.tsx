@@ -1,10 +1,11 @@
 "use client";
 
-import { Check, Plus, Star } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import { AddBookmarkModal } from "@/app/(main)/bookmark/_components/AddBookmarkModal";
+import { FolderRibbonIcon } from "@/app/(main)/bookmark/_components/FolderRibbonIcon";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useBookmarkCategories,
@@ -256,58 +257,48 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           )}
 
           {categories && categories.length > 0 && (
-            <ul role="list">
-              {categories.map((c, index) => {
-                const sel = selectedIds.has(c.categoryId);
-                return (
-                  <li
-                    key={c.categoryId}
-                    className={cn(index > 0 && "border-t border-gray-border")}
-                  >
-                    <button
-                      type="button"
-                      disabled={isAddingBookmarks}
-                      aria-pressed={sel}
-                      aria-label={`${c.name} 북마크에서 ${sel ? "선택 해제" : "선택"}`}
-                      onClick={() => toggleCategory(c.categoryId)}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-black/[0.02]",
-                        "disabled:opacity-60",
-                      )}
-                    >
-                      <span
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-inner"
-                        style={{ backgroundColor: c.colorCode }}
-                        aria-hidden
-                      >
-                        <Star
-                          className="size-[1.125rem] fill-current text-white/95"
-                          strokeWidth={1.25}
-                        />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-sm font-medium text-neutral-900">
-                          {c.name}
-                          <span className="ml-1.5 inline font-normal text-dark-gray tabular-nums">
-                            {c.placeCount}
-                          </span>
-                        </span>
-                      </div>
-                      <span
+            <div className="mx-5 overflow-hidden rounded-2xl border border-gray-border bg-white">
+              <ul role="list" className="divide-y divide-gray-border">
+                {categories.map((c) => {
+                  const sel = selectedIds.has(c.categoryId);
+                  return (
+                    <li key={c.categoryId}>
+                      <button
+                        type="button"
+                        disabled={isAddingBookmarks}
+                        aria-pressed={sel}
+                        aria-label={`${c.name} 북마크에서 ${sel ? "선택 해제" : "선택"}`}
+                        onClick={() => toggleCategory(c.categoryId)}
                         className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                          sel
-                            ? "border-brand-red bg-brand-red text-white shadow-sm"
-                            : "border-gray-300 bg-white text-transparent",
+                          "flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-bubble-gray/60",
+                          "disabled:opacity-60",
                         )}
                       >
-                        <Check className="size-[1.125rem]" strokeWidth={3} />
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        <FolderRibbonIcon color={c.colorCode} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[15px] font-medium text-neutral-900">
+                            {c.name}
+                          </p>
+                          <p className="mt-0.5 text-sm text-dark-gray">
+                            {c.placeCount ?? 0}개 장소
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            "flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                            sel
+                              ? "border-brand-red bg-brand-red text-white shadow-sm"
+                              : "border-gray-300 bg-white text-transparent",
+                          )}
+                        >
+                          <Check className="size-[1.125rem]" strokeWidth={3} />
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
 
           {submitFeedback && (

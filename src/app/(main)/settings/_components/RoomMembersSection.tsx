@@ -1,15 +1,21 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
+import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
 import { useCurrentRoomId } from "@/hooks/use-room-id";
 import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
 import { MemberCard } from "./MemberCard";
+
+const roomActionButtonHoverClass =
+  "transition-colors hover:border-brand-red/40 hover:bg-brand-red/5 hover:text-brand-red";
 
 export function RoomMembersSection() {
   const router = useRouter();
@@ -89,29 +95,22 @@ export function RoomMembersSection() {
       {isHost && (
         <div className="flex items-center justify-end">
           <button
+            type="button"
             onClick={() => {
               setShowInvitePanel((open) => {
                 if (!open) setInvitePanelKey((k) => k + 1);
                 return !open;
               });
             }}
-            className={`inline-flex cursor-pointer items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={cn(
+              "inline-flex cursor-pointer items-center gap-1.5 rounded-full py-2 text-sm font-semibold shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+              pageToolbarButtonPaddingClass,
               showInvitePanel
-                ? "border-brand-red bg-brand-red/5 text-brand-red"
-                : "border-gray-border text-dark-gray hover:border-gray-400"
-            }`}
+                ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50"
+                : "bg-brand-red text-white",
+            )}
           >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 11 11"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            >
-              <path d="M5.5 1v9M1 5.5h9" />
-            </svg>
+            <Plus className="size-6 shrink-0" strokeWidth={2.2} aria-hidden />
             멤버 초대
           </button>
         </div>
@@ -274,7 +273,10 @@ export function RoomMembersSection() {
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full cursor-pointer rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red transition-colors hover:bg-brand-red/5"
+                className={cn(
+                  "w-full cursor-pointer rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red",
+                  roomActionButtonHoverClass,
+                )}
               >
                 여행 삭제
               </button>
@@ -289,7 +291,10 @@ export function RoomMembersSection() {
                 }
                 setShowLeaveConfirm(true);
               }}
-              className="w-full cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-brand-red hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                "w-full cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-border disabled:hover:bg-transparent disabled:hover:text-dark-gray",
+                roomActionButtonHoverClass,
+              )}
             >
               방 나가기
             </button>

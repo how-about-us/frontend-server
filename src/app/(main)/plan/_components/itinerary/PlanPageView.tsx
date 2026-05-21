@@ -17,6 +17,8 @@ import {
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
+import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
+import { cn } from "@/lib/utils";
 
 import { PlanContainerRefProvider } from "../plan-container";
 import { PlanDaySection } from "./PlanDaySection";
@@ -126,7 +128,10 @@ export function PlanPageView() {
         type="button"
         onClick={handleAddSchedule}
         disabled={!canAddSchedule}
-        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        className={cn(
+          "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+          pageToolbarButtonPaddingClass,
+        )}
       >
         <Plus className="size-6 shrink-0" strokeWidth={2.2} aria-hidden />
         새 일차 추가

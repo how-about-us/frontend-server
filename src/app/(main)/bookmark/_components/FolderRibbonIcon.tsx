@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 
 type Variant = "row" | "header";
 
+const ICON_BORDER_STROKE = "#e5e7eb";
+
 export function FolderRibbonIcon({
   color,
   className,
@@ -17,10 +19,10 @@ export function FolderRibbonIcon({
   const header = variant === "header";
   return (
     <Bookmark
-      className={cn(header ? "size-10" : "size-8", className)}
+      className={cn(header ? "size-10" : "size-8", "shrink-0", className)}
       fill={color}
-      color="#FFFFFF"
-      style={header ? undefined : { color }}
+      color={ICON_BORDER_STROKE}
+      strokeWidth={2}
       aria-hidden
     />
   );
