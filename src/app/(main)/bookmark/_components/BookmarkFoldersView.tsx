@@ -191,15 +191,17 @@ export function BookmarkFoldersView() {
 
   return (
     <div className="space-y-4 pb-8 pl-6 pr-6">
-      <button
-        type="button"
-        onClick={openCreate}
-        disabled={isCreating || isUpdating}
-        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-brand-red py-3 text-base font-bold text-white shadow-md transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새 북마크
-        추가
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={openCreate}
+          disabled={isCreating || isUpdating}
+          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새
+          북마크 추가
+        </button>
+      </div>
 
       <div className="rounded-2xl border border-gray-border bg-white">
         {folders.length === 0 ? (

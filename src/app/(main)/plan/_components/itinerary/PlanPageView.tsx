@@ -117,16 +117,19 @@ export function PlanPageView() {
 
   const canAddSchedule = roomId.length > 0 && !isCreatingSchedule;
 
+  const pageContentClassName =
+    "@container/plan space-y-4 overflow-x-auto pb-8 pl-6 pr-6";
+
   const scheduleToolbar = (
     <div className="flex justify-end">
       <button
         type="button"
         onClick={handleAddSchedule}
         disabled={!canAddSchedule}
-        aria-label="일차 추가"
-        className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-brand-red bg-brand-red p-2.5 text-white shadow-sm transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50"
+        className="flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <Plus className="h-5 w-5" aria-hidden />
+        <Plus className="size-6 shrink-0" strokeWidth={2.2} aria-hidden />
+        새 일차 추가
       </button>
     </div>
   );
@@ -136,7 +139,7 @@ export function PlanPageView() {
       <PlanContainerRefProvider containerRef={planContainerRef}>
         <div
           ref={planContainerRef}
-          className="@container/plan space-y-3 overflow-x-auto pl-6 pr-6"
+          className={pageContentClassName}
         >
           {scheduleToolbar}
           <p className="py-8 text-center text-sm text-dark-gray">
@@ -151,7 +154,7 @@ export function PlanPageView() {
     <PlanContainerRefProvider containerRef={planContainerRef}>
       <div
         ref={planContainerRef}
-        className="@container/plan space-y-3 overflow-x-auto pl-6 pr-6"
+        className={pageContentClassName}
       >
       {scheduleToolbar}
 
@@ -163,7 +166,7 @@ export function PlanPageView() {
 
       {!isError && planDays.length === 0 ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
-          아직 생성된 일정이 없어요. 우측 상단의 더하기(+) 버튼으로 일차를
+          아직 생성된 일정이 없어요. 우측 상단의 「새 일차 추가」 버튼으로 일차를
           추가해 보세요.
         </p>
       ) : null}
