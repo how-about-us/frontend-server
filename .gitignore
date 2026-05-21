@@ -20,6 +20,9 @@
 # production
 /build
 
+# Cursor — project rules are local-only (Agent still reads them from disk)
+.cursor/rules/
+
 # misc
 .DS_Store
 *.pem
