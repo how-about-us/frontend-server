@@ -20,6 +20,6 @@ export type SearchResultCardProps = {
   location?: { lat: number; lng: number };
   /** 북마크 목록에서 연 경우 지도 핀 색(북마크 제외 개인 핀은 brand-red) */
   fromBookmark?: boolean;
-  /** 보관함 카테고리 맵 핀 색(hex). 있으면 선택 핀 확대 시 같은 색 유지 */
+  /** 북마크 카테고리 맵 핀 색(hex). 있으면 선택 핀 확대 시 같은 색 유지 */
   bookmarkCategoryColor?: string;
 };

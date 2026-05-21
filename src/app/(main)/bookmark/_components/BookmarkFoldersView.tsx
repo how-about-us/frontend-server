@@ -137,7 +137,7 @@ export function BookmarkFoldersView() {
     if (!Number.isFinite(categoryId)) return;
 
     const ok = window.confirm(
-      `「${folder.title}」 카테고리를 삭제할까요? 소속 보관함 항목도 함께 삭제됩니다.`,
+      `「${folder.title}」 카테고리를 삭제할까요? 소속 북마크 항목도 함께 삭제됩니다.`,
     );
     if (!ok) return;
 

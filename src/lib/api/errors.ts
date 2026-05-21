@@ -1,4 +1,4 @@
-/** 보관함 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
+/** 북마크 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
 const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
   "BOOKMARK_ALREADY_EXISTS",
   "BOOKMARK_DUPLICATE",
@@ -68,7 +68,7 @@ export class HttpError extends Error {
   }
 }
 
-/** 보관함 카테고리명 중복(HTTP 409) 시 토스트용 문구 */
+/** 북마크 카테고리명 중복(HTTP 409) 시 토스트용 문구 */
 export function messageForBookmarkCategorySaveError(
   e: unknown,
   fallback: string,

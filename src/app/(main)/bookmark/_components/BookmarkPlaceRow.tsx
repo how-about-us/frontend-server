@@ -73,7 +73,7 @@ export function BookmarkPlaceRow({
 
   const handleDelete = () => {
     if (!Number.isFinite(bookmarkId) || busy) return;
-    const ok = window.confirm("이 장소를 보관함에서 삭제할까요?");
+    const ok = window.confirm("이 장소를 북마크에서 삭제할까요?");
     if (!ok) return;
     closeMenu();
     deleteItem({ roomId, bookmarkId, categoryId: currentCategoryId });

@@ -39,7 +39,7 @@ export async function getRoomBookmarks(
   const url = new URL(apiUrl(`/rooms/${roomId}/bookmarks`));
   url.searchParams.set("categoryId", String(categoryId));
   return requestJson(url.toString(), undefined, {
-    errorMessage: "보관함 목록 조회 실패",
+    errorMessage: "북마크 목록 조회 실패",
   });
 }
 
@@ -69,7 +69,7 @@ export async function createRoomBookmarks(
       "message" in parsed &&
       typeof (parsed as { message: unknown }).message === "string"
         ? (parsed as { message: string }).message
-        : `보관함 항목 추가 실패: ${res.status}`);
+        : `북마크 항목 추가 실패: ${res.status}`);
     throw new Error(msg);
   }
 
@@ -99,7 +99,7 @@ export async function patchRoomBookmarkCategory(
   return requestJson(
     apiUrl(`/rooms/${roomId}/bookmarks/${bookmarkId}/category`),
     { method: "PATCH", ...jsonBody(body) },
-    { errorMessage: "보관함 카테고리 변경 실패" },
+    { errorMessage: "북마크 카테고리 변경 실패" },
   );
 }
 
@@ -110,6 +110,6 @@ export async function deleteRoomBookmark(
   return requestVoid(
     apiUrl(`/rooms/${roomId}/bookmarks/${bookmarkId}`),
     { method: "DELETE" },
-    { errorMessage: "보관함 항목 삭제 실패" },
+    { errorMessage: "북마크 항목 삭제 실패" },
   );
 }

@@ -203,7 +203,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
             id="add-bookmark-modal-title"
             className="text-lg font-semibold text-neutral-900"
           >
-            보관함에 추가
+            북마크에 추가
           </h2>
           <p className="mt-1 text-sm text-dark-gray">
             담을 리스트를 선택한 뒤 추가를 눌러 주세요.
@@ -248,19 +248,10 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
           )}
 
           {categories && categories.length === 0 && !categoriesLoading && (
-            <div className="space-y-3 px-5 py-6 text-center">
+            <div className="px-5 py-6 text-center">
               <p className="text-sm text-dark-gray">
                 북마크 리스트가 없습니다. 새로 만들어 주세요.
               </p>
-              <button
-                type="button"
-                onClick={openCreateFolderModal}
-                disabled={isCreatingCategory || isAddingBookmarks}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-border bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray disabled:opacity-60"
-              >
-                <Plus className="size-4" strokeWidth={2.2} aria-hidden />새
-                리스트 만들기
-              </button>
             </div>
           )}
 
