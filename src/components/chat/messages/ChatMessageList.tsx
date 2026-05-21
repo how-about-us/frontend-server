@@ -40,6 +40,22 @@ function scrollRootToBottomInstant(root: HTMLDivElement) {
   root.scrollTop = Math.max(0, root.scrollHeight - root.clientHeight);
 }
 
+/** 하단 고정이면 맨 아래, 아니면 마지막 스크롤 시점의 하단 거리(px) 유지 */
+function applyScrollAnchor(
+  root: HTMLDivElement,
+  followTail: boolean,
+  distFromBottom: number,
+) {
+  if (followTail) {
+    scrollRootToBottomInstant(root);
+    return;
+  }
+  root.scrollTop = Math.max(
+    0,
+    root.scrollHeight - root.clientHeight - distFromBottom,
+  );
+}
+
 export function ChatMessageList({
   messages,
   isMinimized = false,
@@ -78,6 +94,8 @@ export function ChatMessageList({
   const didInitialScrollRef = useRef(false);
   /** 사용자가 직접 스크롤할 때만 갱신. 레이아웃만 바뀌어 dist가 커져도 끊기지 않게 함 */
   const followTailRef = useRef(true);
+  /** 패널 리사이즈·최소화 전환 시 하단에서 떨어진 거리(px) 복원용 */
+  const distFromBottomRef = useRef(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
   /** 하단으로 부드럽게 이동 중 상태 정리용 */
   const [smoothJumpToBottom, setSmoothJumpToBottom] = useState(false);
@@ -127,6 +145,7 @@ export function ChatMessageList({
       st: root.scrollTop,
     };
     const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
+    distFromBottomRef.current = dist;
     const near = dist < NEAR_BOTTOM_PX;
     followTailRef.current = near;
     setIsAtBottom(near);
@@ -229,6 +248,63 @@ export function ChatMessageList({
     };
   }, [smoothJumpToBottom]);
 
+  /** 최소화↔확대·패널 높이 변경 시 scrollTop만 유지되면 위로 밀려 보이므로 앵커 복원 */
+  useLayoutEffect(() => {
+    const root = scrollRootRef.current;
+    if (!root) return;
+
+    const restore = () => {
+      applyScrollAnchor(root, followTailRef.current, distFromBottomRef.current);
+      const dist =
+        root.scrollHeight - root.scrollTop - root.clientHeight;
+      const near = dist < NEAR_BOTTOM_PX;
+      followTailRef.current = near;
+      setIsAtBottom(near);
+      scrollPreserveRef.current = { sh: root.scrollHeight, st: root.scrollTop };
+    };
+
+    restore();
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      restore();
+      raf2 = requestAnimationFrame(restore);
+    });
+    const t = window.setTimeout(restore, 320);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(t);
+    };
+  }, [isMinimized]);
+
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    if (!root || typeof ResizeObserver === "undefined") return;
+
+    const lastClientHeightRef = { current: root.clientHeight };
+
+    const ro = new ResizeObserver(() => {
+      const ch = root.clientHeight;
+      if (ch === lastClientHeightRef.current) return;
+      lastClientHeightRef.current = ch;
+
+      applyScrollAnchor(
+        root,
+        followTailRef.current,
+        distFromBottomRef.current,
+      );
+      const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
+      const near = dist < NEAR_BOTTOM_PX;
+      followTailRef.current = near;
+      setIsAtBottom(near);
+      scrollPreserveRef.current = { sh: root.scrollHeight, st: root.scrollTop };
+    });
+
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
@@ -237,7 +313,7 @@ export function ChatMessageList({
         className={cn(
           "chat-message-list-scroll flex min-h-0 flex-1 flex-col bg-white px-3 py-2",
           showScrollbar && "chat-message-list-scroll--bars-visible",
-          isMinimized && "px-2 py-1.5",
+          isMinimized && "chat-message-list-scroll--minimized px-2 py-1.5",
         )}
       >
         <div

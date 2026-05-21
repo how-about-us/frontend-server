@@ -58,3 +58,32 @@
 .chat-message-list-scroll--bars-visible::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
 }
+
+/* 최소화 패널 — 스크롤 트랙·막대를 확대 모드보다 좁게 */
+.chat-message-list-scroll--minimized {
+  scrollbar-gutter: stable;
+}
+
+.chat-message-list-scroll--minimized::-webkit-scrollbar {
+  width: 10px;
+  height: 0;
+}
+
+.chat-message-list-scroll--minimized:not(
+    .chat-message-list-scroll--bars-visible
+  )::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+.chat-message-list-scroll--minimized.chat-message-list-scroll--bars-visible {
+  scrollbar-width: thin;
+}
+
+.chat-message-list-scroll--minimized.chat-message-list-scroll--bars-visible::-webkit-scrollbar {
+  width: 10px;
+  height: auto;
+}
+
+.chat-message-list-scroll--minimized.chat-message-list-scroll--bars-visible::-webkit-scrollbar-thumb {
+  min-height: 2rem;
+}
