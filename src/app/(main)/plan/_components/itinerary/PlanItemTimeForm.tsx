@@ -29,12 +29,16 @@ const fieldLabelClass = cn(
 const inlineInputClass =
   "rounded-md border border-gray-border bg-gray-50/60 tabular-nums text-gray-900 shadow-none transition focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30";
 const timeStartInputClass =
-  "cursor-pointer text-center [color-scheme:light] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center";
+  "cursor-pointer text-center [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center";
 const startTimeInputClassName = cn(
   inlineInputClass,
   timeStartInputClass,
   PLAN_PLACE_CARD_TW.timeInputCompact,
 );
+
+function stopCardActivation(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
 
 function PlanStartTimeInput({
   value,
@@ -45,6 +49,17 @@ function PlanStartTimeInput({
   disabled: boolean;
   onChange: (next: string) => void;
 }) {
+  const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
+    stopCardActivation(e);
+    if (disabled) return;
+    const input = e.currentTarget;
+    try {
+      input.showPicker?.();
+    } catch {
+      input.focus();
+    }
+  };
+
   if (!value) {
     return (
       <div
@@ -65,6 +80,8 @@ function PlanStartTimeInput({
           aria-label="시작 시각"
           value=""
           disabled={disabled}
+          onMouseDown={stopCardActivation}
+          onClick={openPicker}
           onChange={(e) => {
             const v = e.target.value;
             if (v) onChange(v);
@@ -80,9 +97,11 @@ function PlanStartTimeInput({
       type="time"
       aria-label="시작 시각"
       value={value}
+      disabled={disabled}
+      onMouseDown={stopCardActivation}
+      onClick={openPicker}
       onChange={(e) => onChange(e.target.value)}
       className={startTimeInputClassName}
-      disabled={disabled}
     />
   );
 }
@@ -181,6 +200,8 @@ export function PlanItemTimeForm({
               step={1}
               aria-label="체류(분)"
               value={durationStr}
+              onMouseDown={stopCardActivation}
+              onClick={stopCardActivation}
               onChange={(e) => {
                 const raw = e.target.value;
                 if (raw === "") {
