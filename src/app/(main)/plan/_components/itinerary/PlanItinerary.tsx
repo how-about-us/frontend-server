@@ -1,27 +1,17 @@
 "use client";
 
-import {
-  Fragment,
-  useCallback,
-  useMemo,
-  useState,
-  type DragEvent,
-} from "react";
-import { Loader2 } from "lucide-react";
+import { Fragment, useCallback, useMemo, useState } from "react";
+import { Bookmark, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
-import { useDragAutoScroll } from "@/hooks/useDragAutoScroll";
 import {
   useCreateScheduleItem,
-  useReorderScheduleItem,
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
+import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import {
-  defaultNewItemStartTimeHmFromPlanPlaces,
-  newOrderIndexAfterMove,
-} from "@/lib/plan/scheduleItemPlaces";
+import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import {
   formatAdjacentScheduleConflictMessage,
   getAdjacentScheduleConflictFlags,
@@ -33,9 +23,8 @@ import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-
 import type { PlanPlace } from "@/lib/plan/types";
 
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
+import { AddFromBookmarkModal } from "./AddFromBookmarkModal";
 import { PlanPlaceCard } from "./PlanPlaceCard";
-
-const DND_INDEX_MIME = "application/x-plan-item-index";
 
 const EMPTY_PLAN_PLACES: PlanPlace[] = [];
 
@@ -67,7 +56,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       ),
     [orderedExpandedScheduleIds, roomId],
   );
-  /** {@link PlanItineraryMapRoutes} 폴리라인·핀과 동일 팔레트 */
   const orderBadgeColor =
     routeColorByScheduleId.get(scheduleId) ?? "#f12d33";
 
@@ -91,15 +79,15 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   );
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
-  const {
-    mutateAsync: reorderMutate,
-    isReorderSettling,
-  } = useReorderScheduleItem();
 
-  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
 
-  useDragAutoScroll({ active: dragFromIndex !== null });
+  const { getCardDragProps, isReorderSettling } = usePlanItineraryReorder({
+    roomId,
+    scheduleId,
+    places,
+    interactionLocked: isAdding,
+  });
 
   const handlePickPrediction = useCallback(
     async (prediction: google.maps.places.PlacePrediction) => {
@@ -122,83 +110,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [createItem, places, roomId, scheduleId],
   );
 
-  const handleDragStart = useCallback(
-    (index: number) => (e: DragEvent<Element>) => {
-      if (typeof places[index]?.itemId !== "number") return;
-      setDragFromIndex(index);
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData(DND_INDEX_MIME, String(index));
-      e.dataTransfer.setData("text/plain", String(index));
-    },
-    [places],
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDragFromIndex(null);
-    setDropTargetIndex(null);
-  }, []);
-
-  const handleDragOver = useCallback(
-    (index: number) => (e: DragEvent<Element>) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setDropTargetIndex(index);
-    },
-    [],
-  );
-
-  const handleDragLeave = useCallback(
-    (index: number) => (e: DragEvent<Element>) => {
-      const next = e.relatedTarget as Node | null;
-      if (next && e.currentTarget.contains(next)) return;
-      setDropTargetIndex((t) => (t === index ? null : t));
-    },
-    [],
-  );
-
-  const handleDrop = useCallback(
-    (toIndex: number) => async (e: DragEvent<Element>) => {
-      e.preventDefault();
-      const raw =
-        e.dataTransfer.getData(DND_INDEX_MIME) ||
-        e.dataTransfer.getData("text/plain");
-      const fromIndex = parseInt(raw, 10);
-
-      setDropTargetIndex(null);
-      setDragFromIndex(null);
-
-      if (
-        !Number.isFinite(fromIndex) ||
-        fromIndex < 0 ||
-        fromIndex >= places.length ||
-        fromIndex === toIndex
-      ) {
-        return;
-      }
-
-      const itemId = places[fromIndex]?.itemId;
-      if (typeof itemId !== "number") return;
-
-      const newOrderIndex = newOrderIndexAfterMove(
-        fromIndex,
-        toIndex,
-        places.length,
-      );
-
-      try {
-        await reorderMutate({
-          roomId,
-          scheduleId,
-          itemId,
-          body: { newOrderIndex },
-        });
-      } catch {
-        toast.error("순서를 바꾸지 못했어요.");
-      }
-    },
-    [places, reorderMutate, roomId, scheduleId],
-  );
-
   const scheduleFingerprint = useMemo(
     () => schedulePlacesFingerprint(places),
     [places],
@@ -208,8 +119,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     () => getAdjacentScheduleConflictFlags(places),
     [places],
   );
-
-  const dragLocked = isAdding || isReorderSettling || places.length < 2;
 
   return (
     <div>
@@ -232,14 +141,13 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0">
         {places.map((place, index) => (
           <Fragment key={place.id}>
             <PlanPlaceCard
               place={place}
               orderIndex={index + 1}
               orderBadgeColor={orderBadgeColor}
-              dragDisabled={dragLocked || typeof place.itemId !== "number"}
               scheduleTimeEdit={{ roomId, scheduleId }}
               scheduleOverlapWarning={
                 isReorderSettling ?
@@ -248,19 +156,8 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                     scheduleConflictFlags[index]!,
                   )
               }
-              isDragging={dragFromIndex === index}
-              isDropTarget={
-                dropTargetIndex === index &&
-                dragFromIndex !== null &&
-                dragFromIndex !== index
-              }
-              onDragStart={handleDragStart(index)}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver(index)}
-              onDragLeave={handleDragLeave(index)}
-              onDrop={handleDrop(index)}
+              {...getCardDragProps(index)}
             />
-            {/* LS·경로 일치: 장소 목록이 refetch 중일 때 구간 요청 안 함(`scheduleFingerprint`가 최신 순서와 맞도록) */}
             {index < places.length - 1 &&
             typeof place.itemId === "number" &&
             typeof places[index + 1]?.itemId === "number" ? (
@@ -283,17 +180,39 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
       <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
         <p className="text-xs font-medium text-dark-gray">장소 추가</p>
-        <PlacesSearchInput
-          coords={mapCenter}
-          pickOnly
-          disabled={isAdding}
-          onSearch={() => {}}
-          onPickPrediction={(p) => void handlePickPrediction(p)}
-        />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <PlacesSearchInput
+              coords={mapCenter}
+              pickOnly
+              disabled={isAdding}
+              onSearch={() => {}}
+              onPickPrediction={(p) => void handlePickPrediction(p)}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="북마크에서 장소 추가"
+            disabled={isAdding}
+            onClick={() => setBookmarkModalOpen(true)}
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-border bg-white text-dark-gray shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Bookmark className="size-4" strokeWidth={2} aria-hidden />
+          </button>
+        </div>
         {isAdding ? (
           <p className="text-xs text-dark-gray">추가하는 중…</p>
         ) : null}
       </div>
+
+      {bookmarkModalOpen ? (
+        <AddFromBookmarkModal
+          roomId={roomId}
+          scheduleId={scheduleId}
+          places={places}
+          onClose={() => setBookmarkModalOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

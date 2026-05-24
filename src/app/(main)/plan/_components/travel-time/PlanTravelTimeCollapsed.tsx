@@ -14,7 +14,7 @@ export function PlanTravelTimeCollapsed({
 }: PlanTravelTimeCollapsedProps) {
   return (
     <div
-      className={cn("flex items-stretch gap-3 py-1 pl-1", className)}
+      className={cn("flex items-stretch gap-3 py-0.5 pl-1", className)}
       role="separator"
     >
       <TravelRouteRail arrowClassName="text-light-gray" />

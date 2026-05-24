@@ -3,6 +3,15 @@ const MINUTES_PER_DAY = 24 * 60;
 /** 일정 항목 체류(분) 입력·저장 상한 */
 export const SCHEDULE_STAY_DURATION_MAX_MINUTES = 1000;
 
+export function clampStayDurationMinutes(value: unknown): number {
+  const n = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return Math.min(Math.max(0, n), SCHEDULE_STAY_DURATION_MAX_MINUTES);
+}
+
+export function formatStayDurationMinutes(value: unknown): string {
+  return String(clampStayDurationMinutes(value));
+}
+
 /** API `startTime`을 `<input type="time">`용 `HH:mm`으로 바꿈. 미설정·공백·파싱 불가면 `""`. */
 export function normalizeStartTimeToHm(value: string): string {
   const v = value.trim();

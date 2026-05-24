@@ -17,10 +17,12 @@ export function SearchResultCard({
   onClick,
   className,
   variant = "list",
+  showThumbnail = true,
 }: SearchResultCardProps & {
   onClick?: () => void;
   className?: string;
   variant?: "list" | "card";
+  showThumbnail?: boolean;
 }) {
   return (
     <article
@@ -82,21 +84,22 @@ export function SearchResultCard({
         )}
       </div>
 
-      {/* Thumbnail */}
-      <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-xl bg-light-gray">
-        {image ? (
-          <img
-            src={image}
-            alt={name}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <MapPin className="h-6 w-6 text-gray-300" />
-          </div>
-        )}
-      </div>
+      {showThumbnail ? (
+        <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-xl bg-light-gray">
+          {image ? (
+            <img
+              src={image}
+              alt={name}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <MapPin className="h-6 w-6 text-gray-300" />
+            </div>
+          )}
+        </div>
+      ) : null}
     </article>
   );
 }

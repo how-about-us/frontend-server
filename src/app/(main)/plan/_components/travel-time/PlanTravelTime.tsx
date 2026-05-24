@@ -328,7 +328,7 @@ export function PlanTravelTime({
 
   return (
     <div
-      className={cn("flex items-stretch gap-3 py-2 pl-1", className)}
+      className={cn("flex items-stretch gap-3 py-1 pl-1", className)}
       role="separator"
       aria-label="이동 시간 및 길찾기"
     >
