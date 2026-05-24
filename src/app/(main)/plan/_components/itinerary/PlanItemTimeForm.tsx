@@ -55,7 +55,7 @@ function PlanStartTimeInput({
         )}
       >
         <span
-          className="pointer-events-none text-[11px] tabular-nums text-dark-gray/70 @min-[450px]/plan:text-xs"
+          className="pointer-events-none text-[11px] tabular-nums text-dark-gray/70 @min-[370px]/plan:text-xs"
           aria-hidden
         >
           --:--
@@ -144,7 +144,7 @@ export function PlanItemTimeForm({
   const dirty = baselineTime !== timeHm || baselineDur !== durationStr;
 
   return (
-    <div className="flex min-w-0 w-full flex-col gap-1 @min-[450px]/plan:gap-1.5">
+    <div className="flex min-w-0 w-full flex-col gap-1 @min-[370px]/plan:gap-1.5">
       {scheduleOverlapWarning ? (
         <p
           role="status"

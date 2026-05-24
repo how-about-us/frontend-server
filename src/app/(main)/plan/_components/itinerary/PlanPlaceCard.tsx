@@ -174,7 +174,7 @@ export function PlanPlaceCard({
       <div className={PLAN_PLACE_CARD_TW.thumbnail}>
         {photoLoading ? (
           <Loader2
-            className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green @min-[450px]/plan:h-6 @min-[450px]/plan:w-6"
+            className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green @min-[370px]/plan:h-6 @min-[370px]/plan:w-6"
             aria-hidden
           />
         ) : resolvedPhotoUrl ? (
@@ -193,7 +193,7 @@ export function PlanPlaceCard({
         <div className={PLAN_PLACE_CARD_TW.infoStack}>
           <div
             className={cn(
-              "flex min-w-0 items-center gap-1.5 @min-[450px]/plan:gap-2",
+              "flex min-w-0 items-center gap-1.5 @min-[370px]/plan:gap-2",
               PLAN_PLACE_CARD_TW.titleNarrowOnly,
             )}
           >
