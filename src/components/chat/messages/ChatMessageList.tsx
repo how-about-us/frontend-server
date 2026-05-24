@@ -99,8 +99,6 @@ export function ChatMessageList({
   const [isAtBottom, setIsAtBottom] = useState(true);
   /** 하단으로 부드럽게 이동 중 상태 정리용 */
   const [smoothJumpToBottom, setSmoothJumpToBottom] = useState(false);
-  /** 맨 아래(자동 스크롤)일 때는 숨기고, 사용자가 위로 스크롤했을 때만 표시 */
-  const showScrollbar = !isAtBottom;
 
   const firstId = messages[0]?.id;
   const count = messages.length;
@@ -311,28 +309,32 @@ export function ChatMessageList({
         ref={scrollRootRef}
         onScroll={handleScroll}
         className={cn(
-          "chat-message-list-scroll flex min-h-0 flex-1 flex-col bg-white px-3 py-2",
-          showScrollbar && "chat-message-list-scroll--bars-visible",
-          isMinimized && "chat-message-list-scroll--minimized px-2 py-1.5",
+          "chat-message-list-scroll min-h-0 flex-1 bg-white",
+          isMinimized && "chat-message-list-scroll--minimized",
         )}
       >
         <div
-          ref={topSentinelRef}
-          className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
-          aria-hidden
-        />
-        {isLoadingOlder ? (
+          className={cn(
+            "flex flex-col",
+            isMinimized ? "gap-2 px-2 py-1.5" : "gap-3 px-3 py-2",
+          )}
+        >
           <div
-            className={cn(
-              "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
-              isMinimized && "mb-1.5 min-h-4 text-[10px]",
-            )}
-            aria-live="polite"
-          >
-            이전 메시지 불러오는 중…
-          </div>
-        ) : null}
-        <div className={cn("flex flex-col", isMinimized ? "gap-2" : "gap-3")}>
+            ref={topSentinelRef}
+            className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
+            aria-hidden
+          />
+          {isLoadingOlder ? (
+            <div
+              className={cn(
+                "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
+                isMinimized && "mb-1.5 min-h-4 text-[10px]",
+              )}
+              aria-live="polite"
+            >
+              이전 메시지 불러오는 중…
+            </div>
+          ) : null}
           {groups.map((group) => {
             const type = group[0].type;
             const placeIsMine =
@@ -392,8 +394,8 @@ export function ChatMessageList({
               </motion.div>
             );
           })}
+          <div ref={bottomRef} />
         </div>
-        <div ref={bottomRef} />
       </div>
       <AnimatePresence>
         {!isAtBottom && (

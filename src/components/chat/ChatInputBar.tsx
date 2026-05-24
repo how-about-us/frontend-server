@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Search } from "lucide-react";
+import { toast } from "sonner";
 import { ChatEnterIcon } from "@/components/icons";
 import {
   chatAiLabelMotion,
@@ -13,7 +14,11 @@ import {
   chatTypography,
   resolveChatMessageTypography,
 } from "@/components/chat/chat-typography";
-import { CHAT_AI_MENTION_LABEL } from "@/components/chat/chat-constants";
+import {
+  CHAT_AI_MENTION_LABEL,
+  CHAT_MESSAGE_MAX_LENGTH,
+  CHAT_MESSAGE_TOO_LONG_TOAST,
+} from "@/components/chat/chat-constants";
 import { cn } from "@/lib/utils";
 
 interface ChatInputBarProps {
@@ -202,6 +207,12 @@ export function ChatInputBar({
     const raw = inputRef.current?.value ?? message;
     const trimmed = raw.trim();
     if (!trimmed) return;
+
+    if (trimmed.length > CHAT_MESSAGE_MAX_LENGTH) {
+      toast.error(CHAT_MESSAGE_TOO_LONG_TOAST);
+      requestAnimationFrame(() => inputRef.current?.focus());
+      return;
+    }
 
     if (aiEnabled) onSendAi(trimmed);
     else onSendChat(trimmed);
