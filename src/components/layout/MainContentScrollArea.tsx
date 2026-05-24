@@ -21,6 +21,7 @@ export function MainContentScrollArea({ children }: { children: ReactNode }) {
   return (
     <div
       ref={scrollRef}
+      data-main-content-scroll
       className={cn(
         "min-h-0 flex-1 overflow-y-auto pt-6 [scrollbar-gutter:stable] [scrollbar-color:rgba(0,0,0,0.2)_transparent]",
         MAIN_PAGE_INLINE_PADDING_CLASS,

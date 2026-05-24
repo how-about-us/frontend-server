@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
+import { useDragAutoScroll } from "@/hooks/useDragAutoScroll";
 import {
   useCreateScheduleItem,
   useReorderScheduleItem,
@@ -97,6 +98,8 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  useDragAutoScroll({ active: dragFromIndex !== null });
 
   const handlePickPrediction = useCallback(
     async (prediction: google.maps.places.PlacePrediction) => {
