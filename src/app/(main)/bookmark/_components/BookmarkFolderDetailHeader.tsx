@@ -14,7 +14,7 @@ export function BookmarkFolderDetailHeader({
   onEditClick?: () => void;
 }) {
   return (
-    <div className="shrink-0 border-b border-gray-border px-6 pb-5">
+    <div className="shrink-0 border-b border-gray-border pb-5">
       <div className="flex justify-end">
         <Link
           href={BOOKMARK_LIST_PATH}

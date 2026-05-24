@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@/types/chat";
-import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
+import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
 import { AiConversationSummaryContent } from "@/components/chat/messages/AiConversationSummaryContent";
 import { AiRecommendedPlacesList } from "@/components/chat/messages/AiRecommendedPlacesList";
 import type { ChatMessageTextTypography } from "@/components/chat/chat-typography";
@@ -15,22 +15,21 @@ function AiResponseBody({
 }) {
   return (
     <>
-      <AiHighlightedText text={msg.text} />
+      <ChatMarkdownContent text={msg.text} variant="ai" />
       {msg.aiIntent === "place_recommendation" &&
-      msg.aiRecommendedPlaces?.length ?
+      msg.aiRecommendedPlaces?.length ? (
         <AiRecommendedPlacesList
           places={msg.aiRecommendedPlaces}
           heading={msg.aiPlaceRecommendationHeading}
           isMinimized={isMinimized}
         />
-      : null}
-      {msg.aiIntent === "conversation_summary" &&
-      msg.aiConversationSummary ?
+      ) : null}
+      {msg.aiIntent === "conversation_summary" && msg.aiConversationSummary ? (
         <AiConversationSummaryContent
           summary={msg.aiConversationSummary}
           isMinimized={isMinimized}
         />
-      : null}
+      ) : null}
     </>
   );
 }

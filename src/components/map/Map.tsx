@@ -285,7 +285,7 @@ export default function Map() {
       {!bootstrap.ready ? null : (
         <>
           <MapSearchHereButton discoverCategoryId={selectedCategoryId} />
-          <div className="pointer-events-none absolute right-4 top-4 z-[16]">
+          <div className="pointer-events-none absolute bottom-6 left-4 z-[16]">
             <button
               type="button"
               onClick={() => setShowBookmarkPins((v) => !v)}

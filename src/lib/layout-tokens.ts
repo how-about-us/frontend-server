@@ -31,3 +31,6 @@ export const PLAN_PLACE_CARD_WIDE_TW = {
 
 /** 플랜 구간(경로) 카드 가로 고정폭(px). 좌측 패널 max(s2) 기준 본문 영역 근사 */
 export const PLAN_ROUTE_CARD_WIDTH_PX = 620 as const;
+
+/** (main) 좌측 본문 — 사이드바 경계↔콘텐츠 좌측·콘텐츠 우측↔LeftSection 경계 (`MainContentScrollArea`) */
+export const MAIN_PAGE_INLINE_PADDING_CLASS = "px-6" as const;

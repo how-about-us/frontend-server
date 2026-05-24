@@ -1,4 +1,6 @@
 import { CHAT_AI_MENTION_LABEL } from "@/components/chat/chat-constants";
+import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
+import type { ChatMarkdownVariant } from "@/components/chat/chat-markdown-components";
 import { getChatPanelLook } from "@/components/chat/chat-panel-look";
 import { AiResponseBubble } from "@/components/chat/messages/AiResponseBubble";
 import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
@@ -91,11 +93,15 @@ function AiRequestMetaRow({
 function BubbleMessageText({
   msg,
   typo,
+  variant,
 }: {
   msg: ChatMessage;
   typo: ChatMessageTextTypography;
+  variant: ChatMarkdownVariant;
 }) {
-  if (!msg.isAiRequest) return msg.text;
+  if (!msg.isAiRequest) {
+    return <ChatMarkdownContent text={msg.text} variant={variant} />;
+  }
   return (
     <>
       <span className={typo.aiRequestBubblePrefix}>
@@ -104,7 +110,7 @@ function BubbleMessageText({
       {msg.text ? (
         <>
           {" "}
-          <span className="whitespace-pre-wrap break-words">{msg.text}</span>
+          <ChatMarkdownContent text={msg.text} variant={variant} />
         </>
       ) : null}
     </>
@@ -174,7 +180,7 @@ export function OtherMessageGroup({
                   typo.bubble,
                 )}
               >
-                <BubbleMessageText msg={msg} typo={typo} />
+                <BubbleMessageText msg={msg} typo={typo} variant="other" />
               </div>
               {msg.isAiRequest ? (
                 <AiRequestMetaRow msg={msg} typo={typo} isOwnMessage={false} />
@@ -212,7 +218,7 @@ export function MyMessageGroup({
           <div
             className={cn(chrome.bubbleBase, chrome.mineBubble, typo.bubble)}
           >
-            <BubbleMessageText msg={msg} typo={typo} />
+            <BubbleMessageText msg={msg} typo={typo} variant="mine" />
           </div>
           {msg.isAiRequest ? (
             <AiRequestMetaRow

@@ -3,9 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
-import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
+import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
 import {
-  chatAiBubblePlaceRecommendationEmphasisClass,
   chatAiBubblePlaceRecommendationHeadingSubtitleClass,
   chatAiBubblePlaceRecommendationHeadingTitleClass,
   chatAiBubblePlaceRecommendationReasonClass,
@@ -88,10 +87,7 @@ function AiRecommendedPlaceRow({
             chatAiBubblePlaceRecommendationReasonClass(isMinimized),
           )}
         >
-          <AiHighlightedText
-            text={reasonDisplay}
-            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
-          />
+          <ChatMarkdownContent text={reasonDisplay} variant="ai" />
         </p>
       ) : null}
     </div>
@@ -124,18 +120,12 @@ export function AiRecommendedPlacesList({
     >
       {heading?.title ? (
         <div className={titleCls}>
-          <AiHighlightedText
-            text={heading.title}
-            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
-          />
+          <ChatMarkdownContent text={heading.title} variant="ai" />
         </div>
       ) : null}
       {heading?.subtitle ? (
         <div className={subtitleCls}>
-          <AiHighlightedText
-            text={heading.subtitle}
-            emphasisClassName={chatAiBubblePlaceRecommendationEmphasisClass}
-          />
+          <ChatMarkdownContent text={heading.subtitle} variant="ai" />
         </div>
       ) : null}
       <div className="flex flex-col gap-4">

@@ -62,7 +62,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     return (
       <>
         <BookmarkFolderDetailHeader folder={folder} />
-        <div className={`${SCROLLBAR} px-6 py-10`}>
+        <div className={`${SCROLLBAR} py-10`}>
           <p className="text-center text-sm text-dark-gray">
             유효하지 않은 카테고리입니다.
           </p>
@@ -75,7 +75,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     return (
       <>
         <BookmarkFolderDetailHeader folder={folder} />
-        <div className={`${SCROLLBAR} px-6 py-10`}>
+        <div className={`${SCROLLBAR} py-10`}>
           <p className="text-center text-sm text-dark-gray">불러오는 중…</p>
         </div>
       </>
@@ -86,7 +86,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     return (
       <>
         <BookmarkFolderDetailHeader folder={folder} />
-        <div className={`${SCROLLBAR} space-y-3 px-6 py-10`}>
+        <div className={`${SCROLLBAR} space-y-3 py-10`}>
           <p className="text-center text-sm text-brand-red">
             {bookmarksErr instanceof Error
               ? bookmarksErr.message
@@ -111,11 +111,11 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
       <BookmarkFolderDetailHeader folder={folder} />
       <div className={SCROLLBAR}>
         {cardsLoading && places.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-dark-gray">
+          <p className="py-10 text-center text-sm text-dark-gray">
             장소 정보를 불러오는 중…
           </p>
         ) : places.length === 0 ? (
-          <p className="px-6 py-10 text-center text-sm text-dark-gray">
+          <p className="py-10 text-center text-sm text-dark-gray">
             담긴 장소가 없습니다.
           </p>
         ) : (

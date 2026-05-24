@@ -253,8 +253,7 @@ export function ChatMessageList({
 
     const restore = () => {
       applyScrollAnchor(root, followTailRef.current, distFromBottomRef.current);
-      const dist =
-        root.scrollHeight - root.scrollTop - root.clientHeight;
+      const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
       const near = dist < NEAR_BOTTOM_PX;
       followTailRef.current = near;
       setIsAtBottom(near);
@@ -287,11 +286,7 @@ export function ChatMessageList({
       if (ch === lastClientHeightRef.current) return;
       lastClientHeightRef.current = ch;
 
-      applyScrollAnchor(
-        root,
-        followTailRef.current,
-        distFromBottomRef.current,
-      );
+      applyScrollAnchor(root, followTailRef.current, distFromBottomRef.current);
       const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
       const near = dist < NEAR_BOTTOM_PX;
       followTailRef.current = near;
@@ -316,7 +311,7 @@ export function ChatMessageList({
         <div
           className={cn(
             "flex flex-col",
-            isMinimized ? "gap-2 px-2 py-1.5" : "gap-3 px-3 py-2",
+            isMinimized ? "gap-1 px-2" : "gap-1 px-3",
           )}
         >
           <div

@@ -5,7 +5,6 @@ import {
   Camera,
   Landmark,
   TrainFront,
-  Pill,
 } from "lucide-react";
 
 /**
@@ -58,12 +57,5 @@ export const MAP_PLACE_CATEGORIES: MapPlaceCategory[] = [
     searchQuery: "지하철역 버스정류장",
     icon: TrainFront,
     googlePlaceTypeHint: "transit_station",
-  },
-  {
-    id: "pharmacy",
-    label: "약국",
-    searchQuery: "약국",
-    icon: Pill,
-    googlePlaceTypeHint: "pharmacy",
   },
 ];

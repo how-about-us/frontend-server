@@ -120,7 +120,7 @@ export function PlanPageView() {
   const canAddSchedule = roomId.length > 0 && !isCreatingSchedule;
 
   const pageContentClassName =
-    "@container/plan space-y-4 overflow-x-auto pb-8 pl-6 pr-6";
+    "@container/plan space-y-4 overflow-x-auto pb-8";
 
   const scheduleToolbar = (
     <div className="flex justify-end">

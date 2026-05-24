@@ -1,6 +1,6 @@
 "use client";
 
-import { AiHighlightedText } from "@/components/chat/chat-ai-highlighted-text";
+import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
 import {
   chatAiBubbleListTextClass,
   chatAiBubbleMutedListClass,
@@ -27,10 +27,10 @@ export function AiConversationSummaryContent({
   return (
     <div className="mt-2 space-y-3 border-t border-slate-300/80 pt-2">
       <div className={titleCls}>
-        <AiHighlightedText text={summary.title} />
+        <ChatMarkdownContent text={summary.title} variant="ai" />
       </div>
       <div className={bodyCls}>
-        <AiHighlightedText text={summary.overview} />
+        <ChatMarkdownContent text={summary.overview} variant="ai" />
       </div>
 
       {summary.sections?.map((sec) => {
@@ -41,7 +41,7 @@ export function AiConversationSummaryContent({
             <ul className={cn("list-disc space-y-0.5 pl-4", listCls)}>
               {sec.items.map((item, idx) => (
                 <li key={idx}>
-                  <AiHighlightedText text={item} />
+                  <ChatMarkdownContent text={item} variant="ai" />
                 </li>
               ))}
             </ul>
@@ -64,7 +64,7 @@ export function AiConversationSummaryContent({
                 ) : null}
                 {mp.note ? (
                   <span className="mt-0.5 block text-gray-600">
-                    <AiHighlightedText text={mp.note} />
+                    <ChatMarkdownContent text={mp.note} variant="ai" />
                   </span>
                 ) : null}
               </li>

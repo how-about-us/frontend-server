@@ -200,7 +200,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col border-b border-gray-border">
+    <div className="-mx-6 flex h-full min-h-0 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
 
       {/* 검색 입력 */}

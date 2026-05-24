@@ -166,7 +166,7 @@ export function BookmarkFoldersView() {
 
   if (isPending) {
     return (
-      <div className="px-6 py-10 text-center text-sm text-dark-gray">
+      <div className="py-10 text-center text-sm text-dark-gray">
         불러오는 중…
       </div>
     );
@@ -174,7 +174,7 @@ export function BookmarkFoldersView() {
 
   if (isError) {
     return (
-      <div className="space-y-3 px-6 py-10 text-center">
+      <div className="space-y-3 py-10 text-center">
         <p className="text-sm text-brand-red">
           {error instanceof Error
             ? error.message
@@ -192,7 +192,7 @@ export function BookmarkFoldersView() {
   }
 
   return (
-    <div className="space-y-4 pb-8 pl-6 pr-6">
+    <div className="space-y-4 pb-8">
       <div className="flex justify-end">
         <button
           type="button"
