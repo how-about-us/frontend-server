@@ -64,6 +64,9 @@ export default function NewTripPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(
+    null,
+  );
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -88,6 +91,7 @@ export default function NewTripPage() {
   const canSubmit =
     title.trim() &&
     destination.trim() &&
+    destinationPlaceId &&
     startDate &&
     endDate &&
     !isPending &&
@@ -152,11 +156,15 @@ export default function NewTripPage() {
           </div>
 
           <div className="rounded-2xl border-2 border-gray-border bg-white px-5 py-4 transition focus-within:border-brand-red">
-            <p className="mb-1.5 text-sm font-bold text-black">어디로?</p>
+            <p className="mb-1.5 text-sm font-bold text-black">목적지</p>
             <DestinationSearchInput
               value={destination}
               onChange={setDestination}
-              showLeadingIcon={false}
+              onResolvedPlace={(place) =>
+                setDestinationPlaceId(place?.placeId ?? null)
+              }
+              selectionOnly
+              leadingIconType="search"
             />
           </div>
 
