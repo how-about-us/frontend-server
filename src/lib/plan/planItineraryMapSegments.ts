@@ -1,7 +1,7 @@
 /// <reference types="google.maps" />
 
 import type { PlanPlace } from "@/lib/plan/types";
-import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
+import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
 
 /** 펼친 일차 일정 순서에서 인접 두 장소로 만든 Directions 구간 단위 */
 export type PlanItinerarySegmentDescriptor = {
@@ -40,7 +40,7 @@ export function flattenPlanItinerarySegmentsFromPlaces(
         segmentSourceItemId: a.itemId,
         originPlaceId: o,
         destPlaceId: d,
-        travelModeCanon: canonicalScheduleTravelMode(a.travelMode) ?? "WALKING",
+        travelModeCanon: SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
         originLocation: a.location,
         destLocation: b.location,
       });

@@ -27,7 +27,6 @@ import {
 } from "@/lib/plan/scheduleAdjacentConflicts";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
-import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import type { PlanPlace } from "@/lib/plan/types";
@@ -267,9 +266,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 scheduleId={scheduleId}
                 segmentSourceItemId={place.itemId}
                 scheduleFingerprint={scheduleFingerprint}
-                travelMode={
-                  place.travelMode ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE
-                }
                 routeQueryEnabled={
                   placesData !== undefined &&
                   !isFetchingPlaces &&

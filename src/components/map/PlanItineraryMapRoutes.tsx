@@ -34,6 +34,7 @@ import { PlanItineraryStopMapPin } from "./PlanItineraryStopMapPin";
 /**
  * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만,
  * 일정 순서 장소 간 경로(polyline)·정류장 마커를 표시합니다.
+ * 폴리라인 travelMode는 항상 DRIVING(`planItineraryMapSegments`).
  * STOMP 에폭은 {@link usePlanMapDirectionsEpochStore} 참고.
  */
 export function PlanItineraryMapRoutes() {

@@ -23,7 +23,7 @@ import { TravelRouteSummaryLine } from "./TravelRouteSummaryLine";
 export type TravelDirectionsCardProps = {
   menuOpen: boolean;
   onToggleMenu: () => void;
-  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 플랜에서는 항상 자동차 고정 */
+  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 구간별 sessionStorage 선택값 */
   summaryMode: string;
   route: ScheduleItemRouteResponse | null | undefined;
   routeQuery: {
@@ -80,28 +80,27 @@ export function TravelDirectionsCard({
     <div className="relative">
       <button
         type="button"
-        className="flex w-[40%] cursor-pointer items-center gap-2 px-2.5 py-2 text-left"
+        className="inline-flex max-w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left"
         aria-expanded={menuOpen}
         onClick={onToggleMenu}
       >
         <TravelModeGlyph mode={headerTravelMode} />
-        <span className="min-w-0 flex-1 text-xs font-medium text-gray-900">
+        <span className="inline-flex min-w-0 items-center gap-0.5 text-xs font-medium text-gray-900">
           {summaryLine}
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-dark-gray transition-transform",
+              menuOpen && "rotate-180",
+            )}
+            aria-hidden
+          />
         </span>
-
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-dark-gray transition-transform",
-            menuOpen && "rotate-180",
-          )}
-          aria-hidden
-        />
       </button>
 
       {menuOpen ? (
         <div className="w-fit max-w-full border-t border-gray-border px-2.5 py-2">
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-dark-gray">
-            {readOnly ? "다른 수단 참고(자동차 고정)" : "이동 수단"}
+            이동 수단
           </p>
           <ul
             className="flex flex-col gap-1"

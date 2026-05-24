@@ -1,12 +1,16 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { useScheduleItemRoute } from "@/hooks/useRooms";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import { buildScheduleItemRouteSummariesByMode } from "@/lib/plan/scheduleItemRouteModes";
+import {
+  readTravelModeFromSessionStorage,
+  writeTravelModeToSessionStorage,
+} from "@/lib/plan/planTravelLocalStorage";
 import {
   SCHEDULE_ROUTE_DEFERRED_FETCH_MODES,
   SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
@@ -30,15 +34,28 @@ function routePayloadOk(
   );
 }
 
-/** 플랜 구간 경로는 항상 자동차 기준으로 표시·적용, 다른 수단은 패널에서 참고만 */
-const FIXED_TRAVEL_MODE = SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
+function readStoredSegmentMode(
+  roomId: string,
+  scheduleId: number,
+  segmentSourceItemId: number,
+  fingerprint: string,
+): ScheduleTravelModeValue {
+  if (!fingerprint.length) return SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
+  return (
+    readTravelModeFromSessionStorage(
+      roomId,
+      scheduleId,
+      segmentSourceItemId,
+      fingerprint,
+    ) ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE
+  );
+}
 
 export type PlanTravelTimeProps = {
   roomId: string;
   scheduleId: number;
   segmentSourceItemId: number;
   scheduleFingerprint: string;
-  travelMode?: string;
   routeQueryEnabled?: boolean;
   className?: string;
 };
@@ -57,6 +74,17 @@ export function PlanTravelTime({
   const fpTrim = scheduleFingerprint.trim();
   const rid = roomId.trim();
 
+  const [selectedMode, setSelectedMode] = useState<ScheduleTravelModeValue>(
+    () =>
+      readStoredSegmentMode(rid, scheduleId, segmentSourceItemId, fpTrim),
+  );
+
+  useEffect(() => {
+    setSelectedMode(
+      readStoredSegmentMode(rid, scheduleId, segmentSourceItemId, fpTrim),
+    );
+  }, [rid, scheduleId, segmentSourceItemId, fpTrim]);
+
   const {
     data: drivingRoute,
     isPending: drivingPending,
@@ -66,8 +94,26 @@ export function PlanTravelTime({
     roomId,
     scheduleId,
     segmentSourceItemId,
-    FIXED_TRAVEL_MODE,
+    SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
     routeQueryEnabled,
+    fpTrim,
+  );
+
+  const selectedNonDrivingEnabled =
+    routeQueryEnabled &&
+    selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
+
+  const {
+    data: selectedRoute,
+    isPending: selectedPending,
+    isError: selectedError,
+    isFetching: selectedFetching,
+  } = useScheduleItemRoute(
+    roomId,
+    scheduleId,
+    segmentSourceItemId,
+    selectedMode,
+    selectedNonDrivingEnabled,
     fpTrim,
   );
 
@@ -78,8 +124,14 @@ export function PlanTravelTime({
     Number.isFinite(scheduleId) &&
     Number.isFinite(segmentSourceItemId);
 
+  const menuDeferredModes = useMemo(
+    () =>
+      SCHEDULE_ROUTE_DEFERRED_FETCH_MODES.filter((m) => m !== selectedMode),
+    [selectedMode],
+  );
+
   const deferredRouteQueries = useQueries({
-    queries: SCHEDULE_ROUTE_DEFERRED_FETCH_MODES.map((mode) =>
+    queries: menuDeferredModes.map((mode) =>
       persistedScheduleItemRouteQueryOptions(
         rid,
         scheduleId,
@@ -93,10 +145,6 @@ export function PlanTravelTime({
       ),
     ),
   });
-
-  const deferredD0 = deferredRouteQueries[0]?.data;
-  const deferredD1 = deferredRouteQueries[1]?.data;
-  const deferredD2 = deferredRouteQueries[2]?.data;
 
   const modeRouteSummaries = useMemo(() => {
     const merged =
@@ -119,43 +167,54 @@ export function PlanTravelTime({
     };
 
     apply(drivingRoute);
-    apply(deferredD0);
-    apply(deferredD1);
-    apply(deferredD2);
+    if (selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
+      apply(selectedRoute);
+    }
+    menuDeferredModes.forEach((_mode, i) => {
+      apply(deferredRouteQueries[i]?.data);
+    });
 
     return merged;
-  }, [drivingRoute, deferredD0, deferredD1, deferredD2]);
+  }, [
+    drivingRoute,
+    selectedMode,
+    selectedRoute,
+    menuDeferredModes,
+    deferredRouteQueries,
+  ]);
 
   const displayRoute = useMemo(() => {
-    const sel = modeRouteSummaries[FIXED_TRAVEL_MODE];
+    const sel = modeRouteSummaries[selectedMode];
     if (
       sel != null &&
       sel.durationSeconds >= 0 &&
       sel.distanceMeters >= 0
     ) {
       return {
-        travelMode: FIXED_TRAVEL_MODE,
+        travelMode: selectedMode,
         durationSeconds: sel.durationSeconds,
         distanceMeters: sel.distanceMeters,
       } satisfies ScheduleItemRouteResponse;
     }
-    if (routePayloadOk(drivingRoute)) {
+    if (selectedMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
+      if (routePayloadOk(drivingRoute)) {
+        const rc = canonicalScheduleTravelMode(
+          typeof drivingRoute.travelMode === "string"
+            ? drivingRoute.travelMode.trim()
+            : "",
+        );
+        if (rc === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) return drivingRoute;
+      }
+    } else if (routePayloadOk(selectedRoute)) {
       const rc = canonicalScheduleTravelMode(
-        typeof drivingRoute.travelMode === "string"
-          ? drivingRoute.travelMode.trim()
+        typeof selectedRoute.travelMode === "string"
+          ? selectedRoute.travelMode.trim()
           : "",
       );
-      if (rc === FIXED_TRAVEL_MODE) return drivingRoute;
+      if (rc === selectedMode) return selectedRoute;
     }
     return undefined;
-  }, [modeRouteSummaries, drivingRoute]);
-
-  const dq0Pending = deferredRouteQueries[0]?.isPending ?? false;
-  const dq0Fetching = deferredRouteQueries[0]?.isFetching ?? false;
-  const dq1Pending = deferredRouteQueries[1]?.isPending ?? false;
-  const dq1Fetching = deferredRouteQueries[1]?.isFetching ?? false;
-  const dq2Pending = deferredRouteQueries[2]?.isPending ?? false;
-  const dq2Fetching = deferredRouteQueries[2]?.isFetching ?? false;
+  }, [modeRouteSummaries, selectedMode, drivingRoute, selectedRoute]);
 
   const modeRouteRowLoading = useMemo(() => {
     const out: Partial<Record<ScheduleTravelModeValue, boolean>> = {};
@@ -168,41 +227,58 @@ export function PlanTravelTime({
       );
     };
     if (routeQueryEnabled) {
-      out[FIXED_TRAVEL_MODE] =
-        !hasSummary(FIXED_TRAVEL_MODE) &&
+      out[SCHEDULE_ROUTE_PRIMARY_FETCH_MODE] =
+        !hasSummary(SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) &&
         (drivingPending || drivingFetching);
-      const pendFetch = [
-        dq0Pending || dq0Fetching,
-        dq1Pending || dq1Fetching,
-        dq2Pending || dq2Fetching,
-      ] as const;
-      SCHEDULE_ROUTE_DEFERRED_FETCH_MODES.forEach((mode, i) => {
+      if (selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
+        out[selectedMode] =
+          !hasSummary(selectedMode) &&
+          (selectedPending || selectedFetching);
+      }
+      menuDeferredModes.forEach((mode, i) => {
+        const q = deferredRouteQueries[i];
         out[mode] =
           deferredLazyEnabled &&
           !hasSummary(mode) &&
-          pendFetch[i]!;
+          Boolean(q?.isPending || q?.isFetching);
       });
     }
     return out;
   }, [
     modeRouteSummaries,
     routeQueryEnabled,
+    selectedMode,
     deferredLazyEnabled,
     drivingPending,
     drivingFetching,
-    dq0Pending,
-    dq0Fetching,
-    dq1Pending,
-    dq1Fetching,
-    dq2Pending,
-    dq2Fetching,
+    selectedPending,
+    selectedFetching,
+    menuDeferredModes,
+    deferredRouteQueries,
   ]);
 
-  const activeBackingQueryStatus = {
-    isPending: drivingPending,
-    isFetching: drivingFetching,
-    isError: drivingError,
-  } as const;
+  const activeBackingQueryStatus = useMemo(() => {
+    if (selectedMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
+      return {
+        isPending: drivingPending,
+        isFetching: drivingFetching,
+        isError: drivingError,
+      } as const;
+    }
+    return {
+      isPending: selectedPending,
+      isFetching: selectedFetching,
+      isError: selectedError,
+    } as const;
+  }, [
+    selectedMode,
+    drivingPending,
+    drivingFetching,
+    drivingError,
+    selectedPending,
+    selectedFetching,
+    selectedError,
+  ]);
 
   const primarySettled =
     !activeBackingQueryStatus.isPending &&
@@ -223,6 +299,23 @@ export function PlanTravelTime({
     !displayRoute &&
     primarySettled &&
     !summaryIsError;
+
+  const handleSelectTravelMode = useCallback(
+    (mode: ScheduleTravelModeValue) => {
+      if (fpTrim.length) {
+        writeTravelModeToSessionStorage(
+          rid,
+          scheduleId,
+          segmentSourceItemId,
+          fpTrim,
+          mode,
+        );
+      }
+      setSelectedMode(mode);
+      setMenuOpen(false);
+    },
+    [rid, scheduleId, segmentSourceItemId, fpTrim],
+  );
 
   if (directionsHidden) {
     return (
@@ -247,7 +340,7 @@ export function PlanTravelTime({
         <TravelDirectionsCard
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
-          summaryMode={FIXED_TRAVEL_MODE}
+          summaryMode={selectedMode}
           route={displayRoute}
           routeQuery={{
             isPending: summaryPending,
@@ -257,10 +350,10 @@ export function PlanTravelTime({
           routeUnavailable={summaryUnavailable}
           modeRouteSummaries={modeRouteSummaries}
           modeRouteRowLoading={modeRouteRowLoading}
-          effectiveMode={FIXED_TRAVEL_MODE}
+          effectiveMode={selectedMode}
           showUnknownOption={false}
           modeRaw=""
-          readOnly
+          onSelectTravelMode={handleSelectTravelMode}
           onHideDirections={() => {
             setDirectionsHidden(true);
             setMenuOpen(false);
