@@ -20,11 +20,13 @@ import {
 import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 
+import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanContainerRefProvider } from "../plan-container";
 import { PlanDaySection } from "./PlanDaySection";
 import { PlanItinerary } from "./PlanItinerary";
 
 export function PlanPageView() {
+  const { isReadOnly, copy } = usePlanMobileReadOnly();
   const planContainerRef = useRef<HTMLDivElement>(null);
   const storedId = useSessionStore((s) => s.currentRoomId);
   const roomId =
@@ -146,7 +148,7 @@ export function PlanPageView() {
           ref={planContainerRef}
           className={pageContentClassName}
         >
-          {scheduleToolbar}
+          {!isReadOnly ? scheduleToolbar : null}
           <p className="py-8 text-center text-sm text-dark-gray">
             일정을 불러오는 중…
           </p>
@@ -161,7 +163,7 @@ export function PlanPageView() {
         ref={planContainerRef}
         className={pageContentClassName}
       >
-      {scheduleToolbar}
+      {!isReadOnly ? scheduleToolbar : null}
 
       {isError ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-brand-red">
@@ -171,8 +173,7 @@ export function PlanPageView() {
 
       {!isError && planDays.length === 0 ? (
         <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
-          아직 생성된 일정이 없어요. 우측 상단의 「새 일차 추가」 버튼으로 일차를
-          추가해 보세요.
+          {copy.scheduleEmpty}
         </p>
       ) : null}
 
@@ -183,9 +184,11 @@ export function PlanPageView() {
           subtitle={day.dateLabel}
           itineraryScheduleId={sortedSchedules[dayIndex]?.scheduleId ?? null}
           onRequestDeleteSchedule={
-            sortedSchedules[dayIndex] && dayIndex === lastDayIndex ?
-              () => handleDeleteScheduleDay(dayIndex)
-            : undefined
+            !isReadOnly &&
+            sortedSchedules[dayIndex] &&
+            dayIndex === lastDayIndex
+              ? () => handleDeleteScheduleDay(dayIndex)
+              : undefined
           }
         >
           {sortedSchedules[dayIndex] ? (

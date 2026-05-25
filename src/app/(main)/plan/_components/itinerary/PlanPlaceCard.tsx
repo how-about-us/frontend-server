@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
@@ -55,6 +56,7 @@ export function PlanPlaceCard({
   onDragLeave,
   onDrop,
 }: PlanPlaceCardProps) {
+  const { isReadOnly } = usePlanMobileReadOnly();
   const { setSelectedPlace } = useSelectedPlace();
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place);
@@ -86,6 +88,7 @@ export function PlanPlaceCard({
 
   const handleCardClick = useCallback(
     (e: React.MouseEvent) => {
+      if (isReadOnly) return;
       if (e.button !== 0) return;
       const start = pointerDownRef.current;
       pointerDownRef.current = null;
@@ -122,6 +125,7 @@ export function PlanPlaceCard({
       });
     },
     [
+      isReadOnly,
       place.googlePlaceId,
       place.location,
       place.subtitle,
@@ -153,18 +157,20 @@ export function PlanPlaceCard({
 
   return (
     <article
-      draggable={!dragDisabled}
-      onPointerDown={handlePointerDown}
-      onDragStart={dragDisabled ? undefined : onDragStart}
-      onDragEnd={dragDisabled ? undefined : onDragEnd}
-      onDragOver={dragDisabled ? undefined : onDragOver}
-      onDragLeave={dragDisabled ? undefined : onDragLeave}
-      onDrop={dragDisabled ? undefined : onDrop}
-      onClick={handleCardClick}
+      draggable={!dragDisabled && !isReadOnly}
+      onPointerDown={isReadOnly ? undefined : handlePointerDown}
+      onDragStart={dragDisabled || isReadOnly ? undefined : onDragStart}
+      onDragEnd={dragDisabled || isReadOnly ? undefined : onDragEnd}
+      onDragOver={dragDisabled || isReadOnly ? undefined : onDragOver}
+      onDragLeave={dragDisabled || isReadOnly ? undefined : onDragLeave}
+      onDrop={dragDisabled || isReadOnly ? undefined : onDrop}
+      onClick={isReadOnly ? undefined : handleCardClick}
       className={cn(
         "w-full select-none",
         PLAN_PLACE_CARD_TW.article,
-        dragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing",
+        dragDisabled || isReadOnly
+          ? "cursor-default"
+          : "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-70 shadow-md",
         isDropTarget &&
           "ring-2 ring-brand-green ring-offset-2 ring-offset-white",

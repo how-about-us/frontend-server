@@ -6,6 +6,7 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
+import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
 import { reconcileClientSession } from "@/lib/auth";
@@ -57,7 +58,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
       <SessionReconciler />
       <StompProvider>
         <GoogleMapsProvider>
-          {children}
+          <MobileChrome>{children}</MobileChrome>
           <Toaster position="bottom-right" richColors />
         </GoogleMapsProvider>
       </StompProvider>

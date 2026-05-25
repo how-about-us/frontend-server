@@ -7,6 +7,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
+import { useRedirectOnMobileDevice } from "@/hooks/useMobileRedirects";
 import { useCreateRoom } from "@/hooks/useRooms";
 import type { RoomDetail } from "@/lib/api/rooms";
 import {
@@ -66,6 +67,7 @@ function DateField({ id, value, min, onChange }: DateFieldProps) {
 export default function NewTripPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  useRedirectOnMobileDevice("/home");
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(

@@ -17,6 +17,7 @@ import {
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
+import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PLAN_ROUTE_CARD_WIDTH_PX } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,7 @@ export function PlanTravelTime({
   routeQueryEnabled = true,
   className,
 }: PlanTravelTimeProps) {
+  const { isReadOnly } = usePlanMobileReadOnly();
   const [menuOpen, setMenuOpen] = useState(false);
   const [directionsHidden, setDirectionsHidden] = useState(false);
 
@@ -334,10 +336,16 @@ export function PlanTravelTime({
     >
       <TravelRouteRail arrowClassName="text-brand-green" />
       <div
-        className="flex shrink-0 flex-col justify-center py-0.5"
-        style={{ width: PLAN_ROUTE_CARD_WIDTH_PX }}
+        className={cn(
+          "flex shrink-0 flex-col justify-center py-0.5",
+          isReadOnly && "min-w-0 max-w-full flex-1",
+        )}
+        style={
+          isReadOnly ? undefined : { width: PLAN_ROUTE_CARD_WIDTH_PX }
+        }
       >
         <TravelDirectionsCard
+          readOnly={isReadOnly}
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
           summaryMode={selectedMode}

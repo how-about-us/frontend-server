@@ -22,6 +22,7 @@ import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-
 
 import type { PlanPlace } from "@/lib/plan/types";
 
+import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { AddFromBookmarkModal } from "./AddFromBookmarkModal";
 import { PlanPlaceCard } from "./PlanPlaceCard";
@@ -34,6 +35,7 @@ export type PlanItineraryProps = {
 };
 
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
+  const { isReadOnly, copy } = usePlanMobileReadOnly();
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const expandedByScheduleId = usePlanItineraryExpandedStore(
     (s) => s.expandedByScheduleId,
@@ -86,7 +88,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     roomId,
     scheduleId,
     places,
-    interactionLocked: isAdding,
+    interactionLocked: isAdding || isReadOnly,
   });
 
   const handlePickPrediction = useCallback(
@@ -137,7 +139,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
       {!isLoading && places.length === 0 ? (
         <p className="py-4 text-center text-sm text-dark-gray">
-          아직 등록된 장소가 없습니다. 검색으로 장소를 추가해 보세요.
+          {copy.placesEmpty}
         </p>
       ) : null}
 
@@ -148,7 +150,9 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               place={place}
               orderIndex={index + 1}
               orderBadgeColor={orderBadgeColor}
-              scheduleTimeEdit={{ roomId, scheduleId }}
+              scheduleTimeEdit={
+                isReadOnly ? undefined : { roomId, scheduleId }
+              }
               scheduleOverlapWarning={
                 isReorderSettling ?
                   undefined
@@ -178,35 +182,37 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         ))}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <PlacesSearchInput
-              coords={mapCenter}
-              pickOnly
-              leadingIcon="pin"
-              placeholder="장소 추가하기"
+      {!isReadOnly ? (
+        <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <PlacesSearchInput
+                coords={mapCenter}
+                pickOnly
+                leadingIcon="pin"
+                placeholder="장소 추가하기"
+                disabled={isAdding}
+                onSearch={() => {}}
+                onPickPrediction={(p) => void handlePickPrediction(p)}
+              />
+            </div>
+            <button
+              type="button"
+              aria-label="북마크에서 장소 추가"
               disabled={isAdding}
-              onSearch={() => {}}
-              onPickPrediction={(p) => void handlePickPrediction(p)}
-            />
+              onClick={() => setBookmarkModalOpen(true)}
+              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-border bg-white text-dark-gray shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Bookmark className="size-4" strokeWidth={2} aria-hidden />
+            </button>
           </div>
-          <button
-            type="button"
-            aria-label="북마크에서 장소 추가"
-            disabled={isAdding}
-            onClick={() => setBookmarkModalOpen(true)}
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-border bg-white text-dark-gray shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Bookmark className="size-4" strokeWidth={2} aria-hidden />
-          </button>
+          {isAdding ? (
+            <p className="text-xs text-dark-gray">추가하는 중…</p>
+          ) : null}
         </div>
-        {isAdding ? (
-          <p className="text-xs text-dark-gray">추가하는 중…</p>
-        ) : null}
-      </div>
+      ) : null}
 
-      {bookmarkModalOpen ? (
+      {bookmarkModalOpen && !isReadOnly ? (
         <AddFromBookmarkModal
           roomId={roomId}
           scheduleId={scheduleId}
