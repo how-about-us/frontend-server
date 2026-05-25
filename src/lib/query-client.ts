@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
+let registeredQueryClient: QueryClient | null = null;
+
 export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -10,4 +12,13 @@ export function createQueryClient() {
       },
     },
   });
+}
+
+/** BFF·STOMP 등 React 밖에서 Query 캐시 접근용 — `AppRootProviders`에서 1회 등록 */
+export function registerQueryClient(client: QueryClient): void {
+  registeredQueryClient = client;
+}
+
+export function getQueryClient(): QueryClient | null {
+  return registeredQueryClient;
 }

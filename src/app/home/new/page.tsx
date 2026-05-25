@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ChangeEvent } from "react";
@@ -7,11 +8,13 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCreateRoom } from "@/hooks/useRooms";
+import type { RoomDetail } from "@/lib/api/rooms";
 import {
   formatDateYmd,
   isTripDurationWithinLimit,
   MAX_TRIP_DAYS,
 } from "@/lib/plan/tripRange";
+import { roomDetailQueryKey } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
@@ -62,6 +65,7 @@ function DateField({ id, value, min, onChange }: DateFieldProps) {
 
 export default function NewTripPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(
@@ -71,9 +75,6 @@ export default function NewTripPage() {
   const [endDate, setEndDate] = useState("");
 
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
-  const setCurrentRoomInviteCode = useSessionStore(
-    (s) => s.setCurrentRoomInviteCode,
-  );
   const { mutate: createRoom, isPending, error } = useCreateRoom();
 
   const todayYmd = formatDateYmd(new Date());
@@ -111,7 +112,10 @@ export default function NewTripPage() {
       {
         onSuccess: (room) => {
           setCurrentRoomId(room.id);
-          setCurrentRoomInviteCode(room.inviteCode);
+          queryClient.setQueryData<RoomDetail>(
+            roomDetailQueryKey(room.id),
+            room,
+          );
           router.push("/plan");
         },
       },

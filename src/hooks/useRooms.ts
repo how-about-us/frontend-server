@@ -81,7 +81,7 @@ import {
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 import type { PlanPlace } from "@/lib/plan/types";
-import { useSessionStore } from "@/stores/session-store";
+import { useSessionUser } from "@/hooks/useSessionUser";
 
 export function useRoomsList() {
   return useQuery({
@@ -374,14 +374,22 @@ export function useDeleteRoom() {
 }
 
 export function useRegenerateInviteCode() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (roomId: string) => regenerateInviteCode(roomId),
+    onSuccess: (data, roomId) => {
+      queryClient.setQueryData<RoomDetail>(
+        roomDetailQueryKey(roomId),
+        (prev) => (prev ? { ...prev, inviteCode: data.inviteCode } : prev),
+      );
+    },
   });
 }
 
 export function useRoomMembers(roomId: string | null) {
   const pathname = usePathname();
-  const user = useSessionStore((s) => s.user);
+  const { data: user } = useSessionUser();
   const { connected: stompConnected } = useStompContext();
 
   /**

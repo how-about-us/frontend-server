@@ -1,7 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { CheckIcon, XIcon } from "lucide-react";
 
 import {
@@ -9,9 +7,7 @@ import {
   useJoinRequests,
   useRejectJoinRequest,
 } from "@/hooks/useRooms";
-import { joinRequestsQueryKey } from "@/lib/query-keys";
-import type { JoinRequest, JoinRequestListResponse } from "@/lib/api/rooms";
-import { useSessionStore } from "@/stores/session-store";
+import type { JoinRequest } from "@/lib/api/rooms";
 
 type Props = {
   roomId: string;
@@ -88,28 +84,8 @@ function JoinRequestCard({
 }
 
 export function JoinRequestsSection({ roomId }: Props) {
-  const queryClient = useQueryClient();
-  const setPendingJoinRequestsCount = useSessionStore(
-    (s) => s.setPendingJoinRequestsCount,
-  );
-
   const { data, isLoading } = useJoinRequests(roomId);
   const requests = data?.requests ?? [];
-
-  useEffect(() => {
-    setPendingJoinRequestsCount(requests.length);
-    return () => {
-      const cached = queryClient.getQueryData<JoinRequestListResponse>(
-        joinRequestsQueryKey(roomId),
-      );
-      setPendingJoinRequestsCount(cached?.requests.length ?? 0);
-    };
-  }, [
-    requests.length,
-    roomId,
-    queryClient,
-    setPendingJoinRequestsCount,
-  ]);
 
   if (isLoading) {
     return (

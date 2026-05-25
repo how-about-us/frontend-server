@@ -2,14 +2,14 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
 import { reconcileClientSession } from "@/lib/auth";
-import { createQueryClient } from "@/lib/query-client";
+import { createQueryClient, registerQueryClient } from "@/lib/query-client";
 
 /**
  * 전역 레이아웃용 Provider 순서 —
@@ -17,13 +17,22 @@ import { createQueryClient } from "@/lib/query-client";
  *
  * 순서: React Query → STOMP → Google Maps(Context) → 앱 라우트
  */
-export function AppRootProviders({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => createQueryClient());
+function SessionReconciler() {
+  const queryClient = useQueryClient();
 
-  /** `users/me`로 메모리 `user` 정합 (방 ID는 위 동기 부팅에서 이미 시드) */
   useEffect(() => {
-    void reconcileClientSession();
-  }, []);
+    void reconcileClientSession(queryClient);
+  }, [queryClient]);
+
+  return null;
+}
+
+export function AppRootProviders({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => {
+    const client = createQueryClient();
+    registerQueryClient(client);
+    return client;
+  });
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -45,6 +54,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionReconciler />
       <StompProvider>
         <GoogleMapsProvider>
           {children}

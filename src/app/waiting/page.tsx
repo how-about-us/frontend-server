@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { RefreshCw } from "lucide-react";
@@ -12,19 +13,20 @@ import {
   joinStatusForWaitingUi,
   planPathForRoom,
 } from "@/lib/join-room-workflow";
+import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 
 type WaitingCheckState = ReturnType<typeof joinStatusForWaitingUi> | null;
 
 function WaitingContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
   const roomId = searchParams.get("roomId") ?? "";
   const roomTitle = searchParams.get("roomTitle") ?? "여행 방";
 
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
-  const setCurrentRoomMeta = useSessionStore((s) => s.setCurrentRoomMeta);
 
   const [statusResult, setStatusResult] = useState<WaitingCheckState>(null);
   const [fetchError, setFetchError] = useState(false);
@@ -43,7 +45,7 @@ function WaitingContent() {
           setCurrentRoomId(data.id);
           try {
             const meta = await getRoomDetail(data.id);
-            setCurrentRoomMeta(meta);
+            queryClient.setQueryData(roomDetailQueryKey(data.id), meta);
           } catch {
             // 메타 조회 실패해도 입장은 진행
           }

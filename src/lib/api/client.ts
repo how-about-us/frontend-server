@@ -1,6 +1,10 @@
 import { fetchSessionUserRaw } from "@/lib/auth";
 import { tearDownClientSession } from "@/lib/client-storage";
-import { useSessionStore } from "@/stores/session-store";
+import { getQueryClient } from "@/lib/query-client";
+import {
+  readSessionUserCache,
+  setSessionUserCache,
+} from "@/lib/session-user-cache";
 import { refreshToken } from "./auth";
 
 // Deduplicate concurrent refresh attempts into a single request
@@ -18,7 +22,7 @@ async function tryRefresh(): Promise<boolean> {
 }
 
 function clearSessionAndRedirect() {
-  tearDownClientSession();
+  tearDownClientSession({ queryClient: getQueryClient() ?? undefined });
   if (typeof window === "undefined") return;
   const path = window.location.pathname;
   if (
@@ -50,9 +54,10 @@ export async function apiFetch(
     return res;
   }
 
-  if (useSessionStore.getState().user == null) {
+  const queryClient = getQueryClient();
+  if (queryClient && readSessionUserCache(queryClient) == null) {
     const user = await fetchSessionUserRaw();
-    if (user) useSessionStore.getState().setUser(user);
+    if (user) setSessionUserCache(queryClient, user);
   }
 
   return fetch(input, opts);

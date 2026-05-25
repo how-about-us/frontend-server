@@ -62,6 +62,23 @@ async function fetchPlacesWithPhotos(
   return results;
 }
 
+export function placesSearchQueryKey(
+  query: string,
+  latitude: number | null,
+  longitude: number | null,
+  radius?: number,
+) {
+  return [
+    "places",
+    "search",
+    query,
+    latitude,
+    longitude,
+    radius,
+    PLACES_SEARCH_MAX_RESULTS,
+  ] as const;
+}
+
 export function usePlacesSearch(
   query: string,
   latitude: number | null,
@@ -69,15 +86,7 @@ export function usePlacesSearch(
   radius?: number,
 ) {
   return useQuery({
-    queryKey: [
-      "places",
-      "search",
-      query,
-      latitude,
-      longitude,
-      radius,
-      PLACES_SEARCH_MAX_RESULTS,
-    ],
+    queryKey: placesSearchQueryKey(query, latitude, longitude, radius),
     queryFn: () =>
       fetchPlacesWithPhotos(
         query,

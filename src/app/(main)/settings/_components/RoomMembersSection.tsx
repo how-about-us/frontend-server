@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
 import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
 import { useCurrentRoomId } from "@/hooks/use-room-id";
 import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
@@ -27,11 +28,9 @@ export function RoomMembersSection() {
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
-  const user = useSessionStore((s) => s.user);
+  const { data: user } = useSessionUser();
   const { roomId: currentRoomId } = useCurrentRoomId();
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
-  const clearCurrentRoomInviteCode = useSessionStore((s) => s.clearCurrentRoomInviteCode);
-  const clearCurrentRoomMeta = useSessionStore((s) => s.clearCurrentRoomMeta);
   const { data: roomsData } = useRoomsList();
   const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
   const isHost = currentRoom?.role === "HOST";
@@ -56,8 +55,6 @@ export function RoomMembersSection() {
 
   function finishLeaveSession() {
     clearCurrentRoomId();
-    clearCurrentRoomInviteCode();
-    clearCurrentRoomMeta();
     router.replace("/home");
   }
 

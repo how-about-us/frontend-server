@@ -114,6 +114,23 @@ export function planItinerarySegmentMapPathQueryKey(
 export const roomSchedulesQueryKey = (roomId: string | null) =>
   ["room-schedules", roomId] as const;
 
+// ─── Session / search map ────────────────────────────────────────────────────
+
+export const sessionUserQueryKey = ["session", "user"] as const;
+
+export type ActiveSearchMapPin = {
+  googlePlaceId: string;
+  name: string;
+  lat: number;
+  lng: number;
+};
+
+export const activeSearchMapPinsQueryKey = [
+  "places",
+  "search",
+  "active-map-pins",
+] as const;
+
 // ─── Rooms / members ─────────────────────────────────────────────────────────
 
 export const ROOMS_QUERY_KEY = ["rooms"] as const;

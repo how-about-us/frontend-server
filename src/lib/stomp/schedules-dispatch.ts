@@ -21,7 +21,7 @@ import {
   syncRoomDetailFromServer,
 } from "@/lib/rooms";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
-import { useSessionStore } from "@/stores/session-store";
+import { readSessionUserId } from "@/lib/session-user-cache";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
 function removeRouteQueriesForDeletedItemSource(
@@ -212,7 +212,7 @@ export async function dispatchRoomScheduleEvent(
         roomSchedulesQueryKey(rid),
       );
       const alreadyHas = existing?.some((s) => s.scheduleId === sid) ?? false;
-      const me = useSessionStore.getState().user?.id;
+      const me = readSessionUserId(queryClient);
       const isScheduleCreateActor =
         typeof me === "number" &&
         Number.isFinite(me) &&
@@ -266,7 +266,7 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEM_CREATED": {
-      const me = useSessionStore.getState().user?.id;
+      const me = readSessionUserId(queryClient);
       const actorIsMe =
         typeof me === "number" &&
         Number.isFinite(me) &&
@@ -307,7 +307,7 @@ export async function dispatchRoomScheduleEvent(
         rid,
         sid,
       );
-      const me = useSessionStore.getState().user?.id;
+      const me = readSessionUserId(queryClient);
       const hydrateFromApi =
         !(
           typeof me === "number" &&
@@ -350,7 +350,7 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
-      const me = useSessionStore.getState().user?.id;
+      const me = readSessionUserId(queryClient);
       const actorIsMe =
         typeof me === "number" &&
         Number.isFinite(me) &&

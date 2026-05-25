@@ -6,38 +6,42 @@ import { useMemo } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
+import { useCurrentRoomId } from "@/hooks/use-room-id";
+import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRoomsList } from "@/hooks/useRooms";
-import { useSessionStore } from "@/stores/session-store";
 import {
   formatRoomTripSubtitleKo,
   tripYmdBoundsFromRoomSources,
 } from "@/lib/plan/tripRange";
 
 const HeaderBar = () => {
-  const storedRoomId = useSessionStore((s) => s.currentRoomId);
-  const roomMeta = useSessionStore((s) => s.currentRoomMeta);
+  const { roomId } = useCurrentRoomId();
+  const rid = typeof roomId === "string" ? roomId.trim() : "";
   const { data, isPending } = useRoomsList();
-
-  const roomId =
-    typeof storedRoomId === "string" ? storedRoomId.trim() : undefined;
+  const { data: roomDetail } = useRoomDetail(rid || null);
 
   const listRooms = data?.rooms;
 
   const tripMeta = useMemo(
     () =>
-      roomId?.length
-        ? tripYmdBoundsFromRoomSources(roomId, listRooms, roomMeta ?? undefined)
+      rid.length
+        ? tripYmdBoundsFromRoomSources(rid, listRooms, roomDetail ?? undefined)
         : { startYmd: "", endYmd: "" },
-    [listRooms, roomId, roomMeta],
+    [listRooms, rid, roomDetail],
   );
 
-  const currentRoom = roomId?.length
-    ? (listRooms ?? []).find((r) => r.id === roomId)
+  const currentRoom = rid.length
+    ? (listRooms ?? []).find((r) => r.id === rid)
     : undefined;
 
   const dateStr = currentRoom
     ? formatRoomTripSubtitleKo(tripMeta.startYmd, tripMeta.endYmd)
     : "";
+
+  const displayTitle =
+    currentRoom?.title?.trim() ||
+    (roomDetail?.id === rid ? roomDetail.title?.trim() : "") ||
+    "";
 
   return (
     <header className="border-b-2 border-brand-red">
@@ -57,10 +61,10 @@ const HeaderBar = () => {
         </div>
         <div className="flex min-w-0 flex-1 items-center justify-between gap-2 px-5 py-1 pr-2">
           <div className="min-w-0 bg-white py-1.5">
-            {currentRoom ? (
+            {currentRoom || displayTitle ? (
               <>
                 <span className="block truncate text-sm font-semibold leading-tight">
-                  {currentRoom.title}
+                  {displayTitle || currentRoom?.title}
                 </span>
                 <span className="block truncate text-xs leading-tight text-dark-gray">
                   {dateStr}
@@ -75,7 +79,7 @@ const HeaderBar = () => {
               </span>
             ) : (
               <span className="block truncate text-sm font-semibold leading-tight text-dark-gray">
-                {roomMeta?.title ?? "방 정보 없음"}
+                방 정보 없음
               </span>
             )}
           </div>

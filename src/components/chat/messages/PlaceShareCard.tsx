@@ -4,7 +4,7 @@ import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import { useSessionStore } from "@/stores/session-store";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import { cn } from "@/lib/utils";
 import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
@@ -22,7 +22,8 @@ export function PlaceShareCard({
   const typo = resolveChatMessageTypography(isMinimized);
   const reduceMotion = useReducedMotion();
   const place = message.place;
-  const myId = useSessionStore((s) => s.user?.id);
+  const { data: sessionUser } = useSessionUser();
+  const myId = sessionUser?.id;
   const { setSelectedPlace } = useSelectedPlace();
   const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
 

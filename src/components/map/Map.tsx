@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Bookmark } from "lucide-react";
 import {
   AdvancedMarker,
@@ -22,9 +23,9 @@ import {
   DESTINATION_MAP_ZOOM,
   useTripMapBootstrap,
 } from "@/hooks/useTripMapBootstrap";
+import { activeSearchMapPinsQueryKey, type ActiveSearchMapPin } from "@/lib/query-keys";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
-import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
@@ -112,7 +113,15 @@ function DestinationPanController({
 }
 
 function MapSearchResultPins() {
-  const pins = useSearchMapPinsStore((s) => s.pins);
+  const { data: pins = [] } = useQuery<ActiveSearchMapPin[]>({
+    queryKey: activeSearchMapPinsQueryKey,
+    queryFn: (): ActiveSearchMapPin[] => [],
+    initialData: [],
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   const pinsFocus = useMapPinsFocusStore((s) => s.focus);
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const selectedPlaceId = selectedPlace?.googlePlaceId?.trim() ?? "";

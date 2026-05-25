@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { useChat } from "@/hooks/useChat";
-import { useSessionStore } from "@/stores/session-store";
+import { useHostJoinRequestsBadgeCount } from "@/hooks/useHostJoinRequestsBadgeCount";
 
 import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
 import { SidebarFeedbackFormButton } from "./SidebarFeedbackFormButton";
@@ -26,9 +26,7 @@ function isSidebarItemActive(pathname: string, key: string, href: string) {
 function SideBar() {
   const pathname = usePathname();
   const { chatState, openChat } = useChat();
-  const pendingJoinRequestsCount = useSessionStore(
-    (s) => s.pendingJoinRequestsCount,
-  );
+  const pendingJoinRequestsCount = useHostJoinRequestsBadgeCount();
 
   const isChatActive = chatState !== "closed";
   const isOnSettings = pathname.startsWith("/settings");
@@ -49,17 +47,18 @@ function SideBar() {
       </button>
 
       <div className="flex flex-col items-center gap-2 px-1">
-        {SIDEBAR_ITEMS.map((item) => (
-          <SidebarNavItem
-            key={item.href}
-            href={item.href}
-            icon={item.icon}
-            label={`sidebar-${item.href.slice(1)}`}
-            isActive={isSidebarItemActive(pathname, item.key, item.href)}
-            showPingBadge={item.key === "settings" && showSettingsNotification}
-            showDividerBelow={item.key === "bookmark"}
-          />
-        ))}
+      {SIDEBAR_ITEMS.map((item) => (
+        <SidebarNavItem
+          key={item.href}
+          href={item.href}
+          icon={item.icon}
+          label={`sidebar-${item.href.slice(1)}`}
+          isActive={isSidebarItemActive(pathname, item.key, item.href)}
+          showPingBadge={item.key === "settings" && showSettingsNotification}
+          showDividerBelow={item.key === "bookmark"}
+        />
+      ))}
+
       </div>
 
       <div className="mt-auto px-1 pb-4">

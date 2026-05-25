@@ -11,7 +11,7 @@ import {
 import type { ChatMessage } from "@/types/chat";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useSessionStore } from "@/stores/session-store";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import {
   groupConsecutiveMessages,
   isChatHistoryPrependSnapshot,
@@ -85,7 +85,8 @@ export function ChatMessageList({
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
-  const myId = useSessionStore((s) => s.user?.id);
+  const { data: sessionUser } = useSessionUser();
+  const myId = sessionUser?.id;
   const reduceMotion = useReducedMotion();
 
   const prevCountRef = useRef(0);

@@ -5,7 +5,6 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
-import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   roomId: string;
@@ -20,9 +19,6 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
   const roomIdTrim = roomId.trim();
   const [copied, setCopied] = useState(false);
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
-  const setCurrentRoomInviteCode = useSessionStore(
-    (s) => s.setCurrentRoomInviteCode,
-  );
 
   const { mutate: regenerate, isPending: isRegenerating } =
     useRegenerateInviteCode();
@@ -34,14 +30,13 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
 
     regenerate(roomIdTrim, {
       onSuccess: ({ inviteCode: newCode }) => {
-        setCurrentRoomInviteCode(newCode);
         setIssuedCode(newCode);
       },
       onError: () => {
         toast.error("초대 링크를 발급하지 못했어요.");
       },
     });
-  }, [roomIdTrim, regenerate, setCurrentRoomInviteCode]);
+  }, [roomIdTrim, regenerate]);
 
   const inviteUrl = issuedCode
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${issuedCode}`
@@ -60,7 +55,6 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
     setIssuedCode(null);
     regenerate(roomIdTrim, {
       onSuccess: ({ inviteCode: newCode }) => {
-        setCurrentRoomInviteCode(newCode);
         setIssuedCode(newCode);
       },
       onError: () => {

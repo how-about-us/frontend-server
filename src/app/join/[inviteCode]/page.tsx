@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -9,11 +10,13 @@ import { checkClientAuthenticated, setPendingInviteCode } from "@/lib/auth";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
 import { planPathForRoom } from "@/lib/join-room-workflow";
+import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 
 export default function JoinPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const inviteCode = Array.isArray(params.inviteCode)
     ? params.inviteCode[0]
     : params.inviteCode;
@@ -22,7 +25,6 @@ export default function JoinPage() {
 
   const { mutate: join } = useJoinRoom();
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
-  const setCurrentRoomMeta = useSessionStore((s) => s.setCurrentRoomMeta);
 
   useEffect(() => {
     if (!inviteCode) return;
@@ -45,7 +47,7 @@ export default function JoinPage() {
             setCurrentRoomId(data.id);
             try {
               const meta = await getRoomDetail(data.id);
-              setCurrentRoomMeta(meta);
+              queryClient.setQueryData(roomDetailQueryKey(data.id), meta);
             } catch {
               // 메타 조회 실패해도 입장은 진행 (waiting 승인 처리와 동일)
             }
@@ -67,7 +69,7 @@ export default function JoinPage() {
     return () => {
       cancelled = true;
     };
-  }, [inviteCode, join, router, setCurrentRoomId, setCurrentRoomMeta]);
+  }, [inviteCode, join, router, setCurrentRoomId, queryClient]);
 
   if (error) {
     return (

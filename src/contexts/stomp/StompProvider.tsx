@@ -22,6 +22,7 @@ import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 import { ROOMS_QUERY_KEY } from "@/lib/query-keys";
 import { resolveRoomIdFromPathname } from "@/lib/session-room-storage";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import {
   bootstrapCurrentRoomFromSessionStorage,
   useSessionStore,
@@ -51,7 +52,7 @@ const FORCED_ROOM_EXIT_TOAST_MS = 4500;
 export function StompProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = useSessionStore((s) => s.user);
+  const { data: user } = useSessionUser();
   const storeRoomId = useSessionStore((s) => s.currentRoomId);
   const resolvedRoomId = resolveRoomIdFromPathname(storeRoomId, pathname);
   const queryClient = useQueryClient();
@@ -110,8 +111,6 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
       const session = useSessionStore.getState();
       session.clearCurrentRoomId();
-      session.clearCurrentRoomInviteCode();
-      session.clearCurrentRoomMeta();
 
       void queryClientRef.current.invalidateQueries({
         queryKey: ROOMS_QUERY_KEY,

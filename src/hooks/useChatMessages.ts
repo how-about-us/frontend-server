@@ -12,7 +12,7 @@ import {
   transientMessagesDuringRoomHistoryFetch,
 } from "@/lib/chat";
 import { useStompContext } from "@/contexts/StompContext";
-import { useSessionStore } from "@/stores/session-store";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import { getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
@@ -50,7 +50,8 @@ export function useChatMessages(
   const { fetchHistory } = options;
   const queryClient = useQueryClient();
   const { setRoomChatMessageHandler } = useStompContext();
-  const userId = useSessionStore((s) => s.user?.id);
+  const { data: sessionUser } = useSessionUser();
+  const userId = sessionUser?.id;
   const { data: membersData } = useRoomMembers(roomId);
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(true);

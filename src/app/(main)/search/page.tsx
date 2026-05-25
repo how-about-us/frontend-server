@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,6 +11,11 @@ import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { buildSearchMapSnapshotFromMapCenterStore } from "@/lib/map-viewport-commit";
+import {
+  clearActiveSearchMapPins,
+  placeSearchResultsToMapPins,
+  setActiveSearchMapPins,
+} from "@/lib/active-search-map-pins";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSearchRecenterStore } from "@/stores/search-recenter-store";
 import {
@@ -24,11 +30,11 @@ import {
   chatPlaceShareBannerSweepDurationSec,
 } from "@/components/chat/chat-animations";
 import { useSessionStore } from "@/stores/session-store";
-import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
 
 export default function SearchPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const qParam = searchParams.get("q")?.trim() ?? "";
@@ -38,10 +44,6 @@ export default function SearchPage() {
     typeof currentRoomId === "string" && currentRoomId.trim().length > 0;
 
   const { setSelectedPlace } = useSelectedPlace();
-  const clearSearchMapPins = useSearchMapPinsStore((s) => s.clearSearchMapPins);
-  const setSearchMapPinsFromResults = useSearchMapPinsStore(
-    (s) => s.setSearchMapPinsFromResults,
-  );
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
   const { sendPlaceMessage, canSend } = useChatActions();
@@ -71,7 +73,7 @@ export default function SearchPage() {
         return;
       }
 
-      clearSearchMapPins();
+      clearActiveSearchMapPins(queryClient);
       const snapshot = buildSearchMapSnapshotFromMapCenterStore();
       if (!snapshot) {
         clearSearchSnapshot();
@@ -84,7 +86,7 @@ export default function SearchPage() {
       setSearchCoords(snapshot.center);
       setSearchRadius(snapshot.radius);
     },
-    [clearSearchMapPins],
+    [queryClient],
   );
 
   useLayoutEffect(() => {
@@ -147,9 +149,12 @@ export default function SearchPage() {
       results.length > 0
     ) {
       useMapPinsFocusStore.getState().claimFocus("search");
-      setSearchMapPinsFromResults(results);
+      setActiveSearchMapPins(
+        queryClient,
+        placeSearchResultsToMapPins(results),
+      );
     } else {
-      clearSearchMapPins();
+      clearActiveSearchMapPins(queryClient);
       if (!hasActiveSearch) {
         useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
       }
@@ -161,17 +166,16 @@ export default function SearchPage() {
     isLoading,
     isError,
     results,
-    setSearchMapPinsFromResults,
-    clearSearchMapPins,
+    queryClient,
   ]);
 
   useEffect(
     () => () => {
-      clearSearchMapPins();
+      clearActiveSearchMapPins(queryClient);
       useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
       useSearchRecenterStore.getState().clearSearchSnapshot();
     },
-    [clearSearchMapPins],
+    [queryClient],
   );
 
   const shareModeActive = isShareMode && hasRoom;

@@ -8,7 +8,7 @@ import type {
   RoomMemberListResponse,
 } from "@/lib/api/rooms";
 import { ROOMS_QUERY_KEY, roomMembersQueryKey } from "@/lib/query-keys";
-import { useSessionStore } from "@/stores/session-store";
+import { readSessionUserId } from "@/lib/session-user-cache";
 
 import type { RoomMemberPayload } from "./member-events";
 
@@ -18,7 +18,7 @@ function patchRoomsRoleForHostDelegation(
   previousHostUserId: number,
   newHostUserId: number,
 ): void {
-  const me = useSessionStore.getState().user?.id;
+  const me = readSessionUserId(queryClient);
   if (me == null) return;
 
   queryClient.setQueryData<RoomListResponse>(ROOMS_QUERY_KEY, (prev) => {

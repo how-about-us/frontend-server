@@ -6,7 +6,6 @@ import { getRoomDetail } from "@/lib/api/rooms";
 import { apiUrl } from "@/lib/api/http";
 import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
 import { ROOMS_QUERY_KEY, roomDetailQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
-import { useSessionStore } from "@/stores/session-store";
 
 /** 일차 삭제 후 route·items 쿼리 캐시 제거 (삭제된 scheduleId에 대한 GET 방지) */
 export function removeCachesForDeletedSchedule(
@@ -65,7 +64,7 @@ export function selectHostRoom(
   return inCurrent ?? rooms.find((r) => isHostRole(r.role));
 }
 
-/** `GET /rooms/{roomId}` 결과로 room-detail·방 목록·현재 방 세션 메타를 맞춥니다. */
+/** `GET /rooms/{roomId}` 결과로 room-detail·방 목록 캐시를 맞춥니다. */
 export async function syncRoomDetailFromServer(
   queryClient: QueryClient,
   roomId: string,
@@ -96,10 +95,6 @@ export async function syncRoomDetailFromServer(
       ),
     };
   });
-  const { currentRoomId, setCurrentRoomMeta } = useSessionStore.getState();
-  if (currentRoomId?.trim() === rid) {
-    setCurrentRoomMeta(detail);
-  }
 }
 
 export type RoomAccessVerdict = "ok" | "forbidden" | "error";

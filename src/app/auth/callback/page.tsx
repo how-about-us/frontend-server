@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
@@ -14,12 +15,13 @@ import {
   getGoogleOAuthRedirectUri,
   OAUTH_STATE_SESSION_KEY,
 } from "@/lib/google-oauth";
+import { setSessionUserCache } from "@/lib/session-user-cache";
 import { useSessionStore } from "@/stores/session-store";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const setUser = useSessionStore((s) => s.setUser);
+  const queryClient = useQueryClient();
   const setSessionReady = useSessionStore((s) => s.setSessionReady);
 
   // React Strict Mode (Next dev) 에서 useEffect 가 두 번 실행되면
@@ -54,7 +56,7 @@ function AuthCallbackContent() {
             router.replace("/login?error=OAuthCallback");
             return;
           }
-          setUser(me);
+          setSessionUserCache(queryClient, me);
           setSessionReady(true);
 
           if (pendingInviteCode) {
@@ -69,7 +71,7 @@ function AuthCallbackContent() {
       .catch(() => {
         router.replace("/login?error=OAuthCallback");
       });
-  }, [searchParams, router, setUser, setSessionReady]);
+  }, [searchParams, router, queryClient, setSessionReady]);
 
   return <AuthFlowSpinner />;
 }

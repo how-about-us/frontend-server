@@ -1,15 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@/hooks/useChat";
+import { useCurrentRoomTitle } from "@/hooks/useCurrentRoomTitle";
 import { useChatMessages } from "@/hooks/useChatMessages";
-import { getRoomDetail } from "@/lib/api/rooms";
-import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useCurrentRoomId } from "@/hooks/use-room-id";
 import { useRoomMembers } from "@/hooks/useRooms";
-import { useSessionStore } from "@/stores/session-store";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "./messages/ChatMessageList";
 import { ChatInputBar } from "./ChatInputBar";
@@ -25,7 +22,7 @@ export function ChatPanel() {
   const isMinimized = chatState === "minimized";
   const panelOpen = chatState !== "closed";
   const { roomId } = useCurrentRoomId();
-  const sessionRoomTitle = useSessionStore((s) => s.currentRoomMeta?.title);
+  const title = useCurrentRoomTitle(roomId);
   const { data: membersData } = useRoomMembers(roomId);
   const onlineCount =
     membersData?.members.filter((m) => m.isOnline).length ?? 0;
@@ -44,13 +41,6 @@ export function ChatPanel() {
   } = useChatMessages(roomId, { fetchHistory: panelOpen });
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
-  const { data: roomDetail } = useQuery({
-    queryKey: roomDetailQueryKey(rid),
-    queryFn: () => getRoomDetail(rid),
-    enabled: rid.length > 0,
-  });
-
-  const title = sessionRoomTitle?.trim() || roomDetail?.title?.trim() || "채팅";
 
   function handlePlusClick() {
     if (!rid) return;

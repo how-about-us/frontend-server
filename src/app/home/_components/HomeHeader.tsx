@@ -10,8 +10,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { logout } from "@/lib/api/auth";
+import { useSessionUser } from "@/hooks/useSessionUser";
 import { tearDownClientSession } from "@/lib/client-storage";
-import { useSessionStore } from "@/stores/session-store";
 
 function UserAvatar({
   user,
@@ -42,7 +42,7 @@ export function HomeHeader() {
   const profileRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(profileRef, () => setOpen(false));
 
-  const user = useSessionStore((s) => s.user);
+  const { data: user } = useSessionUser();
 
   const handleLogout = async () => {
     await logout();

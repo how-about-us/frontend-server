@@ -39,8 +39,6 @@ export function MainRoomGate({ children }: { children: ReactNode }) {
       if (cancelled || verdict !== "forbidden") return;
       const session = useSessionStore.getState();
       session.clearCurrentRoomId();
-      session.clearCurrentRoomInviteCode();
-      session.clearCurrentRoomMeta();
       router.replace("/home");
     })();
     return () => {
