@@ -346,7 +346,7 @@ export function ChatInputBar({
               aiEnabled,
             );
           }}
-          placeholder="메시지를 입력하세요."
+          placeholder="Shift+Enter로 줄바꿈"
           className={cn(
             "box-border min-h-0 w-full flex-1 resize-none overflow-y-auto bg-transparent py-1 leading-normal text-black outline-none placeholder:text-black/40 [scrollbar-color:#d9d9d9_transparent]",
             isMinimized ? "text-[11px]" : "text-xs",

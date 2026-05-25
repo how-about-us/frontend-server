@@ -1,10 +1,7 @@
 /**
- * 사용자 채팅 Markdown 렌더 전 — 줄바꿈·연속 공백을 화면에 가깝게 보존.
- * Markdown 특수문자는 건드리지 않는다.
+ * 사용자 채팅 본문 정규화 — 줄바꿈만 통일한다.
+ * 공백·줄바꿈 표시는 렌더 단계(whitespace-pre-wrap)에서 처리한다.
  */
 export function prepareUserChatMarkdown(text: string): string {
-  const normalized = text.replace(/\r\n/g, "\n");
-  return normalized.replace(/ {2,}/g, (run) =>
-    " " + "\u00a0".repeat(run.length - 1),
-  );
+  return text.replace(/\r\n/g, "\n");
 }

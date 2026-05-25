@@ -24,8 +24,14 @@ export function ChatMarkdownContent({
 }) {
   if (!text) return null;
 
-  const markdownSource =
-    preserveWhitespace ? prepareUserChatMarkdown(text) : text;
+  if (preserveWhitespace) {
+    const plain = prepareUserChatMarkdown(text);
+    return (
+      <div className={cn("whitespace-pre-wrap break-words", className)}>
+        {plain}
+      </div>
+    );
+  }
 
   return (
     <div className={cn("break-words", className)}>
@@ -33,7 +39,7 @@ export function ChatMarkdownContent({
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={createChatMarkdownComponents(variant)}
       >
-        {markdownSource}
+        {text}
       </Markdown>
     </div>
   );
