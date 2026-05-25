@@ -18,7 +18,7 @@ export async function exchangeGoogleCode(
   return { ok: false, status: res.status };
 }
 
-export async function refreshToken(): Promise<
+async function refreshToken(): Promise<
   { ok: true } | { ok: false; status: number }
 > {
   const res = await fetch("/api/auth/refresh", {
@@ -28,6 +28,20 @@ export async function refreshToken(): Promise<
 
   if (res.ok) return { ok: true };
   return { ok: false, status: res.status };
+}
+
+let pendingRefresh: Promise<boolean> | null = null;
+
+/** 브라우저: `POST /api/auth/refresh` — 동시 401에 대해 1회만 호출 */
+export async function tryClientRefresh(): Promise<boolean> {
+  if (!pendingRefresh) {
+    pendingRefresh = refreshToken()
+      .then((r) => r.ok)
+      .finally(() => {
+        pendingRefresh = null;
+      });
+  }
+  return pendingRefresh;
 }
 
 export async function logout(): Promise<

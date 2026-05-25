@@ -2,7 +2,10 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { isProtectedAppPath } from "@/lib/auth-session";
 import { clearUserScopedBrowserStorage, tearDownClientSession } from "@/lib/client-storage";
-import { fetchSessionUserRaw } from "@/lib/session-user";
+import {
+  fetchSessionUserRaw,
+  fetchSessionUserWithRetry,
+} from "@/lib/session-user";
 import {
   readSessionUserCache,
   setSessionUserCache,
@@ -13,10 +16,9 @@ export type { SessionUser } from "@/lib/session-user";
 export {
   checkClientAuthenticated,
   consumePendingInviteCode,
-  fetchSessionUserRaw,
-  fetchSessionUserWithRetry,
   setPendingInviteCode,
 } from "@/lib/session-user-flow";
+export { fetchSessionUserRaw, fetchSessionUserWithRetry };
 
 const RECONCILE_SKIP_PATH_PREFIXES = ["/auth/callback", "/login"] as const;
 

@@ -1,16 +1,31 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { hasAuthenticatedSession } from "@/lib/auth-server";
+import { appendSetCookies } from "@/lib/auth-cookies";
+import { verifySessionWithOptionalRefresh } from "@/lib/auth-server";
 import { isProtectedAppPath } from "@/lib/auth-session";
+
+function withRefreshedCookies(
+  response: NextResponse,
+  setCookies: readonly string[],
+): NextResponse {
+  if (setCookies.length > 0) {
+    appendSetCookies(response, setCookies);
+  }
+  return response;
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = await hasAuthenticatedSession(request);
+  const { ok: hasSession, setCookies } =
+    await verifySessionWithOptionalRefresh(request.headers.get("cookie"));
 
   if (pathname === "/login") {
     if (hasSession) {
-      return NextResponse.redirect(new URL("/home", request.url));
+      return withRefreshedCookies(
+        NextResponse.redirect(new URL("/home", request.url)),
+        setCookies,
+      );
     }
     return NextResponse.next();
   }
@@ -23,7 +38,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  return NextResponse.next();
+  return withRefreshedCookies(NextResponse.next(), setCookies);
 }
 
 export const config = {

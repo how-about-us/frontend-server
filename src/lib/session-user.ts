@@ -1,3 +1,4 @@
+import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
 import { API_BASE } from "@/lib/api/config";
 
 export interface SessionUser {
@@ -8,9 +9,9 @@ export interface SessionUser {
   provider: string;
 }
 
-/** `apiFetch` 없이 GET /users/me */
+/** GET /users/me — 401 시 BFF refresh 후 1회 재시도 */
 export async function fetchSessionUserRaw(): Promise<SessionUser | null> {
-  const res = await fetch(`${API_BASE}/users/me`, { credentials: "include" });
+  const { response: res } = await authenticatedFetch(`${API_BASE}/users/me`);
   if (!res.ok) return null;
   return res.json() as Promise<SessionUser>;
 }

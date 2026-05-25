@@ -23,7 +23,3 @@ export function consumePendingInviteCode(): string | null {
   return value;
 }
 
-export {
-  fetchSessionUserRaw,
-  fetchSessionUserWithRetry,
-} from "@/lib/session-user";
