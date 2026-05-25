@@ -179,12 +179,13 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       </div>
 
       <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
-        <p className="text-xs font-medium text-dark-gray">장소 추가</p>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <PlacesSearchInput
               coords={mapCenter}
               pickOnly
+              leadingIcon="pin"
+              placeholder="장소 추가하기"
               disabled={isAdding}
               onSearch={() => {}}
               onPickPrediction={(p) => void handlePickPrediction(p)}

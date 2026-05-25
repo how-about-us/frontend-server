@@ -35,6 +35,9 @@ type Props = {
   onPickPrediction?: (prediction: Prediction) => void;
   /** true면 검색 버튼 숨김 — 자동완성 선택만 사용 */
   pickOnly?: boolean;
+  placeholder?: string;
+  /** 입력창 왼쪽 아이콘 (기본: 돋보기) */
+  leadingIcon?: "search" | "pin";
   /** 입력 지우기(X) 클릭 시 — 예: 검색 지도 핀 제거 */
   onClear?: () => void;
   disabled?: boolean;
@@ -46,6 +49,8 @@ export function PlacesSearchInput({
   urlQuery = "",
   onPickPrediction,
   pickOnly = false,
+  placeholder = "장소를 검색하세요",
+  leadingIcon = "search",
   onClear,
   disabled = false,
 }: Props) {
@@ -289,7 +294,17 @@ export function PlacesSearchInput({
     <div ref={containerRef} className="relative">
       <form onSubmit={handleSubmit} className="flex items-center gap-1">
         <div className="relative left-1 flex w-full items-center px-1">
-          <Search className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray" />
+          {leadingIcon === "pin" ? (
+            <MapPin
+              className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray"
+              aria-hidden
+            />
+          ) : (
+            <Search
+              className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray"
+              aria-hidden
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
@@ -298,7 +313,7 @@ export function PlacesSearchInput({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => predictions.length > 0 && setIsOpen(true)}
-            placeholder="장소를 검색하세요"
+            placeholder={placeholder}
             autoComplete="off"
             className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-sm outline-none placeholder:text-[#99A1AF] focus:border-brand-green focus:ring-1 focus:ring-brand-green disabled:cursor-not-allowed disabled:opacity-60"
           />
