@@ -25,7 +25,20 @@ export function createChatMarkdownComponents(
 
   return {
     p({ children }) {
-      return <p className="mb-1 last:mb-0 break-words">{children}</p>;
+      const preserveLayout = variant === "mine" || variant === "other";
+      return (
+        <p
+          className={cn(
+            "mb-1 last:mb-0 break-words",
+            preserveLayout && "whitespace-pre-wrap",
+          )}
+        >
+          {children}
+        </p>
+      );
+    },
+    br() {
+      return <br />;
     },
     a({ href, children }) {
       return (

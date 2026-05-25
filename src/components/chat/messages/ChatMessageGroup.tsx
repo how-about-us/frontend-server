@@ -100,7 +100,13 @@ function BubbleMessageText({
   variant: ChatMarkdownVariant;
 }) {
   if (!msg.isAiRequest) {
-    return <ChatMarkdownContent text={msg.text} variant={variant} />;
+    return (
+      <ChatMarkdownContent
+        text={msg.text}
+        variant={variant}
+        preserveWhitespace
+      />
+    );
   }
   return (
     <>
@@ -110,7 +116,11 @@ function BubbleMessageText({
       {msg.text ? (
         <>
           {" "}
-          <ChatMarkdownContent text={msg.text} variant={variant} />
+          <ChatMarkdownContent
+            text={msg.text}
+            variant={variant}
+            preserveWhitespace
+          />
         </>
       ) : null}
     </>
