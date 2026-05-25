@@ -28,7 +28,7 @@ export const PLAN_PLACE_CARD_TW = {
   thumbnail:
     "relative col-start-1 row-start-1 shrink-0 self-start overflow-hidden rounded-xl bg-brand-green/30 h-20 w-20 @min-[370px]/plan:row-span-2 @min-[370px]/plan:h-30 @min-[370px]/plan:w-30",
   infoColumn:
-    "col-start-2 row-start-1 flex min-w-0 flex-col justify-center gap-0.5 @min-[370px]/plan:justify-start @min-[370px]/plan:gap-1",
+    "col-start-2 row-start-1 flex min-w-0 flex-col justify-start gap-0.5 self-start @min-[370px]/plan:gap-1",
   infoStack: "flex min-w-0 flex-col gap-0.5 @min-[370px]/plan:gap-1",
   timeCell:
     "col-span-2 col-start-1 row-start-2 min-w-0 overflow-hidden border-t border-gray-border/60 pt-2 @min-[370px]/plan:overflow-visible @min-[370px]/plan:col-span-1 @min-[370px]/plan:col-start-2 @min-[370px]/plan:row-start-2 @min-[370px]/plan:self-end @min-[370px]/plan:border-t-0 @min-[370px]/plan:pt-0",
