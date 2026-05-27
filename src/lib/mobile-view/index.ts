@@ -4,8 +4,15 @@ export {
   readIsLandscapeOrientation,
   readIsMobileLandscape,
 } from "./orientation";
-export { isMainRouteBlockedOnMobile } from "./routes";
-export { planCopy, planCopyForDevice } from "./copy";
+export {
+  isMainRouteBlockedOnMobile,
+  isMobileReadOnlyNoticeRoute,
+} from "./routes";
+export {
+  mobileReadOnlyNoticeMessage,
+  planCopy,
+  planCopyForDevice,
+} from "./copy";
 export {
   MOBILE_VIEW_DEFAULT,
   readMobileViewState,

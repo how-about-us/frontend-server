@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
+import { MobileReadOnlyNotice } from "@/components/mobile/MobileReadOnlyNotice";
 import { useMobileView } from "@/contexts/MobileViewContext";
 import { useRoomsList } from "@/hooks/useRooms";
 import {
@@ -28,6 +29,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <MobileReadOnlyNotice />
       <HomeHeader />
 
       <main className="mx-auto max-w-5xl px-6 py-8">
