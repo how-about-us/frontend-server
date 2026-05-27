@@ -1,3 +1,5 @@
+import { MAX_SCHEDULES_PER_ROOM } from "@/lib/plan/schedulePolicy";
+
 /** 북마크 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
 const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
   "BOOKMARK_ALREADY_EXISTS",
@@ -29,6 +31,26 @@ export function isRoomBookmarkDuplicateFromBody(body: unknown): boolean {
   if (!raw) return false;
   const normalized = raw.toUpperCase().replace(/-/g, "_");
   return ROOM_BOOKMARK_DUPLICATE_ERROR_CODES.has(normalized);
+}
+
+export function isScheduleLimitExceededFromBody(body: unknown): boolean {
+  const raw = readApiErrorCodeFromJson(body);
+  if (!raw) return false;
+  return raw.toUpperCase().replace(/-/g, "_") === "SCHEDULE_LIMIT_EXCEEDED";
+}
+
+/** `SCHEDULE_LIMIT_EXCEEDED` 등 — 서버 메시지에 30개 상한을 덧붙입니다. */
+export function withScheduleLimitCountHint(
+  message: string | undefined,
+  body?: unknown,
+): string {
+  const base = message?.trim() || "최대 일정 개수를 초과했어요.";
+  const isLimit =
+    (body !== undefined && isScheduleLimitExceededFromBody(body)) ||
+    /최대\s*일정|일정.*(초과|개수)|SCHEDULE_LIMIT/i.test(base);
+  if (!isLimit) return base;
+  if (base.includes(String(MAX_SCHEDULES_PER_ROOM))) return base;
+  return `${base} (방당 최대 ${MAX_SCHEDULES_PER_ROOM}개까지예요.)`;
 }
 
 /** HTTP error JSON에서 사용자에게 그대로 보여줄 메시지 추출 (Spring `message` / `errors` 등) */

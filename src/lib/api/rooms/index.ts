@@ -63,7 +63,6 @@ export {
   createRoomSchedule,
   deleteRoomSchedule,
   getRoomSchedules,
-  seedRoomSchedules,
 } from "./schedules";
 
 export {

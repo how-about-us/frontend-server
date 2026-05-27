@@ -30,52 +30,6 @@ export function formatDateYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/**
- * 방 생성·일정 시드 등 서버와 맞춘 여행 최대 일수(시작·종료일 포함).
- */
-export const MAX_TRIP_DAYS = 30;
-
-/**
- * 방 생성 시 기간 문자열(포함) 각 날짜에 대해 `dayNumber`는 1부터 순번입니다.
- */
-export function eachInclusiveTripDay(
-  startYmd: string,
-  endYmd: string,
-): { date: string; dayNumber: number }[] {
-  const a = parseLocalYmd(startYmd);
-  const b = parseLocalYmd(endYmd);
-  const lo = a <= b ? a : b;
-  const hi = a <= b ? b : a;
-  const out: { date: string; dayNumber: number }[] = [];
-  const c = new Date(lo);
-  let dayNumber = 1;
-  while (c <= hi) {
-    out.push({ date: formatDateYmd(c), dayNumber });
-    c.setDate(c.getDate() + 1);
-    dayNumber++;
-  }
-  return out;
-}
-
-/** 시작·종료일(포함) 사이 여행 일수. */
-export function countInclusiveTripDays(
-  startYmd: string,
-  endYmd: string,
-): number {
-  return eachInclusiveTripDay(startYmd, endYmd).length;
-}
-
-export function isTripDurationWithinLimit(
-  startYmd: string,
-  endYmd: string,
-  maxDays: number = MAX_TRIP_DAYS,
-): boolean {
-  const start = startYmd.trim();
-  const end = endYmd.trim();
-  if (!start || !end) return true;
-  return countInclusiveTripDays(start, end) <= maxDays;
-}
-
 export function formatKoreanDateLabel(d: Date): string {
   const w = WEEKDAYS_KO[d.getDay()];
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`;

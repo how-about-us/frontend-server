@@ -1,4 +1,8 @@
-import { readUserFacingMessageFromApiBody } from "@/lib/api/errors";
+import {
+  isScheduleLimitExceededFromBody,
+  readUserFacingMessageFromApiBody,
+  withScheduleLimitCountHint,
+} from "@/lib/api/errors";
 import { apiFetch } from "@/lib/api/client";
 import {
   apiUrl,
@@ -25,7 +29,10 @@ export async function createRoom(
   const parsed = await tryParseJson(res);
   if (!res.ok) {
     const fromBody = readUserFacingMessageFromApiBody(parsed);
-    throw new Error(fromBody ?? `방 생성 실패: ${res.status}`);
+    const msg = isScheduleLimitExceededFromBody(parsed)
+      ? withScheduleLimitCountHint(fromBody, parsed)
+      : (fromBody ?? `방 생성 실패: ${res.status}`);
+    throw new Error(msg);
   }
   return parsed as RoomCreateResponse;
 }

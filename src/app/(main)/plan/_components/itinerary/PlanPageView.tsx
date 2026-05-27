@@ -85,17 +85,7 @@ export function PlanPageView() {
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
       if (!confirm("이 일차를 삭제할까요?")) return;
-      deleteSchedule(
-        { roomId, scheduleId: sid },
-        {
-          onSuccess: () => {
-            toast.success("일차를 삭제했어요.");
-          },
-          onError: () => {
-            toast.error("일차를 삭제하지 못했어요.");
-          },
-        },
-      );
+      deleteSchedule({ roomId, scheduleId: sid });
     },
     [
       deleteSchedule,
@@ -110,8 +100,12 @@ export function PlanPageView() {
     if (!roomId.length) return;
     if (isCreatingSchedule) return;
     const body = buildNextScheduleCreateBody(sortedSchedules);
-    void createScheduleAsync({ roomId, body }).catch(() => {
-      toast.error("일차를 추가하지 못했어요.");
+    void createScheduleAsync({ roomId, body }).catch((e) => {
+      toast.error(
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "일차를 추가하지 못했어요.",
+      );
     });
   }, [createScheduleAsync, isCreatingSchedule, roomId, sortedSchedules]);
 

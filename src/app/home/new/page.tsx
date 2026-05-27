@@ -10,11 +10,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useRedirectOnMobileDevice } from "@/hooks/useMobileRedirects";
 import { useCreateRoom } from "@/hooks/useRooms";
 import type { RoomDetail } from "@/lib/api/rooms";
-import {
-  formatDateYmd,
-  isTripDurationWithinLimit,
-  MAX_TRIP_DAYS,
-} from "@/lib/plan/tripRange";
+import { formatDateYmd } from "@/lib/plan/tripRange";
 import { roomDetailQueryKey } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
@@ -84,13 +80,6 @@ export default function NewTripPage() {
 
   const dateRangeInvalid = Boolean(startDate && endDate && endDate < startDate);
 
-  const tripDurationInvalid = Boolean(
-    startDate &&
-    endDate &&
-    !dateRangeInvalid &&
-    !isTripDurationWithinLimit(startDate, endDate),
-  );
-
   const canSubmit =
     title.trim() &&
     destination.trim() &&
@@ -98,11 +87,10 @@ export default function NewTripPage() {
     startDate &&
     endDate &&
     !isPending &&
-    !dateRangeInvalid &&
-    !tripDurationInvalid;
+    !dateRangeInvalid;
 
   const handleSubmit = () => {
-    if (!canSubmit || dateRangeInvalid || tripDurationInvalid) return;
+    if (!canSubmit || dateRangeInvalid) return;
 
     createRoom(
       {
@@ -194,11 +182,6 @@ export default function NewTripPage() {
             {dateRangeInvalid && (
               <p className="mt-2 text-xs text-brand-red">
                 종료일은 시작일 이후여야 해요.
-              </p>
-            )}
-            {tripDurationInvalid && (
-              <p className="mt-2 text-xs text-brand-red">
-                여행 기간은 최대 {MAX_TRIP_DAYS}일까지예요.
               </p>
             )}
           </div>
