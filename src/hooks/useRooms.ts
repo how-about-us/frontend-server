@@ -68,7 +68,10 @@ import {
   roomSchedulesQueryKey,
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
-import { syncRoomDetailFromServer } from "@/lib/rooms";
+import {
+  hydrateRoomSchedulesFromServer,
+  syncRoomDetailFromServer,
+} from "@/lib/rooms";
 import {
   pathDefersRoomStompRoomTopics,
   pathSuspendsStomp,
@@ -89,11 +92,10 @@ export function useCreateRoom() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: RoomCreateRequest) => createRoom(data),
-    onSuccess: (room) => {
+    onSuccess: async (room) => {
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
-      queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(room.id),
-      });
+      await hydrateRoomSchedulesFromServer(queryClient, room.id);
+      await syncRoomDetailFromServer(queryClient, room.id);
     },
   });
 }

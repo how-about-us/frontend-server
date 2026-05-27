@@ -1,11 +1,23 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api/client";
-import type { RoomDetail, RoomListItem, RoomListResponse } from "@/lib/api/rooms";
-import { getRoomDetail } from "@/lib/api/rooms";
+import type {
+  RoomDetail,
+  RoomListItem,
+  RoomListResponse,
+  RoomSchedule,
+} from "@/lib/api/rooms";
+import { getRoomDetail, getRoomSchedules } from "@/lib/api/rooms";
 import { apiUrl } from "@/lib/api/http";
 import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
-import { ROOMS_QUERY_KEY, roomDetailQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
+import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
+import type { PlanPlace } from "@/lib/plan/types";
+import {
+  ROOMS_QUERY_KEY,
+  roomDetailQueryKey,
+  roomSchedulesQueryKey,
+  scheduleItemsQueryKey,
+} from "@/lib/query-keys";
 
 /** 일차 삭제 후 route·items 쿼리 캐시 제거 (삭제된 scheduleId에 대한 GET 방지) */
 export function removeCachesForDeletedSchedule(
@@ -62,6 +74,35 @@ export function selectHostRoom(
   }
 
   return inCurrent ?? rooms.find((r) => isHostRole(r.role));
+}
+
+/**
+ * `GET /rooms/{roomId}/schedules`로 서버 일정을 가져와 React Query 캐시에 넣습니다.
+ * 방 생성(서버 시딩) 직후 플랜 첫 진입 시 빈 목록·레이스를 줄입니다.
+ */
+export async function hydrateRoomSchedulesFromServer(
+  queryClient: QueryClient,
+  roomId: string,
+): Promise<RoomSchedule[]> {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+
+  const schedules = await queryClient.fetchQuery({
+    queryKey: roomSchedulesQueryKey(rid),
+    queryFn: () => getRoomSchedules(rid),
+  });
+  const sorted = sortRoomSchedules(schedules);
+  queryClient.setQueryData<RoomSchedule[]>(
+    roomSchedulesQueryKey(rid),
+    sorted,
+  );
+  for (const s of sorted) {
+    queryClient.setQueryData<PlanPlace[]>(
+      scheduleItemsQueryKey(rid, s.scheduleId),
+      [],
+    );
+  }
+  return sorted;
 }
 
 /** `GET /rooms/{roomId}` 결과로 room-detail·방 목록 캐시를 맞춥니다. */
