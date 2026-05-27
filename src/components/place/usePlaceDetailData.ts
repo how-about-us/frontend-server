@@ -1,17 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPlaceDetail, getPlacePhotoUrl } from "@/lib/api/places";
+import {
+  fetchPlaceDetail,
+  fetchPlacePhotoUrl,
+  placeDetailQueryDefaults,
+} from "@/lib/places/place-queries";
 import type { PlaceDetailResult } from "./types";
 
 export function usePlaceDetailData(googlePlaceId?: string) {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   return useQuery<PlaceDetailResult>({
-    queryKey: ["place-detail", googlePlaceId],
+    queryKey: ["places", "detail-panel", id],
     queryFn: async () => {
-      const detail = await getPlaceDetail(googlePlaceId!);
+      const detail = await fetchPlaceDetail(id);
       const photoUrls = (
         await Promise.all(
           detail.photoNames.slice(0, 9).map(async (n) => {
             try {
-              return await getPlacePhotoUrl(n);
+              return await fetchPlacePhotoUrl(n);
             } catch {
               return null;
             }
@@ -36,7 +41,7 @@ export function usePlaceDetailData(googlePlaceId?: string) {
         reviews: detail.reviews ?? [],
       };
     },
-    enabled: !!googlePlaceId,
-    staleTime: 60_000,
+    enabled: id.length > 0,
+    ...placeDetailQueryDefaults,
   });
 }

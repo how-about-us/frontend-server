@@ -10,8 +10,11 @@ import {
   chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { aiRecommendedPlaceEnrichmentQueryKey } from "@/lib/query-keys";
-import { resolvePlaceCardEnrichmentFromPlaceId } from "@/lib/places/placeCardEnrichment";
+import {
+  fetchPlaceDetail,
+  placeDetailQueryDefaults,
+  placeDetailQueryKey,
+} from "@/lib/places/place-queries";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { stripRecommendedPlaceReasonPrefix } from "@/lib/recommended-place-reason";
 import type {
@@ -37,10 +40,22 @@ function AiRecommendedPlaceRow({
     place.rating === undefined ||
     place.userRatingCount === undefined;
   const { data: enriched } = useQuery({
-    queryKey: aiRecommendedPlaceEnrichmentQueryKey(place.placeId),
-    queryFn: () => resolvePlaceCardEnrichmentFromPlaceId(place.placeId),
+    queryKey: placeDetailQueryKey(place.placeId),
+    queryFn: () => fetchPlaceDetail(place.placeId),
+    select: (detail) => ({
+      photoName: detail.photoNames?.[0]?.trim() || null,
+      rating:
+        typeof detail.rating === "number" && Number.isFinite(detail.rating)
+          ? detail.rating
+          : null,
+      userRatingCount:
+        typeof detail.userRatingCount === "number" &&
+        Number.isFinite(detail.userRatingCount)
+          ? detail.userRatingCount
+          : null,
+    }),
     enabled: needsDetail && place.placeId.trim().length > 0,
-    staleTime: 5 * 60_000,
+    ...placeDetailQueryDefaults,
   });
   const photoName = fromMeta || enriched?.photoName?.trim() || "";
   const displayRating =

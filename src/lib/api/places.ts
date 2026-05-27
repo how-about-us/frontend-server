@@ -1,4 +1,3 @@
-import type { SearchResultCardProps } from "@/types/place";
 import { API_BASE } from "./config";
 import { apiFetch } from "./client";
 
@@ -52,12 +51,6 @@ export type PlacePhotoResponse = {
   photoUrl: string;
 };
 
-/** In-flight + settled memo: 일정 리오더처럼 같은 place·photo 가 반복될 때 API 재호출 방지 */
-const placeDetailPromisesById = new Map<string, Promise<PlaceDetail>>();
-const placePhotoUrlPromisesByName = new Map<string, Promise<string>>();
-/** 성공 응답 URL — 동일 trim `photoName`에 대해 RQ 가 `queryFn`을 재실행해도 `GET /places/photos` 생략 */
-const resolvedPlacePhotoUrlByTrimmedName = new Map<string, string>();
-
 // ─── API functions ─────────────────────────────────────────────────────────
 
 export async function searchPlaces(params: {
@@ -84,7 +77,9 @@ export async function searchPlaces(params: {
   return res.json();
 }
 
-async function requestPlaceDetail(googlePlaceId: string): Promise<PlaceDetail> {
+export async function requestPlaceDetail(
+  googlePlaceId: string,
+): Promise<PlaceDetail> {
   const res = await apiFetch(
     `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}`,
   );
@@ -92,24 +87,7 @@ async function requestPlaceDetail(googlePlaceId: string): Promise<PlaceDetail> {
   return res.json();
 }
 
-export async function getPlaceDetail(
-  googlePlaceId: string,
-): Promise<PlaceDetail> {
-  const cacheKey =
-    typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  const hit =
-    cacheKey.length > 0 ? placeDetailPromisesById.get(cacheKey) : undefined;
-  if (hit) return hit;
-
-  const p = requestPlaceDetail(googlePlaceId).catch((err) => {
-    if (cacheKey.length > 0) placeDetailPromisesById.delete(cacheKey);
-    throw err;
-  });
-  if (cacheKey.length > 0) placeDetailPromisesById.set(cacheKey, p);
-  return p;
-}
-
-async function requestPlacePhotoUrl(photoName: string): Promise<string> {
+export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("photoName", photoName);
 
@@ -117,66 +95,4 @@ async function requestPlacePhotoUrl(photoName: string): Promise<string> {
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
   return data.photoUrl;
-}
-
-export async function getPlacePhotoUrl(photoName: string): Promise<string> {
-  const cacheKey = typeof photoName === "string" ? photoName.trim() : "";
-  if (cacheKey.length === 0) {
-    throw new Error("getPlacePhotoUrl: empty photoName");
-  }
-
-  const resolved = resolvedPlacePhotoUrlByTrimmedName.get(cacheKey);
-  if (resolved !== undefined) {
-    return resolved;
-  }
-
-  const hit = placePhotoUrlPromisesByName.get(cacheKey);
-  if (hit) return hit;
-
-  const p = requestPlacePhotoUrl(cacheKey)
-    .then((url) => {
-      resolvedPlacePhotoUrlByTrimmedName.set(cacheKey, url);
-      placePhotoUrlPromisesByName.delete(cacheKey);
-      return url;
-    })
-    .catch((err) => {
-      placePhotoUrlPromisesByName.delete(cacheKey);
-      throw err;
-    });
-  placePhotoUrlPromisesByName.set(cacheKey, p);
-  return p;
-}
-
-/** Loads place detail and first photo for list/search card display (e.g. bookmarks). */
-export async function getPlaceCardPropsByGoogleId(
-  googlePlaceId: string,
-): Promise<SearchResultCardProps> {
-  const detail = await getPlaceDetail(googlePlaceId);
-  let image: string | undefined;
-  const firstPhoto = detail.photoNames[0];
-  if (firstPhoto) {
-    try {
-      image = await getPlacePhotoUrl(firstPhoto);
-    } catch {
-      /* preview optional */
-    }
-  }
-  const hours = detail.regularOpeningHours?.weekdayDescriptions?.length
-    ? detail.regularOpeningHours.weekdayDescriptions.join("\n")
-    : undefined;
-  return {
-    name: detail.name,
-    category: detail.primaryTypeDisplayName || detail.primaryType,
-    rating: detail.rating,
-    userRatingCount: detail.userRatingCount,
-    isOpen: detail.regularOpeningHours?.openNow ?? null,
-    address: detail.formattedAddress,
-    googlePlaceId: detail.googlePlaceId,
-    location: detail.location,
-    reviewSummary: detail.reviewSummary,
-    image,
-    phone: detail.phoneNumber || undefined,
-    hours,
-    website: detail.websiteUri || undefined,
-  };
 }

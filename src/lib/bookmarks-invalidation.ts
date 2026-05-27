@@ -3,8 +3,6 @@ import type { Query, QueryClient } from "@tanstack/react-query";
 import {
   PLACE_CARD_BOOKMARK_SEGMENT,
   bookmarkCategoriesQueryKey,
-  bookmarkMapPinPlaceQueryKey,
-  bookmarkMapPinPlaceRootQueryKey,
   placeCardBookmarkRootQueryKey,
   roomBookmarksQueryKey,
 } from "@/lib/query-keys";
@@ -40,10 +38,6 @@ export async function invalidateRoomBookmarkQueries(
         refetchType: "all",
       });
       await queryClient.invalidateQueries({
-        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
-        refetchType: "all",
-      });
-      await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
       });
@@ -58,10 +52,6 @@ export async function invalidateRoomBookmarkQueries(
         refetchType: "all",
       });
       await queryClient.invalidateQueries({
-        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
-        refetchType: "all",
-      });
-      await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
       });
@@ -70,9 +60,6 @@ export async function invalidateRoomBookmarkQueries(
     case "BOOKMARK_DELETED":
       queryClient.removeQueries({
         predicate: placeCardBookmarkPredicate(rid, bookmarkId),
-      });
-      queryClient.removeQueries({
-        queryKey: bookmarkMapPinPlaceQueryKey(rid, bookmarkId),
       });
       await queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
@@ -98,9 +85,6 @@ export async function invalidateRoomBookmarkQueries(
       });
       queryClient.removeQueries({
         queryKey: placeCardBookmarkRootQueryKey(rid),
-      });
-      queryClient.removeQueries({
-        queryKey: bookmarkMapPinPlaceRootQueryKey(rid),
       });
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),

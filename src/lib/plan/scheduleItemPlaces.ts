@@ -1,12 +1,12 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { getPlaceDetail } from "@/lib/api/places";
 import {
   getScheduleItems,
   updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
+import { fetchPlaceDetail } from "@/lib/places/place-queries";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -272,7 +272,7 @@ async function planPlaceFromScheduleItem(
   item: RoomScheduleItem,
 ): Promise<PlanPlace> {
   try {
-    const detail = await getPlaceDetail(item.googlePlaceId);
+    const detail = await fetchPlaceDetail(item.googlePlaceId);
     const firstPhoto = detail.photoNames[0];
     return {
       id: `item-${item.itemId}`,

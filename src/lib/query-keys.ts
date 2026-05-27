@@ -5,12 +5,10 @@ import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 export const BOOKMARK_CATEGORIES_SEGMENT = "bookmark-categories" as const;
 export const ROOM_BOOKMARKS_SEGMENT = "room-bookmarks" as const;
 export const PLACE_CARD_BOOKMARK_SEGMENT = "place-card-bookmark" as const;
-export const BOOKMARK_MAP_PIN_PLACE_SEGMENT = "bookmark-map-pin-place" as const;
 
 const BOOKMARK_CATEGORIES = BOOKMARK_CATEGORIES_SEGMENT;
 const ROOM_BOOKMARKS = ROOM_BOOKMARKS_SEGMENT;
 const PLACE_CARD_BOOKMARK = PLACE_CARD_BOOKMARK_SEGMENT;
-const BOOKMARK_MAP_PIN_PLACE = BOOKMARK_MAP_PIN_PLACE_SEGMENT;
 
 export function bookmarkCategoriesQueryKey(roomId: string | null) {
   return [BOOKMARK_CATEGORIES, roomId] as const;
@@ -39,46 +37,6 @@ export function placeCardBookmarkQueryKey(
   bookmarkId: number,
 ) {
   return [PLACE_CARD_BOOKMARK, roomId, googlePlaceId, bookmarkId] as const;
-}
-
-/** 맵 핀 좌표/요약 전용 `/places/:id`(getPlaceDetail) 캐시 — 폴더 카드 쿼리와 분리 */
-export function bookmarkMapPinPlaceRootQueryKey(roomId: string) {
-  return [BOOKMARK_MAP_PIN_PLACE, roomId] as const;
-}
-
-export function bookmarkMapPinPlaceQueryKey(
-  roomId: string,
-  bookmarkId: number,
-) {
-  return [BOOKMARK_MAP_PIN_PLACE, roomId, bookmarkId] as const;
-}
-
-const AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT =
-  "ai-recommended-place-enrichment" as const;
-
-/** AI 장소 추천 카드 — 메타 결손 시 `resolvePlaceCardEnrichmentFromPlaceId` 쿼리 */
-export function aiRecommendedPlaceEnrichmentQueryKey(googlePlaceId: string) {
-  const id =
-    typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  return [AI_RECOMMENDED_PLACE_ENRICHMENT_SEGMENT, id] as const;
-}
-
-// ─── Place photos ────────────────────────────────────────────────────────────
-
-const PLACE_PHOTO_QUERY_GC_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** `usePlacePhotoUrlQuery` — 같은 `photoName`에 대해 불필요한 `GET /places/photos` 재호출 방지 */
-export const placePhotoUrlQueryDefaults = {
-  staleTime: Infinity,
-  gcTime: PLACE_PHOTO_QUERY_GC_MS,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-} as const;
-
-export function placePhotoUrlQueryKey(photoName: string) {
-  const n = typeof photoName === "string" ? photoName.trim() : "";
-  return ["places", "photoUrl", n] as const;
 }
 
 // ─── Plan itinerary map path (per segment, Google Directions JS) ─────────────

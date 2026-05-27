@@ -11,8 +11,8 @@ import {
   useCreateScheduleItem,
   useRoomBookmarks,
 } from "@/hooks/useRooms";
-import { getPlaceCardPropsByGoogleId } from "@/lib/api/places";
 import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import { fetchPlaceCardProps } from "@/lib/places/place-queries";
 import type { PlanPlace } from "@/lib/plan/types";
 import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,7 @@ export function AddFromBookmarkModal({
         b.googlePlaceId,
         b.bookmarkId,
       ),
-      queryFn: () => getPlaceCardPropsByGoogleId(b.googlePlaceId),
+      queryFn: () => fetchPlaceCardProps(b.googlePlaceId),
       enabled: !!b.googlePlaceId && bookmarkRows != null,
       staleTime: 60_000,
     })),

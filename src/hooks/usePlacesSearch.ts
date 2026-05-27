@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   searchPlaces,
-  getPlacePhotoUrl,
   type PlaceSearchItem,
 } from "@/lib/api/places";
+import { fetchPlacePhotoUrl } from "@/lib/places/place-queries";
 import type { SearchResultCardProps } from "@/types/place";
 
 /** 검색 페이지에서 한 요청당 최대 장소 개수(서버 `limit` + 클라 보정·썸네일 호출 상한) */
@@ -38,7 +38,7 @@ async function fetchPlacesWithPhotos(
     items.map(async (item) => {
       let imageUrl: string | undefined;
       try {
-        imageUrl = await getPlacePhotoUrl(item.photoName);
+        imageUrl = await fetchPlacePhotoUrl(item.photoName);
       } catch {
         // Photo fetch failures are non-fatal
       }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getPlacePhotoUrl } from "@/lib/api/places";
+import { fetchPlacePhotoUrl } from "@/lib/places/place-queries";
 import {
   placePhotoUrlQueryDefaults,
   placePhotoUrlQueryKey,
@@ -10,7 +10,7 @@ export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   return useQuery({
     queryKey: placePhotoUrlQueryKey(name),
-    queryFn: () => getPlacePhotoUrl(name),
+    queryFn: () => fetchPlacePhotoUrl(name),
     enabled: name.length > 0,
     ...placePhotoUrlQueryDefaults,
   });

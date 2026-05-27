@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { getPlaceCardPropsByGoogleId } from "@/lib/api/places";
+import { fetchPlaceCardProps } from "@/lib/places/place-queries";
 import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomBookmarks } from "@/hooks/useRooms";
@@ -35,7 +35,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
         b.bookmarkId,
       ),
       queryFn: async () => {
-        const card = await getPlaceCardPropsByGoogleId(b.googlePlaceId);
+        const card = await fetchPlaceCardProps(b.googlePlaceId);
         return { ...card, id: String(b.bookmarkId) } satisfies BookmarkedPlace;
       },
       enabled: !!roomId && !!b.googlePlaceId && bookmarkRows != null,

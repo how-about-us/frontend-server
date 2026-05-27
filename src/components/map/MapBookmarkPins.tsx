@@ -7,11 +7,14 @@ import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useBookmarkCategories } from "@/hooks/useRooms";
-import { getPlaceDetail } from "@/lib/api/places";
 import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import {
-  bookmarkMapPinPlaceQueryKey,
+  fetchPlaceDetail,
+  placeDetailQueryDefaults,
+  placeDetailQueryKey,
+} from "@/lib/places/place-queries";
+import {
   roomBookmarksQueryKey,
 } from "@/lib/query-keys";
 
@@ -31,7 +34,7 @@ type BookmarkRowAugmented = {
 };
 
 function detailToSelectedPlacePayload(
-  d: Awaited<ReturnType<typeof getPlaceDetail>>,
+  d: Awaited<ReturnType<typeof fetchPlaceDetail>>,
 ) {
   return {
     name: d.name,
@@ -94,13 +97,13 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
 
   const placeQueries = useQueries({
     queries: flattenedBookmarks.map((row) => ({
-      queryKey: bookmarkMapPinPlaceQueryKey(roomId!, row.bookmarkId),
-      queryFn: () => getPlaceDetail(row.googlePlaceId),
+      queryKey: placeDetailQueryKey(row.googlePlaceId),
+      queryFn: () => fetchPlaceDetail(row.googlePlaceId),
       enabled:
         !!roomId &&
         listsLoaded &&
         flattenedBookmarks.length > 0,
-      staleTime: 60_000,
+      ...placeDetailQueryDefaults,
     })),
   });
 

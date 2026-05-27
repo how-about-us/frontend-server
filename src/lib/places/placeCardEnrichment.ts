@@ -1,6 +1,6 @@
-import { getPlaceDetail } from "@/lib/api/places";
+import { fetchPlaceDetail } from "@/lib/places/place-queries";
 
-/** `getPlaceDetail` 한 번으로 OG·AI 카드용 사진·평점·리뷰 수 */
+/** `fetchPlaceDetail` 한 번으로 OG·AI 카드용 사진·평점·리뷰 수 */
 export type PlaceCardEnrichmentFromDetail = {
   photoName: string | null;
   rating: number | null;
@@ -13,7 +13,7 @@ export async function resolvePlaceCardEnrichmentFromPlaceId(
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   if (!id) return null;
   try {
-    const detail = await getPlaceDetail(id);
+    const detail = await fetchPlaceDetail(id);
     const first = detail.photoNames?.[0]?.trim() ?? "";
     return {
       photoName: first.length > 0 ? first : null,

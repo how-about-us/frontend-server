@@ -1,20 +1,19 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { getPlacePhotoUrl } from "@/lib/api/places";
 import {
   collectGooglePlaceIdsForAiPhotoBackfill,
   collectPlacePhotoNamesFromServerMessages,
 } from "@/lib/chat";
+import { fetchPlacePhotoUrl } from "@/lib/places/place-queries";
 import { resolvePlaceCardEnrichmentFromPlaceId } from "@/lib/places/placeCardEnrichment";
-import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
 import type { ServerChatMessage } from "@/types/chat";
 
 /**
  * 채팅 히스토리 로드 직후 1회 — 메타의 `photoName`·AI 추천 place 디테일로 모은 이름에 대해
- * `/places/photos`를 채워 React Query 캐시(+ `getPlacePhotoUrl` 모듈 메모)에 적재합니다.
+ * `/places/photos`를 React Query 캐시에 예열합니다.
  */
 export async function warmPlacePhotoQueriesFromChatHistory(
-  queryClient: QueryClient,
+  _queryClient: QueryClient,
   history: ServerChatMessage[],
 ): Promise<void> {
   const names = new Set(collectPlacePhotoNamesFromServerMessages(history));
@@ -33,8 +32,7 @@ export async function warmPlacePhotoQueriesFromChatHistory(
 
   await Promise.allSettled(
     [...names].map(async (name) => {
-      const url = await getPlacePhotoUrl(name);
-      queryClient.setQueryData(placePhotoUrlQueryKey(name), url);
+      await fetchPlacePhotoUrl(name);
     }),
   );
 }
