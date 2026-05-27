@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import {
   clampStayDurationMinutes,
+  formatScheduleStaySummary,
   formatStayDurationMinutes,
   normalizeStartTimeToHm,
   SCHEDULE_STAY_DURATION_MAX_MINUTES,
 } from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
+
+import { PlanCollapsibleField } from "./PlanPlaceCardParts";
 
 type PlanItemTimeFormProps = {
   roomId: string;
@@ -22,10 +25,7 @@ type PlanItemTimeFormProps = {
   scheduleOverlapWarning?: string;
 };
 
-const fieldLabelClass = cn(
-  "text-xs font-medium leading-none text-dark-gray",
-  PLAN_PLACE_CARD_TW.timeFieldLabelWideOnly,
-);
+const fieldLabelClass = PLAN_PLACE_CARD_TW.timeFieldLabel;
 const inlineInputClass =
   "rounded-md border border-gray-border bg-gray-50/60 tabular-nums text-gray-900 shadow-none transition focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30";
 const timeStartInputClass =
@@ -70,7 +70,7 @@ function PlanStartTimeInput({
         )}
       >
         <span
-          className="pointer-events-none text-[11px] tabular-nums text-dark-gray/70 @min-[370px]/plan:text-xs"
+          className="pointer-events-none text-[11px] tabular-nums text-dark-gray/70"
           aria-hidden
         >
           --:--
@@ -106,6 +106,23 @@ function PlanStartTimeInput({
   );
 }
 
+export function PlanItemTimeReadOnly({
+  startTime,
+  durationMinutes,
+}: {
+  startTime: string;
+  durationMinutes: number;
+}) {
+  const summary = formatScheduleStaySummary(startTime, durationMinutes);
+  if (!summary) return null;
+
+  return (
+    <p className="truncate text-[10px] tabular-nums text-dark-gray/75">
+      {summary}
+    </p>
+  );
+}
+
 export function PlanItemTimeForm({
   roomId,
   scheduleId,
@@ -114,10 +131,12 @@ export function PlanItemTimeForm({
   durationMinutes,
   scheduleOverlapWarning,
 }: PlanItemTimeFormProps) {
+  const panelId = useId();
   const [timeHm, setTimeHm] = useState(() => normalizeStartTimeToHm(startTime));
   const [durationStr, setDurationStr] = useState(() =>
     formatStayDurationMinutes(durationMinutes),
   );
+  const [expanded, setExpanded] = useState(false);
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
   const serverHm = normalizeStartTimeToHm(startTime);
@@ -128,6 +147,12 @@ export function PlanItemTimeForm({
   useEffect(() => {
     setDurationStr(formatStayDurationMinutes(durationMinutes));
   }, [durationMinutes]);
+
+  useEffect(() => {
+    if (scheduleOverlapWarning) {
+      setExpanded(true);
+    }
+  }, [scheduleOverlapWarning]);
 
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
@@ -153,6 +178,7 @@ export function PlanItemTimeForm({
         body: { startTime: timeHm, durationMinutes: dm },
       });
       toast.success("체류 시간을 저장했어요.");
+      setExpanded(false);
     } catch {
       toast.error("체류 시간을 저장하지 못했어요.");
     }
@@ -161,80 +187,82 @@ export function PlanItemTimeForm({
   const baselineTime = normalizeStartTimeToHm(startTime);
   const baselineDur = formatStayDurationMinutes(durationMinutes);
   const dirty = baselineTime !== timeHm || baselineDur !== durationStr;
+  const collapsedHint =
+    formatScheduleStaySummary(startTime, durationMinutes) || undefined;
 
   return (
-    <div className="flex min-w-0 w-full flex-col gap-1 @min-[370px]/plan:gap-1.5">
+    <PlanCollapsibleField
+      label="체류 시간"
+      collapsedHint={collapsedHint}
+      expanded={expanded}
+      onToggle={() => setExpanded((v) => !v)}
+      disabled={isPending}
+      panelId={panelId}
+    >
       {scheduleOverlapWarning ? (
         <p
           role="status"
           className={cn(
-            "line-clamp-1 leading-snug font-medium text-brand-red break-keep",
+            "line-clamp-2 font-medium text-brand-red break-keep",
             PLAN_PLACE_CARD_TW.overlapWarningCompact,
           )}
         >
           {scheduleOverlapWarning}
         </p>
       ) : null}
-      <div
-        className={cn(
-          PLAN_PLACE_CARD_TW.timeBorderWideOnly,
-          PLAN_PLACE_CARD_TW.timeBorderPadding,
-        )}
-      >
-        <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
-          <label className={PLAN_PLACE_CARD_TW.timeField}>
-            <span className={fieldLabelClass}>시작</span>
-            <PlanStartTimeInput
-              value={timeHm}
-              disabled={isPending}
-              onChange={setTimeHm}
-            />
-          </label>
-          <label className={PLAN_PLACE_CARD_TW.timeField}>
-            <span className={fieldLabelClass}>체류(분)</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
-              step={1}
-              aria-label="체류(분)"
-              value={durationStr}
-              onMouseDown={stopCardActivation}
-              onClick={stopCardActivation}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "") {
-                  setDurationStr("");
-                  return;
-                }
-                const v = parseInt(raw, 10);
-                if (!Number.isFinite(v)) {
-                  setDurationStr(raw);
-                  return;
-                }
-                setDurationStr(String(clampStayDurationMinutes(v)));
-              }}
-              className={cn(
-                inlineInputClass,
-                PLAN_PLACE_CARD_TW.timeInputCompact,
-              )}
-              disabled={isPending}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={isPending || !dirty}
+      <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
+        <label className={PLAN_PLACE_CARD_TW.timeField}>
+          <span className={fieldLabelClass}>시작</span>
+          <PlanStartTimeInput
+            value={timeHm}
+            disabled={isPending}
+            onChange={setTimeHm}
+          />
+        </label>
+        <label className={PLAN_PLACE_CARD_TW.timeField}>
+          <span className={fieldLabelClass}>체류(분)</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
+            step={1}
+            aria-label="체류(분)"
+            value={durationStr}
+            onMouseDown={stopCardActivation}
+            onClick={stopCardActivation}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                setDurationStr("");
+                return;
+              }
+              const v = parseInt(raw, 10);
+              if (!Number.isFinite(v)) {
+                setDurationStr(raw);
+                return;
+              }
+              setDurationStr(String(clampStayDurationMinutes(v)));
+            }}
             className={cn(
-              "shrink-0 cursor-pointer rounded-md bg-brand-green font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40",
-              PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
+              inlineInputClass,
+              PLAN_PLACE_CARD_TW.timeInputCompact,
             )}
-          >
-            {isPending ? "저장 중…" : "저장"}
-          </button>
-        </div>
+            disabled={isPending}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={isPending || !dirty}
+          className={cn(
+            "shrink-0 cursor-pointer rounded-md bg-brand-green font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40",
+            PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
+          )}
+        >
+          {isPending ? "…" : "저장"}
+        </button>
       </div>
-    </div>
+    </PlanCollapsibleField>
   );
 }

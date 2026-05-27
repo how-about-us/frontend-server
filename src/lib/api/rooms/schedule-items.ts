@@ -7,6 +7,7 @@ export type RoomScheduleItem = {
   googlePlaceId: string;
   startTime: string;
   durationMinutes: number;
+  memo?: string;
   orderIndex: number;
   travelMode: string;
   createdAt: string;
@@ -20,8 +21,10 @@ export type RoomScheduleItemCreateRequest = {
 };
 
 export type RoomScheduleItemUpdateRequest = {
-  startTime: string;
-  durationMinutes: number;
+  startTime?: string;
+  durationMinutes?: number;
+  /** 키를 내면 서버가 갱신. 빈 문자열이면 삭제 */
+  memo?: string | null;
 };
 
 export type ReorderScheduleItemRequest = {
@@ -101,7 +104,7 @@ export async function updateScheduleItem(
   return requestJson(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}`),
     { method: "PATCH", ...jsonBody(body) },
-    { errorMessage: "체류 시간 수정 실패" },
+    { errorMessage: "일정 항목 수정 실패" },
   );
 }
 

@@ -18,6 +18,8 @@ export type PlanPlace = {
   durationMinutes?: number;
   /** 서버가 주면 초기 길찾기 수단 추정값(클라이언트 선택은 저장 안 됨). 없으면 `WALKING` 등 폴백 */
   travelMode?: string;
+  /** 일정 항목 메모 — PATCH로만 설정 */
+  memo?: string;
 };
 
 /** 일차별 플랜 메타 — 섹션 헤더용 (`places`는 현재 빈 배열) */

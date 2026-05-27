@@ -18,45 +18,44 @@ export const PLAN_CONTAINER_NARROW_MAX_INLINE_PX = 400 as const;
  */
 export const PLAN_PLACE_CARD_LAYOUT_WIDE_MIN_PX = 370 as const;
 
+/** `PlanPlaceCard` 접힌 상태 기준 최소 높이·썸네일 한 변(px) — 사진·본문 열 동기화 */
+export const PLAN_PLACE_CARD_MIN_SIZE_REM = "7rem" as const;
+
 /**
  * `PlanPlaceCard` 컨테이너 쿼리 유틸 — 문자열은 **템플릿으로 만들지 말 것**
  * (`@min-[370px]` 처럼 소스에 그대로 적혀야 Tailwind v4가 CSS를 생성함).
  */
 export const PLAN_PLACE_CARD_TW = {
   article:
-    "grid grid-cols-[auto_minmax(0,1fr)] grid-rows-[auto_auto] gap-x-2 gap-y-2.5 rounded-2xl border border-gray-border bg-white p-4 shadow-sm @min-[370px]/plan:min-h-30 @min-[370px]/plan:gap-x-3 @min-[370px]/plan:gap-y-1.5",
+    "grid grid-cols-[auto_minmax(0,1fr)] items-stretch gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
   thumbnail:
-    "relative col-start-1 row-start-1 shrink-0 self-start overflow-hidden rounded-xl bg-brand-green/30 h-20 w-20 @min-[370px]/plan:row-span-2 @min-[370px]/plan:h-30 @min-[370px]/plan:w-30",
-  infoColumn:
-    "col-start-2 row-start-1 flex min-w-0 flex-col justify-start gap-0.5 self-start @min-[370px]/plan:gap-1",
-  infoStack: "flex min-w-0 flex-col gap-0.5 @min-[370px]/plan:gap-1",
-  timeCell:
-    "col-span-2 col-start-1 row-start-2 min-w-0 overflow-hidden border-t border-gray-border/60 pt-2 @min-[370px]/plan:overflow-visible @min-[370px]/plan:col-span-1 @min-[370px]/plan:col-start-2 @min-[370px]/plan:row-start-2 @min-[370px]/plan:self-end @min-[370px]/plan:border-t-0 @min-[370px]/plan:pt-0",
-  subtitleCompact:
-    "truncate text-[11px] leading-snug text-dark-gray/90 @min-[370px]/plan:text-xs @min-[370px]/plan:leading-normal",
+    "relative h-full w-[7rem] min-h-[7rem] shrink-0 self-stretch overflow-hidden rounded-lg bg-brand-green/30",
+  contentColumn:
+    "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
+  titleRow: "mb-1.5 flex min-w-0 items-start gap-2",
+  subtitle: "text-[10px] leading-snug text-dark-gray/85",
+  controlsStack: "flex min-w-0 flex-col gap-0.5",
   orderBadgeCompact:
-    "h-6 w-6 text-[10px] @min-[370px]/plan:h-7 @min-[370px]/plan:w-7 @min-[370px]/plan:text-xs",
-  titleNarrowOnly: "@min-[370px]/plan:hidden",
-  titleWideOnly: "hidden @min-[370px]/plan:grid",
-  titleCompact: "text-sm @min-[370px]/plan:text-base",
-  titleClampWide: "@min-[370px]/plan:line-clamp-2",
-  subtitleClampWide: "@min-[370px]/plan:line-clamp-1",
-  deleteButtonCompact:
-    "p-1 @min-[370px]/plan:-mr-1 @min-[370px]/plan:-mt-0.5 @min-[370px]/plan:p-1.5",
-  deleteIconCompact: "h-3.5 w-3.5 @min-[370px]/plan:h-4 @min-[370px]/plan:w-4",
-  timeFieldLabelWideOnly: "hidden @min-[370px]/plan:block",
+    "h-6 w-6 text-[11px] @min-[370px]/plan:h-7 @min-[370px]/plan:w-7 @min-[370px]/plan:text-xs",
+  titleCompact: "text-[13px] font-semibold leading-snug text-gray-900",
+  titleClamp: "line-clamp-2",
+  subtitleClamp: "line-clamp-2",
+  deleteButtonCompact: "p-0.5 @min-[370px]/plan:p-1",
+  deleteIconCompact: "h-3.5 w-3.5",
+  timeFieldLabel: "text-[10px] font-medium leading-none text-dark-gray/90",
   timeFieldsRow:
-    "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-1.5 @min-[370px]/plan:items-end @min-[370px]/plan:gap-2.5",
-  timeField:
-    "flex min-w-0 w-full flex-col gap-0.5 @min-[370px]/plan:gap-1",
+    "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-1 @min-[370px]/plan:gap-1.5",
+  timeField: "flex min-w-0 w-full flex-col gap-0.5",
   timeInputCompact:
-    "h-7 min-w-0 w-full text-[11px] px-1.5 @min-[370px]/plan:h-8 @min-[370px]/plan:text-xs @min-[370px]/plan:px-2.5",
+    "h-6 min-w-0 w-full text-[11px] px-1.5 @min-[370px]/plan:h-7 @min-[370px]/plan:px-2",
   timeSaveButtonCompact:
-    "h-7 shrink-0 px-2 text-[11px] @min-[370px]/plan:h-8 @min-[370px]/plan:px-3 @min-[370px]/plan:text-xs",
-  timeBorderPadding: "pt-0 @min-[370px]/plan:pt-2.5",
-  timeBorderWideOnly:
-    "border-t-0 @min-[370px]/plan:border-t @min-[370px]/plan:border-gray-border/60",
-  overlapWarningCompact: "text-[10px] @min-[370px]/plan:text-[11px]",
+    "h-6 shrink-0 px-2 text-[10px] @min-[370px]/plan:h-7 @min-[370px]/plan:px-2.5 @min-[370px]/plan:text-[11px]",
+  sectionToggle:
+    "flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left text-[10px] font-medium text-dark-gray/80 transition hover:bg-gray-50 hover:text-dark-gray",
+  sectionToggleHint: "min-w-0 flex-1 truncate font-normal text-dark-gray/60",
+  memoTextarea:
+    "min-h-[1.75rem] max-h-20 w-full resize-y rounded-md border border-gray-border bg-gray-50/60 px-2 py-1 text-[11px] leading-snug text-gray-900 shadow-none transition placeholder:text-dark-gray/45 focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30",
+  overlapWarningCompact: "text-[10px] leading-tight",
 } as const;
 
 /** 플랜 구간(경로) 카드 가로 고정폭(px). 좌측 패널 max(s2) 기준 본문 영역 근사 */

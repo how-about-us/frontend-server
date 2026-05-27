@@ -235,12 +235,14 @@ export function useUpdateScheduleItem() {
         vars.itemId,
         vars.body,
       ),
-    onSuccess: (updated, { roomId, scheduleId }) => {
+    onSuccess: (updated, { roomId, scheduleId, body }) => {
       const rid = roomId.trim();
       if (!rid.length) return;
       const key = scheduleItemsQueryKey(rid, scheduleId);
       const prev = queryClient.getQueryData<PlanPlace[]>(key);
-      const merged = applyRoomScheduleItemToPlanPlaces(prev, updated);
+      const merged = applyRoomScheduleItemToPlanPlaces(prev, updated, {
+        memoTouched: Object.prototype.hasOwnProperty.call(body, "memo"),
+      });
       if (merged) {
         queryClient.setQueryData(key, merged);
       } else {

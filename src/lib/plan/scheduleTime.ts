@@ -12,6 +12,19 @@ export function formatStayDurationMinutes(value: unknown): string {
   return String(clampStayDurationMinutes(value));
 }
 
+/** 접힌 체류 시간 토글에 표시할 한 줄 요약 */
+export function formatScheduleStaySummary(
+  startTime: string,
+  durationMinutes: number,
+): string {
+  const hm = normalizeStartTimeToHm(startTime);
+  const dur = clampStayDurationMinutes(durationMinutes);
+  if (!hm && dur <= 0) return "";
+  if (!hm) return `${dur}분`;
+  if (dur <= 0) return hm;
+  return `${hm} · ${dur}분`;
+}
+
 /** API `startTime`을 `<input type="time">`용 `HH:mm`으로 바꿈. 미설정·공백·파싱 불가면 `""`. */
 export function normalizeStartTimeToHm(value: string): string {
   const v = value.trim();

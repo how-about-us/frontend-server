@@ -1,8 +1,13 @@
 import type { MouseEvent, ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
+
+const stopFormClickPropagation = {
+  onMouseDown: (e: MouseEvent) => e.stopPropagation(),
+  onClick: (e: MouseEvent) => e.stopPropagation(),
+} as const;
 
 export function PlanOrderIndexBadge({
   orderIndex,
@@ -40,11 +45,9 @@ export function PlanOrderIndexBadge({
 export function PlanScheduleItemDeleteButton({
   disabled,
   onDelete,
-  gridPlacementClassName,
 }: {
   disabled: boolean;
   onDelete: () => void;
-  gridPlacementClassName?: string;
 }) {
   return (
     <button
@@ -52,7 +55,6 @@ export function PlanScheduleItemDeleteButton({
       className={cn(
         "shrink-0 cursor-pointer rounded-lg text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40",
         PLAN_PLACE_CARD_TW.deleteButtonCompact,
-        gridPlacementClassName,
       )}
       aria-label="일정에서 삭제"
       disabled={disabled}
@@ -71,19 +73,63 @@ export function PlanScheduleItemDeleteButton({
   );
 }
 
-const stopFormClickPropagation = {
-  onMouseDown: (e: MouseEvent) => e.stopPropagation(),
-  onClick: (e: MouseEvent) => e.stopPropagation(),
-} as const;
+export function PlanPlaceCardControlsStack({ children }: { children: ReactNode }) {
+  return (
+    <div className={PLAN_PLACE_CARD_TW.controlsStack} {...stopFormClickPropagation}>
+      {children}
+    </div>
+  );
+}
 
-export function PlanPlaceCardTimeCell({
+export function PlanCollapsibleField({
+  label,
+  collapsedHint,
+  expanded,
+  onToggle,
+  disabled,
+  panelId,
   children,
 }: {
+  label: string;
+  collapsedHint?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  panelId: string;
   children: ReactNode;
 }) {
   return (
-    <div className={PLAN_PLACE_CARD_TW.timeCell} {...stopFormClickPropagation}>
-      {children}
+    <div className="flex min-w-0 w-full flex-col gap-0.5">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        disabled={disabled}
+        onMouseDown={stopFormClickPropagation.onMouseDown}
+        onClick={(e) => {
+          stopFormClickPropagation.onClick(e);
+          onToggle();
+        }}
+        className={cn(
+          PLAN_PLACE_CARD_TW.sectionToggle,
+          disabled && "pointer-events-none opacity-70",
+        )}
+      >
+        {expanded ?
+          <ChevronUp className="h-3 w-3 shrink-0" aria-hidden />
+        : <ChevronDown className="h-3 w-3 shrink-0" aria-hidden />}
+        <span className="shrink-0">{label}</span>
+        {!expanded && collapsedHint ?
+          <span className={PLAN_PLACE_CARD_TW.sectionToggleHint}>
+            {collapsedHint}
+          </span>
+        : null}
+      </button>
+      {expanded ?
+        <div id={panelId} className="flex min-w-0 w-full flex-col gap-1">
+          {children}
+        </div>
+      : null}
     </div>
   );
 }

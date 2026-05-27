@@ -15,10 +15,11 @@ import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
-import { PlanItemTimeForm } from "./PlanItemTimeForm";
+import { PlanItemMemoForm, PlanItemMemoReadOnly } from "./PlanItemMemoForm";
+import { PlanItemTimeForm, PlanItemTimeReadOnly } from "./PlanItemTimeForm";
 import {
   PlanOrderIndexBadge,
-  PlanPlaceCardTimeCell,
+  PlanPlaceCardControlsStack,
   PlanScheduleItemDeleteButton,
 } from "./PlanPlaceCardParts";
 
@@ -134,18 +135,40 @@ export function PlanPlaceCard({
     ],
   );
 
-  const timeForm =
-    scheduleTimeEdit && typeof place.itemId === "number" ? (
-      <PlanItemTimeForm
-        key={`${scheduleTimeEdit.scheduleId}-${place.itemId}`}
-        roomId={scheduleTimeEdit.roomId}
-        scheduleId={scheduleTimeEdit.scheduleId}
-        itemId={place.itemId}
-        startTime={place.startTime ?? ""}
-        durationMinutes={place.durationMinutes ?? 0}
-        scheduleOverlapWarning={scheduleOverlapWarning}
-      />
-    ) : null;
+  const scheduleItemId =
+    scheduleTimeEdit && typeof place.itemId === "number" ? place.itemId : null;
+
+  const scheduleControls =
+    scheduleTimeEdit && scheduleItemId !== null ?
+      !isReadOnly ?
+        <PlanPlaceCardControlsStack>
+          <PlanItemTimeForm
+            key={`time-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
+            roomId={scheduleTimeEdit.roomId}
+            scheduleId={scheduleTimeEdit.scheduleId}
+            itemId={scheduleItemId}
+            startTime={place.startTime ?? ""}
+            durationMinutes={place.durationMinutes ?? 0}
+            scheduleOverlapWarning={scheduleOverlapWarning}
+          />
+          <PlanItemMemoForm
+            key={`memo-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
+            roomId={scheduleTimeEdit.roomId}
+            scheduleId={scheduleTimeEdit.scheduleId}
+            itemId={scheduleItemId}
+            memo={place.memo}
+          />
+        </PlanPlaceCardControlsStack>
+      : <PlanPlaceCardControlsStack>
+          <PlanItemTimeReadOnly
+            startTime={place.startTime ?? ""}
+            durationMinutes={place.durationMinutes ?? 0}
+          />
+          {place.memo ?
+            <PlanItemMemoReadOnly memo={place.memo} />
+          : null}
+        </PlanPlaceCardControlsStack>
+    : null;
 
   const deleteButton =
     canManageServerItem ? (
@@ -180,7 +203,7 @@ export function PlanPlaceCard({
       <div className={PLAN_PLACE_CARD_TW.thumbnail}>
         {photoLoading ? (
           <Loader2
-            className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green @min-[370px]/plan:h-6 @min-[370px]/plan:w-6"
+            className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green"
             aria-hidden
           />
         ) : resolvedPhotoUrl ? (
@@ -189,80 +212,47 @@ export function PlanPlaceCard({
             alt={place.title}
             fill
             className="object-cover"
-            sizes="(min-width: 400px) 120px, 80px"
+            sizes="112px"
             draggable={false}
           />
         ) : null}
       </div>
 
-      <div className={PLAN_PLACE_CARD_TW.infoColumn}>
-        <div className={PLAN_PLACE_CARD_TW.infoStack}>
-          <div
+      <div className={PLAN_PLACE_CARD_TW.contentColumn}>
+        <div className={PLAN_PLACE_CARD_TW.titleRow}>
+          <PlanOrderIndexBadge
+            orderIndex={orderIndex}
+            backgroundColorHex={orderBadgeColor}
+          />
+          <h3
             className={cn(
-              "flex min-w-0 items-center gap-1.5 @min-[370px]/plan:gap-2",
-              PLAN_PLACE_CARD_TW.titleNarrowOnly,
+              "min-w-0 flex-1",
+              PLAN_PLACE_CARD_TW.titleCompact,
+              PLAN_PLACE_CARD_TW.titleClamp,
             )}
+            title={place.title}
           >
-            <PlanOrderIndexBadge
-              orderIndex={orderIndex}
-              backgroundColorHex={orderBadgeColor}
-            />
-            <h3
-              className={cn(
-                "min-w-0 flex-1 truncate font-semibold leading-snug text-gray-900",
-                PLAN_PLACE_CARD_TW.titleCompact,
-              )}
-              title={place.title}
-            >
-              {place.title}
-            </h3>
-            {deleteButton}
-          </div>
-
-          <div
-            className={cn(
-              "min-w-0 w-full grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-1 items-start gap-x-2 gap-y-1",
-              PLAN_PLACE_CARD_TW.titleWideOnly,
-            )}
-          >
-            <PlanOrderIndexBadge
-              orderIndex={orderIndex}
-              backgroundColorHex={orderBadgeColor}
-              className="col-start-1 row-start-1"
-            />
-            {canManageServerItem ? (
-              <PlanScheduleItemDeleteButton
-                disabled={isDeletingItem}
-                gridPlacementClassName="col-start-3 row-start-1"
-                onDelete={() => void handleDeleteScheduleItem()}
-              />
-            ) : null}
-            <h3
-              className={cn(
-                "col-start-2 row-start-1 min-w-0 font-semibold leading-snug text-gray-900 break-keep text-pretty",
-                PLAN_PLACE_CARD_TW.titleCompact,
-                PLAN_PLACE_CARD_TW.titleClampWide,
-              )}
-            >
-              {place.title}
-            </h3>
-          </div>
-
-          {place.subtitle ? (
-            <p
-              className={cn(
-                "break-keep",
-                PLAN_PLACE_CARD_TW.subtitleCompact,
-                PLAN_PLACE_CARD_TW.subtitleClampWide,
-              )}
-            >
-              {place.subtitle}
-            </p>
-          ) : null}
+            {place.title}
+          </h3>
+          {deleteButton ?
+            <span className="flex shrink-0">{deleteButton}</span>
+          : null}
         </div>
-      </div>
 
-      {timeForm ? <PlanPlaceCardTimeCell>{timeForm}</PlanPlaceCardTimeCell> : null}
+        {place.subtitle ?
+          <p
+            className={cn(
+              PLAN_PLACE_CARD_TW.subtitle,
+              PLAN_PLACE_CARD_TW.subtitleClamp,
+            )}
+            title={place.subtitle}
+          >
+            {place.subtitle}
+          </p>
+        : null}
+
+        {scheduleControls}
+      </div>
     </article>
   );
 }

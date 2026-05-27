@@ -18,6 +18,33 @@ export function sortRoomScheduleItemsByOrder(
   return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
 }
 
+function memoFromScheduleItem(item: RoomScheduleItem): string | undefined {
+  const raw = item.memo;
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+type ApplyScheduleItemPatchOptions = {
+  /** PATCH body에 `memo`가 포함된 경우 — 응답에서 필드가 생략돼도 삭제 반영 */
+  memoTouched?: boolean;
+};
+
+/** PATCH 응답 — `memo` 키가 없으면 기존 캐시 메모 유지(시간만 수정 등) */
+function memoFromScheduleItemPatch(
+  existing: PlanPlace,
+  updated: RoomScheduleItem,
+  options?: ApplyScheduleItemPatchOptions,
+): string | undefined {
+  if (options?.memoTouched) {
+    return memoFromScheduleItem(updated);
+  }
+  if (!Object.prototype.hasOwnProperty.call(updated, "memo")) {
+    return existing.memo;
+  }
+  return memoFromScheduleItem(updated);
+}
+
 /**
  * 리오더 등으로 서버 `RoomScheduleItem[]`만 바뀐 경우, 캐시된 PlanPlace의
  * 제목·photoName·location 등은 유지하고 순서·시간·수단만 반영합니다.
@@ -57,6 +84,7 @@ function mergeScheduleItemsIntoPlanPlaces(
       startTime: hasServerStart ? item.startTime : existing.startTime,
       durationMinutes: serverDurationOk ? item.durationMinutes : existing.durationMinutes,
       travelMode: item.travelMode,
+      memo: memoFromScheduleItem(item),
     });
   }
   return out;
@@ -243,6 +271,7 @@ export function defaultNewItemStartTimeHmFromScheduleItems(
 export function applyRoomScheduleItemToPlanPlaces(
   prev: PlanPlace[] | undefined,
   updated: RoomScheduleItem,
+  options?: ApplyScheduleItemPatchOptions,
 ): PlanPlace[] | null {
   if (!prev || prev.length === 0) return null;
   let found = false;
@@ -263,6 +292,7 @@ export function applyRoomScheduleItemToPlanPlaces(
         ? updated.durationMinutes
         : p.durationMinutes,
       travelMode: updated.travelMode,
+      memo: memoFromScheduleItemPatch(p, updated, options),
     };
   });
   return found ? out : null;
@@ -285,6 +315,7 @@ async function planPlaceFromScheduleItem(
       startTime: item.startTime,
       durationMinutes: item.durationMinutes,
       travelMode: item.travelMode,
+      memo: memoFromScheduleItem(item),
     };
   } catch {
     return {
@@ -296,6 +327,7 @@ async function planPlaceFromScheduleItem(
       startTime: item.startTime,
       durationMinutes: item.durationMinutes,
       travelMode: item.travelMode,
+      memo: memoFromScheduleItem(item),
     };
   }
 }
