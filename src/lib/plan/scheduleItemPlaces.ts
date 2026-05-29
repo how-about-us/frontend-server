@@ -6,7 +6,7 @@ import {
   updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
-import { fetchPlaceDetail } from "@/lib/places/place-queries";
+import { fetchPlacePreview } from "@/lib/places/place-queries";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -302,16 +302,15 @@ async function planPlaceFromScheduleItem(
   item: RoomScheduleItem,
 ): Promise<PlanPlace> {
   try {
-    const detail = await fetchPlaceDetail(item.googlePlaceId);
-    const firstPhoto = detail.photoNames[0];
+    const preview = await fetchPlacePreview(item.googlePlaceId);
     return {
       id: `item-${item.itemId}`,
       itemId: item.itemId,
       googlePlaceId: item.googlePlaceId,
-      location: detail.location,
-      title: detail.name,
-      subtitle: detail.formattedAddress,
-      photoName: firstPhoto?.trim() || undefined,
+      location: preview.location,
+      title: preview.name,
+      subtitle: preview.formattedAddress,
+      photoName: preview.photoName,
       startTime: item.startTime,
       durationMinutes: item.durationMinutes,
       travelMode: item.travelMode,

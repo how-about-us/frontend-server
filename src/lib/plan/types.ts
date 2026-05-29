@@ -11,7 +11,7 @@ export type PlanPlace = {
   /** 서버 일정 항목과 매핑 시 */
   itemId?: number;
   googlePlaceId?: string;
-  /** `getPlaceDetail` 성공 시 — 지도 마커·경로 표시용 */
+  /** `GET /places/{id}/preview` 성공 시 — 지도 마커·경로 표시용 */
   location?: { lat: number; lng: number };
   /** 서버 일정 항목 — PATCH 시 사용 (`HH:mm` 등 API 그대로) */
   startTime?: string;

@@ -38,9 +38,10 @@ export async function getRoomBookmarks(
 ): Promise<RoomBookmark[]> {
   const url = new URL(apiUrl(`/rooms/${roomId}/bookmarks`));
   url.searchParams.set("categoryId", String(categoryId));
-  return requestJson(url.toString(), undefined, {
+  const body = await requestJson<unknown>(url.toString(), undefined, {
     errorMessage: "북마크 목록 조회 실패",
   });
+  return normalizeBookmarksResponse(body);
 }
 
 export async function createRoomBookmarks(

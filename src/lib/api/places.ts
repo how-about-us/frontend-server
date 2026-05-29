@@ -56,6 +56,24 @@ export type PlacePhotoResponse = {
   photoUrl: string;
 };
 
+/** Raw JSON from `GET /places/{googlePlaceId}/preview` */
+export type PlacePreviewResponse = {
+  googlePlaceId: string;
+  name: string;
+  formattedAddress: string;
+  location: { latitude: number; longitude: number } | null;
+  photoName: string | null;
+};
+
+/** Client-normalized preview (coordinates match detail/search shape) */
+export type PlacePreview = {
+  googlePlaceId: string;
+  name: string;
+  formattedAddress: string;
+  location?: { lat: number; lng: number };
+  photoName?: string;
+};
+
 // ─── API functions ─────────────────────────────────────────────────────────
 
 export async function searchPlaces(params: {
@@ -92,6 +110,16 @@ export async function requestPlaceDetail(
     `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}`,
   );
   if (!res.ok) throw new Error(`Place detail failed: ${res.status}`);
+  return res.json();
+}
+
+export async function requestPlacePreview(
+  googlePlaceId: string,
+): Promise<PlacePreviewResponse> {
+  const res = await apiFetch(
+    `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}/preview`,
+  );
+  if (!res.ok) throw new Error(`Place preview failed: ${res.status}`);
   return res.json();
 }
 

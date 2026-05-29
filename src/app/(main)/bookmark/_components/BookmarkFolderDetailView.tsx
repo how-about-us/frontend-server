@@ -1,17 +1,28 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
-import { fetchPlaceCardProps } from "@/lib/places/place-queries";
+
+import { loadPlacePreview } from "@/lib/places/place-queries";
 import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
+import type { RoomBookmark } from "@/lib/api/rooms";
 import type { BookmarkFolder, BookmarkedPlace } from "@/types/bookmark";
 import { BookmarkFolderDetailHeader } from "./BookmarkFolderDetailHeader";
 import { BookmarkPlaceRow } from "./BookmarkPlaceRow";
 
 const SCROLLBAR =
   "min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent]";
+
+function trimGooglePlaceId(raw: unknown): string {
+  return typeof raw === "string" ? raw.trim() : "";
+}
+
+function normalizeBookmarkRows(data: unknown): RoomBookmark[] {
+  return Array.isArray(data) ? data : [];
+}
 
 export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder }) {
   const { setSelectedPlace } = useSelectedPlace();
@@ -20,39 +31,71 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
   const categoryIdOk = Number.isFinite(categoryId) ? categoryId : null;
 
   const {
-    data: bookmarkRows,
+    data: bookmarkRowsRaw,
     isPending: bookmarksLoading,
     isError: bookmarksError,
     error: bookmarksErr,
     refetch,
   } = useRoomBookmarks(roomId, categoryIdOk);
 
-  const placeQueries = useQueries({
-    queries: (bookmarkRows ?? []).map((b) => ({
-      queryKey: placeCardBookmarkQueryKey(
-        roomId ?? "",
-        b.googlePlaceId,
-        b.bookmarkId,
-      ),
-      queryFn: async () => {
-        const card = await fetchPlaceCardProps(b.googlePlaceId);
-        return { ...card, id: String(b.bookmarkId) } satisfies BookmarkedPlace;
-      },
-      enabled: !!roomId && !!b.googlePlaceId && bookmarkRows != null,
-      staleTime: 60_000,
-    })),
-  });
+  const bookmarkRows = useMemo(
+    () => normalizeBookmarkRows(bookmarkRowsRaw),
+    [bookmarkRowsRaw],
+  );
 
-  const places: BookmarkedPlace[] =
-    !bookmarkRows?.length
-      ? []
-      : placeQueries
-          .map((q) => q.data)
-          .filter((p): p is BookmarkedPlace => p != null);
+  const bookmarkListReady =
+    !bookmarksLoading && bookmarkRowsRaw !== undefined && !!roomId;
+
+  const placeQueryDefs = useMemo(() => {
+    if (!bookmarkListReady) return [];
+    return bookmarkRows
+      .map((b) => {
+        const googlePlaceId = trimGooglePlaceId(b.googlePlaceId);
+        if (!googlePlaceId.length) return null;
+        return {
+          queryKey: placeCardBookmarkQueryKey(
+            roomId!,
+            googlePlaceId,
+            b.bookmarkId,
+          ),
+          queryFn: async (): Promise<BookmarkedPlace> => {
+            const preview = await loadPlacePreview(googlePlaceId);
+            return {
+              id: String(b.bookmarkId),
+              name: preview.name,
+              address: preview.formattedAddress,
+              photoName: preview.photoName,
+              googlePlaceId: preview.googlePlaceId,
+              location: preview.location,
+            };
+          },
+          staleTime: 60_000,
+          retry: 1,
+        };
+      })
+      .filter((q): q is NonNullable<typeof q> => q != null);
+  }, [bookmarkListReady, bookmarkRows, roomId]);
+
+  const placeQueries = useQueries({ queries: placeQueryDefs });
+
+  const places: BookmarkedPlace[] = useMemo(
+    () => placeQueries.map((q) => q.data).filter((p): p is BookmarkedPlace => p != null),
+    [placeQueries],
+  );
 
   const cardsLoading =
-    (bookmarkRows?.length ?? 0) > 0 &&
-    placeQueries.some((q) => q.isPending || q.isFetching);
+    bookmarkListReady &&
+    bookmarkRows.length > 0 &&
+    placeQueries.some((q) => q.isFetching);
+
+  const cardsError =
+    bookmarkListReady &&
+    bookmarkRows.length > 0 &&
+    places.length === 0 &&
+    placeQueries.length > 0 &&
+    placeQueries.every((q) => q.isError);
+
+  const firstPlaceError = placeQueries.find((q) => q.isError)?.error;
 
   if (!roomId) {
     return null;
@@ -110,10 +153,29 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     <>
       <BookmarkFolderDetailHeader folder={folder} />
       <div className={SCROLLBAR}>
-        {cardsLoading && places.length === 0 ? (
+        {cardsLoading ? (
           <p className="py-10 text-center text-sm text-dark-gray">
             장소 정보를 불러오는 중…
           </p>
+        ) : cardsError ? (
+          <div className="space-y-3 py-10">
+            <p className="text-center text-sm text-brand-red">
+              {firstPlaceError instanceof Error
+                ? firstPlaceError.message
+                : "장소 정보를 불러오지 못했습니다."}
+            </p>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  void Promise.all(placeQueries.map((q) => q.refetch()));
+                }}
+                className="cursor-pointer text-sm font-medium text-neutral-900 underline"
+              >
+                다시 시도
+              </button>
+            </div>
+          </div>
         ) : places.length === 0 ? (
           <p className="py-10 text-center text-sm text-dark-gray">
             담긴 장소가 없습니다.
@@ -126,10 +188,13 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
               roomId={roomId}
               currentCategoryId={categoryIdOk}
               onOpenDetail={() => {
-                const { id, ...card } = row;
-                void id;
                 setSelectedPlace({
-                  ...card,
+                  name: row.name,
+                  category: "",
+                  rating: null,
+                  address: row.address,
+                  googlePlaceId: row.googlePlaceId,
+                  location: row.location,
                   fromBookmark: true,
                   bookmarkCategoryColor: folder.color,
                 });

@@ -61,6 +61,7 @@ import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
+  roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
   ROOMS_QUERY_KEY,
   roomDetailQueryKey,
@@ -612,6 +613,9 @@ export function useCreateRoomBookmark() {
           );
         },
       );
+      void queryClient.invalidateQueries({
+        queryKey: roomBookmarksQueryKey(roomId, categoryId),
+      });
     },
   });
 }
@@ -625,7 +629,7 @@ export type CreateRoomBookmarksInCategoriesResult = {
   addedCategoryIds: number[];
 };
 
-/** POST 한 번으로 `googlePlaceId` + `categoryIds` 배열 전달. Bookmark list refetch는 STOMP 브로드캐스트에서만 처리합니다. */
+/** POST 한 번으로 `googlePlaceId` + `categoryIds` 배열 전달. STOMP와 함께 목록 캐시도 즉시 무효화합니다. */
 export function useCreateRoomBookmarksInCategories() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -683,6 +687,9 @@ export function useCreateRoomBookmarksInCategories() {
           );
         },
       );
+      void queryClient.invalidateQueries({
+        queryKey: roomBookmarksByRoomRootQueryKey(roomId),
+      });
     },
   });
 }

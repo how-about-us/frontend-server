@@ -5,14 +5,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { FolderRibbonIcon } from "@/app/(main)/bookmark/_components/FolderRibbonIcon";
-import { SearchResultCard } from "@/components/place";
+import { BookmarkPlacePreviewCard } from "@/app/(main)/bookmark/_components/BookmarkPlacePreviewCard";
 import {
   useBookmarkCategories,
   useCreateScheduleItem,
   useRoomBookmarks,
 } from "@/hooks/useRooms";
 import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
-import { fetchPlaceCardProps } from "@/lib/places/place-queries";
+import { loadPlacePreview } from "@/lib/places/place-queries";
+import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -71,37 +72,59 @@ export function AddFromBookmarkModal({
     refetch: refetchBookmarks,
   } = useRoomBookmarks(roomId, selectedCategoryId);
 
-  const placeQueries = useQueries({
-    queries: (bookmarkRows ?? []).map((b) => ({
-      queryKey: placeCardBookmarkQueryKey(
-        roomId,
-        b.googlePlaceId,
-        b.bookmarkId,
-      ),
-      queryFn: () => fetchPlaceCardProps(b.googlePlaceId),
-      enabled: !!b.googlePlaceId && bookmarkRows != null,
-      staleTime: 60_000,
-    })),
-  });
+  const bookmarkListReady =
+    !bookmarksLoading && bookmarkRows !== undefined;
+
+  const bookmarkItems: RoomBookmark[] = Array.isArray(bookmarkRows)
+    ? bookmarkRows
+    : [];
+
+  const placeQueryDefs = useMemo(() => {
+    if (!bookmarkListReady) return [];
+    return bookmarkItems
+      .map((b) => {
+        const googlePlaceId =
+          typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
+        if (!googlePlaceId.length) return null;
+        return {
+          queryKey: placeCardBookmarkQueryKey(
+            roomId,
+            googlePlaceId,
+            b.bookmarkId,
+          ),
+          queryFn: () => loadPlacePreview(googlePlaceId),
+          staleTime: 60_000,
+          retry: 1,
+        };
+      })
+      .filter((q): q is NonNullable<typeof q> => q != null);
+  }, [bookmarkListReady, bookmarkItems, roomId]);
+
+  const placeQueries = useQueries({ queries: placeQueryDefs });
 
   const bookmarkPlaces = useMemo(() => {
-    if (!bookmarkRows?.length) return [];
-    return bookmarkRows
-      .map((row, i) => {
-        const card = placeQueries[i]?.data;
-        if (!card) return null;
+    if (!placeQueryDefs.length) return [];
+    return placeQueryDefs
+      .map((def, i) => {
+        const preview = placeQueries[i]?.data;
+        if (!preview) return null;
+        const bookmarkId = def.queryKey[3];
+        if (typeof bookmarkId !== "number") return null;
+        const row = bookmarkItems.find((r) => r.bookmarkId === bookmarkId);
+        if (!row) return null;
         return {
           bookmarkId: row.bookmarkId,
           googlePlaceId: row.googlePlaceId,
-          card,
+          preview,
         };
       })
       .filter((p): p is NonNullable<typeof p> => p != null);
-  }, [bookmarkRows, placeQueries]);
+  }, [bookmarkItems, placeQueryDefs, placeQueries]);
 
   const cardsLoading =
-    (bookmarkRows?.length ?? 0) > 0 &&
-    placeQueries.some((q) => q.isPending || q.isFetching);
+    bookmarkListReady &&
+    bookmarkItems.length > 0 &&
+    placeQueries.some((q) => q.isFetching);
 
   const existingPlaceIds = useMemo(() => {
     const ids = new Set<string>();
@@ -278,16 +301,17 @@ export function AddFromBookmarkModal({
                   담긴 장소가 없습니다.
                 </p>
               ) : (
-                bookmarkPlaces.map(({ bookmarkId, googlePlaceId, card: placeCardProps }) => {
+                bookmarkPlaces.map(({ bookmarkId, googlePlaceId, preview }) => {
                   const gid = googlePlaceId.trim();
                   const alreadyAdded = existingPlaceIds.has(gid);
                   const rowAdding = addingGooglePlaceId === gid;
 
                   return (
-                    <SearchResultCard
+                    <BookmarkPlacePreviewCard
                       key={bookmarkId}
-                      {...placeCardProps}
-                      showThumbnail={false}
+                      name={preview.name}
+                      address={preview.formattedAddress}
+                      photoName={preview.photoName}
                       className={cn(
                         "w-full border-x-0 px-5",
                         alreadyAdded && "opacity-50",

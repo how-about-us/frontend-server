@@ -9,14 +9,13 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useBookmarkCategories } from "@/hooks/useRooms";
 import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
+import type { PlacePreview } from "@/lib/api/places";
 import {
-  fetchPlaceDetail,
-  placeDetailQueryDefaults,
-  placeDetailQueryKey,
+  fetchPlacePreview,
+  placePreviewQueryDefaults,
+  placePreviewQueryKey,
 } from "@/lib/places/place-queries";
-import {
-  roomBookmarksQueryKey,
-} from "@/lib/query-keys";
+import { roomBookmarksQueryKey } from "@/lib/query-keys";
 
 /** 맵 북마크 마커 아이콘 테두리 (gray-400 계열) */
 const BOOKMARK_MAP_MARKER_STROKE = "#9ca3af";
@@ -33,34 +32,22 @@ type BookmarkRowAugmented = {
   colorCode: string;
 };
 
-function detailToSelectedPlacePayload(
-  d: Awaited<ReturnType<typeof fetchPlaceDetail>>,
-) {
+function previewToSelectedPlacePayload(preview: PlacePreview) {
   return {
-    name: d.name,
-    category: d.primaryTypeDisplayName || d.primaryType,
-    rating: d.rating,
-    googlePlaceId: d.googlePlaceId,
-    location: d.location,
-    address: d.formattedAddress,
-    userRatingCount: d.userRatingCount,
-    reviewSummary: d.reviewSummary,
-    isOpen: d.regularOpeningHours?.openNow ?? null,
-    phone: d.phoneNumber || undefined,
-    website: d.websiteUri || undefined,
-    hours: d.regularOpeningHours?.weekdayDescriptions?.length
-      ? d.regularOpeningHours.weekdayDescriptions.join("\n")
-      : undefined,
+    name: preview.name,
+    category: "",
+    rating: null,
+    googlePlaceId: preview.googlePlaceId,
+    location: preview.location,
+    address: preview.formattedAddress,
   };
 }
 
 export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
 
-  const { data: categories, isSuccess: categoriesReady } = useBookmarkCategories(
-    roomId,
-    { enabled: !!roomId },
-  );
+  const { data: categories, isSuccess: categoriesReady } =
+    useBookmarkCategories(roomId, { enabled: !!roomId });
 
   const categoryList = categories ?? [];
 
@@ -69,7 +56,7 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
       queryKey: roomBookmarksQueryKey(roomId, cat.categoryId),
       queryFn: () => getRoomBookmarks(roomId!, cat.categoryId),
       enabled: !!roomId && categoriesReady,
-      staleTime: 60_000,
+      staleTime: 0,
     })),
   });
 
@@ -81,7 +68,8 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
       if (!rows?.length) return;
       const colorCode = cat.colorCode?.trim() || "#16a34a";
       for (const b of rows) {
-        const gid = typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
+        const gid =
+          typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
         if (!gid.length) continue;
         out.push({
           bookmarkId: b.bookmarkId,
@@ -97,13 +85,10 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
 
   const placeQueries = useQueries({
     queries: flattenedBookmarks.map((row) => ({
-      queryKey: placeDetailQueryKey(row.googlePlaceId),
-      queryFn: () => fetchPlaceDetail(row.googlePlaceId),
-      enabled:
-        !!roomId &&
-        listsLoaded &&
-        flattenedBookmarks.length > 0,
-      ...placeDetailQueryDefaults,
+      queryKey: placePreviewQueryKey(row.googlePlaceId),
+      queryFn: () => fetchPlacePreview(row.googlePlaceId),
+      enabled: !!roomId && listsLoaded && flattenedBookmarks.length > 0,
+      ...placePreviewQueryDefaults,
     })),
   });
 
@@ -118,11 +103,11 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
   return (
     <>
       {flattenedBookmarks.map((row, i) => {
-        const detail = placeQueries[i]?.data;
-        const loc = detail?.location;
-        if (!detail || loc == null) return null;
+        const preview = placeQueries[i]?.data;
+        const loc = preview?.location;
+        if (!preview || loc == null) return null;
 
-        const legacyId = normalizeGooglePlaceResourceId(detail.googlePlaceId);
+        const legacyId = normalizeGooglePlaceResourceId(preview.googlePlaceId);
         if (selectedNormalized && legacyId === selectedNormalized) {
           return null;
         }
@@ -131,12 +116,12 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
           <AdvancedMarker
             key={`${row.bookmarkId}-${legacyId}`}
             position={loc}
-            title={detail.name}
+            title={preview.name}
             onClick={(e) => {
               e.stop();
               setSelectedPlace(
                 {
-                  ...detailToSelectedPlacePayload(detail),
+                  ...previewToSelectedPlacePayload(preview),
                   fromBookmark: true,
                   bookmarkCategoryColor: row.colorCode,
                 },

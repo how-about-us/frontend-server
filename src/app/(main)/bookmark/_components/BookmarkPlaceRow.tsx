@@ -2,7 +2,7 @@
 
 import { ChevronLeft, MoreHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SearchResultCard } from "@/components/place";
+import { BookmarkPlacePreviewCard } from "./BookmarkPlacePreviewCard";
 import {
   useBookmarkCategories,
   useDeleteRoomBookmarkItem,
@@ -23,7 +23,7 @@ export function BookmarkPlaceRow({
   currentCategoryId: number;
   onOpenDetail: () => void;
 }) {
-  const { id, ...placeCardProps } = place;
+  const { id, name, address, photoName } = place;
   const bookmarkId = Number.parseInt(id, 10);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -81,8 +81,10 @@ export function BookmarkPlaceRow({
 
   return (
     <div className="relative flex items-stretch border-b border-gray-border bg-white">
-      <SearchResultCard
-        {...placeCardProps}
+      <BookmarkPlacePreviewCard
+        name={name}
+        address={address}
+        photoName={photoName}
         className="min-w-0 flex-1 border-0 hover:bg-gray-50 active:bg-gray-100"
         onClick={onOpenDetail}
       />

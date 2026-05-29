@@ -31,6 +31,9 @@ import { getQueryClient } from "@/lib/query-client";
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
 
+/** 카테고리·필터 검색 1회당 Places API 결과 상한 */
+const MAP_DISCOVER_MAX_RESULT_COUNT = 10;
+
 /** Places API(New) field mask — camelCase 프로퍼티명과 동일 */
 const NEARBY_FIELDS: string[] = [
   "id",
@@ -175,7 +178,7 @@ export function MapDiscoverPlaces({
             useStrictTypeFiltering: true,
             locationRestriction: snapshot.bounds,
             isOpenNow: true,
-            maxResultCount: 20,
+            maxResultCount: MAP_DISCOVER_MAX_RESULT_COUNT,
             language: "ko",
           };
           if (ratingVal !== "all") {
@@ -196,7 +199,7 @@ export function MapDiscoverPlaces({
               center: snapshot.center,
               radius,
             },
-            maxResultCount: 20,
+            maxResultCount: MAP_DISCOVER_MAX_RESULT_COUNT,
             language: "ko",
           };
           const res = await Place.searchNearby(request);
