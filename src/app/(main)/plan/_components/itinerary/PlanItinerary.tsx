@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { Bookmark, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -84,7 +85,14 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
 
-  const { getCardDragProps, isReorderSettling } = usePlanItineraryReorder({
+  const prefersReducedMotion = useReducedMotion();
+
+  const {
+    getRowProps,
+    listContainerProps,
+    isDraggingActive,
+    isReorderSettling,
+  } = usePlanItineraryReorder({
     roomId,
     scheduleId,
     places,
@@ -143,43 +151,47 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-0">
-        {places.map((place, index) => (
-          <Fragment key={place.id}>
-            <PlanPlaceCard
-              place={place}
-              orderIndex={index + 1}
-              orderBadgeColor={orderBadgeColor}
-              scheduleTimeEdit={
-                isReadOnly ? undefined : { roomId, scheduleId }
-              }
-              scheduleOverlapWarning={
-                isReorderSettling ?
-                  undefined
-                : formatAdjacentScheduleConflictMessage(
-                    scheduleConflictFlags[index]!,
-                  )
-              }
-              {...getCardDragProps(index)}
-            />
-            {index < places.length - 1 &&
-            typeof place.itemId === "number" &&
-            typeof places[index + 1]?.itemId === "number" ? (
-              <PlanTravelTime
-                roomId={roomId}
-                scheduleId={scheduleId}
-                segmentSourceItemId={place.itemId}
-                scheduleFingerprint={scheduleFingerprint}
-                routeQueryEnabled={
-                  placesData !== undefined &&
-                  !isFetchingPlaces &&
-                  existingItemIds.has(place.itemId) &&
-                  existingItemIds.has(places[index + 1].itemId!)
+      <div className="flex flex-col gap-0" {...listContainerProps}>
+        {places.map((place, index) => {
+          const motionEnabled = isDraggingActive && !prefersReducedMotion;
+          const { ref, style, card } = getRowProps(index, motionEnabled);
+
+          return (
+            <div key={place.id} ref={ref} style={style}>
+              <PlanPlaceCard
+                place={place}
+                orderBadgeColor={orderBadgeColor}
+                scheduleTimeEdit={
+                  isReadOnly ? undefined : { roomId, scheduleId }
                 }
+                scheduleOverlapWarning={
+                  isReorderSettling ?
+                    undefined
+                  : formatAdjacentScheduleConflictMessage(
+                      scheduleConflictFlags[index]!,
+                    )
+                }
+                {...card}
               />
-            ) : null}
-          </Fragment>
-        ))}
+              {index < places.length - 1 &&
+              typeof place.itemId === "number" &&
+              typeof places[index + 1]?.itemId === "number" ? (
+                <PlanTravelTime
+                  roomId={roomId}
+                  scheduleId={scheduleId}
+                  segmentSourceItemId={place.itemId}
+                  scheduleFingerprint={scheduleFingerprint}
+                  routeQueryEnabled={
+                    placesData !== undefined &&
+                    !isFetchingPlaces &&
+                    existingItemIds.has(place.itemId) &&
+                    existingItemIds.has(places[index + 1].itemId!)
+                  }
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       {!isReadOnly ? (

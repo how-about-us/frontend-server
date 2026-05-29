@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from "react";
 
-const MAIN_CONTENT_SCROLL_SELECTOR = "[data-main-content-scroll]";
+import { resolveMainContentScrollRoot } from "@/lib/dnd/mainContentScroll";
 
 export type UseDragAutoScrollOptions = {
   /** 드래그 중일 때만 자동 스크롤을 활성화합니다. */
@@ -19,7 +19,7 @@ function resolveScrollRoot(
   scrollRootRef?: RefObject<HTMLElement | null>,
 ): HTMLElement | null {
   if (scrollRootRef?.current) return scrollRootRef.current;
-  return document.querySelector<HTMLElement>(MAIN_CONTENT_SCROLL_SELECTOR);
+  return resolveMainContentScrollRoot();
 }
 
 function applyEdgeAutoScroll(
