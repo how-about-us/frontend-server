@@ -31,8 +31,7 @@ export function placeDetailQueryKey(googlePlaceId: string) {
 }
 
 export function placePreviewQueryKey(googlePlaceId: string) {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  return ["places", "preview", id] as const;
+  return ["places", "preview", resolvePreviewGooglePlaceId(googlePlaceId)] as const;
 }
 
 export function normalizePreviewLocation(
@@ -96,7 +95,7 @@ export async function fetchPlaceDetail(googlePlaceId: string): Promise<PlaceDeta
   });
 }
 
-function resolvePreviewGooglePlaceId(googlePlaceId: string): string {
+export function resolvePreviewGooglePlaceId(googlePlaceId: string): string {
   const raw = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   return raw.length ? normalizeGooglePlaceResourceId(raw) : "";
 }

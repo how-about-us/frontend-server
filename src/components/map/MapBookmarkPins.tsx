@@ -11,14 +11,14 @@ import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import type { PlacePreview } from "@/lib/api/places";
 import {
-  fetchPlacePreview,
+  loadPlacePreview,
   placePreviewQueryDefaults,
   placePreviewQueryKey,
 } from "@/lib/places/place-queries";
 import { roomBookmarksQueryKey } from "@/lib/query-keys";
 
-/** 맵 북마크 마커 아이콘 테두리 (gray-400 계열) */
-const BOOKMARK_MAP_MARKER_STROKE = "#9ca3af";
+/** 맵 북마크 마커 아이콘 테두리 */
+const BOOKMARK_MAP_MARKER_STROKE = "#000000";
 
 export type MapBookmarkPinsProps = {
   roomId: string | null;
@@ -60,12 +60,19 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
     })),
   });
 
+  const listsSettled = useMemo(() => {
+    if (!categoriesReady) return false;
+    if (categoryList.length === 0) return true;
+    if (bookmarkListQueries.length !== categoryList.length) return false;
+    return bookmarkListQueries.every((q) => q.isSuccess || q.isError);
+  }, [categoriesReady, categoryList.length, bookmarkListQueries]);
+
   const flattenedBookmarks = useMemo((): BookmarkRowAugmented[] => {
-    if (!categoryList.length) return [];
+    if (!listsSettled || !categoryList.length) return [];
     const out: BookmarkRowAugmented[] = [];
     categoryList.forEach((cat, i) => {
       const rows = bookmarkListQueries[i]?.data;
-      if (!rows?.length) return;
+      if (!Array.isArray(rows) || !rows.length) return;
       const colorCode = cat.colorCode?.trim() || "#16a34a";
       for (const b of rows) {
         const gid =
@@ -79,18 +86,21 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
       }
     });
     return out;
-  }, [categoryList, bookmarkListQueries]);
+  }, [categoryList, bookmarkListQueries, listsSettled]);
 
-  const listsLoaded = bookmarkListQueries.every((q) => !q.isPending);
-
-  const placeQueries = useQueries({
-    queries: flattenedBookmarks.map((row) => ({
+  const placeQueryDefs = useMemo(() => {
+    if (!roomId || !listsSettled || flattenedBookmarks.length === 0) {
+      return [];
+    }
+    return flattenedBookmarks.map((row) => ({
       queryKey: placePreviewQueryKey(row.googlePlaceId),
-      queryFn: () => fetchPlacePreview(row.googlePlaceId),
-      enabled: !!roomId && listsLoaded && flattenedBookmarks.length > 0,
-      ...placePreviewQueryDefaults,
-    })),
-  });
+      queryFn: () => loadPlacePreview(row.googlePlaceId),
+      staleTime: placePreviewQueryDefaults.staleTime,
+      retry: 1,
+    }));
+  }, [roomId, listsSettled, flattenedBookmarks]);
+
+  const placeQueries = useQueries({ queries: placeQueryDefs });
 
   const selectedNormalized = selectedPlace?.googlePlaceId
     ? normalizeGooglePlaceResourceId(selectedPlace.googlePlaceId)
@@ -130,14 +140,14 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
             }}
           >
             <span
-              className="flex h-[34px] w-[34px] items-center justify-center drop-shadow-md"
+              className="flex h-[42px] w-[42px] items-center justify-center drop-shadow-md"
               style={{ color: row.colorCode }}
             >
               <Bookmark
-                className="h-7 w-7"
+                className="h-9 w-9"
                 fill="currentColor"
                 stroke={BOOKMARK_MAP_MARKER_STROKE}
-                strokeWidth={2.75}
+                strokeWidth={2.5}
                 strokeLinejoin="round"
                 aria-hidden
               />
