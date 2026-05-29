@@ -13,7 +13,12 @@ export type PlaceSearchItem = {
   rating: number;
   userRatingCount: number;
   openNow: boolean;
-  photoName: string;
+  photoName: string | null;
+};
+
+export type PlaceSearchPageResponse = {
+  items: PlaceSearchItem[];
+  nextPageToken: string | null;
 };
 
 export type PlaceReview = {
@@ -58,9 +63,9 @@ export async function searchPlaces(params: {
   latitude: number;
   longitude: number;
   radius?: number;
-  /** 서버가 지원하면 응답 개수 상한(미지원 시에도 클라이언트에서 잘라 처리 가능) */
-  limit?: number;
-}): Promise<PlaceSearchItem[]> {
+  pageSize?: number;
+  pageToken?: string;
+}): Promise<PlaceSearchPageResponse> {
   const url = new URL(`${API_BASE}/places/search`);
   url.searchParams.set("query", params.query);
   url.searchParams.set("latitude", String(params.latitude));
@@ -68,8 +73,11 @@ export async function searchPlaces(params: {
   if (params.radius !== undefined) {
     url.searchParams.set("radius", String(params.radius));
   }
-  if (params.limit !== undefined) {
-    url.searchParams.set("limit", String(params.limit));
+  if (params.pageSize !== undefined) {
+    url.searchParams.set("pageSize", String(params.pageSize));
+  }
+  if (params.pageToken) {
+    url.searchParams.set("pageToken", params.pageToken);
   }
 
   const res = await apiFetch(url.toString());

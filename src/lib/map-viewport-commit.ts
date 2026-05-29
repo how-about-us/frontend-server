@@ -1,8 +1,7 @@
 /// <reference types="google.maps" />
 
-import {
-  cappedPlacesSearchRadiusMeters,
-} from "@/lib/maps";
+import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
+import { viewportSearchRadiusMetersFromBounds } from "@/lib/maps";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import type {
   DiscoverMapSnapshot,
@@ -13,40 +12,37 @@ import type {
 export function buildSearchMapSnapshotFromMapCenterStore(): SearchMapSnapshot | null {
   const { mapCenter, zoom, radiusMeters } = useMapCenterStore.getState();
   if (!mapCenter) return null;
+  const radius =
+    radiusMeters != null && Number.isFinite(radiusMeters)
+      ? clampPlacesSearchRadiusMeters(radiusMeters)
+      : undefined;
+
   return {
     center: mapCenter,
     zoom: zoom ?? null,
-    radius: cappedPlacesSearchRadiusMeters(radiusMeters),
+    radius: radius ?? clampPlacesSearchRadiusMeters(5000),
   };
 }
 
 /** Discover(Places JS) 영역 고정 스냅샷 — 맵 현재 카메라 기준 1회 커밋 */
 export function buildDiscoverSnapshotFromGoogleMap(
   map: google.maps.Map,
-  geometryLib: google.maps.GeometryLibrary,
 ): DiscoverMapSnapshot | null {
   const bounds = map.getBounds();
   if (!bounds) return null;
 
-  const center = bounds.getCenter();
-  const northEast = bounds.getNorthEast();
-  const radiusRaw = geometryLib.spherical.computeDistanceBetween(
-    center,
-    northEast,
-  );
-  const radius =
-    typeof radiusRaw === "number" && Number.isFinite(radiusRaw)
-      ? Math.max(1, Math.round(radiusRaw))
-      : 0;
+  const boundsLiteral = bounds.toJSON();
+  const center = bounds.getCenter().toJSON();
+  const radius = viewportSearchRadiusMetersFromBounds(center, boundsLiteral);
 
   const zoomRaw = map.getZoom();
   const zoom = typeof zoomRaw === "number" ? zoomRaw : null;
 
   return {
-    bounds: bounds.toJSON(),
-    center: center.toJSON(),
+    bounds: boundsLiteral,
+    center,
     zoom,
-    radius,
+    radius: clampPlacesSearchRadiusMeters(radius),
   };
 }
 

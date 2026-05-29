@@ -11,13 +11,27 @@ export type MapSearchHereButtonProps = {
 export function MapSearchHereButton({
   discoverCategoryId,
 }: MapSearchHereButtonProps) {
-  const requestRecenter = useSearchRecenterStore((s) => s.requestRecenter);
-  const visible = usePlacesSearchHereVisible({ discoverCategoryId });
+  const requestSearchRecenter = useSearchRecenterStore(
+    (s) => s.requestSearchRecenter,
+  );
+  const requestDiscoverRecenter = useSearchRecenterStore(
+    (s) => s.requestDiscoverRecenter,
+  );
+  const { visible, suggestSearchRecenter, suggestDiscoverRecenter } =
+    usePlacesSearchHereVisible({ discoverCategoryId });
 
   return (
     <SearchHereFloatingButton
       visible={visible}
-      onPress={() => requestRecenter()}
+      onPress={() => {
+        if (suggestSearchRecenter) {
+          requestSearchRecenter();
+          return;
+        }
+        if (suggestDiscoverRecenter) {
+          requestDiscoverRecenter();
+        }
+      }}
     />
   );
 }

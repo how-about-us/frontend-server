@@ -218,7 +218,7 @@ export function usePlanItineraryReorder({
           isDragging,
           motionEnabled,
         }),
-        card: {
+        placeCardDragProps: {
           displayOrderIndex,
           isDragging,
           dragDisabled:

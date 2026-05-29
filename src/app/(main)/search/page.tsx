@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,7 +28,9 @@ import {
   usePlacesSearch,
   type PlaceSearchResult,
 } from "@/hooks/usePlacesSearch";
+import { PLACES_SEARCH_PAGE_SIZE } from "@/lib/places/placesSearchPageSize";
 import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
+import { PlacesSearchPagination } from "@/components/search/PlacesSearchPagination";
 import { useChatActions } from "@/hooks/useChatActions";
 import { useChat } from "@/hooks/useChat";
 import {
@@ -30,7 +38,10 @@ import {
   chatPlaceShareBannerSweepDurationSec,
 } from "@/components/chat/chat-animations";
 import { useSessionStore } from "@/stores/session-store";
-import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
+import {
+  searchPinWriteStillValid,
+  useMapPinsFocusStore,
+} from "@/stores/map-pins-focus-store";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -45,7 +56,9 @@ export default function SearchPage() {
 
   const { setSelectedPlace } = useSelectedPlace();
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
-  const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
+  const searchRecenterRequestId = useSearchRecenterStore(
+    (s) => s.searchRecenterRequestId,
+  );
   const { sendPlaceMessage, canSend } = useChatActions();
   const { openChat } = useChat();
 
@@ -55,10 +68,12 @@ export default function SearchPage() {
     lat: number;
     lng: number;
   } | null>(null);
-  /** 뷰포트 반경(m)을 상한 적용한 값 — `GET /places/search` radius */
+  /** 마지막 검색 시점 뷰포트 반경(m) — `GET /places/search` radius */
   const [searchRadius, setSearchRadius] = useState<number | undefined>(
     undefined,
   );
+  /** 검색·재검색 커밋마다 증가 — `usePlacesSearch` pageToken 초기화 */
+  const [searchGeneration, setSearchGeneration] = useState(0);
 
   const commitSearchAtCurrentView = useCallback(
     (trimmedQuery: string) => {
@@ -74,6 +89,8 @@ export default function SearchPage() {
       }
 
       clearActiveSearchMapPins(queryClient);
+      searchPinsEpochRef.current =
+        useMapPinsFocusStore.getState().claimFocus("search");
       const snapshot = buildSearchMapSnapshotFromMapCenterStore();
       if (!snapshot) {
         clearSearchSnapshot();
@@ -85,6 +102,7 @@ export default function SearchPage() {
       setSearchSnapshot(snapshot);
       setSearchCoords(snapshot.center);
       setSearchRadius(snapshot.radius);
+      setSearchGeneration((g) => g + 1);
     },
     [queryClient],
   );
@@ -119,55 +137,72 @@ export default function SearchPage() {
   }
 
   useEffect(() => {
-    if (recenterRequestId === 0) return;
+    if (searchRecenterRequestId === 0) return;
     const trimmed = query.trim();
     if (!trimmed.length) return;
     commitSearchAtCurrentView(trimmed);
-  }, [recenterRequestId, query, commitSearchAtCurrentView]);
+  }, [searchRecenterRequestId, query, commitSearchAtCurrentView]);
 
   const {
-    data: results,
-    isLoading,
+    items,
+    pageIndex,
+    hasPreviousPage,
+    hasNextPage,
+    goToPreviousPage,
+    goToNextPage,
+    isPending,
+    isFetching,
     isError,
+    isSuccess,
     error,
   } = usePlacesSearch(
     query,
     searchCoords?.lat ?? null,
     searchCoords?.lng ?? null,
     searchCoords !== null ? searchRadius : undefined,
+    PLACES_SEARCH_PAGE_SIZE,
+    searchGeneration,
   );
 
-  useEffect(() => {
-    const hasActiveSearch =
-      query.trim().length > 0 && searchCoords !== null;
+  const hasActiveSearch = query.trim().length > 0 && searchCoords !== null;
+  const showResultList =
+    hasActiveSearch && isSuccess && !isError && items.length > 0;
 
-    if (
-      hasActiveSearch &&
-      !isLoading &&
-      !isError &&
-      results &&
-      results.length > 0
-    ) {
-      useMapPinsFocusStore.getState().claimFocus("search");
-      setActiveSearchMapPins(
-        queryClient,
-        placeSearchResultsToMapPins(results),
-      );
-    } else {
+  const resultsScrollRef = useRef<HTMLDivElement>(null);
+  const searchPinsEpochRef = useRef(0);
+
+  useEffect(() => {
+    resultsScrollRef.current?.scrollTo({ top: 0 });
+  }, [pageIndex]);
+  const showPagination =
+    hasActiveSearch &&
+    isSuccess &&
+    !isError &&
+    (items.length > 0 || pageIndex > 0);
+
+  const showSearchLoading =
+    hasActiveSearch && isFetching && items.length === 0;
+
+  useEffect(() => {
+    if (!hasActiveSearch) {
       clearActiveSearchMapPins(queryClient);
-      if (!hasActiveSearch) {
-        useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
-      }
+      useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
+      return;
     }
-  }, [
-    query,
-    searchCoords,
-    searchRadius,
-    isLoading,
-    isError,
-    results,
-    queryClient,
-  ]);
+
+    if (isFetching) {
+      clearActiveSearchMapPins(queryClient);
+      return;
+    }
+
+    if (isError) {
+      clearActiveSearchMapPins(queryClient);
+      return;
+    }
+
+    if (!searchPinWriteStillValid(searchPinsEpochRef.current)) return;
+    setActiveSearchMapPins(queryClient, placeSearchResultsToMapPins(items));
+  }, [hasActiveSearch, isFetching, isError, items, queryClient]);
 
   useEffect(
     () => () => {
@@ -204,11 +239,11 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="-mx-6 flex h-full min-h-0 flex-col border-b border-gray-border">
+    <div className="flex h-full max-h-full min-h-0 w-full min-w-0 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
 
-      {/* 검색 입력 */}
-      <div className="shrink-0 pl-4 pr-3 pb-4">
+      {/* 검색 입력 — focus ring이 잘리지 않도록 상·좌우 여백 */}
+      <div className="shrink-0 overflow-visible pl-6 pr-3 pb-2.5 border-b border-gray-border">
         <PlacesSearchInput
           coords={mapCenter}
           urlQuery={qParam}
@@ -216,52 +251,52 @@ export default function SearchPage() {
           onClear={() => handleSearch("")}
         />
       </div>
-      {shareModeActive ?
+      {shareModeActive ? (
         <motion.div
           className="relative shrink-0 overflow-hidden border-b border-brand-red/40"
           initial={reduceMotion ? false : { opacity: 0, y: -6 }}
           animate={
-            reduceMotion ?
-              {
-                opacity: 1,
-                y: 0,
-                backgroundColor: "rgba(241,45,51,0.09)",
-              }
-            : {
-                opacity: 1,
-                y: 0,
-                backgroundColor: [
-                  "rgba(241,45,51,0.055)",
-                  "rgba(241,45,51,0.13)",
-                  "rgba(241,45,51,0.055)",
-                ],
-                boxShadow: [
-                  "inset 0 0 0 rgba(241,45,51,0)",
-                  "inset 0 -18px 40px rgba(241,45,51,0.125)",
-                  "inset 0 0 0 rgba(241,45,51,0)",
-                ],
-              }
+            reduceMotion
+              ? {
+                  opacity: 1,
+                  y: 0,
+                  backgroundColor: "rgba(241,45,51,0.09)",
+                }
+              : {
+                  opacity: 1,
+                  y: 0,
+                  backgroundColor: [
+                    "rgba(241,45,51,0.055)",
+                    "rgba(241,45,51,0.13)",
+                    "rgba(241,45,51,0.055)",
+                  ],
+                  boxShadow: [
+                    "inset 0 0 0 rgba(241,45,51,0)",
+                    "inset 0 -18px 40px rgba(241,45,51,0.125)",
+                    "inset 0 0 0 rgba(241,45,51,0)",
+                  ],
+                }
           }
           transition={
-            reduceMotion ?
-              { duration: 0 }
-            : {
-                opacity: { type: "spring", stiffness: 420, damping: 32 },
-                y: { type: "spring", stiffness: 420, damping: 32 },
-                backgroundColor: {
-                  repeat: Infinity,
-                  duration: chatPlaceShareBannerGlowDurationSec,
-                  ease: "easeInOut",
-                },
-                boxShadow: {
-                  repeat: Infinity,
-                  duration: chatPlaceShareBannerGlowDurationSec,
-                  ease: "easeInOut",
-                },
-              }
+            reduceMotion
+              ? { duration: 0 }
+              : {
+                  opacity: { type: "spring", stiffness: 420, damping: 32 },
+                  y: { type: "spring", stiffness: 420, damping: 32 },
+                  backgroundColor: {
+                    repeat: Infinity,
+                    duration: chatPlaceShareBannerGlowDurationSec,
+                    ease: "easeInOut",
+                  },
+                  boxShadow: {
+                    repeat: Infinity,
+                    duration: chatPlaceShareBannerGlowDurationSec,
+                    ease: "easeInOut",
+                  },
+                }
           }
         >
-          {!reduceMotion ?
+          {!reduceMotion ? (
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[11px] overflow-hidden bg-gradient-to-b from-brand-red/[0.38] via-brand-red/[0.12] to-transparent"
@@ -284,21 +319,21 @@ export default function SearchPage() {
                 }}
               />
             </div>
-          : null}
-          <div className="relative z-[3] flex min-h-[52px] shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-semibold leading-snug tracking-tight text-brand-red drop-shadow-[0_0_10px_rgba(241,45,51,0.22)]">
+          ) : null}
+          <div className="relative z-[3] flex min-h-13 shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-semibold leading-snug tracking-tight text-brand-red drop-shadow-[0_0_10px_rgba(241,45,51,0.22)]">
             <motion.span
               className="inline-flex shrink-0 text-brand-red"
               aria-hidden
               animate={
-                reduceMotion ?
-                  {}
-                : {
-                    filter: [
-                      "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
-                      "drop-shadow(0 0 7px rgba(241,45,51,0.55))",
-                      "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
-                    ],
-                  }
+                reduceMotion
+                  ? {}
+                  : {
+                      filter: [
+                        "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
+                        "drop-shadow(0 0 7px rgba(241,45,51,0.55))",
+                        "drop-shadow(0 0 2px rgba(241,45,51,0.25))",
+                      ],
+                    }
               }
               transition={{
                 repeat: Infinity,
@@ -320,19 +355,19 @@ export default function SearchPage() {
             </button>
           </div>
         </motion.div>
-      : null}
+      ) : null}
 
       {/* 결과 */}
-      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:rgba(0,0,0,0.2)_transparent]">
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-dark-gray">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {showSearchLoading && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-dark-gray">
             <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
             <span className="text-sm">장소를 검색하는 중...</span>
           </div>
         )}
 
-        {isError && (
-          <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#FF6467]">
+        {hasActiveSearch && isError && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[#FF6467]">
             <AlertCircle className="h-6 w-6" />
             <span className="text-sm">
               {error instanceof Error ? error.message : "검색에 실패했습니다."}
@@ -340,33 +375,60 @@ export default function SearchPage() {
           </div>
         )}
 
-        {!isLoading && !isError && query && results?.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-1 py-16 text-dark-gray">
-            <Search className="h-6 w-6 text-[#99A1AF]" />
-            <span className="text-sm">검색 결과가 없습니다.</span>
-          </div>
-        )}
+        {hasActiveSearch &&
+          isSuccess &&
+          !isError &&
+          items.length === 0 &&
+          pageIndex === 0 && (
+            <div className="flex flex-1 flex-col items-center justify-center gap-1 text-dark-gray">
+              <Search className="h-6 w-6 text-[#99A1AF]" />
+              <span className="text-sm">검색 결과가 없습니다.</span>
+            </div>
+          )}
 
-        {!isLoading && !isError && !query && (
-          <div className="flex flex-col items-center justify-center gap-1 py-16 text-[#99A1AF]">
+        {!hasActiveSearch && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-1 text-[#99A1AF]">
             <Search className="h-8 w-8" />
             <span className="text-sm">검색어를 입력해 주세요.</span>
           </div>
         )}
 
-        {results && results.length > 0 && (
-          <div className="flex flex-col gap-3 px-4 py-4 pb-6">
-            {results.map((result, i) => (
-              <SearchResultCard
-                key={result.googlePlaceId ?? i}
-                {...result}
-                variant="card"
-                onClick={() => handleCardClick(result)}
-              />
-            ))}
+        {showResultList && (
+          <div
+            ref={resultsScrollRef}
+            className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:rgba(0,0,0,0.2)_transparent]"
+          >
+            <ul className="w-full min-w-0">
+              {items.map((result) => (
+                <li key={result.googlePlaceId} className="w-full">
+                  <SearchResultCard
+                    {...result}
+                    variant="list"
+                    className="box-border h-[88px] w-full shrink-0"
+                    onClick={() => handleCardClick(result)}
+                  />
+                </li>
+              ))}
+            </ul>
+            {isFetching && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/50">
+                <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {showPagination ? (
+        <PlacesSearchPagination
+          hasPrevious={hasPreviousPage}
+          hasNext={hasNextPage}
+          pageLabel={`${pageIndex + 1}페이지`}
+          onPrevious={goToPreviousPage}
+          onNext={goToNextPage}
+          disabled={isFetching}
+        />
+      ) : null}
     </div>
   );
 }

@@ -16,22 +16,31 @@ export type DiscoverMapSnapshot = SearchMapSnapshot & {
 type SearchRecenterState = {
   searchSnapshot: SearchMapSnapshot | null;
   discoverSnapshot: DiscoverMapSnapshot | null;
-  recenterRequestId: number;
+  searchRecenterRequestId: number;
+  discoverRecenterRequestId: number;
   setSearchSnapshot: (snapshot: SearchMapSnapshot | null) => void;
   clearSearchSnapshot: () => void;
   setDiscoverSnapshot: (snapshot: DiscoverMapSnapshot | null) => void;
   clearDiscoverSnapshot: () => void;
-  requestRecenter: () => void;
+  requestSearchRecenter: () => void;
+  requestDiscoverRecenter: () => void;
 };
 
 export const useSearchRecenterStore = create<SearchRecenterState>((set) => ({
   searchSnapshot: null,
   discoverSnapshot: null,
-  recenterRequestId: 0,
+  searchRecenterRequestId: 0,
+  discoverRecenterRequestId: 0,
   setSearchSnapshot: (searchSnapshot) => set({ searchSnapshot }),
   clearSearchSnapshot: () => set({ searchSnapshot: null }),
   setDiscoverSnapshot: (discoverSnapshot) => set({ discoverSnapshot }),
   clearDiscoverSnapshot: () => set({ discoverSnapshot: null }),
-  requestRecenter: () =>
-    set((s) => ({ recenterRequestId: s.recenterRequestId + 1 })),
+  requestSearchRecenter: () =>
+    set((s) => ({
+      searchRecenterRequestId: s.searchRecenterRequestId + 1,
+    })),
+  requestDiscoverRecenter: () =>
+    set((s) => ({
+      discoverRecenterRequestId: s.discoverRecenterRequestId + 1,
+    })),
 }));

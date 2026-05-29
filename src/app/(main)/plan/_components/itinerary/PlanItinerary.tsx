@@ -154,7 +154,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       <div className="flex flex-col gap-0" {...listContainerProps}>
         {places.map((place, index) => {
           const motionEnabled = isDraggingActive && !prefersReducedMotion;
-          const { ref, style, card } = getRowProps(index, motionEnabled);
+          const { ref, style, placeCardDragProps } = getRowProps(index, motionEnabled);
 
           return (
             <div key={place.id} ref={ref} style={style}>
@@ -171,7 +171,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                       scheduleConflictFlags[index]!,
                     )
                 }
-                {...card}
+                {...placeCardDragProps}
               />
               {index < places.length - 1 &&
               typeof place.itemId === "number" &&

@@ -23,7 +23,7 @@ export function BookmarkPlaceRow({
   currentCategoryId: number;
   onOpenDetail: () => void;
 }) {
-  const { id, ...card } = place;
+  const { id, ...placeCardProps } = place;
   const bookmarkId = Number.parseInt(id, 10);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,7 +82,7 @@ export function BookmarkPlaceRow({
   return (
     <div className="relative flex items-stretch border-b border-gray-border bg-white">
       <SearchResultCard
-        {...card}
+        {...placeCardProps}
         className="min-w-0 flex-1 border-0 hover:bg-gray-50 active:bg-gray-100"
         onClick={onOpenDetail}
       />

@@ -21,14 +21,14 @@ export function SearchResultCard({
 }: SearchResultCardProps & {
   onClick?: () => void;
   className?: string;
-  variant?: "list" | "card";
+  variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
   return (
     <article
       className={cn(
         "flex items-center gap-3 bg-white transition-colors",
-        variant === "card"
+        variant === "tile"
           ? "cursor-pointer rounded-2xl border border-gray-border px-4 py-3 shadow-sm hover:bg-gray-50 active:bg-bubble-gray/60"
           : "border-b border-gray-border px-4 py-2 hover:bg-gray-50 active:bg-gray-100",
         className,
@@ -85,7 +85,12 @@ export function SearchResultCard({
       </div>
 
       {showThumbnail ? (
-        <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-xl bg-light-gray">
+        <div
+          className={cn(
+            "shrink-0 overflow-hidden rounded-lg bg-light-gray",
+            "h-[80px] w-[80px]",
+          )}
+        >
           {image ? (
             <img
               src={image}

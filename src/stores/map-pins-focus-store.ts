@@ -41,3 +41,9 @@ export function discoverPinWriteStillValid(epoch: number): boolean {
   const { focus, writeEpoch } = useMapPinsFocusStore.getState();
   return focus === "discover" && writeEpoch === epoch;
 }
+
+/** Search 비동기 완료 직후: 아직 검색이 소유자이며 동일 라운드(epoch)면 반영 허용 */
+export function searchPinWriteStillValid(epoch: number): boolean {
+  const { focus, writeEpoch } = useMapPinsFocusStore.getState();
+  return focus === "search" && writeEpoch === epoch;
+}

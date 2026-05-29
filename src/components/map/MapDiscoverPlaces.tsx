@@ -116,9 +116,10 @@ export function MapDiscoverPlaces({
 }: MapDiscoverPlacesProps) {
   const map = useMap();
   const placesLib = useMapsLibrary("places");
-  const geometryLib = useMapsLibrary("geometry");
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
-  const recenterRequestId = useSearchRecenterStore((s) => s.recenterRequestId);
+  const discoverRecenterRequestId = useSearchRecenterStore(
+    (s) => s.discoverRecenterRequestId,
+  );
   const pinsFocus = useMapPinsFocusStore((s) => s.focus);
 
   const [markers, setMarkers] = useState<DiscoverMarker[]>([]);
@@ -259,13 +260,13 @@ export function MapDiscoverPlaces({
       return;
     }
 
-    if (!map || !placesLib || !geometryLib) return;
+    if (!map || !placesLib) return;
 
     const catChanged =
       prevCategoryIdRef.current !== selectedCategoryId;
 
     if (catChanged) {
-      const snap = buildDiscoverSnapshotFromGoogleMap(map, geometryLib);
+      const snap = buildDiscoverSnapshotFromGoogleMap(map);
       if (!snap) return;
       prevCategoryIdRef.current = selectedCategoryId;
       useSearchRecenterStore.getState().setDiscoverSnapshot(snap);
@@ -305,15 +306,14 @@ export function MapDiscoverPlaces({
     openNow,
     map,
     placesLib,
-    geometryLib,
     runDiscoverSearch,
   ]);
 
-  /** 검색 페이지와 동일하게 `현 위치 검색` 버튼 → discover 스냅샷 갱신·재조회 */
+  /** `현 위치 검색` 버튼 → discover 스냅샷 갱신·재조회 */
   useEffect(() => {
-    if (recenterRequestId === 0) return;
-    if (!selectedCategoryId || !map || !placesLib || !geometryLib) return;
-    const snapshot = buildDiscoverSnapshotFromGoogleMap(map, geometryLib);
+    if (discoverRecenterRequestId === 0) return;
+    if (!selectedCategoryId || !map || !placesLib) return;
+    const snapshot = buildDiscoverSnapshotFromGoogleMap(map);
     if (!snapshot) return;
     useSearchRecenterStore.getState().setDiscoverSnapshot(snapshot);
     const epochRecenter = useMapPinsFocusStore.getState().claimFocus("discover");
@@ -329,13 +329,12 @@ export function MapDiscoverPlaces({
       );
     });
   }, [
-    recenterRequestId,
+    discoverRecenterRequestId,
     selectedCategoryId,
     rating,
     openNow,
     map,
     placesLib,
-    geometryLib,
     runDiscoverSearch,
   ]);
 

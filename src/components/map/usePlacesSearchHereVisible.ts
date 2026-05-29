@@ -10,6 +10,12 @@ type UsePlacesSearchHereVisibleParams = {
   discoverCategoryId: string | null;
 };
 
+export type PlacesSearchHereVisibility = {
+  visible: boolean;
+  suggestSearchRecenter: boolean;
+  suggestDiscoverRecenter: boolean;
+};
+
 function chipsDiscoverRecenterEligible(
   discoverCategoryId: string | null,
   discoverSnapshot: DiscoverMapSnapshot | null,
@@ -39,15 +45,21 @@ function chipsDiscoverRecenterEligible(
  */
 export function usePlacesSearchHereVisible({
   discoverCategoryId,
-}: UsePlacesSearchHereVisibleParams): boolean {
+}: UsePlacesSearchHereVisibleParams): PlacesSearchHereVisibility {
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
   const zoom = useMapCenterStore((s) => s.zoom);
   const searchSnapshot = useSearchRecenterStore((s) => s.searchSnapshot);
   const discoverSnapshot = useSearchRecenterStore((s) => s.discoverSnapshot);
 
-  if (!mapCenter) return false;
+  if (!mapCenter) {
+    return {
+      visible: false,
+      suggestSearchRecenter: false,
+      suggestDiscoverRecenter: false,
+    };
+  }
 
-  const suggestFromSearchSnapshot =
+  const suggestSearchRecenter =
     searchSnapshot != null
     && shouldSuggestPlacesSearchRecenter({
       mapCenter,
@@ -57,12 +69,16 @@ export function usePlacesSearchHereVisible({
       snapshotZoom: searchSnapshot.zoom,
     });
 
-  const suggestFromDiscoverChip = chipsDiscoverRecenterEligible(
+  const suggestDiscoverRecenter = chipsDiscoverRecenterEligible(
     discoverCategoryId,
     discoverSnapshot,
     mapCenter,
     zoom,
   );
 
-  return suggestFromSearchSnapshot || suggestFromDiscoverChip;
+  return {
+    visible: suggestSearchRecenter || suggestDiscoverRecenter,
+    suggestSearchRecenter,
+    suggestDiscoverRecenter,
+  };
 }

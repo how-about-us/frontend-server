@@ -1,5 +1,6 @@
 /// <reference types="google.maps" />
 
+import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import type { PlanItinerarySegmentDescriptor } from "@/lib/plan/planItineraryMapSegments";
 import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
 
@@ -109,8 +110,8 @@ export function haversineMeters(
 }
 
 /**
- * 현재 뷰포트(bounds)에 비해 장소 검색 반경이 과하게 넓어지지 않도록 하는 값.
- * 중심→북동 모서리(외접원) 대신 중심에서 각 변까지의 거리 중 최소(내접에 가깝게)를 쓴다.
+ * 지도 중심 기준 뷰포트에 내접하는 원의 최대 반경(m).
+ * 중심에서 북·남·동·서 경계까지 거리의 최솟값 — 줌을 벗어나지 않으면서 원형 검색을 최대한 채운다.
  */
 export function viewportSearchRadiusMetersFromBounds(
   center: google.maps.LatLngLiteral,
@@ -132,20 +133,8 @@ export function viewportSearchRadiusMetersFromBounds(
     lat: center.lat,
     lng: bounds.west,
   });
-  return Math.min(toNorth, toSouth, toEast, toWest);
-}
-
-/** `GET /places/search` 에 전달하는 반경 상한 (미터) */
-export const PLACES_SEARCH_RADIUS_CAP_METERS = 8000;
-
-export function cappedPlacesSearchRadiusMeters(
-  viewportRadiusMeters: number | null | undefined,
-): number {
-  const raw =
-    viewportRadiusMeters ?? PLACES_SEARCH_RADIUS_CAP_METERS;
-  return Math.min(
-    PLACES_SEARCH_RADIUS_CAP_METERS,
-    Math.max(1, Math.round(raw)),
+  return clampPlacesSearchRadiusMeters(
+    Math.min(toNorth, toSouth, toEast, toWest),
   );
 }
 

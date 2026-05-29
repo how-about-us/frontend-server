@@ -17,7 +17,13 @@ import {
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
-import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
+import {
+  pageToolbarButtonCompactGapClass,
+  pageToolbarButtonCompactIconClass,
+  pageToolbarButtonCompactIconStroke,
+  pageToolbarButtonCompactPaddingClass,
+  pageToolbarButtonCompactTextClass,
+} from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
@@ -116,7 +122,7 @@ export function PlanPageView() {
   const canAddSchedule = roomId.length > 0 && !isCreatingSchedule;
 
   const pageContentClassName =
-    "@container/plan space-y-4 overflow-x-auto pb-8";
+    "@container/plan space-y-2.5 overflow-x-auto pb-8";
 
   const scheduleToolbar = (
     <div className="flex justify-end">
@@ -125,11 +131,17 @@ export function PlanPageView() {
         onClick={handleAddSchedule}
         disabled={!canAddSchedule}
         className={cn(
-          "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
-          pageToolbarButtonPaddingClass,
+          "flex cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+          pageToolbarButtonCompactGapClass,
+          pageToolbarButtonCompactTextClass,
+          pageToolbarButtonCompactPaddingClass,
         )}
       >
-        <Plus className="size-6 shrink-0" strokeWidth={2.2} aria-hidden />
+        <Plus
+          className={pageToolbarButtonCompactIconClass}
+          strokeWidth={pageToolbarButtonCompactIconStroke}
+          aria-hidden
+        />
         새 일차 추가
       </button>
     </div>

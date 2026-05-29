@@ -278,7 +278,7 @@ export function AddFromBookmarkModal({
                   담긴 장소가 없습니다.
                 </p>
               ) : (
-                bookmarkPlaces.map(({ bookmarkId, googlePlaceId, card }) => {
+                bookmarkPlaces.map(({ bookmarkId, googlePlaceId, card: placeCardProps }) => {
                   const gid = googlePlaceId.trim();
                   const alreadyAdded = existingPlaceIds.has(gid);
                   const rowAdding = addingGooglePlaceId === gid;
@@ -286,7 +286,7 @@ export function AddFromBookmarkModal({
                   return (
                     <SearchResultCard
                       key={bookmarkId}
-                      {...card}
+                      {...placeCardProps}
                       showThumbnail={false}
                       className={cn(
                         "w-full border-x-0 px-5",

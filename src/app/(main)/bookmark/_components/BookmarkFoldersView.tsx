@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
-import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
+import {
+  pageToolbarButtonCompactGapClass,
+  pageToolbarButtonCompactIconClass,
+  pageToolbarButtonCompactIconStroke,
+  pageToolbarButtonCompactPaddingClass,
+  pageToolbarButtonCompactTextClass,
+} from "@/components/layout/page-toolbar-button";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useBookmarkCategories,
@@ -192,19 +198,24 @@ export function BookmarkFoldersView() {
   }
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-2.5 pb-8">
       <div className="flex justify-end">
         <button
           type="button"
           onClick={openCreate}
           disabled={isCreating || isUpdating}
           className={cn(
-            "flex cursor-pointer items-center gap-1.5 rounded-full bg-brand-red text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
-            pageToolbarButtonPaddingClass,
+            "flex cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+            pageToolbarButtonCompactGapClass,
+            pageToolbarButtonCompactTextClass,
+            pageToolbarButtonCompactPaddingClass,
           )}
         >
-          <BookmarkPlus className="size-6 shrink-0" strokeWidth={2.2} />새
-          북마크 추가
+          <BookmarkPlus
+            className={pageToolbarButtonCompactIconClass}
+            strokeWidth={pageToolbarButtonCompactIconStroke}
+          />
+          새 북마크 추가
         </button>
       </div>
 

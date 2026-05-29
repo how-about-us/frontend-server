@@ -23,7 +23,7 @@ export function BookmarkFolderDetailHeader({
           목록으로 돌아가기
         </Link>
       </div>
-      <div className="mt-6 flex items-center justify-between gap-3">
+      <div className="mt-2.5 flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <FolderRibbonIcon color={folder.color} variant="header" />
           <div className="min-w-0">

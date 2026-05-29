@@ -293,7 +293,7 @@ export function PlacesSearchInput({
   return (
     <div ref={containerRef} className="relative">
       <form onSubmit={handleSubmit} className="flex items-center gap-1">
-        <div className="relative left-1 flex w-full items-center px-1">
+        <div className="relative flex w-full min-w-0 items-center">
           {leadingIcon === "pin" ? (
             <MapPin
               className="pointer-events-none absolute left-3 h-4 w-4 text-dark-gray"
@@ -315,7 +315,7 @@ export function PlacesSearchInput({
             onFocus={() => predictions.length > 0 && setIsOpen(true)}
             placeholder={placeholder}
             autoComplete="off"
-            className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-sm outline-none placeholder:text-[#99A1AF] focus:border-brand-green focus:ring-1 focus:ring-brand-green disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-sm outline-none placeholder:text-[#99A1AF] focus:border-brand-green focus:ring-2 focus:ring-brand-green/30 focus:ring-inset disabled:cursor-not-allowed disabled:opacity-60"
           />
           {inputValue ? (
             <button
