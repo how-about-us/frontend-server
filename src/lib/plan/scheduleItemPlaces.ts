@@ -9,6 +9,12 @@ import {
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
 import { fetchPlacePreview } from "@/lib/places/place-queries";
+import { getQueryClient } from "@/lib/query-client";
+import {
+  invalidateScheduleItemRoutesAfterItemCreated,
+  invalidateScheduleItemRoutesAfterReorder,
+  readOrderedItemIdsFromScheduleItemsCache,
+} from "@/lib/plan/scheduleStompRouteScope";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -47,22 +53,43 @@ function memoFromScheduleItemPatch(
   return memoFromScheduleItem(updated);
 }
 
+function patchPlanPlaceFromScheduleItem(
+  existing: PlanPlace,
+  item: RoomScheduleItem,
+): PlanPlace {
+  const hasServerStart =
+    typeof item.startTime === "string" && item.startTime.trim().length > 0;
+  const serverDurationOk =
+    typeof item.durationMinutes === "number" &&
+    Number.isFinite(item.durationMinutes);
+  return {
+    ...existing,
+    googlePlaceId: item.googlePlaceId,
+    startTime: hasServerStart ? item.startTime : existing.startTime,
+    durationMinutes: serverDurationOk
+      ? item.durationMinutes
+      : existing.durationMinutes,
+    travelMode: item.travelMode,
+    memo: memoFromScheduleItem(item),
+  };
+}
+
 /**
  * 리오더 등으로 서버 `RoomScheduleItem[]`만 바뀐 경우, 캐시된 PlanPlace의
  * 제목·photoName·location 등은 유지하고 순서·시간·수단만 반영합니다.
- * 캐시에 없는 itemId가 있거나 집합/길이가 맞지 않으면 null → 전체 재조회.
+ * 항목 1개 추가(+1)는 신규 항목만 Preview enrich.
+ * 그 외 길이/집합 불일치는 null → 전체 재조회.
  */
-function mergeScheduleItemsIntoPlanPlaces(
+async function mergeScheduleItemsIntoPlanPlaces(
   prev: PlanPlace[] | undefined,
   items: RoomScheduleItem[],
-): PlanPlace[] | null {
+): Promise<PlanPlace[] | null> {
   if (!prev || prev.length === 0) return null;
 
   const prevWithId = prev.filter(
     (p): p is PlanPlace & { itemId: number } => typeof p.itemId === "number",
   );
   if (prevWithId.length !== prev.length) return null;
-  if (items.length !== prev.length) return null;
 
   const byId = new Map<number, PlanPlace>();
   for (const p of prevWithId) {
@@ -71,23 +98,26 @@ function mergeScheduleItemsIntoPlanPlaces(
   if (byId.size !== prevWithId.length) return null;
 
   const sorted = sortRoomScheduleItemsByOrder(items);
+  const allowOneNewItem = items.length === prev.length + 1;
+
+  if (items.length !== prev.length && !allowOneNewItem) {
+    return null;
+  }
+
+  if (allowOneNewItem) {
+    const newItems = sorted.filter((item) => !byId.has(item.itemId));
+    if (newItems.length !== 1) return null;
+  }
+
   const out: PlanPlace[] = [];
   for (const item of sorted) {
     const existing = byId.get(item.itemId);
-    if (!existing) return null;
-    const hasServerStart =
-      typeof item.startTime === "string" && item.startTime.trim().length > 0;
-    const serverDurationOk =
-      typeof item.durationMinutes === "number" &&
-      Number.isFinite(item.durationMinutes);
-    out.push({
-      ...existing,
-      googlePlaceId: item.googlePlaceId,
-      startTime: hasServerStart ? item.startTime : existing.startTime,
-      durationMinutes: serverDurationOk ? item.durationMinutes : existing.durationMinutes,
-      travelMode: item.travelMode,
-      memo: memoFromScheduleItem(item),
-    });
+    if (existing) {
+      out.push(patchPlanPlaceFromScheduleItem(existing, item));
+      continue;
+    }
+    if (!allowOneNewItem) return null;
+    out.push(await planPlaceFromScheduleItem(item));
   }
   return out;
 }
@@ -120,12 +150,27 @@ export async function mergeOrRefetchSchedulePlanPlacesFromItems(
   if (!rid.length) return;
   const key = scheduleItemsQueryKey(rid, scheduleId);
   const prev = queryClient.getQueryData<PlanPlace[]>(key);
-  const merged = mergeScheduleItemsIntoPlanPlaces(prev, items);
+  const merged = await mergeScheduleItemsIntoPlanPlaces(prev, items);
   if (merged) {
     queryClient.setQueryData(key, merged);
     return;
   }
   await refetchSchedulePlanPlacesIntoCache(queryClient, rid, scheduleId);
+}
+
+/** `schedule-items` 캐시가 있으면 Preview 없이 반환, 없을 때만 전체 enrich. */
+export async function fetchSchedulePlanPlacesFromCacheOrApi(
+  roomId: string,
+  scheduleId: number,
+): Promise<PlanPlace[]> {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+  const cached = getQueryClient()?.getQueryData<PlanPlace[]>(key);
+  if (cached != null && cached.length > 0) {
+    return cached;
+  }
+  return fetchScheduleItemsAsPlanPlaces(rid, scheduleId);
 }
 
 /** 새 항목 POST 시 `startTime` — `HH:mm` (로컬 슬롯: 08:00부터 번호당 1시간, 최대 22:00) */
@@ -208,9 +253,16 @@ export async function syncPlanPlacesAfterReorderSuccess(
   roomId: string,
   scheduleId: number,
   items: RoomScheduleItem[],
+  movedItemId: number,
 ): Promise<void> {
   const rid = roomId.trim();
   if (!rid.length) return;
+
+  const oldOrderedIds = readOrderedItemIdsFromScheduleItemsCache(
+    queryClient,
+    rid,
+    scheduleId,
+  );
 
   await mergeOrRefetchSchedulePlanPlacesFromItems(
     queryClient,
@@ -220,7 +272,17 @@ export async function syncPlanPlacesAfterReorderSuccess(
   );
 
   const patches = buildChainedStartPatchesForReorder(items);
-  if (patches.length === 0) return;
+  if (patches.length === 0) {
+    await invalidateScheduleItemRoutesAfterReorder(
+      queryClient,
+      rid,
+      scheduleId,
+      movedItemId,
+      oldOrderedIds,
+      items,
+    );
+    return;
+  }
 
   const snapshot = sortRoomScheduleItemsByOrder(items);
   const byItemId = new Map(snapshot.map((it) => [it.itemId, it]));
@@ -249,11 +311,20 @@ export async function syncPlanPlacesAfterReorderSuccess(
     return;
   }
 
+  const finalItems = sortRoomScheduleItemsByOrder([...byItemId.values()]);
   await mergeOrRefetchSchedulePlanPlacesFromItems(
     queryClient,
     roomId,
     scheduleId,
-    sortRoomScheduleItemsByOrder([...byItemId.values()]),
+    finalItems,
+  );
+  await invalidateScheduleItemRoutesAfterReorder(
+    queryClient,
+    rid,
+    scheduleId,
+    movedItemId,
+    oldOrderedIds,
+    finalItems,
   );
 }
 
@@ -409,42 +480,35 @@ export async function createScheduleItemAtPlanIndex(
       ? created.orderIndex
       : args.places.length;
 
-  if (fromIndex !== targetIndex) {
-    const items = await reorderScheduleItem(
-      rid,
-      args.scheduleId,
-      created.itemId,
-      {
-        newOrderIndex: newOrderIndexAfterMove(
-          fromIndex,
-          targetIndex,
-          listLengthAfterCreate,
-        ),
-      },
-    );
-    await syncPlanPlacesAfterReorderSuccess(
-      queryClient,
-      rid,
-      args.scheduleId,
-      items,
-    );
-    const key = scheduleItemsQueryKey(rid, args.scheduleId);
-    const cached = queryClient.getQueryData<PlanPlace[]>(key);
-    if (!cached?.some((p) => p.itemId === created.itemId)) {
-      await refetchSchedulePlanPlacesIntoCache(
-        queryClient,
-        rid,
-        args.scheduleId,
-      );
-    }
-  } else {
+  if (fromIndex === targetIndex) {
     await appendCreatedScheduleItemToPlanPlaces(
       queryClient,
       rid,
       args.scheduleId,
       created,
     );
+    return created;
   }
+
+  const items = await reorderScheduleItem(
+    rid,
+    args.scheduleId,
+    created.itemId,
+    {
+      newOrderIndex: newOrderIndexAfterMove(
+        fromIndex,
+        targetIndex,
+        listLengthAfterCreate,
+      ),
+    },
+  );
+  await syncPlanPlacesAfterReorderSuccess(
+    queryClient,
+    rid,
+    args.scheduleId,
+    items,
+    created.itemId,
+  );
 
   return created;
 }
@@ -468,6 +532,12 @@ export async function appendCreatedScheduleItemToPlanPlaces(
   const next = [...without];
   next.splice(idx, 0, newPlace);
   queryClient.setQueryData(key, next);
+  await invalidateScheduleItemRoutesAfterItemCreated(
+    queryClient,
+    rid,
+    scheduleId,
+    created.itemId,
+  );
 }
 
 /** 드래그를 `toIndex` 자리에 놓았을 때 PATCH에 넣을 `newOrderIndex`(0-based) */

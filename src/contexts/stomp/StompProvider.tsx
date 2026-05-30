@@ -170,9 +170,13 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const subscribeToRoomTopics = useCallback(
     (client: Client, roomId: string) => {
       const rid = roomId.trim();
-      if (lastSubscribedRoomIdRef.current !== rid) {
-        lastSubscribedRoomIdRef.current = rid;
+      if (
+        lastSubscribedRoomIdRef.current === rid &&
+        roomTopicsUnsubRef.current != null
+      ) {
+        return;
       }
+      lastSubscribedRoomIdRef.current = rid;
       detachRoomTopicsOnly();
       forcedExitConsumedRef.current = false;
       roomTopicsUnsubRef.current = subscribeRoomStompTopics(
@@ -212,8 +216,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
     setConnectionState,
   });
 
+  const roomTopicsDeferred = pathDefersRoomStompRoomTopics(pathname);
+
   useStompRoomTopicsResyncEffect({
-    pathname,
+    roomTopicsDeferred,
     resolvedRoomId,
     connected: connectionState.connected,
     clientRef,

@@ -1,6 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
+import type { RoomScheduleItem } from "@/lib/api/rooms/schedule-items";
+import {
+  clearPersistedScheduleRoutesForSchedule,
+  clearPersistedScheduleRoutesForSegmentSources,
+} from "@/lib/plan/planTravelLocalStorage";
+import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 import type { PlanPlace } from "@/lib/plan/types";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 
@@ -26,6 +31,16 @@ export function readOrderedItemIdsFromScheduleItemsCache(
     scheduleItemsQueryKey(roomId, scheduleId),
   );
   return asOrderedItemIds(data ?? null);
+}
+
+/** 리오더 API 응답 `RoomScheduleItem[]` → `orderIndex` 순 `itemId` 목록 */
+export function orderedItemIdsFromRoomScheduleItems(
+  items: RoomScheduleItem[],
+): number[] {
+  return [...items]
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+    .map((it) => it.itemId)
+    .filter((id): id is number => typeof id === "number" && Number.isFinite(id));
 }
 
 /** 항목 `itemId`에 인접한 구간의 출발 `segmentSourceItemId` (최대 prev, 자신). */
@@ -94,6 +109,79 @@ export function collectSegmentSourcesForReorder(
   return { sources: [...s], useFallback: false };
 }
 
+export function bumpPlanMapRouteSegments(
+  roomId: string,
+  scheduleId: number,
+  sourceItemIds: number[],
+): void {
+  if (sourceItemIds.length === 0) return;
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  usePlanMapDirectionsEpochStore.getState().bumpSegments(
+    rid,
+    sourceItemIds.map((segmentSourceItemId) => ({
+      scheduleId,
+      segmentSourceItemId,
+    })),
+  );
+}
+
+/** 항목 생성 후 캐시 반영 직후 — 인접 구간 route만 무효화(본인 mutation). */
+export async function invalidateScheduleItemRoutesAfterItemCreated(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  const orderedIds = readOrderedItemIdsFromScheduleItemsCache(
+    queryClient,
+    rid,
+    scheduleId,
+  );
+  const { sources, useFallback } = collectSegmentSourcesForCreate(
+    orderedIds,
+    itemId,
+  );
+  if (useFallback) {
+    await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, scheduleId);
+    usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    return;
+  }
+  await invalidateScheduleItemRouteForSources(queryClient, rid, scheduleId, sources);
+  bumpPlanMapRouteSegments(rid, scheduleId, sources);
+}
+
+/**
+ * 리오더·중간 삽입 직후 — STOMP보다 먼저 캐시·서버 순서를 알 때 구간만 무효화.
+ * `oldOrderedIds`는 merge 전 `schedule-items` 스냅샷, `items`는 리오더(또는 최종 PATCH) 응답.
+ */
+export async function invalidateScheduleItemRoutesAfterReorder(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  movedItemId: number,
+  oldOrderedIds: number[] | null,
+  items: RoomScheduleItem[],
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  const newOrderedIds = orderedItemIdsFromRoomScheduleItems(items);
+  const { sources, useFallback } = collectSegmentSourcesForReorder(
+    oldOrderedIds,
+    newOrderedIds,
+    movedItemId,
+  );
+  if (useFallback) {
+    await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, scheduleId);
+    usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    return;
+  }
+  await invalidateScheduleItemRouteForSources(queryClient, rid, scheduleId, sources);
+  bumpPlanMapRouteSegments(rid, scheduleId, sources);
+}
+
 export async function invalidateScheduleItemRouteForSources(
   queryClient: QueryClient,
   roomId: string,
@@ -102,7 +190,7 @@ export async function invalidateScheduleItemRouteForSources(
 ): Promise<void> {
   if (sourceItemIds.length === 0) return;
   const rid = roomId.trim();
-  clearPersistedScheduleRoutesForSchedule(rid, scheduleId);
+  clearPersistedScheduleRoutesForSegmentSources(rid, scheduleId, sourceItemIds);
   const want = new Set(sourceItemIds);
   await queryClient.invalidateQueries({
     predicate: (q) => {

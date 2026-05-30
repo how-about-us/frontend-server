@@ -153,7 +153,8 @@ export function useStompClientLifecycleEffect({
 }
 
 type RoomTopicsOpts = {
-  pathname: string;
+  /** `/home` 등 방 토픽을 미루는 경로 여부 — plan↔bookmark 탭 전환과 분리 */
+  roomTopicsDeferred: boolean;
   resolvedRoomId: string | null;
   connected: boolean;
   clientRef: MutableRefObject<Client | null>;
@@ -162,9 +163,9 @@ type RoomTopicsOpts = {
   unsubscribeRoomTopics: () => void;
 };
 
-/** 방·경로 변경 시 방 토픽 구독을 맞춥니다 (`pathDefersRoomStompRoomTopics` 포함). */
+/** 방·`/home` 경계·roomId 변경 시에만 방 토픽 구독을 맞춥니다. */
 export function useStompRoomTopicsResyncEffect({
-  pathname,
+  roomTopicsDeferred,
   resolvedRoomId,
   connected,
   clientRef,
@@ -176,7 +177,7 @@ export function useStompRoomTopicsResyncEffect({
     const client = clientRef.current;
     if (!client?.connected || !connected) return;
 
-    if (pathDefersRoomStompRoomTopics(pathname)) {
+    if (roomTopicsDeferred) {
       detachRoomTopicsOnly();
       return;
     }
@@ -189,8 +190,8 @@ export function useStompRoomTopicsResyncEffect({
   }, [
     connected,
     resolvedRoomId,
+    roomTopicsDeferred,
     detachRoomTopicsOnly,
-    pathname,
     subscribeToRoomTopics,
     unsubscribeRoomTopics,
   ]);

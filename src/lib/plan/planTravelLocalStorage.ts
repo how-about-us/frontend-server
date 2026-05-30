@@ -74,21 +74,13 @@ export function schedulePlacesFingerprint(places: PlanPlace[]): string {
   return parts.join("|");
 }
 
-/** 해당 일차 경로·이동수단 sessionStorage 항목 일괄 제거 */
-export function clearPersistedScheduleRoutesForSchedule(
-  roomId: string,
-  scheduleId: number,
-): void {
-  if (typeof window === "undefined") return;
-  const rid = roomId.trim();
-  if (!rid.length) return;
-  const prefixRoute = `${NS_ROUTE}:${rid}:${scheduleId}:`;
-  const prefixMode = `${NS_MODE}:${rid}:${scheduleId}:`;
+function removeSessionStorageKeysMatchingPrefixes(prefixes: string[]): void {
+  if (typeof window === "undefined" || prefixes.length === 0) return;
   const toRemove: string[] = [];
   for (let i = 0; i < sessionStorage.length; i++) {
     const k = sessionStorage.key(i);
     if (!k) continue;
-    if (k.startsWith(prefixRoute) || k.startsWith(prefixMode)) {
+    if (prefixes.some((p) => k.startsWith(p))) {
       toRemove.push(k);
     }
   }
@@ -99,6 +91,55 @@ export function clearPersistedScheduleRoutesForSchedule(
       /* quota */
     }
   }
+}
+
+/** 지정 구간(`segmentSourceItemId`)의 경로·이동수단 sessionStorage만 제거 */
+export function clearPersistedScheduleRoutesForSegmentSources(
+  roomId: string,
+  scheduleId: number,
+  segmentSourceItemIds: number[],
+): void {
+  const rid = roomId.trim();
+  if (!rid.length || segmentSourceItemIds.length === 0) return;
+  const routePrefixes = segmentSourceItemIds.map(
+    (id) => `${NS_ROUTE}:${rid}:${scheduleId}:${id}:`,
+  );
+  const exactModeKeys = new Set(
+    segmentSourceItemIds.map((id) => modeStorageKey(rid, scheduleId, id)),
+  );
+  if (typeof window === "undefined") return;
+  const toRemove: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
+    if (!k) continue;
+    if (exactModeKeys.has(k)) {
+      toRemove.push(k);
+      continue;
+    }
+    if (routePrefixes.some((p) => k.startsWith(p))) {
+      toRemove.push(k);
+    }
+  }
+  for (const k of toRemove) {
+    try {
+      sessionStorage.removeItem(k);
+    } catch {
+      /* quota */
+    }
+  }
+}
+
+/** 해당 일차 경로·이동수단 sessionStorage 항목 일괄 제거 */
+export function clearPersistedScheduleRoutesForSchedule(
+  roomId: string,
+  scheduleId: number,
+): void {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  removeSessionStorageKeysMatchingPrefixes([
+    `${NS_ROUTE}:${rid}:${scheduleId}:`,
+    `${NS_MODE}:${rid}:${scheduleId}:`,
+  ]);
 }
 
 /**

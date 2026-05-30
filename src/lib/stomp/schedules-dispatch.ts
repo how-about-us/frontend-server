@@ -268,21 +268,12 @@ export async function dispatchRoomScheduleEvent(
         typeof me === "number" &&
         Number.isFinite(me) &&
         me === event.actorUserId;
-      const cachedIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
-      const cacheHasNewItem = cachedIds?.includes(event.itemId) ?? false;
-
-      if (!actorIsMe || !cacheHasNewItem) {
-        await refetchScheduleItemsPlaces(queryClient, rid, sid);
-      }
-
-      /** 중간 삽입: reorder 전까지 캐시에 없음 — 경로는 `SCHEDULE_ITEMS_REORDERED`에서만 */
-      if (actorIsMe && !cacheHasNewItem) {
+      /** 본인 mutation은 append/reorder 직후 구간 단위 무효화 — STOMP 선도착 시 일정 전체 `/route` 폭주 방지 */
+      if (actorIsMe) {
         return;
       }
+
+      await refetchScheduleItemsPlaces(queryClient, rid, sid);
 
       const newIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
@@ -304,28 +295,29 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEMS_REORDERED": {
+      const me = readSessionUserId(queryClient);
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId;
+      /** 본인 mutation은 `syncPlanPlacesAfterReorderSuccess` 직후 구간 무효화 */
+      if (actorIsMe) {
+        return;
+      }
+
       const oldIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,
         sid,
       );
-      const me = readSessionUserId(queryClient);
-      const hydrateFromApi =
-        !(
-          typeof me === "number" &&
-          Number.isFinite(me) &&
-          event.actorUserId === me
-        );
 
-      if (hydrateFromApi) {
-        const items = await getScheduleItems(rid, sid);
-        await mergeOrRefetchSchedulePlanPlacesFromItems(
-          queryClient,
-          rid,
-          sid,
-          items,
-        );
-      }
+      const items = await getScheduleItems(rid, sid);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        rid,
+        sid,
+        items,
+      );
       const newIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,

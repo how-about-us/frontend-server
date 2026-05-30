@@ -3,7 +3,7 @@
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
@@ -42,7 +42,7 @@ export function usePlanItineraryStopNormalizedPlaceIds(
       queryFn: () =>
         rid.length === 0
           ? Promise.resolve([])
-          : fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
+          : fetchSchedulePlanPlacesFromCacheOrApi(rid, scheduleId),
       enabled:
         enabled && rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
       staleTime: Infinity,

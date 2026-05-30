@@ -297,13 +297,14 @@ export function useReorderScheduleItem() {
     onError: () => {
       setIsChainedTimeSyncPending(false);
     },
-    onSuccess: async (items, { roomId, scheduleId }) => {
+    onSuccess: async (items, { roomId, scheduleId, itemId }) => {
       try {
         await syncPlanPlacesAfterReorderSuccess(
           queryClient,
           roomId,
           scheduleId,
           items,
+          itemId,
         );
       } finally {
         setIsChainedTimeSyncPending(false);
@@ -407,6 +408,9 @@ export function useRoomMembers(roomId: string | null) {
     queryKey: roomMembersQueryKey(roomId),
     queryFn: () => getRoomMembers(roomId!),
     enabled: !!roomId && (!waitForStompBeforeMembers || stompConnected),
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 

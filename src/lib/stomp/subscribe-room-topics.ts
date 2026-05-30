@@ -8,7 +8,10 @@ import { applyRoomBookmarkStompMessage } from "@/lib/stomp/bookmarks-dispatch";
 import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
-import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
+import {
+  dispatchRoomPresence,
+  syncRoomMembersIfCacheEmpty,
+} from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
 import { dispatchUserError } from "@/lib/stomp/user-error-dispatch";
@@ -40,11 +43,9 @@ export function subscribeRoomStompTopics(
   const presenceSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/presence`,
     (message) => {
-      void (async () => {
-        const event = parseRoomPresenceMessage(message.body);
-        if (!event) return;
-        await dispatchRoomPresence(queryClientRef.current, subscribedRoomId);
-      })();
+      const event = parseRoomPresenceMessage(message.body);
+      if (!event) return;
+      dispatchRoomPresence(queryClientRef.current, subscribedRoomId, event);
     },
   );
 
@@ -95,7 +96,7 @@ export function subscribeRoomStompTopics(
     },
   );
 
-  void dispatchRoomPresence(queryClientRef.current, subscribedRoomId);
+  void syncRoomMembersIfCacheEmpty(queryClientRef.current, subscribedRoomId);
 
   return () => {
     membersSub.unsubscribe();

@@ -12,7 +12,7 @@ import {
   fetchOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
-import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import { displayPositionsForOverlappingStops } from "@/lib/plan/planItineraryMapMarkerOffset";
 import {
@@ -86,7 +86,7 @@ export function PlanItineraryMapRoutes() {
       queryFn: () =>
         rid.length === 0
           ? Promise.resolve([])
-          : fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
+          : fetchSchedulePlanPlacesFromCacheOrApi(rid, scheduleId),
       enabled: rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
       staleTime: Infinity,
       refetchOnMount: false,
