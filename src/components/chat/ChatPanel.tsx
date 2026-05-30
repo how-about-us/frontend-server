@@ -10,6 +10,8 @@ import { useRoomMembers } from "@/hooks/useRooms";
 import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "./messages/ChatMessageList";
 import { ChatInputBar } from "./ChatInputBar";
+import { ChatRateLimitBanner } from "./ChatRateLimitBanner";
+import { useChatRateLimitStore } from "@/stores/chat-rate-limit-store";
 import {
   panelVariants,
   panelTransition,
@@ -41,6 +43,8 @@ export function ChatPanel() {
   } = useChatMessages(roomId, { fetchHistory: panelOpen });
 
   const rid = typeof roomId === "string" ? roomId.trim() : "";
+  const rateLimit = useChatRateLimitStore((s) => s.rateLimit);
+  const isSendBlocked = useChatRateLimitStore((s) => s.isSendBlocked);
 
   function handlePlusClick() {
     if (!rid) return;
@@ -86,12 +90,22 @@ export function ChatPanel() {
             initialScrollAnchorId={initialScrollAnchorId}
             onAtBottom={markMessagesRead}
           />
+          <AnimatePresence initial={false}>
+            {rateLimit ? (
+              <ChatRateLimitBanner
+                key="chat-rate-limit"
+                message={rateLimit.message}
+                isMinimized={isMinimized}
+              />
+            ) : null}
+          </AnimatePresence>
           <ChatInputBar
             isMinimized={isMinimized}
             onSendChat={sendChatMessage}
             onSendAi={sendAiMessage}
             onPlusClick={handlePlusClick}
             plusDisabled={!rid}
+            sendDisabled={isSendBlocked}
           />
         </motion.div>
       )}

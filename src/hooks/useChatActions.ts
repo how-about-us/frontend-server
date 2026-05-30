@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 
 import { useStompContext } from "@/contexts/StompContext";
+import { isChatSendBlocked } from "@/stores/chat-rate-limit-store";
 import { useSessionStore } from "@/stores/session-store";
 import type { PlaceShareData } from "@/types/chat";
 
@@ -21,7 +22,15 @@ export function useChatActions() {
   const sendChatMessage = useCallback(
     (content: string) => {
       const trimmed = content.trim();
-      if (!client || !connected || !ridTrimmed || !trimmed) return;
+      if (
+        !client ||
+        !connected ||
+        !ridTrimmed ||
+        !trimmed ||
+        isChatSendBlocked()
+      ) {
+        return;
+      }
       client.publish({
         destination: `/app/rooms/${ridTrimmed}/messages/chat`,
         body: JSON.stringify({
@@ -36,7 +45,15 @@ export function useChatActions() {
   const sendAiMessage = useCallback(
     (content: string) => {
       const trimmed = content.trim();
-      if (!client || !connected || !ridTrimmed || !trimmed) return;
+      if (
+        !client ||
+        !connected ||
+        !ridTrimmed ||
+        !trimmed ||
+        isChatSendBlocked()
+      ) {
+        return;
+      }
       client.publish({
         destination: `/app/rooms/${ridTrimmed}/messages/ai`,
         body: JSON.stringify({
@@ -50,7 +67,7 @@ export function useChatActions() {
 
   const sendPlaceMessage = useCallback(
     (place: PlaceShareData) => {
-      if (!client || !connected || !ridTrimmed) return;
+      if (!client || !connected || !ridTrimmed || isChatSendBlocked()) return;
       client.publish({
         destination: `/app/rooms/${ridTrimmed}/messages/place`,
         body: JSON.stringify({

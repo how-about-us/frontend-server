@@ -6,6 +6,7 @@ export type UserErrorPayload = {
   domain: string;
   message: string;
   retryable: boolean;
+  retryAfterMs?: number | null;
 };
 
 export function parseUserErrorMessage(body: string): UserErrorPayload | null {
@@ -17,6 +18,7 @@ export function parseUserErrorMessage(body: string): UserErrorPayload | null {
     const domain = raw?.domain;
     const message = raw?.message;
     const retryable = raw?.retryable;
+    const retryAfterMsRaw = raw?.retryAfterMs;
     if (
       typeof action !== "string" ||
       typeof clientRequestId !== "string" ||
@@ -27,6 +29,15 @@ export function parseUserErrorMessage(body: string): UserErrorPayload | null {
     ) {
       return null;
     }
+    let retryAfterMs: number | null | undefined;
+    if (retryAfterMsRaw === null) {
+      retryAfterMs = null;
+    } else if (retryAfterMsRaw !== undefined) {
+      if (typeof retryAfterMsRaw !== "number" || retryAfterMsRaw < 0) {
+        return null;
+      }
+      retryAfterMs = retryAfterMsRaw;
+    }
     return {
       action,
       clientRequestId,
@@ -34,8 +45,26 @@ export function parseUserErrorMessage(body: string): UserErrorPayload | null {
       domain,
       message,
       retryable,
+      ...(retryAfterMs !== undefined ? { retryAfterMs } : {}),
     };
   } catch {
     return null;
   }
+}
+
+/** MESSAGE 도메인 rate limit — 패널 쿨다운 UI 대상 */
+export function isMessageRateLimit(payload: UserErrorPayload): boolean {
+  if (payload.domain !== "MESSAGE") return false;
+  if (payload.action === "RATE_LIMITED") return true;
+  if (payload.action === "SEND" && payload.retryAfterMs != null) return true;
+  return false;
+}
+
+/** rate limit 쿨다운 적용에 사용할 ms (없으면 RATE_LIMITED는 5초 기본) */
+export function getRateLimitRetryAfterMs(payload: UserErrorPayload): number {
+  if (payload.retryAfterMs != null && payload.retryAfterMs > 0) {
+    return payload.retryAfterMs;
+  }
+  if (payload.action === "RATE_LIMITED") return 5000;
+  return 0;
 }

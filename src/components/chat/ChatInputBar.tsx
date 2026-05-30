@@ -27,6 +27,7 @@ interface ChatInputBarProps {
   onSendAi: (content: string) => void;
   onPlusClick?: () => void;
   plusDisabled?: boolean;
+  sendDisabled?: boolean;
 }
 
 function mentionSuffixMatchesAi(valueFromAt: string): boolean {
@@ -69,6 +70,7 @@ export function ChatInputBar({
   onSendAi,
   onPlusClick,
   plusDisabled = false,
+  sendDisabled = false,
 }: ChatInputBarProps) {
   const [aiEnabled, setAiEnabled] = useState(false);
   const [message, setMessage] = useState("");
@@ -204,6 +206,8 @@ export function ChatInputBar({
   }
 
   function handleSend() {
+    if (sendDisabled) return;
+
     const raw = inputRef.current?.value ?? message;
     const trimmed = raw.trim();
     if (!trimmed) return;
@@ -434,9 +438,18 @@ export function ChatInputBar({
         <motion.button
           type="button"
           onClick={handleSend}
-          whileTap={reduceMotion ? undefined : chatTapSoft}
+          disabled={sendDisabled}
+          aria-label={
+            sendDisabled
+              ? "메시지를 너무 빠르게 보내 전송이 일시 중지되었습니다"
+              : "메시지 보내기"
+          }
+          whileTap={reduceMotion || sendDisabled ? undefined : chatTapSoft}
           transition={chatTapTransition}
-          className="flex cursor-pointer items-center gap-2 px-2 py-2 transition hover:opacity-80"
+          className={cn(
+            "flex items-center gap-2 px-2 py-2 transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40",
+            sendDisabled ? "cursor-not-allowed" : "cursor-pointer",
+          )}
         >
           <ChatEnterIcon
             className={hasContent ? "text-brand-red" : "text-light-gray"}

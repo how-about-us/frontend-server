@@ -11,7 +11,7 @@ import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
-import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
+import { dispatchUserError } from "@/lib/stomp/user-error-dispatch";
 import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
 export type RoomTopicsUnsubscriber = () => void;
 
@@ -78,7 +78,7 @@ export function subscribeRoomStompTopics(
   const userErrorsSub = client.subscribe(`/user/queue/errors`, (message) => {
     const payload = parseUserErrorMessage(message.body);
     if (!payload) return;
-    dispatchUserErrorToast(payload);
+    dispatchUserError(payload);
   });
 
   const messagesSub = client.subscribe(
