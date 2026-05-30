@@ -9,25 +9,18 @@ import { parseRoomPresenceMessage } from "@/lib/stomp/events";
 import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
-import { parseRoomLifecycleMessage } from "@/lib/stomp/room-lifecycle-events";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
 import { startSessionPresencePing } from "@/lib/stomp/sessionPresencePing";
 import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
 import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
-import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
-
 export type RoomTopicsUnsubscriber = () => void;
 
 export type SubscribeRoomStompTopicsOptions = {
-  notifyForcedRoomExit: (
-    reason: ForcedRoomExitReason,
-    eventRoomId: string,
-  ) => void;
   onRoomChatMessage?: (msg: ServerChatMessage) => void;
 };
 
-/** 방 단위 members·presence·bookmarks·schedules·lifecycle + messages + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
+/** 방 단위 members·presence·bookmarks·schedules + messages + 개인 에러 큐(`/user/queue/errors`) 구독; 반환값으로 한 번에 해제 */
 export function subscribeRoomStompTopics(
   client: Client,
   roomId: string,
@@ -89,16 +82,6 @@ export function subscribeRoomStompTopics(
     dispatchUserErrorToast(payload);
   });
 
-  const lifecycleSub = client.subscribe(
-    `/topic/rooms/${subscribedRoomId}/lifecycle`,
-    (message) => {
-      const payload = parseRoomLifecycleMessage(message.body);
-      if (!payload) return;
-      if (payload.roomId.trim() !== subscribedRoomId) return;
-      options.notifyForcedRoomExit("room_deleted", payload.roomId);
-    },
-  );
-
   const messagesSub = client.subscribe(
     `/topic/rooms/${subscribedRoomId}/messages`,
     (message) => {
@@ -124,7 +107,6 @@ export function subscribeRoomStompTopics(
     bookmarksSub.unsubscribe();
     schedulesSub.unsubscribe();
     userErrorsSub.unsubscribe();
-    lifecycleSub.unsubscribe();
     messagesSub.unsubscribe();
   };
 }

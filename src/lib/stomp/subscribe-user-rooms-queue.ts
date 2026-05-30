@@ -10,8 +10,11 @@ import {
 
 export type SubscribeUserRoomsQueueOptions = {
   queryClientRef: MutableRefObject<QueryClient>;
-  getCurrentRoomId: () => string | null | undefined;
-  notifyForcedRoomExit: (reason: ForcedRoomExitReason, eventRoomId: string) => void;
+  notifyForcedRoomExit: (
+    reason: ForcedRoomExitReason,
+    eventRoomId: string,
+    message?: string,
+  ) => void;
 };
 
 /**
@@ -27,7 +30,11 @@ export function subscribeUserRoomsQueue(
     if (!parsed) return;
 
     if (parsed.kind === "forced_exit") {
-      options.notifyForcedRoomExit(parsed.reason, parsed.roomId);
+      options.notifyForcedRoomExit(
+        parsed.reason,
+        parsed.roomId,
+        parsed.message,
+      );
       return;
     }
 

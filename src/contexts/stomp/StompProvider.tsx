@@ -12,15 +12,18 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import type { Client } from "@stomp/stompjs";
-import { toast } from "sonner";
 
+import {
+  evictRoomFromClientCaches,
+  refreshRoomsList,
+  showForcedExitToast,
+} from "@/lib/stomp/forced-room-exit-dispatch";
 import {
   pathDefersRoomStompRoomTopics,
   pathSuspendsStomp,
 } from "@/lib/stomp/stompPathPolicy";
 import { subscribeRoomStompTopics } from "@/lib/stomp/subscribe-room-topics";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
-import { ROOMS_QUERY_KEY } from "@/lib/query-keys";
 import { resolveRoomIdFromPathname } from "@/lib/session-room-storage";
 import { useSessionUser } from "@/hooks/useSessionUser";
 import {
@@ -46,8 +49,6 @@ const StompContext = createContext<StompContextValue>({
   connected: false,
   setRoomChatMessageHandler: () => {},
 });
-
-const FORCED_ROOM_EXIT_TOAST_MS = 4500;
 
 export function StompProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -99,35 +100,36 @@ export function StompProvider({ children }: { children: ReactNode }) {
     lastSubscribedRoomIdRef.current = null;
   }, [detachRoomTopicsOnly]);
 
-  const handleForcedRoomExit = useCallback(
-    (reason: "kicked" | "room_deleted") => {
-      const message =
-        reason === "kicked"
-          ? "방장에 의해 강제 퇴장 당했습니다"
-          : "방장에 의해 방이 삭제되었습니다";
-      toast(message, { duration: FORCED_ROOM_EXIT_TOAST_MS });
+  const handleForcedRoomExit = useCallback(() => {
+    unsubscribeRoomTopics();
 
-      unsubscribeRoomTopics();
+    const session = useSessionStore.getState();
+    session.clearCurrentRoomId();
 
-      const session = useSessionStore.getState();
-      session.clearCurrentRoomId();
-
-      void queryClientRef.current.invalidateQueries({
-        queryKey: ROOMS_QUERY_KEY,
-      });
-
-      router.replace("/home");
-    },
-    [router, unsubscribeRoomTopics],
-  );
+    router.replace("/home");
+  }, [router, unsubscribeRoomTopics]);
 
   const notifyForcedRoomExit = useCallback(
-    (reason: ForcedRoomExitReason, eventRoomId: string) => {
-      const cur = getResolvedRoomId();
-      if (!cur || eventRoomId.trim() !== cur) return;
-      if (forcedExitConsumedRef.current) return;
-      forcedExitConsumedRef.current = true;
-      handleForcedRoomExit(reason);
+    (reason: ForcedRoomExitReason, eventRoomId: string, message?: string) => {
+      const rid = eventRoomId.trim();
+      if (!rid) return;
+
+      evictRoomFromClientCaches(queryClientRef.current, rid);
+      refreshRoomsList(queryClientRef.current);
+      showForcedExitToast(reason, message);
+
+      const cur = getResolvedRoomId()?.trim() ?? "";
+      if (cur === rid) {
+        if (forcedExitConsumedRef.current) return;
+        forcedExitConsumedRef.current = true;
+        handleForcedRoomExit();
+        return;
+      }
+
+      const stored = useSessionStore.getState().currentRoomId?.trim() ?? "";
+      if (stored === rid) {
+        useSessionStore.getState().clearCurrentRoomId();
+      }
     },
     [getResolvedRoomId, handleForcedRoomExit],
   );
@@ -159,10 +161,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
         client,
         rid,
         queryClientRef,
-        { notifyForcedRoomExit, onRoomChatMessage },
+        { onRoomChatMessage },
       );
     },
-    [detachRoomTopicsOnly, notifyForcedRoomExit, onRoomChatMessage],
+    [detachRoomTopicsOnly, onRoomChatMessage],
   );
 
   const teardownConnectedClient = useCallback(() => {

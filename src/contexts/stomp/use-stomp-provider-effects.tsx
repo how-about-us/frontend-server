@@ -21,6 +21,7 @@ type LifecycleOpts = {
   notifyForcedRoomExit: (
     reason: ForcedRoomExitReason,
     eventRoomId: string,
+    message?: string,
   ) => void;
   subscribeToRoomTopics: (client: Client, roomId: string) => void;
   teardownConnectedClient: () => void;
@@ -71,7 +72,6 @@ export function useStompClientLifecycleEffect({
       userRoomsQueueUnsubRef.current?.();
       userRoomsQueueUnsubRef.current = subscribeUserRoomsQueue(client, {
         queryClientRef,
-        getCurrentRoomId: getResolvedRoomId,
         notifyForcedRoomExit,
       });
 
