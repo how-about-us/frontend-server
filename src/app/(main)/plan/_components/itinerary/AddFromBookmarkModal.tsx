@@ -15,10 +15,9 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
 } from "@/lib/plan/scheduleItemPlaces";
-import { loadPlacePreview } from "@/lib/places/place-queries";
+import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
-import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 type AddFromBookmarkModalProps = {
@@ -93,18 +92,12 @@ export function AddFromBookmarkModal({
           typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
         if (!googlePlaceId.length) return null;
         return {
-          queryKey: placeCardBookmarkQueryKey(
-            roomId,
-            googlePlaceId,
-            b.bookmarkId,
-          ),
-          queryFn: () => loadPlacePreview(googlePlaceId),
-          staleTime: 60_000,
-          retry: 1,
+          bookmarkId: b.bookmarkId,
+          ...placePreviewQueryOptions(googlePlaceId),
         };
       })
       .filter((q): q is NonNullable<typeof q> => q != null);
-  }, [bookmarkListReady, bookmarkItems, roomId]);
+  }, [bookmarkListReady, bookmarkItems]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
@@ -114,9 +107,7 @@ export function AddFromBookmarkModal({
       .map((def, i) => {
         const preview = placeQueries[i]?.data;
         if (!preview) return null;
-        const bookmarkId = def.queryKey[3];
-        if (typeof bookmarkId !== "number") return null;
-        const row = bookmarkItems.find((r) => r.bookmarkId === bookmarkId);
+        const row = bookmarkItems.find((r) => r.bookmarkId === def.bookmarkId);
         if (!row) return null;
         return {
           bookmarkId: row.bookmarkId,

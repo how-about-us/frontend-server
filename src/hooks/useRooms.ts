@@ -53,6 +53,7 @@ import {
 } from "@/lib/api/rooms";
 import {
   applyRoomScheduleItemToPlanPlaces,
+  applyScheduleItemDeletedOnClient,
   createScheduleItemAtPlanIndex,
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
@@ -265,12 +266,21 @@ export function useUpdateScheduleItem() {
 }
 
 export function useDeleteScheduleItem() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       roomId: string;
       scheduleId: number;
       itemId: number;
     }) => deleteScheduleItem(vars.roomId, vars.scheduleId, vars.itemId),
+    onSuccess: async (_, { roomId, scheduleId, itemId }) => {
+      await applyScheduleItemDeletedOnClient(
+        queryClient,
+        roomId,
+        scheduleId,
+        itemId,
+      );
+    },
   });
 }
 

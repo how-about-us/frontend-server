@@ -12,6 +12,7 @@ import {
   invalidateScheduleItemRouteForSources,
   invalidateScheduleItemRouteForWholeSchedule,
   readOrderedItemIdsFromScheduleItemsCache,
+  removeRouteQueriesForDeletedItemSource,
 } from "@/lib/plan/scheduleStompRouteScope";
 import type { RoomSchedule } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -23,25 +24,6 @@ import {
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
 import { readSessionUserId } from "@/lib/session-user-cache";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
-
-function removeRouteQueriesForDeletedItemSource(
-  queryClient: QueryClient,
-  roomId: string,
-  scheduleId: number,
-  itemId: number,
-): void {
-  queryClient.removeQueries({
-    predicate: (q) => {
-      const key = q.queryKey;
-      if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
-        return false;
-      }
-      if (String(key[1] ?? "").trim() !== roomId) return false;
-      if (key[2] !== scheduleId) return false;
-      return key[3] === itemId;
-    },
-  });
-}
 
 async function refetchScheduleItemsPlaces(
   queryClient: QueryClient,
@@ -236,17 +218,30 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEM_DELETED": {
+      const me = readSessionUserId(queryClient);
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId;
+      /** 본인 mutation은 `applyScheduleItemDeletedOnClient`에서 캐시·route 처리 */
+      if (actorIsMe) {
+        return;
+      }
+
       const oldIds = readOrderedItemIdsFromScheduleItemsCache(
         queryClient,
         rid,
         sid,
       );
       removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, event.itemId);
-      await queryClient.invalidateQueries({
-        queryKey: scheduleItemsQueryKey(rid, sid),
-        refetchType: "active",
-      });
-      await refetchScheduleItemsPlaces(queryClient, rid, sid);
+
+      const items = await getScheduleItems(rid, sid);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        rid,
+        sid,
+        items,
+      );
 
       const { sources, useFallback } = collectSegmentSourcesForDelete(
         oldIds,

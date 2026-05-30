@@ -3,8 +3,7 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 
-import { loadPlacePreview } from "@/lib/places/place-queries";
-import { placeCardBookmarkQueryKey } from "@/lib/query-keys";
+import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
@@ -53,35 +52,33 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
         const googlePlaceId = trimGooglePlaceId(b.googlePlaceId);
         if (!googlePlaceId.length) return null;
         return {
-          queryKey: placeCardBookmarkQueryKey(
-            roomId!,
-            googlePlaceId,
-            b.bookmarkId,
-          ),
-          queryFn: async (): Promise<BookmarkedPlace> => {
-            const preview = await loadPlacePreview(googlePlaceId);
-            return {
-              id: String(b.bookmarkId),
-              name: preview.name,
-              address: preview.formattedAddress,
-              photoName: preview.photoName,
-              googlePlaceId: preview.googlePlaceId,
-              location: preview.location,
-            };
-          },
-          staleTime: 60_000,
-          retry: 1,
+          bookmarkId: b.bookmarkId,
+          ...placePreviewQueryOptions(googlePlaceId),
         };
       })
       .filter((q): q is NonNullable<typeof q> => q != null);
-  }, [bookmarkListReady, bookmarkRows, roomId]);
+  }, [bookmarkListReady, bookmarkRows]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
-  const places: BookmarkedPlace[] = useMemo(
-    () => placeQueries.map((q) => q.data).filter((p): p is BookmarkedPlace => p != null),
-    [placeQueries],
-  );
+  const places: BookmarkedPlace[] = useMemo(() => {
+    const out: BookmarkedPlace[] = [];
+    placeQueryDefs.forEach((def, i) => {
+      const preview = placeQueries[i]?.data;
+      if (!preview) return;
+      const row = bookmarkRows.find((r) => r.bookmarkId === def.bookmarkId);
+      if (!row) return;
+      out.push({
+        id: String(row.bookmarkId),
+        name: preview.name,
+        address: preview.formattedAddress,
+        photoName: preview.photoName,
+        googlePlaceId: preview.googlePlaceId,
+        location: preview.location,
+      });
+    });
+    return out;
+  }, [bookmarkRows, placeQueryDefs, placeQueries]);
 
   const cardsLoading =
     bookmarkListReady &&

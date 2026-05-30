@@ -11,9 +11,11 @@ import {
 import { fetchPlacePreview } from "@/lib/places/place-queries";
 import { getQueryClient } from "@/lib/query-client";
 import {
+  invalidateScheduleItemRoutesAfterDelete,
   invalidateScheduleItemRoutesAfterItemCreated,
   invalidateScheduleItemRoutesAfterReorder,
   readOrderedItemIdsFromScheduleItemsCache,
+  removeRouteQueriesForDeletedItemSource,
 } from "@/lib/plan/scheduleStompRouteScope";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
@@ -78,6 +80,7 @@ function patchPlanPlaceFromScheduleItem(
  * 리오더 등으로 서버 `RoomScheduleItem[]`만 바뀐 경우, 캐시된 PlanPlace의
  * 제목·photoName·location 등은 유지하고 순서·시간·수단만 반영합니다.
  * 항목 1개 추가(+1)는 신규 항목만 Preview enrich.
+ * 항목 1개 삭제(-1)는 기존 PlanPlace 유지·순서·시간만 패치(Preview 없음).
  * 그 외 길이/집합 불일치는 null → 전체 재조회.
  */
 async function mergeScheduleItemsIntoPlanPlaces(
@@ -99,14 +102,27 @@ async function mergeScheduleItemsIntoPlanPlaces(
 
   const sorted = sortRoomScheduleItemsByOrder(items);
   const allowOneNewItem = items.length === prev.length + 1;
+  const allowOneDelete = items.length === prev.length - 1;
 
-  if (items.length !== prev.length && !allowOneNewItem) {
+  if (items.length !== prev.length && !allowOneNewItem && !allowOneDelete) {
     return null;
   }
 
   if (allowOneNewItem) {
     const newItems = sorted.filter((item) => !byId.has(item.itemId));
     if (newItems.length !== 1) return null;
+  }
+
+  if (allowOneDelete) {
+    const itemIdSet = new Set(sorted.map((item) => item.itemId));
+    let removedFromPrev = 0;
+    for (const id of byId.keys()) {
+      if (!itemIdSet.has(id)) removedFromPrev += 1;
+    }
+    if (removedFromPrev !== 1) return null;
+    for (const item of sorted) {
+      if (!byId.has(item.itemId)) return null;
+    }
   }
 
   const out: PlanPlace[] = [];
@@ -116,10 +132,67 @@ async function mergeScheduleItemsIntoPlanPlaces(
       out.push(patchPlanPlaceFromScheduleItem(existing, item));
       continue;
     }
-    if (!allowOneNewItem) return null;
-    out.push(await planPlaceFromScheduleItem(item));
+    if (allowOneNewItem) {
+      out.push(await planPlaceFromScheduleItem(item));
+      continue;
+    }
+    return null;
   }
   return out;
+}
+
+/** DELETE 직후 `schedule-items`에서 항목만 제거(Preview·Photo 재조회 없음). */
+export function removeScheduleItemFromPlanPlacesCache(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  deletedItemId: number,
+): boolean {
+  const rid = roomId.trim();
+  if (!rid.length) return false;
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+  const prev = queryClient.getQueryData<PlanPlace[]>(key);
+  if (!prev?.length) return false;
+  const next = prev.filter((p) => p.itemId !== deletedItemId);
+  if (next.length === prev.length) return false;
+  queryClient.setQueryData(key, next);
+  return true;
+}
+
+/** 본인 DELETE mutation 직후 — 캐시 패치·삭제 구간 route·쿼리 정리 */
+export async function applyScheduleItemDeletedOnClient(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  deletedItemId: number,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+
+  const oldIds = readOrderedItemIdsFromScheduleItemsCache(
+    queryClient,
+    rid,
+    scheduleId,
+  );
+  removeScheduleItemFromPlanPlacesCache(
+    queryClient,
+    rid,
+    scheduleId,
+    deletedItemId,
+  );
+  removeRouteQueriesForDeletedItemSource(
+    queryClient,
+    rid,
+    scheduleId,
+    deletedItemId,
+  );
+  await invalidateScheduleItemRoutesAfterDelete(
+    queryClient,
+    rid,
+    scheduleId,
+    deletedItemId,
+    oldIds,
+  );
 }
 
 /** `staleTime: Infinity` 캐시를 우회해 목록을 다시 가져와 `schedule-items`에 반영합니다. */

@@ -72,6 +72,26 @@ export function collectSegmentSourcesForCreate(
   };
 }
 
+export function removeRouteQueriesForDeletedItemSource(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+): void {
+  const rid = roomId.trim();
+  queryClient.removeQueries({
+    predicate: (q) => {
+      const key = q.queryKey;
+      if (!Array.isArray(key) || key[0] !== "schedule-item-route") {
+        return false;
+      }
+      if (String(key[1] ?? "").trim() !== rid) return false;
+      if (key[2] !== scheduleId) return false;
+      return key[3] === itemId;
+    },
+  });
+}
+
 export function collectSegmentSourcesForDelete(
   oldOrderedIds: number[] | null,
   deletedItemId: number,
@@ -124,6 +144,29 @@ export function bumpPlanMapRouteSegments(
       segmentSourceItemId,
     })),
   );
+}
+
+/** 항목 삭제 직후 — 삭제 전 순서 스냅샷 기준 인접 구간 route만 무효화(본인 mutation). */
+export async function invalidateScheduleItemRoutesAfterDelete(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  deletedItemId: number,
+  oldOrderedIds: number[] | null,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+  const { sources, useFallback } = collectSegmentSourcesForDelete(
+    oldOrderedIds,
+    deletedItemId,
+  );
+  if (useFallback) {
+    await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, scheduleId);
+    usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    return;
+  }
+  await invalidateScheduleItemRouteForSources(queryClient, rid, scheduleId, sources);
+  bumpPlanMapRouteSegments(rid, scheduleId, sources);
 }
 
 /** 항목 생성 후 캐시 반영 직후 — 인접 구간 route만 무효화(본인 mutation). */

@@ -110,6 +110,20 @@ export async function loadPlacePreview(googlePlaceId: string): Promise<PlacePrev
   return normalizePlacePreview(raw);
 }
 
+/**
+ * 북마크·일정 카드 등 `useQueries`용 — `fetchPlacePreview`와 동일 `placePreviewQueryKey`·60s 캐시.
+ */
+export function placePreviewQueryOptions(googlePlaceId: string) {
+  const id = resolvePreviewGooglePlaceId(googlePlaceId);
+  return {
+    queryKey: placePreviewQueryKey(id),
+    queryFn: () => loadPlacePreview(id),
+    enabled: id.length > 0,
+    ...placePreviewQueryDefaults,
+    retry: 1,
+  };
+}
+
 export async function fetchPlacePreview(googlePlaceId: string): Promise<PlacePreview> {
   const id = resolvePreviewGooglePlaceId(googlePlaceId);
   if (!id.length) {
