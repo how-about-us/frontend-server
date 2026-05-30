@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Bookmark } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   Map as GoogleMap,
   useMap,
   useMapsLibrary,
+  type MapCameraChangedEvent,
   type MapMouseEvent,
 } from "@vis.gl/react-google-maps";
 
@@ -24,6 +25,11 @@ import {
   DESTINATION_MAP_ZOOM,
   useTripMapBootstrap,
 } from "@/hooks/useTripMapBootstrap";
+import {
+  readRoomMapViewport,
+  writeRoomMapViewport,
+} from "@/lib/map-room-viewport-storage";
+import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import { activeSearchMapPinsQueryKey, type ActiveSearchMapPin } from "@/lib/query-keys";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -60,6 +66,61 @@ function SelectedPlaceController() {
   return null;
 }
 
+const VIEWPORT_PERSIST_DEBOUNCE_MS = 400;
+
+/** bootstrap 복원 직후 Zustand `mapCenter`·줌을 검색/일정 UI와 맞춤 */
+function MapBootstrapSync({
+  ready,
+  center,
+  zoom,
+  roomId,
+}: {
+  ready: boolean;
+  center: google.maps.LatLngLiteral;
+  zoom: number;
+  roomId: string | null;
+}) {
+  const map = useMap();
+  const setMapCamera = useMapCenterStore((s) => s.setMapCamera);
+  const syncedKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !ready) return;
+    const rid = typeof roomId === "string" ? roomId.trim() : "";
+    const key = `${rid}:${center.lat}:${center.lng}:${zoom}`;
+    if (syncedKeyRef.current === key) return;
+    syncedKeyRef.current = key;
+
+    const mapCenter = map.getCenter();
+    const bounds = map.getBounds();
+    const lat = mapCenter?.lat() ?? center.lat;
+    const lng = mapCenter?.lng() ?? center.lng;
+    const mapZoom = map.getZoom() ?? zoom;
+    let radiusMeters = clampPlacesSearchRadiusMeters(2500);
+    if (bounds && mapCenter) {
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      radiusMeters = viewportSearchRadiusMetersFromBounds(
+        { lat: mapCenter.lat(), lng: mapCenter.lng() },
+        {
+          north: ne.lat(),
+          south: sw.lat(),
+          east: ne.lng(),
+          west: sw.lng(),
+        },
+      );
+    }
+
+    setMapCamera({
+      mapCenter: { lat, lng },
+      zoom: mapZoom,
+      radiusMeters,
+    });
+  }, [map, ready, center.lat, center.lng, zoom, roomId, setMapCamera]);
+
+  return null;
+}
+
 // ─── 방 destination 변경 시 지도 동기화(설정 수정 등)·캐시 갱신 ───────────────
 
 function DestinationPanController({
@@ -88,6 +149,14 @@ function DestinationPanController({
     if (!map || !dest.length || !geocodingLib) return;
 
     if (appliedDestRef.current === dest) return;
+
+    const hadPreviousDest = appliedDestRef.current !== null;
+    const savedViewport =
+      rid.length > 0 ? readRoomMapViewport(rid) : null;
+    if (!hadPreviousDest && savedViewport) {
+      appliedDestRef.current = dest;
+      return;
+    }
 
     const fromCache =
       rid.length > 0 ? readDestinationLatLngFromSession(rid, dest) : null;
@@ -189,6 +258,78 @@ export default function Map() {
     geocodingLib,
   );
 
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingViewportRef = useRef<{
+    rid: string;
+    lat: number;
+    lng: number;
+    zoom: number;
+  } | null>(null);
+
+  const flushViewportPersist = useCallback(() => {
+    if (persistTimerRef.current !== null) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    const pending = pendingViewportRef.current;
+    if (pending) {
+      writeRoomMapViewport(pending.rid, {
+        lat: pending.lat,
+        lng: pending.lng,
+        zoom: pending.zoom,
+      });
+      pendingViewportRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      flushViewportPersist();
+    };
+  }, [currentRoomId, flushViewportPersist]);
+
+  const handleCameraChanged = useCallback(
+    (ev: MapCameraChangedEvent) => {
+      const { center, zoom, bounds } = ev.detail;
+      const radiusMeters = viewportSearchRadiusMetersFromBounds(
+        center,
+        bounds,
+      );
+      setMapCamera({
+        mapCenter: { lat: center.lat, lng: center.lng },
+        zoom,
+        radiusMeters,
+      });
+
+      const rid =
+        typeof currentRoomId === "string" ? currentRoomId.trim() : "";
+      if (!rid.length) return;
+
+      pendingViewportRef.current = {
+        rid,
+        lat: center.lat,
+        lng: center.lng,
+        zoom,
+      };
+      if (persistTimerRef.current !== null) {
+        clearTimeout(persistTimerRef.current);
+      }
+      persistTimerRef.current = setTimeout(() => {
+        persistTimerRef.current = null;
+        const pending = pendingViewportRef.current;
+        if (pending?.rid === rid) {
+          writeRoomMapViewport(pending.rid, {
+            lat: pending.lat,
+            lng: pending.lng,
+            zoom: pending.zoom,
+          });
+          pendingViewportRef.current = null;
+        }
+      }, VIEWPORT_PERSIST_DEBOUNCE_MS);
+    },
+    [currentRoomId, setMapCamera],
+  );
+
   const handleMapClick = (ev: MapMouseEvent) => {
     const placeId = ev.detail.placeId?.trim() ?? "";
     if (placeId.length > 0) {
@@ -220,6 +361,7 @@ export default function Map() {
           />
         ) : (
           <GoogleMap
+            key={currentRoomId ?? "no-room"}
             defaultCenter={bootstrap.center}
             defaultZoom={bootstrap.zoom}
             minZoom={MAP_MIN_ZOOM}
@@ -233,19 +375,14 @@ export default function Map() {
             fullscreenControl={false}
             clickableIcons={selectedCategoryId == null}
             onClick={handleMapClick}
-            onCameraChanged={(ev) => {
-              const { center, zoom, bounds } = ev.detail;
-              const radiusMeters = viewportSearchRadiusMetersFromBounds(
-                center,
-                bounds,
-              );
-              setMapCamera({
-                mapCenter: { lat: center.lat, lng: center.lng },
-                zoom,
-                radiusMeters,
-              });
-            }}
+            onCameraChanged={handleCameraChanged}
           >
+          <MapBootstrapSync
+            ready={bootstrap.ready}
+            center={bootstrap.center}
+            zoom={bootstrap.zoom}
+            roomId={currentRoomId}
+          />
           <SelectedPlaceController />
           <DestinationPanController
             roomId={currentRoomId}
