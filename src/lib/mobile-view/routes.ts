@@ -1,6 +1,8 @@
 const MAIN_MOBILE_BLOCKED_PREFIXES = [
   "/search",
   "/bookmark",
+  "/member-settings",
+  "/room-settings",
   "/settings",
 ] as const;
 
@@ -9,6 +11,8 @@ const MOBILE_READ_ONLY_NOTICE_PREFIXES = [
   "/plan",
   "/search",
   "/bookmark",
+  "/member-settings",
+  "/room-settings",
   "/settings",
 ] as const;
 

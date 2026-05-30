@@ -8,6 +8,8 @@ import {
   useRejectJoinRequest,
 } from "@/hooks/useRooms";
 import type { JoinRequest } from "@/lib/api/rooms";
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
+import { cn } from "@/lib/utils";
 
 type Props = {
   roomId: string;
@@ -35,7 +37,12 @@ function JoinRequestCard({
   const isPending = isApproving || isRejecting;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div
+      className={cn(
+        "flex items-center gap-3 py-3",
+        MAIN_CARD_INNER_PADDING_X_CLASS,
+      )}
+    >
       {/* avatar */}
       <div className="relative flex-shrink-0">
         {request.profileImageUrl ? (

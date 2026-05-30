@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { useMobileView } from "@/contexts/MobileViewContext";
 import { useChat } from "@/hooks/useChat";
 import { useSectionWidth } from "@/contexts/SectionWidthContext";
-import { width, CHAT_PANEL_DOCKED_WIDTH } from "@/lib/layout-tokens";
+import { width, CHAT_PANEL_DOCKED_WIDTH, mainPanelMaxWidthFromContentToken } from "@/lib/layout-tokens";
 
 const WIDTH_TRANSITION = {
   duration: 0.45,
@@ -35,7 +35,9 @@ export default function LeftSection({
     if (planPath) {
       return chatState === "maximized" ? width.s1 : width.s2;
     }
-    return maxWidth.trim() ? maxWidth : "none";
+    return maxWidth.trim()
+      ? mainPanelMaxWidthFromContentToken(maxWidth.trim())
+      : "none";
   }, [isMobileDevice, planPath, maxWidth, chatState]);
 
   const animateMinWidth = isMobileDevice ? 0 : CHAT_PANEL_DOCKED_WIDTH;

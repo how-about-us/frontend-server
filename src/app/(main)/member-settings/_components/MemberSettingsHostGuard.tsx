@@ -5,7 +5,7 @@ import { useRoomsList } from "@/hooks/useRooms";
 import { selectHostRoom } from "@/lib/rooms";
 import { JoinRequestsSection } from "./JoinRequestsSection";
 
-export function SettingsHostGuard() {
+export function MemberSettingsHostGuard() {
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const { data: roomsData } = useRoomsList();
 

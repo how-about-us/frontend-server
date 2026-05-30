@@ -1,5 +1,6 @@
 "use client";
 
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
@@ -79,7 +80,12 @@ export function PlanDaySection({
       className="overflow-hidden rounded-2xl border border-gray-border bg-white"
       aria-label={subtitle ? `${title} ${subtitle}` : title}
     >
-      <div className="relative flex w-full items-stretch gap-0.5 px-4 py-3.5">
+      <div
+        className={cn(
+          "relative flex w-full items-stretch gap-0.5 py-3.5",
+          MAIN_CARD_INNER_PADDING_X_CLASS,
+        )}
+      >
         <button
           type="button"
           id={`${panelId}-trigger`}
@@ -127,7 +133,7 @@ export function PlanDaySection({
       >
         <div
           className={cn(
-            "px-4 pb-4",
+            cn(MAIN_CARD_INNER_PADDING_X_CLASS, "pb-4"),
             expanded ?
               "border-t border-dashed border-gray-border pt-3"
             : "pt-1",

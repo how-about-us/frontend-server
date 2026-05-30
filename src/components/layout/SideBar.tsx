@@ -13,7 +13,8 @@ const SIDEBAR_ITEMS = [
   { key: "search", href: "/search", icon: "/search.svg" },
   { key: "plan", href: "/plan", icon: "/calendar-days.svg" },
   { key: "bookmark", href: "/bookmark", icon: "/bookmark.svg" },
-  { key: "settings", href: "/settings", icon: "/user-cog.svg" },
+  { key: "member-settings", href: "/member-settings", icon: "/user-cog.svg" },
+  { key: "room-settings", href: "/room-settings", icon: "/settings.svg" },
 ] as const;
 
 function isSidebarItemActive(pathname: string, key: string, href: string) {
@@ -29,9 +30,11 @@ function SideBar() {
   const pendingJoinRequestsCount = useHostJoinRequestsBadgeCount();
 
   const isChatActive = chatState !== "closed";
-  const isOnSettings = pathname.startsWith("/settings");
+  const isOnMemberSettings = pathname.startsWith("/member-settings");
+  const isOnRoomSettings = pathname.startsWith("/room-settings");
+  const isOnSettingsArea = isOnMemberSettings || isOnRoomSettings;
   const showSettingsNotification =
-    pendingJoinRequestsCount > 0 && !isOnSettings;
+    pendingJoinRequestsCount > 0 && !isOnSettingsArea;
 
   return (
     <aside className="flex h-full w-13 shrink-0 flex-col items-center gap-2 border-r border-gray-border bg-white">
@@ -54,7 +57,9 @@ function SideBar() {
           icon={item.icon}
           label={`sidebar-${item.href.slice(1)}`}
           isActive={isSidebarItemActive(pathname, item.key, item.href)}
-          showPingBadge={item.key === "settings" && showSettingsNotification}
+          showPingBadge={
+            item.key === "member-settings" && showSettingsNotification
+          }
           showDividerBelow={item.key === "bookmark"}
         />
       ))}

@@ -6,10 +6,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
-import { pageToolbarButtonPaddingClass } from "@/components/layout/page-toolbar-button";
-import { useCurrentRoomId } from "@/hooks/use-room-id";
-import { useKickMember, useLeaveRoom, useRoomMembers, useRoomsList, useTransferHost } from "@/hooks/useRooms";
-import { useSessionUser } from "@/hooks/useSessionUser";
+import {
+  pageToolbarButtonCompactGapClass,
+  pageToolbarButtonCompactIconClass,
+  pageToolbarButtonCompactIconStroke,
+  pageToolbarButtonCompactPaddingClass,
+  pageToolbarButtonCompactTextClass,
+} from "@/components/layout/page-toolbar-button";
+import { useCurrentRoomMembership } from "@/hooks/useCurrentRoomMembership";
+import { useKickMember, useLeaveRoom, useTransferHost } from "@/hooks/useRooms";
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
@@ -28,23 +34,21 @@ export function RoomMembersSection() {
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
-  const { data: user } = useSessionUser();
-  const { roomId: currentRoomId } = useCurrentRoomId();
+  const {
+    user,
+    roomId: currentRoomId,
+    currentRoom,
+    members,
+    me,
+    others,
+    isHost,
+    isMembersLoading,
+  } = useCurrentRoomMembership();
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
-  const { data: roomsData } = useRoomsList();
-  const currentRoom = roomsData?.rooms.find((r) => r.id === currentRoomId);
-  const isHost = currentRoom?.role === "HOST";
 
   const { mutate: kick, isPending: isKicking } = useKickMember();
   const { mutateAsync: leaveAsync, isPending: isLeaving } = useLeaveRoom();
   const { mutate: transfer, isPending: isTransferring } = useTransferHost();
-
-  const { data: membersData, isLoading: isMembersLoading } =
-    useRoomMembers(currentRoomId);
-  const members = membersData?.members ?? [];
-
-  const me = members.find((m) => m.userId === user?.id);
-  const others = members.filter((m) => m.userId !== user?.id);
   const hostCannotLeaveAlone = Boolean(
     isHost && user && !isMembersLoading && others.length === 0,
   );
@@ -100,14 +104,20 @@ export function RoomMembersSection() {
               });
             }}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full text-sm font-semibold shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
-              pageToolbarButtonPaddingClass,
+              "flex cursor-pointer items-center rounded-full shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+              pageToolbarButtonCompactGapClass,
+              pageToolbarButtonCompactTextClass,
+              pageToolbarButtonCompactPaddingClass,
               showInvitePanel
                 ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50"
                 : "bg-brand-red text-white",
             )}
           >
-            <Plus className="size-6 shrink-0" strokeWidth={2.2} aria-hidden />
+            <Plus
+              className={pageToolbarButtonCompactIconClass}
+              strokeWidth={pageToolbarButtonCompactIconStroke}
+              aria-hidden
+            />
             멤버 초대
           </button>
         </div>
@@ -194,7 +204,12 @@ export function RoomMembersSection() {
 
                 {/* 방장 위임 확인 인라인 UI */}
                 {transferTargetId === member.userId && (
-                  <div className="border-b border-gray-border bg-brand-red/5 px-4 py-3">
+                  <div
+                    className={cn(
+                      "border-b border-gray-border bg-brand-red/5 py-3",
+                      MAIN_CARD_INNER_PADDING_X_CLASS,
+                    )}
+                  >
                     <p className="mb-2 text-xs font-medium text-gray-800">
                       <span className="font-semibold">{member.nickname}</span>님에게 방장을 위임하시겠어요?
                     </p>
@@ -228,7 +243,12 @@ export function RoomMembersSection() {
 
                 {/* 추방 확인 인라인 UI */}
                 {kickTargetId === member.userId && (
-                  <div className="border-b border-gray-border bg-brand-red/5 px-4 py-3">
+                  <div
+                    className={cn(
+                      "border-b border-gray-border bg-brand-red/5 py-3",
+                      MAIN_CARD_INNER_PADDING_X_CLASS,
+                    )}
+                  >
                     <p className="mb-2 text-xs font-medium text-gray-800">
                       <span className="font-semibold">{member.nickname}</span>님을 추방하시겠어요?
                     </p>

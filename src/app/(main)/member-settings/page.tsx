@@ -1,13 +1,13 @@
-import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
-import { RoomMembersSection } from "./_components/RoomMembersSection";
-import { SettingsHostGuard } from "./_components/SettingsHostGuard";
+import { MainSettingsPageLayout } from "@/components/layout/MainSettingsPageLayout";
 
-export default function SettingsPage() {
+import { MemberSettingsHostGuard } from "./_components/MemberSettingsHostGuard";
+import { RoomMembersSection } from "./_components/RoomMembersSection";
+
+export default function MemberSettingsPage() {
   return (
-    <div className="flex flex-col gap-6 rounded-2xl pb-10">
-      <SetSectionMaxWidth value="s1" />
-      <SettingsHostGuard />
+    <MainSettingsPageLayout>
+      <MemberSettingsHostGuard />
       <RoomMembersSection />
-    </div>
+    </MainSettingsPageLayout>
   );
 }

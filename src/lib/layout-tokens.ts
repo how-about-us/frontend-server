@@ -3,6 +3,14 @@ export const width = {
   s2: "720px",
 } as const;
 
+/** SideBar·HeaderBar 홈 열 `w-13` (Tailwind spacing 13 = 3.25rem) */
+export const MAIN_SIDEBAR_RAIL_WIDTH = "3.25rem" as const;
+
+/** SetSectionMaxWidth 본문 토큰 + 사이드바 레일 → LeftSection 전체 maxWidth */
+export function mainPanelMaxWidthFromContentToken(contentWidth: string): string {
+  return `calc(${contentWidth} + ${MAIN_SIDEBAR_RAIL_WIDTH})`;
+}
+
 /** 채팅 패널 펼침 너비 — `ChatPanel` 의 `w-[400px]`·LeftSection `minWidth` 와 동기화 */
 export const CHAT_PANEL_DOCKED_WIDTH = width.s1;
 
@@ -61,5 +69,12 @@ export const PLAN_PLACE_CARD_TW = {
 /** 플랜 구간(경로) 카드 가로 고정폭(px). 좌측 패널 max(s2) 기준 본문 영역 근사 */
 export const PLAN_ROUTE_CARD_WIDTH_PX = 620 as const;
 
-/** (main) 좌측 본문 — 사이드바 경계↔콘텐츠 좌측·콘텐츠 우측↔LeftSection 경계 (`MainContentScrollArea`) */
+/** (main) 스크롤 컨테이너 — 양쪽 gutter 로 좌우 대칭 (`MainContentScrollArea`, search 제외) */
+export const MAIN_SCROLLBAR_GUTTER_CLASS =
+  "[scrollbar-gutter:stable_both-edges] [scrollbar-color:rgba(0,0,0,0.2)_transparent]" as const;
+
+/** (main) 본문 콘텐츠 래퍼 좌우 여백 — 스크롤 gutter 와 분리 (`MainContentScrollArea` inner) */
 export const MAIN_PAGE_INLINE_PADDING_CLASS = "px-6" as const;
+
+/** bordered 카드·리스트 행 내부 좌우 여백 (`MemberCard`, `PlanDaySection` 등) */
+export const MAIN_CARD_INNER_PADDING_X_CLASS = "px-3" as const;

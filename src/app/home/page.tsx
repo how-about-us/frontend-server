@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { RoomListItem } from "@/lib/api/rooms";
 import { HomeHeader } from "./_components/HomeHeader";
 import { RoomGrid } from "./_components/RoomGrid";
-import { EditRoomModal } from "./_components/EditRoomModal";
 import { DeleteConfirmModal } from "./_components/DeleteConfirmModal";
 
 export default function HomePage() {
@@ -24,7 +23,6 @@ export default function HomePage() {
   const { data, isLoading, isError, refetch } = useRoomsList();
   const rooms = data?.rooms ?? [];
 
-  const [editingRoom, setEditingRoom] = useState<RoomListItem | null>(null);
   const [deletingRoom, setDeletingRoom] = useState<RoomListItem | null>(null);
 
   return (
@@ -58,18 +56,10 @@ export default function HomePage() {
             isLoading={isLoading}
             isError={isError}
             onRetry={refetch}
-            onEdit={setEditingRoom}
             onDelete={setDeletingRoom}
           />
         </div>
       </main>
-
-      {editingRoom && (
-        <EditRoomModal
-          room={editingRoom}
-          onClose={() => setEditingRoom(null)}
-        />
-      )}
 
       {deletingRoom && (
         <DeleteConfirmModal

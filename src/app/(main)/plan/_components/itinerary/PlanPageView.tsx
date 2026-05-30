@@ -25,6 +25,7 @@ import {
   pageToolbarButtonCompactTextClass,
 } from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanContainerRefProvider } from "../plan-container";
@@ -172,13 +173,23 @@ export function PlanPageView() {
       {!isReadOnly ? scheduleToolbar : null}
 
       {isError ? (
-        <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-brand-red">
+        <p
+          className={cn(
+            "rounded-xl border border-gray-border bg-white py-3 text-sm text-brand-red",
+            MAIN_CARD_INNER_PADDING_X_CLASS,
+          )}
+        >
           일정 목록을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.
         </p>
       ) : null}
 
       {!isError && planDays.length === 0 ? (
-        <p className="rounded-xl border border-gray-border bg-white px-4 py-3 text-sm text-dark-gray">
+        <p
+          className={cn(
+            "rounded-xl border border-gray-border bg-white py-3 text-sm text-dark-gray",
+            MAIN_CARD_INNER_PADDING_X_CLASS,
+          )}
+        >
           {copy.scheduleEmpty}
         </p>
       ) : null}

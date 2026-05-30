@@ -4,6 +4,7 @@ import { BookmarkPlus, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { messageForBookmarkCategorySaveError } from "@/lib/api/errors";
 import {
   pageToolbarButtonCompactGapClass,
@@ -221,14 +222,24 @@ export function BookmarkFoldersView() {
 
       <div className="rounded-2xl border border-gray-border bg-white">
         {folders.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-dark-gray">
+          <p
+            className={cn(
+              "py-10 text-center text-sm text-dark-gray",
+              MAIN_CARD_INNER_PADDING_X_CLASS,
+            )}
+          >
             북마크가 없습니다. 위 버튼으로 추가해 보세요.
           </p>
         ) : (
           <ul className="divide-y divide-gray-border">
             {folders.map((folder) => (
               <li key={folder.id}>
-                <div className="flex items-center gap-3 px-4 py-4">
+                <div
+                  className={cn(
+                    "flex items-center gap-3 py-4",
+                    MAIN_CARD_INNER_PADDING_X_CLASS,
+                  )}
+                >
                   <Link
                     href={bookmarkFolderPath(folder.id)}
                     className="flex min-w-0 flex-1 items-center gap-3 rounded-lg outline-none ring-brand-red focus-visible:ring-2"

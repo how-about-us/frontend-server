@@ -52,6 +52,19 @@ export function isHostRole(role: string | undefined | null): boolean {
   return role.toUpperCase() === "HOST";
 }
 
+/** 방 목록·상세·멤버 role 중 하나라도 HOST 이면 true (캐시 타이밍 보강) */
+export function resolveViewerIsHost(sources: {
+  listRole?: string | null;
+  detailRole?: string | null;
+  memberRole?: string | null;
+}): boolean {
+  return (
+    isHostRole(sources.listRole) ||
+    isHostRole(sources.detailRole) ||
+    isHostRole(sources.memberRole)
+  );
+}
+
 /**
  * 입장 요청(join-requests) 등 호스트 전용 API와 맞춰 쓸 방 선택.
  * - `anyHostedRoom`: 현재 방이 호스트면 그 방, 아니면 목록에서 첫 호스트 방(배지·설정용).

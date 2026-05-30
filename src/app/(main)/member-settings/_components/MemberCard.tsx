@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
+import { cn } from "@/lib/utils";
+
 export type MemberRole = "HOST" | "MEMBER";
 
 export type MemberCardData = {
@@ -69,7 +72,12 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
   }, [open]);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl py-2.5",
+        MAIN_CARD_INNER_PADDING_X_CLASS,
+      )}
+    >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <Avatar

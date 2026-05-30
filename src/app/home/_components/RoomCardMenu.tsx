@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { RoomListItem } from "@/lib/api/rooms";
@@ -9,11 +9,10 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   room: RoomListItem;
-  onEdit: (room: RoomListItem) => void;
   onDelete: (room: RoomListItem) => void;
 };
 
-export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
+export function RoomCardMenu({ room, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(menuRef, () => setOpen(false));
@@ -42,18 +41,6 @@ export function RoomCardMenu({ room, onEdit, onDelete }: Props) {
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              setOpen(false);
-              onEdit(room);
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
-          >
-            <Pencil size={13} />
-            수정하기
-          </button>
           <button
             type="button"
             onClick={(e) => {

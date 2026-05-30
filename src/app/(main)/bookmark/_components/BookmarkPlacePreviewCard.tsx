@@ -3,6 +3,7 @@
 import { MapPin } from "lucide-react";
 
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
+import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
 export type BookmarkPlacePreviewCardProps = {
@@ -26,7 +27,8 @@ export function BookmarkPlacePreviewCard({
     <article
       className={cn(
         "flex items-center gap-3 bg-white transition-colors",
-        "border-b border-gray-border px-4 py-2 hover:bg-gray-50 active:bg-gray-100",
+        "border-b border-gray-border py-2 hover:bg-gray-50 active:bg-gray-100",
+        MAIN_CARD_INNER_PADDING_X_CLASS,
         className,
       )}
       onClick={onClick}

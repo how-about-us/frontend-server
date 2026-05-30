@@ -6,6 +6,8 @@ export function isProtectedAppPath(pathname: string): boolean {
     "/plan",
     "/bookmark",
     "/search",
+    "/member-settings",
+    "/room-settings",
     "/settings",
     "/waiting",
   ];

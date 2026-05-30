@@ -13,11 +13,10 @@ import { formatTripYmdRangeShortKo as formatDateRange } from "@/lib/plan/tripRan
 
 type Props = {
   room: RoomListItem;
-  onEdit: (room: RoomListItem) => void;
   onDelete: (room: RoomListItem) => void;
 };
 
-export function RoomCard({ room, onEdit, onDelete }: Props) {
+export function RoomCard({ room, onDelete }: Props) {
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const gradient = getRoomGradient(room.id);
 
@@ -57,7 +56,7 @@ export function RoomCard({ room, onEdit, onDelete }: Props) {
 
       {isHostRole(room.role) ? (
         <div className="absolute right-3 top-3 z-10">
-          <RoomCardMenu room={room} onEdit={onEdit} onDelete={onDelete} />
+          <RoomCardMenu room={room} onDelete={onDelete} />
         </div>
       ) : null}
     </div>
