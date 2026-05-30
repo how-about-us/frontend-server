@@ -1,8 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import {
-  fetchScheduleItemsAsPlanPlaces,
   mergeOrRefetchSchedulePlanPlacesFromItems,
+  refetchSchedulePlanPlacesIntoCache,
 } from "@/lib/plan/scheduleItemPlaces";
 import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import {
@@ -48,10 +48,7 @@ async function refetchScheduleItemsPlaces(
   roomId: string,
   scheduleId: number,
 ): Promise<void> {
-  await queryClient.fetchQuery({
-    queryKey: scheduleItemsQueryKey(roomId, scheduleId),
-    queryFn: () => fetchScheduleItemsAsPlanPlaces(roomId, scheduleId),
-  });
+  await refetchSchedulePlanPlacesIntoCache(queryClient, roomId, scheduleId);
 }
 
 function bumpMapForRouteSources(
@@ -280,6 +277,11 @@ export async function dispatchRoomScheduleEvent(
 
       if (!actorIsMe || !cacheHasNewItem) {
         await refetchScheduleItemsPlaces(queryClient, rid, sid);
+      }
+
+      /** 중간 삽입: reorder 전까지 캐시에 없음 — 경로는 `SCHEDULE_ITEMS_REORDERED`에서만 */
+      if (actorIsMe && !cacheHasNewItem) {
+        return;
       }
 
       const newIds = readOrderedItemIdsFromScheduleItemsCache(

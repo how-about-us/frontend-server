@@ -11,7 +11,10 @@ import {
   useCreateScheduleItem,
   useRoomBookmarks,
 } from "@/hooks/useRooms";
-import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import {
+  defaultNewItemStartTimeHmAtInsertIndex,
+  defaultNewItemStartTimeHmFromPlanPlaces,
+} from "@/lib/plan/scheduleItemPlaces";
 import { loadPlacePreview } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -22,6 +25,8 @@ type AddFromBookmarkModalProps = {
   roomId: string;
   scheduleId: number;
   places: PlanPlace[];
+  /** 지정 시 해당 index에 삽입, 없으면 맨 뒤 */
+  insertIndex?: number;
   onClose: () => void;
 };
 
@@ -29,6 +34,7 @@ export function AddFromBookmarkModal({
   roomId,
   scheduleId,
   places,
+  insertIndex,
   onClose,
 }: AddFromBookmarkModalProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
@@ -152,12 +158,19 @@ export function AddFromBookmarkModal({
       }
 
       setAddingGooglePlaceId(gid);
+      const index = insertIndex ?? places.length;
+      const startTimeHm =
+        insertIndex != null && insertIndex < places.length
+          ? defaultNewItemStartTimeHmAtInsertIndex(places, insertIndex)
+          : defaultNewItemStartTimeHmFromPlanPlaces(places);
       try {
         await createItem({
           roomId,
           scheduleId,
           googlePlaceId: gid,
-          startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(places),
+          insertIndex: index,
+          placesSnapshot: places,
+          startTimeHm,
         });
         toast.success("일정에 추가했어요.");
         onClose();
@@ -171,6 +184,7 @@ export function AddFromBookmarkModal({
       busy,
       createItem,
       existingPlaceIds,
+      insertIndex,
       onClose,
       places,
       roomId,

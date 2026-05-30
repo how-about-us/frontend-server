@@ -62,6 +62,8 @@ export function AddToScheduleModal({
         roomId: rid,
         scheduleId,
         googlePlaceId,
+        insertIndex: cached.length,
+        placesSnapshot: cached,
         startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(cached),
       });
       toast.success("일정에 추가했어요.");

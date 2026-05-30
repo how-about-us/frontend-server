@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
 import { TravelDirectionsCard } from "./TravelDirectionsCard";
 import { TravelRouteRail } from "./TravelRouteRail";
+import { PLAN_SEGMENT_RAIL_LINE_CLASS } from "./travelSegmentRailLayout";
 
 function routePayloadOk(
   r: ScheduleItemRouteResponse | null | undefined,
@@ -59,6 +60,8 @@ export type PlanTravelTimeProps = {
   scheduleFingerprint: string;
   routeQueryEnabled?: boolean;
   className?: string;
+  /** `PlanTravelSegment` 등 외부 레일 사용 시 카드 본문만 렌더 */
+  contentOnly?: boolean;
 };
 
 export function PlanTravelTime({
@@ -68,6 +71,7 @@ export function PlanTravelTime({
   scheduleFingerprint,
   routeQueryEnabled = true,
   className,
+  contentOnly = false,
 }: PlanTravelTimeProps) {
   const { isReadOnly } = usePlanMobileReadOnly();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -323,28 +327,27 @@ export function PlanTravelTime({
     return (
       <PlanTravelTimeCollapsed
         className={className}
+        contentOnly={contentOnly}
         onShowDirections={() => setDirectionsHidden(false)}
       />
     );
   }
 
-  return (
+  const directionsCard = (
     <div
-      className={cn("flex items-stretch gap-3 py-1 pl-1", className)}
-      role="separator"
-      aria-label="이동 시간 및 길찾기"
+      className={cn(
+        "flex shrink-0 flex-col justify-center",
+        !contentOnly && "py-0.5",
+        isReadOnly && "min-w-0 max-w-full flex-1",
+        contentOnly && "w-full max-w-full",
+      )}
+      style={
+        isReadOnly || contentOnly ?
+          undefined
+        : { width: PLAN_ROUTE_CARD_WIDTH_PX }
+      }
     >
-      <TravelRouteRail arrowClassName="text-brand-green" />
-      <div
-        className={cn(
-          "flex shrink-0 flex-col justify-center py-0.5",
-          isReadOnly && "min-w-0 max-w-full flex-1",
-        )}
-        style={
-          isReadOnly ? undefined : { width: PLAN_ROUTE_CARD_WIDTH_PX }
-        }
-      >
-        <TravelDirectionsCard
+      <TravelDirectionsCard
           readOnly={isReadOnly}
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
@@ -367,6 +370,31 @@ export function PlanTravelTime({
             setMenuOpen(false);
           }}
         />
+    </div>
+  );
+
+  if (contentOnly) {
+    return (
+      <div
+        className={cn(className)}
+        role="separator"
+        aria-label="이동 시간 및 길찾기"
+      >
+        {directionsCard}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn("relative py-1 pl-1", className)}
+      role="separator"
+      aria-label="이동 시간 및 길찾기"
+    >
+      <div className={PLAN_SEGMENT_RAIL_LINE_CLASS} aria-hidden />
+      <div className="relative flex min-h-10 items-center gap-3">
+        <TravelRouteRail arrowClassName="text-brand-red" layout="row" />
+        {directionsCard}
       </div>
     </div>
   );

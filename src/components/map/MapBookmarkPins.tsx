@@ -24,6 +24,8 @@ export type MapBookmarkPinsProps = {
   roomId: string | null;
   /** true일 때만 핀을 그립니다. 데이터는 `roomId` 기준으로 캐시에 유지되며 토글과 무관합니다. */
   enabled: boolean;
+  /** 일정 경로 장소와 동일한 장소 — plan 맵에서 북마크 핀을 숨깁니다. */
+  hiddenNormalizedPlaceIds?: ReadonlySet<string>;
 };
 
 type BookmarkRowAugmented = {
@@ -43,7 +45,11 @@ function previewToSelectedPlacePayload(preview: PlacePreview) {
   };
 }
 
-export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
+export function MapBookmarkPins({
+  roomId,
+  enabled,
+  hiddenNormalizedPlaceIds,
+}: MapBookmarkPinsProps) {
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
 
   const { data: categories, isSuccess: categoriesReady } =
@@ -119,6 +125,9 @@ export function MapBookmarkPins({ roomId, enabled }: MapBookmarkPinsProps) {
 
         const legacyId = normalizeGooglePlaceResourceId(preview.googlePlaceId);
         if (selectedNormalized && legacyId === selectedNormalized) {
+          return null;
+        }
+        if (hiddenNormalizedPlaceIds?.has(legacyId)) {
           return null;
         }
 

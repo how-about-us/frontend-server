@@ -250,6 +250,7 @@ export function PlacesSearchInput({
           <ul
             ref={dropdownListRef}
             role="listbox"
+            data-places-autocomplete-menu
             style={{
               position: "fixed",
               top: menuGeometry.top,

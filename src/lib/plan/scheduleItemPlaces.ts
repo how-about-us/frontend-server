@@ -2,7 +2,9 @@ import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
+  createScheduleItem,
   getScheduleItems,
+  reorderScheduleItem,
   updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
@@ -90,6 +92,20 @@ function mergeScheduleItemsIntoPlanPlaces(
   return out;
 }
 
+/** `staleTime: Infinity` 캐시를 우회해 목록을 다시 가져와 `schedule-items`에 반영합니다. */
+export async function refetchSchedulePlanPlacesIntoCache(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): Promise<PlanPlace[]> {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+  const places = await fetchScheduleItemsAsPlanPlaces(rid, scheduleId);
+  queryClient.setQueryData(key, places);
+  return places;
+}
+
 /**
  * STOMP 리오더·`reorderScheduleItem` 응답 등 공통 경로: `RoomScheduleItem[]`로
  * 캐시된 PlanPlace를 갱신하고, 머지 불가 시에만 전체 enrich를 다시 가져옵니다.
@@ -109,10 +125,7 @@ export async function mergeOrRefetchSchedulePlanPlacesFromItems(
     queryClient.setQueryData(key, merged);
     return;
   }
-  await queryClient.fetchQuery({
-    queryKey: key,
-    queryFn: () => fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
-  });
+  await refetchSchedulePlanPlacesIntoCache(queryClient, rid, scheduleId);
 }
 
 /** 새 항목 POST 시 `startTime` — `HH:mm` (로컬 슬롯: 08:00부터 번호당 1시간, 최대 22:00) */
@@ -244,6 +257,28 @@ export async function syncPlanPlacesAfterReorderSuccess(
   );
 }
 
+/** 삽입 위치 기준 시작 시각 — 앞 장소 체류 종료 시각, 맨 뒤·빈 목록은 기존 폴백. */
+export function defaultNewItemStartTimeHmAtInsertIndex(
+  places: PlanPlace[],
+  insertIndex: number,
+): string {
+  if (places.length === 0 || insertIndex <= 0) {
+    return slotStartTimeHm(0);
+  }
+  if (insertIndex >= places.length) {
+    return defaultNewItemStartTimeHmFromPlanPlaces(places);
+  }
+  const prev = places[insertIndex - 1];
+  const hm = normalizeStartTimeToHm(prev?.startTime ?? "");
+  const dur =
+    typeof prev?.durationMinutes === "number" &&
+    Number.isFinite(prev.durationMinutes)
+      ? prev.durationMinutes
+      : 60;
+  if (!hm) return slotStartTimeHm(insertIndex);
+  return addMinutesToHm(hm, dur);
+}
+
 /** 화면 순서 유지 `PlanPlace[]` 기준: 마지막 카드 시작 + 1시간, 없으면 슬롯 폴백. */
 export function defaultNewItemStartTimeHmFromPlanPlaces(
   places: PlanPlace[],
@@ -329,6 +364,89 @@ async function planPlaceFromScheduleItem(
       memo: memoFromScheduleItem(item),
     };
   }
+}
+
+function resolveInsertTargetIndex(
+  insertIndex: number,
+  listLength: number,
+): number {
+  if (listLength <= 0) return 0;
+  if (insertIndex >= listLength) return listLength - 1;
+  return Math.max(0, Math.min(insertIndex, listLength - 1));
+}
+
+/** 1) 일차 항목 생성 2) `insertIndex` 슬롯으로 reorder(필요 시). */
+export async function createScheduleItemAtPlanIndex(
+  queryClient: QueryClient,
+  args: {
+    roomId: string;
+    scheduleId: number;
+    places: PlanPlace[];
+    insertIndex: number;
+    googlePlaceId: string;
+    startTimeHm: string;
+  },
+): Promise<RoomScheduleItem> {
+  const rid = args.roomId.trim();
+  if (!rid.length) {
+    throw new Error("createScheduleItemAtPlanIndex: empty roomId");
+  }
+
+  const created = await createScheduleItem(rid, args.scheduleId, {
+    googlePlaceId: args.googlePlaceId,
+    startTime: args.startTimeHm,
+    durationMinutes: 60,
+  });
+
+  const listLengthAfterCreate = args.places.length + 1;
+  const targetIndex = resolveInsertTargetIndex(
+    args.insertIndex,
+    listLengthAfterCreate,
+  );
+  const fromIndex =
+    typeof created.orderIndex === "number" &&
+    Number.isFinite(created.orderIndex)
+      ? created.orderIndex
+      : args.places.length;
+
+  if (fromIndex !== targetIndex) {
+    const items = await reorderScheduleItem(
+      rid,
+      args.scheduleId,
+      created.itemId,
+      {
+        newOrderIndex: newOrderIndexAfterMove(
+          fromIndex,
+          targetIndex,
+          listLengthAfterCreate,
+        ),
+      },
+    );
+    await syncPlanPlacesAfterReorderSuccess(
+      queryClient,
+      rid,
+      args.scheduleId,
+      items,
+    );
+    const key = scheduleItemsQueryKey(rid, args.scheduleId);
+    const cached = queryClient.getQueryData<PlanPlace[]>(key);
+    if (!cached?.some((p) => p.itemId === created.itemId)) {
+      await refetchSchedulePlanPlacesIntoCache(
+        queryClient,
+        rid,
+        args.scheduleId,
+      );
+    }
+  } else {
+    await appendCreatedScheduleItemToPlanPlaces(
+      queryClient,
+      rid,
+      args.scheduleId,
+      created,
+    );
+  }
+
+  return created;
 }
 
 /** POST 응답으로 `schedule-items` 캐시에 새 항목을 반영합니다(GET items 생략). */

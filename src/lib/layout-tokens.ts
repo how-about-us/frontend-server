@@ -27,9 +27,9 @@ export const PLAN_PLACE_CARD_MIN_SIZE_REM = "7rem" as const;
  */
 export const PLAN_PLACE_CARD_TW = {
   article:
-    "grid grid-cols-[auto_minmax(0,1fr)] items-stretch gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
+    "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
   thumbnail:
-    "relative h-full w-[7rem] min-h-[7rem] shrink-0 self-stretch overflow-hidden rounded-lg bg-brand-green/30",
+    "relative h-[7rem] w-[7rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
   contentColumn:
     "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
   titleRow: "mb-1.5 flex min-w-0 items-start gap-2",

@@ -131,7 +131,7 @@ export function TravelDirectionsCard({
                 selected &&
                   (readOnly ?
                     "bg-gray-50 ring-1 ring-gray-border/40"
-                  : "bg-brand-green/10 ring-1 ring-brand-green/25"),
+                  : "bg-brand-red/10 ring-1 ring-brand-red/25"),
               );
 
               if (readOnly) {
@@ -171,7 +171,7 @@ export function TravelDirectionsCard({
                       {scheduleTravelModeLabel(value)}
                     </span>
                     {selected ? (
-                      <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase text-brand-green">
+                      <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase text-brand-red">
                         선택됨
                       </span>
                     ) : (

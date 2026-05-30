@@ -52,8 +52,10 @@ import {
   type RoomSchedule,
 } from "@/lib/api/rooms";
 import {
-  appendCreatedScheduleItemToPlanPlaces,
   applyRoomScheduleItemToPlanPlaces,
+  createScheduleItemAtPlanIndex,
+  defaultNewItemStartTimeHmAtInsertIndex,
+  defaultNewItemStartTimeHmFromPlanPlaces,
   fetchScheduleItemsAsPlanPlaces,
   syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
@@ -199,24 +201,30 @@ export function useSchedulePlanPlaces(
 export function useCreateScheduleItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: {
+    mutationFn: async (vars: {
       roomId: string;
       scheduleId: number;
       googlePlaceId: string;
-      startTimeHm: string;
-    }) =>
-      createScheduleItem(vars.roomId, vars.scheduleId, {
+      startTimeHm?: string;
+      insertIndex?: number;
+      placesSnapshot?: PlanPlace[];
+    }) => {
+      const places = vars.placesSnapshot ?? [];
+      const insertIndex = vars.insertIndex ?? places.length;
+      const startTimeHm =
+        vars.startTimeHm ??
+        (insertIndex >= places.length
+          ? defaultNewItemStartTimeHmFromPlanPlaces(places)
+          : defaultNewItemStartTimeHmAtInsertIndex(places, insertIndex));
+
+      return createScheduleItemAtPlanIndex(queryClient, {
+        roomId: vars.roomId,
+        scheduleId: vars.scheduleId,
+        places,
+        insertIndex,
         googlePlaceId: vars.googlePlaceId,
-        startTime: vars.startTimeHm,
-        durationMinutes: 60,
-      }),
-    onSuccess: async (created, { roomId, scheduleId }) => {
-      await appendCreatedScheduleItemToPlanPlaces(
-        queryClient,
-        roomId,
-        scheduleId,
-        created,
-      );
+        startTimeHm,
+      });
     },
   });
 }

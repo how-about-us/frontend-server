@@ -1,0 +1,71 @@
+"use client";
+
+import { useQueries } from "@tanstack/react-query";
+import { useMemo } from "react";
+
+import { fetchScheduleItemsAsPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
+import { normalizeGooglePlaceResourceId } from "@/lib/maps";
+import { scheduleItemsQueryKey } from "@/lib/query-keys";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { useSessionStore } from "@/stores/session-store";
+
+const EMPTY = new Set<string>();
+
+/** 펼친 일차 일정 장소의 정규화된 `googlePlaceId` (북마크 핀 중복 숨김용). */
+export function usePlanItineraryStopNormalizedPlaceIds(
+  enabled: boolean,
+): ReadonlySet<string> {
+  const roomIdRaw = useSessionStore((s) => s.currentRoomId);
+  const rid = typeof roomIdRaw === "string" ? roomIdRaw.trim() : "";
+
+  const expandedByScheduleId = usePlanItineraryExpandedStore(
+    (s) => s.expandedByScheduleId,
+  );
+  const expandedScheduleIds = useMemo(
+    () =>
+      Object.keys(expandedByScheduleId)
+        .map((k) => Number(k))
+        .filter(
+          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
+        ),
+    [expandedByScheduleId],
+  );
+
+  const orderedScheduleIdsForQueries = useMemo(
+    () => [...expandedScheduleIds].sort((a, b) => a - b),
+    [expandedScheduleIds],
+  );
+
+  const placesQueries = useQueries({
+    queries: orderedScheduleIdsForQueries.map((scheduleId) => ({
+      queryKey: scheduleItemsQueryKey(rid || null, scheduleId),
+      queryFn: () =>
+        rid.length === 0
+          ? Promise.resolve([])
+          : fetchScheduleItemsAsPlanPlaces(rid, scheduleId),
+      enabled:
+        enabled && rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
+      staleTime: Infinity,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+    })),
+  });
+
+  return useMemo(() => {
+    if (!enabled || rid.length === 0) return EMPTY;
+
+    const ids = new Set<string>();
+    orderedScheduleIdsForQueries.forEach((_, bucketIdx) => {
+      const places = placesQueries[bucketIdx]?.data ?? [];
+      for (const place of places) {
+        const gid =
+          typeof place.googlePlaceId === "string"
+            ? place.googlePlaceId.trim()
+            : "";
+        if (!gid.length) continue;
+        ids.add(normalizeGooglePlaceResourceId(gid));
+      }
+    });
+    return ids;
+  }, [enabled, rid, orderedScheduleIdsForQueries, placesQueries]);
+}

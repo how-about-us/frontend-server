@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import {
   AdvancedMarker,
@@ -27,6 +28,7 @@ import { activeSearchMapPinsQueryKey, type ActiveSearchMapPin } from "@/lib/quer
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
+import { usePlanItineraryStopNormalizedPlaceIds } from "@/hooks/usePlanItineraryStopNormalizedPlaceIds";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
@@ -154,9 +156,17 @@ function MapSearchResultPins() {
   );
 }
 
+function isPlanPath(pathname: string): boolean {
+  return pathname === "/plan" || pathname.startsWith("/plan/");
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function Map() {
+  const pathname = usePathname();
+  const isPlanPage = isPlanPath(pathname ?? "");
+  const planStopPlaceIds = usePlanItineraryStopNormalizedPlaceIds(isPlanPage);
+
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const setMapCamera = useMapCenterStore((s) => s.setMapCamera);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
@@ -250,7 +260,13 @@ export default function Map() {
             openNow={openNow}
           />
 
-          <MapBookmarkPins roomId={currentRoomId} enabled={showBookmarkPins} />
+          <MapBookmarkPins
+            roomId={currentRoomId}
+            enabled={showBookmarkPins}
+            hiddenNormalizedPlaceIds={
+              isPlanPage ? planStopPlaceIds : undefined
+            }
+          />
 
           <MapSearchResultPins />
 

@@ -38,7 +38,7 @@ export function TravelRouteSummaryLine({
   if (isFetching) {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-green" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-red" />
         불러오는 중…
       </span>
     );
@@ -47,7 +47,7 @@ export function TravelRouteSummaryLine({
   if (isPending) {
     return (
       <span className="inline-flex items-center gap-1.5">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-green" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-red" />
         불러오는 중…
       </span>
     );

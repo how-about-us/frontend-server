@@ -1,18 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
-import { Bookmark, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { PlacesSearchInput } from "@/components/search/PlacesSearchInput";
 import {
   useCreateScheduleItem,
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import {
   formatAdjacentScheduleConflictMessage,
   getAdjacentScheduleConflictFlags,
@@ -26,7 +24,9 @@ import type { PlanPlace } from "@/lib/plan/types";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { AddFromBookmarkModal } from "./AddFromBookmarkModal";
+import { PlanAddPlaceControls } from "./PlanAddPlaceControls";
 import { PlanPlaceCard } from "./PlanPlaceCard";
+import { PlanTravelSegment } from "./PlanTravelSegment";
 
 const EMPTY_PLAN_PLACES: PlanPlace[] = [];
 
@@ -83,7 +83,12 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const { mutateAsync: createItem, isPending: isAdding } =
     useCreateScheduleItem();
 
-  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
+  const [activeInsertIndex, setActiveInsertIndex] = useState<number | null>(
+    null,
+  );
+  const [bookmarkModal, setBookmarkModal] = useState<{
+    insertIndex?: number;
+  } | null>(null);
 
   const prefersReducedMotion = useReducedMotion();
 
@@ -96,23 +101,47 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     roomId,
     scheduleId,
     places,
-    interactionLocked: isAdding || isReadOnly,
+    interactionLocked:
+      isAdding || isReadOnly || activeInsertIndex !== null,
   });
 
+  useEffect(() => {
+    if (activeInsertIndex === null || isReadOnly) return;
+
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target;
+      if (!(target instanceof Node)) return;
+      if (target instanceof Element) {
+        if (target.closest("[data-plan-insert-slot]")) return;
+        if (target.closest("[data-places-autocomplete-menu]")) return;
+      }
+      setActiveInsertIndex(null);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [activeInsertIndex, isReadOnly]);
+
   const handlePickPrediction = useCallback(
-    async (prediction: google.maps.places.PlacePrediction) => {
+    async (
+      prediction: google.maps.places.PlacePrediction,
+      insertIndex?: number,
+    ) => {
       const googlePlaceId = prediction.placeId;
       if (!googlePlaceId) {
         toast.error("장소 식별 정보를 찾을 수 없어요.");
         return;
       }
+      const index = insertIndex ?? places.length;
       try {
         await createItem({
           roomId,
           scheduleId,
           googlePlaceId,
-          startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(places),
+          insertIndex: index,
+          placesSnapshot: places,
         });
+        setActiveInsertIndex(null);
       } catch {
         toast.error("장소를 일정에 추가하지 못했어요.");
       }
@@ -130,31 +159,38 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [places],
   );
 
+  const addControlsDisabled = isAdding || isReadOnly;
+
   return (
     <div>
-      {isLoading ? (
+      {isLoading ?
         <div className="flex items-center justify-center gap-2 py-8 text-dark-gray">
           <Loader2 className="h-5 w-5 animate-spin text-brand-green" />
           <span className="text-sm">장소 목록을 불러오는 중…</span>
         </div>
-      ) : null}
+      : null}
 
-      {isError ? (
+      {isError ?
         <p className="py-4 text-center text-sm text-brand-red">
           장소 목록을 불러오지 못했어요.
         </p>
-      ) : null}
+      : null}
 
-      {!isLoading && places.length === 0 ? (
+      {!isLoading && places.length === 0 ?
         <p className="py-4 text-center text-sm text-dark-gray">
           {copy.placesEmpty}
         </p>
-      ) : null}
+      : null}
 
       <div className="flex flex-col gap-0" {...listContainerProps}>
         {places.map((place, index) => {
           const motionEnabled = isDraggingActive && !prefersReducedMotion;
-          const { ref, style, placeCardDragProps } = getRowProps(index, motionEnabled);
+          const { ref, style, placeCardDragProps } = getRowProps(
+            index,
+            motionEnabled,
+          );
+          const insertIndex = index + 1;
+          const segmentActive = activeInsertIndex === insertIndex;
 
           return (
             <div key={place.id} ref={ref} style={style}>
@@ -175,63 +211,71 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               />
               {index < places.length - 1 &&
               typeof place.itemId === "number" &&
-              typeof places[index + 1]?.itemId === "number" ? (
-                <PlanTravelTime
-                  roomId={roomId}
-                  scheduleId={scheduleId}
-                  segmentSourceItemId={place.itemId}
-                  scheduleFingerprint={scheduleFingerprint}
-                  routeQueryEnabled={
-                    placesData !== undefined &&
-                    !isFetchingPlaces &&
-                    existingItemIds.has(place.itemId) &&
-                    existingItemIds.has(places[index + 1].itemId!)
+              typeof places[index + 1]?.itemId === "number" ?
+                <PlanTravelSegment
+                  isActive={segmentActive}
+                  onActivate={() => setActiveInsertIndex(insertIndex)}
+                  addDisabled={addControlsDisabled}
+                  showAddControls={segmentActive}
+                  addControls={
+                    <PlanAddPlaceControls
+                      coords={mapCenter}
+                      disabled={addControlsDisabled}
+                      onPickPrediction={(p) =>
+                        void handlePickPrediction(p, insertIndex)
+                      }
+                      onOpenBookmark={() =>
+                        setBookmarkModal({ insertIndex })
+                      }
+                    />
                   }
-                />
-              ) : null}
+                >
+                  <PlanTravelTime
+                    contentOnly
+                    roomId={roomId}
+                    scheduleId={scheduleId}
+                    segmentSourceItemId={place.itemId}
+                    scheduleFingerprint={scheduleFingerprint}
+                    routeQueryEnabled={
+                      placesData !== undefined &&
+                      !isFetchingPlaces &&
+                      existingItemIds.has(place.itemId) &&
+                      existingItemIds.has(places[index + 1].itemId!)
+                    }
+                  />
+                </PlanTravelSegment>
+              : null}
             </div>
           );
         })}
       </div>
 
-      {!isReadOnly ? (
+      {!isReadOnly ?
         <div className="mt-4 flex flex-col gap-2 border-t border-dashed border-gray-border pt-4">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <PlacesSearchInput
-                coords={mapCenter}
-                pickOnly
-                leadingIcon="pin"
-                placeholder="장소 추가하기"
-                disabled={isAdding}
-                onSearch={() => {}}
-                onPickPrediction={(p) => void handlePickPrediction(p)}
-              />
-            </div>
-            <button
-              type="button"
-              aria-label="북마크에서 장소 추가"
-              disabled={isAdding}
-              onClick={() => setBookmarkModalOpen(true)}
-              className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-gray-border bg-white text-dark-gray shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Bookmark className="size-4" strokeWidth={2} aria-hidden />
-            </button>
-          </div>
-          {isAdding ? (
+          <PlanAddPlaceControls
+            coords={mapCenter}
+            disabled={addControlsDisabled}
+            onPickPrediction={(p) => void handlePickPrediction(p)}
+            onOpenBookmark={() => setBookmarkModal({})}
+          />
+          {isAdding ?
             <p className="text-xs text-dark-gray">추가하는 중…</p>
-          ) : null}
+          : null}
         </div>
-      ) : null}
+      : null}
 
-      {bookmarkModalOpen && !isReadOnly ? (
+      {bookmarkModal && !isReadOnly ?
         <AddFromBookmarkModal
           roomId={roomId}
           scheduleId={scheduleId}
           places={places}
-          onClose={() => setBookmarkModalOpen(false)}
+          insertIndex={bookmarkModal.insertIndex}
+          onClose={() => {
+            setBookmarkModal(null);
+            setActiveInsertIndex(null);
+          }}
         />
-      ) : null}
+      : null}
     </div>
   );
 }
