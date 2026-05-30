@@ -18,6 +18,6 @@ export function usePlanPlaceCardPhoto(place: PlanPlace) {
 
   return {
     resolvedPhotoUrl,
-    photoLoading: Boolean(photoName) && photoQuery.isPending,
+    photoLoading: Boolean(photoName) && photoQuery.isLoading,
   };
 }

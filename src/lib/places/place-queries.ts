@@ -128,6 +128,7 @@ export async function fetchPlacePreview(googlePlaceId: string): Promise<PlacePre
   });
 }
 
+/** imperative·다른 queryKey의 queryFn에서만 사용 — `usePlacePhotoUrlQuery` queryFn에는 `requestPlacePhotoUrl` */
 export async function fetchPlacePhotoUrl(photoName: string): Promise<string> {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   if (!name.length) {
