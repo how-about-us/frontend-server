@@ -4,6 +4,19 @@ import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
+/** 카드 D&D·지도 선택과 겹치지 않게 할 인터랙티브 영역 */
+export const PLAN_PLACE_CARD_INTERACTIVE_SELECTOR =
+  "textarea, input, select, button, a, [data-plan-card-no-drag]";
+
+export function isPlanPlaceCardInteractiveTarget(
+  target: EventTarget | null,
+): boolean {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest(PLAN_PLACE_CARD_INTERACTIVE_SELECTOR))
+  );
+}
+
 const stopFormClickPropagation = {
   onMouseDown: (e: MouseEvent) => e.stopPropagation(),
   onClick: (e: MouseEvent) => e.stopPropagation(),
@@ -75,7 +88,13 @@ export function PlanScheduleItemDeleteButton({
 
 export function PlanPlaceCardControlsStack({ children }: { children: ReactNode }) {
   return (
-    <div className={PLAN_PLACE_CARD_TW.controlsStack} {...stopFormClickPropagation}>
+    <div
+      className={cn(
+        PLAN_PLACE_CARD_TW.controlsStack,
+        "cursor-auto select-text",
+      )}
+      {...stopFormClickPropagation}
+    >
       {children}
     </div>
   );

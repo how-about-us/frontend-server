@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { PlanItemMemoForm, PlanItemMemoReadOnly } from "./PlanItemMemoForm";
 import { PlanItemTimeForm, PlanItemTimeReadOnly } from "./PlanItemTimeForm";
 import {
+  isPlanPlaceCardInteractiveTarget,
   PlanOrderIndexBadge,
   PlanPlaceCardControlsStack,
   PlanScheduleItemDeleteButton,
@@ -52,6 +53,7 @@ export function PlanPlaceCard({
   const { isReadOnly } = usePlanMobileReadOnly();
   const { setSelectedPlace } = useSelectedPlace();
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const blockCardDragRef = useRef(false);
   const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place);
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
@@ -75,9 +77,31 @@ export function PlanPlaceCard({
     }
   }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
+    blockCardDragRef.current = isPlanPlaceCardInteractiveTarget(e.target);
+    if (isReadOnly || blockCardDragRef.current) return;
     pointerDownRef.current = { x: e.clientX, y: e.clientY };
-  }, []);
+  }, [isReadOnly]);
+
+  const handleDragStart = useCallback(
+    (e: DragEvent<Element>) => {
+      if (blockCardDragRef.current) {
+        blockCardDragRef.current = false;
+        e.preventDefault();
+        return;
+      }
+      onDragStart(e);
+    },
+    [onDragStart],
+  );
+
+  const handleDragEnd = useCallback(
+    (e: DragEvent<Element>) => {
+      blockCardDragRef.current = false;
+      onDragEnd(e);
+    },
+    [onDragEnd],
+  );
 
   const handleCardClick = useCallback(
     (e: React.MouseEvent) => {
@@ -173,9 +197,9 @@ export function PlanPlaceCard({
   return (
     <article
       draggable={!dragDisabled && !isReadOnly}
-      onPointerDown={isReadOnly ? undefined : handlePointerDown}
-      onDragStart={dragDisabled || isReadOnly ? undefined : onDragStart}
-      onDragEnd={dragDisabled || isReadOnly ? undefined : onDragEnd}
+      onPointerDownCapture={isReadOnly ? undefined : handlePointerDownCapture}
+      onDragStart={dragDisabled || isReadOnly ? undefined : handleDragStart}
+      onDragEnd={dragDisabled || isReadOnly ? undefined : handleDragEnd}
       onClick={isReadOnly ? undefined : handleCardClick}
       className={cn(
         "w-full select-none",

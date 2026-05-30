@@ -212,7 +212,7 @@ export function PlanItemMemoForm({
           onMouseDown={stopCardActivation}
           onClick={stopCardActivation}
           onChange={(e) => setDraft(e.target.value)}
-          className={PLAN_PLACE_CARD_TW.memoTextarea}
+          className={cn(PLAN_PLACE_CARD_TW.memoTextarea, "select-text cursor-text")}
         />
         <div className="flex items-center justify-end gap-2">
           <span className="text-[10px] tabular-nums text-dark-gray/55">
