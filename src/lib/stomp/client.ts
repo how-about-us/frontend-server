@@ -14,6 +14,6 @@ export function getStompBrokerURL(): string {
 export function createStompClient(httpURL: string): Client {
   return new Client({
     webSocketFactory: () => new SockJS(httpURL),
-    reconnectDelay: 5000,
+    reconnectDelay: 0,
   });
 }

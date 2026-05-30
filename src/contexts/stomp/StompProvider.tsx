@@ -85,10 +85,16 @@ export function StompProvider({ children }: { children: ReactNode }) {
   /** pathname-only 재구독과 실제 방 전환을 구분 */
   const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
+  const suppressCloseRecoveryRef = useRef(false);
+  const [stompConnectNonce, setStompConnectNonce] = useState(0);
   const [connectionState, setConnectionState] = useState<StompConnectionState>({
     client: null,
     connected: false,
   });
+
+  const onRequestStompReconnect = useCallback(() => {
+    setStompConnectNonce((n) => n + 1);
+  }, []);
 
   const detachRoomTopicsOnly = useCallback(() => {
     roomTopicsUnsubRef.current?.();
@@ -168,6 +174,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
   );
 
   const teardownConnectedClient = useCallback(() => {
+    suppressCloseRecoveryRef.current = true;
     unsubscribeRoomTopics();
     userRoomsQueueUnsubRef.current?.();
     userRoomsQueueUnsubRef.current = null;
@@ -179,9 +186,12 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   useStompClientLifecycleEffect({
     stompEligible,
+    stompConnectNonce,
+    suppressCloseRecoveryRef,
     notifyForcedRoomExit,
     subscribeToRoomTopics,
     teardownConnectedClient,
+    onRequestStompReconnect,
     clientRef,
     userRoomsQueueUnsubRef,
     getResolvedRoomId,

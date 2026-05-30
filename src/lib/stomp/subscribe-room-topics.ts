@@ -11,7 +11,6 @@ import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import { dispatchRoomPresence } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
-import { startSessionPresencePing } from "@/lib/stomp/sessionPresencePing";
 import { dispatchUserErrorToast } from "@/lib/stomp/user-error-dispatch";
 import { parseUserErrorMessage } from "@/lib/stomp/user-error-events";
 export type RoomTopicsUnsubscriber = () => void;
@@ -96,12 +95,9 @@ export function subscribeRoomStompTopics(
     },
   );
 
-  const stopSessionPresencePing = startSessionPresencePing(client);
-
   void dispatchRoomPresence(queryClientRef.current, subscribedRoomId);
 
   return () => {
-    stopSessionPresencePing();
     membersSub.unsubscribe();
     presenceSub.unsubscribe();
     bookmarksSub.unsubscribe();

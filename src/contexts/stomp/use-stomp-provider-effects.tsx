@@ -8,6 +8,12 @@ import type { Client } from "@stomp/stompjs";
 
 import { createStompClient, getStompBrokerURL } from "@/lib/stomp/client";
 import { pathDefersRoomStompRoomTopics } from "@/lib/stomp/stompPathPolicy";
+import {
+  handleStompSessionExpired,
+  renewSessionAfterStompClose,
+  STOMP_ACCESS_TOKEN_EXPIRED_CLOSE_CODE,
+} from "@/lib/stomp/stomp-session-recovery";
+import { startSessionPresencePing } from "@/lib/stomp/sessionPresencePing";
 import { subscribeUserRoomsQueue } from "@/lib/stomp/subscribe-user-rooms-queue";
 import type { ForcedRoomExitReason } from "@/lib/stomp/user-room-queue";
 
@@ -18,6 +24,8 @@ export type StompConnectionState = {
 
 type LifecycleOpts = {
   stompEligible: boolean;
+  stompConnectNonce: number;
+  suppressCloseRecoveryRef: MutableRefObject<boolean>;
   notifyForcedRoomExit: (
     reason: ForcedRoomExitReason,
     eventRoomId: string,
@@ -25,6 +33,7 @@ type LifecycleOpts = {
   ) => void;
   subscribeToRoomTopics: (client: Client, roomId: string) => void;
   teardownConnectedClient: () => void;
+  onRequestStompReconnect: () => void;
   clientRef: MutableRefObject<Client | null>;
   userRoomsQueueUnsubRef: MutableRefObject<(() => void) | null>;
   getResolvedRoomId: () => string | null;
@@ -39,9 +48,12 @@ type LifecycleOpts = {
  */
 export function useStompClientLifecycleEffect({
   stompEligible,
+  stompConnectNonce,
+  suppressCloseRecoveryRef,
   notifyForcedRoomExit,
   subscribeToRoomTopics,
   teardownConnectedClient,
+  onRequestStompReconnect,
   clientRef,
   userRoomsQueueUnsubRef,
   getResolvedRoomId,
@@ -58,17 +70,29 @@ export function useStompClientLifecycleEffect({
       return;
     }
 
-    if (clientRef.current) {
-      return;
-    }
+    suppressCloseRecoveryRef.current = false;
+
+    const stopPingRef: { current: (() => void) | null } = { current: null };
+    const recoveryInFlightRef = { current: false };
+    let effectActive = true;
+
+    const stopAppPing = () => {
+      stopPingRef.current?.();
+      stopPingRef.current = null;
+    };
 
     const client = createStompClient(getStompBrokerURL());
     clientRef.current = client;
     setConnectionState({ client, connected: false });
 
     client.onConnect = () => {
+      if (!effectActive) return;
       setConnectionState({ client, connected: true });
       forcedExitConsumedRef.current = false;
+
+      stopAppPing();
+      stopPingRef.current = startSessionPresencePing(client);
+
       userRoomsQueueUnsubRef.current?.();
       userRoomsQueueUnsubRef.current = subscribeUserRoomsQueue(client, {
         queryClientRef,
@@ -82,23 +106,70 @@ export function useStompClientLifecycleEffect({
     };
 
     client.onDisconnect = () => {
+      if (!effectActive) return;
       setConnectionState((prev) => ({ ...prev, connected: false }));
     };
 
     client.onStompError = () => {
+      if (!effectActive) return;
       setConnectionState((prev) => ({ ...prev, connected: false }));
+    };
+
+    client.onWebSocketClose = (event) => {
+      if (!effectActive) return;
+      if (suppressCloseRecoveryRef.current) return;
+      if (recoveryInFlightRef.current) return;
+
+      if (event.code === STOMP_ACCESS_TOKEN_EXPIRED_CLOSE_CODE) {
+        console.debug("[stomp] WebSocket closed: ACCESS_TOKEN_EXPIRED (4001)");
+      }
+
+      recoveryInFlightRef.current = true;
+      stopAppPing();
+      setConnectionState((prev) => ({ ...prev, connected: false }));
+
+      void (async () => {
+        try {
+          const result = await renewSessionAfterStompClose(
+            queryClientRef.current,
+          );
+          if (!effectActive || suppressCloseRecoveryRef.current) return;
+
+          if (!result.ok) {
+            handleStompSessionExpired(queryClientRef.current);
+            return;
+          }
+
+          suppressCloseRecoveryRef.current = true;
+          userRoomsQueueUnsubRef.current?.();
+          userRoomsQueueUnsubRef.current = null;
+          client.deactivate();
+          clientRef.current = null;
+          suppressCloseRecoveryRef.current = false;
+
+          if (!effectActive) return;
+          onRequestStompReconnect();
+        } finally {
+          recoveryInFlightRef.current = false;
+        }
+      })();
     };
 
     client.activate();
 
     return () => {
+      effectActive = false;
+      stopAppPing();
       teardownConnectedClient();
     };
   }, [
     getResolvedRoomId,
     notifyForcedRoomExit,
+    onRequestStompReconnect,
+    stompConnectNonce,
     stompEligible,
     subscribeToRoomTopics,
+    suppressCloseRecoveryRef,
     teardownConnectedClient,
   ]);
   /* eslint-enable react-hooks/set-state-in-effect */

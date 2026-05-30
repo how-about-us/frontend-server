@@ -1,25 +1,11 @@
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
+import { expireClientSessionAndRedirect } from "@/lib/auth-session-client";
 import { fetchSessionUserRaw } from "@/lib/auth";
-import { tearDownClientSession } from "@/lib/client-storage";
 import { getQueryClient } from "@/lib/query-client";
 import {
   readSessionUserCache,
   setSessionUserCache,
 } from "@/lib/session-user-cache";
-
-function clearSessionAndRedirect() {
-  tearDownClientSession({ queryClient: getQueryClient() ?? undefined });
-  if (typeof window === "undefined") return;
-  const path = window.location.pathname;
-  if (
-    path === "/login" ||
-    path.startsWith("/join/") ||
-    path.startsWith("/auth/")
-  ) {
-    return;
-  }
-  window.location.replace("/login");
-}
 
 /**
  * Drop-in replacement for fetch that automatically retries once after
@@ -32,7 +18,9 @@ export async function apiFetch(
   const { response: res, didRefresh } = await authenticatedFetch(input, init);
 
   if (res.status === 401) {
-    clearSessionAndRedirect();
+    expireClientSessionAndRedirect({
+      queryClient: getQueryClient() ?? undefined,
+    });
     return res;
   }
 

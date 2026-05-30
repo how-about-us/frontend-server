@@ -386,9 +386,9 @@ export function useRoomMembers(roomId: string | null) {
   const { connected: stompConnected } = useStompContext();
 
   /**
-   * 방 토픽을 구독하는 구간에서는 세션 presence ping 이전에 GET /members 가 먼저 나가면
+   * 방 토픽을 구독하는 구간에서는 STOMP 연결·`/app/ping` 이전에 GET /members 가 먼저 나가면
    * `isOnline` 이 모두 false 로 내려오는 경우가 있다. STOMP 연결 후에만 조회한다.
-   * `/home` 등 토픽을 미루는 경로는 기존처럼 즉시 조회(해당 구간에서는 ping 미전송).
+   * `/home` 등 방 토픽을 미루는 경로는 즉시 조회(ping은 연결 단위로 계속 전송).
    */
   const waitForStompBeforeMembers =
     Boolean(user && roomId) &&
