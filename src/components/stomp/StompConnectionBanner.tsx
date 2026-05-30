@@ -1,0 +1,50 @@
+"use client";
+
+import { AlertCircle } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+
+import { cn } from "@/lib/utils";
+import { useStompConnectionStore } from "@/stores/stomp-connection-store";
+
+type StompConnectionBannerProps = {
+  onRetry: () => void;
+};
+
+export function StompConnectionBanner({ onRetry }: StompConnectionBannerProps) {
+  const connectionIssue = useStompConnectionStore((s) => s.connectionIssue);
+  const reduceMotion = useReducedMotion();
+
+  if (!connectionIssue) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      role="alert"
+      aria-live="polite"
+      initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={reduceMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.2 }}
+      className="fixed top-0 right-0 left-0 z-50 overflow-hidden border-b border-brand-red/25 bg-brand-red/[0.06] shadow-sm"
+    >
+      <div className="mx-auto flex max-w-screen-xl items-center gap-2 px-4 py-2.5 text-brand-red">
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+        <p className="min-w-0 flex-1 text-xs font-medium leading-snug sm:text-sm">
+          {connectionIssue}
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className={cn(
+            "shrink-0 rounded-md border border-brand-red/30 bg-white/80 px-2.5 py-1",
+            "text-xs font-semibold text-brand-red transition-colors",
+            "hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red/40",
+          )}
+        >
+          다시 시도
+        </button>
+      </div>
+    </motion.div>
+  );
+}

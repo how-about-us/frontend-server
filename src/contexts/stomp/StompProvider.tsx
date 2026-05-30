@@ -32,6 +32,10 @@ import {
 } from "@/stores/session-store";
 import type { ServerChatMessage } from "@/types/chat";
 
+import { StompConnectionBanner } from "@/components/stomp/StompConnectionBanner";
+import { handleStompReconnect } from "@/lib/stomp/stomp-session-recovery";
+import { useStompConnectionStore } from "@/stores/stomp-connection-store";
+
 import {
   useStompClientLifecycleEffect,
   useStompRoomTopicsResyncEffect,
@@ -86,14 +90,22 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const lastSubscribedRoomIdRef = useRef<string | null>(null);
   const forcedExitConsumedRef = useRef(false);
   const suppressCloseRecoveryRef = useRef(false);
-  const [stompConnectNonce, setStompConnectNonce] = useState(0);
   const [connectionState, setConnectionState] = useState<StompConnectionState>({
     client: null,
     connected: false,
   });
 
-  const onRequestStompReconnect = useCallback(() => {
-    setStompConnectNonce((n) => n + 1);
+  const retryStompConnection = useCallback(() => {
+    const client = clientRef.current;
+    if (!client) return;
+
+    useStompConnectionStore.getState().resumeAutoRecovery();
+    void handleStompReconnect({
+      client,
+      queryClient: queryClientRef.current,
+      isSuppressed: () => suppressCloseRecoveryRef.current,
+      isActive: () => clientRef.current === client,
+    });
   }, []);
 
   const detachRoomTopicsOnly = useCallback(() => {
@@ -175,6 +187,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   const teardownConnectedClient = useCallback(() => {
     suppressCloseRecoveryRef.current = true;
+    useStompConnectionStore.getState().clearConnectionIssue();
     unsubscribeRoomTopics();
     userRoomsQueueUnsubRef.current?.();
     userRoomsQueueUnsubRef.current = null;
@@ -186,12 +199,10 @@ export function StompProvider({ children }: { children: ReactNode }) {
 
   useStompClientLifecycleEffect({
     stompEligible,
-    stompConnectNonce,
     suppressCloseRecoveryRef,
     notifyForcedRoomExit,
     subscribeToRoomTopics,
     teardownConnectedClient,
-    onRequestStompReconnect,
     clientRef,
     userRoomsQueueUnsubRef,
     getResolvedRoomId,
@@ -219,6 +230,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
         setRoomChatMessageHandler,
       }}
     >
+      <StompConnectionBanner onRetry={retryStompConnection} />
       {children}
     </StompContext.Provider>
   );
