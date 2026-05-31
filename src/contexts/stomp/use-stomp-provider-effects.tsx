@@ -84,6 +84,20 @@ export function useStompClientLifecycleEffect({
     const isActive = () => effectActive;
     const isSuppressed = () => suppressCloseRecoveryRef.current;
 
+    const requestStompRecovery = () => {
+      if (!effectActive || suppressCloseRecoveryRef.current) return;
+
+      stopAppPing();
+      setConnectionState((prev) => ({ ...prev, connected: false }));
+
+      void handleStompReconnect({
+        client,
+        queryClient: queryClientRef.current,
+        isSuppressed,
+        isActive,
+      });
+    };
+
     client.onConnect = () => {
       if (!effectActive) return;
       useStompConnectionStore.getState().clearConnectionIssue();
@@ -107,7 +121,7 @@ export function useStompClientLifecycleEffect({
 
     client.onDisconnect = () => {
       if (!effectActive) return;
-      setConnectionState((prev) => ({ ...prev, connected: false }));
+      requestStompRecovery();
     };
 
     client.onStompError = () => {
@@ -123,15 +137,7 @@ export function useStompClientLifecycleEffect({
         console.debug("[stomp] WebSocket closed: ACCESS_TOKEN_EXPIRED (4001)");
       }
 
-      stopAppPing();
-      setConnectionState((prev) => ({ ...prev, connected: false }));
-
-      void handleStompReconnect({
-        client,
-        queryClient: queryClientRef.current,
-        isSuppressed,
-        isActive,
-      });
+      requestStompRecovery();
     };
 
     client.activate();

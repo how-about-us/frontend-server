@@ -128,11 +128,19 @@ async function runStompReconnect({
     return;
   }
 
+  if (client.active) {
+    await client.deactivate();
+  }
+
+  if (!isActive() || isSuppressed()) {
+    return;
+  }
+
   client.activate();
 }
 
 /**
- * WebSocket close 후 session 검증 → `client.activate()` 또는 로그아웃·장애 UI.
+ * WebSocket close 후 session 검증 → deactivate/activate 재연결 또는 로그아웃·장애 UI.
  * 단일 in-flight promise로 동시 호출을 합칩니다.
  */
 export function handleStompReconnect(
