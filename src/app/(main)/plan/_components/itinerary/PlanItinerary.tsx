@@ -16,7 +16,10 @@ import {
   getAdjacentScheduleConflictFlags,
 } from "@/lib/plan/scheduleAdjacentConflicts";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
-import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
+import {
+  scheduleIdsToRouteColors,
+  sortedScheduleIdsForRouteColors,
+} from "@/lib/plan/planRouteDayColors";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import type { PlanPlace } from "@/lib/plan/types";
@@ -41,23 +44,13 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const expandedByScheduleId = usePlanItineraryExpandedStore(
     (s) => s.expandedByScheduleId,
   );
-  const orderedExpandedScheduleIds = useMemo(
-    () =>
-      Object.keys(expandedByScheduleId)
-        .map((k) => Number(k))
-        .filter(
-          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
-        )
-        .sort((a, b) => a - b),
-    [expandedByScheduleId],
-  );
   const routeColorByScheduleId = useMemo(
     () =>
       scheduleIdsToRouteColors(
-        orderedExpandedScheduleIds,
+        sortedScheduleIdsForRouteColors(expandedByScheduleId),
         roomId.trim() || undefined,
       ),
-    [orderedExpandedScheduleIds, roomId],
+    [expandedByScheduleId, roomId],
   );
   const orderBadgeColor =
     routeColorByScheduleId.get(scheduleId) ?? "#f12d33";

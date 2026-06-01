@@ -1,6 +1,6 @@
 /**
- * 펼친 플랜 일차(scheduleId)마다 서로 다른 경로·핀 색 (#RRGGBB).
- * 골든 앵글로 hue를 분산하고, 선택적 `roomId` 시드로 방마다 팔레트 오프셋.
+ * 플랜 일차(scheduleId)마다 고정 경로·핀·순서 뱃지 색 (#RRGGBB).
+ * 펼침 토글과 무관하게 방 내 일차 정렬 순서로 hue를 고정합니다.
  */
 
 const GOLDEN_ANGLE_HUE_STEP = 137.5083565656715;
@@ -52,8 +52,18 @@ function hueSeedFromString(str: string): number {
   return Math.abs(h) % 360;
 }
 
+/** 방에 속한 모든 일차 id(펼침 여부 무관), 오름차순 */
+export function sortedScheduleIdsForRouteColors(
+  scheduleIdsByPresence: Record<number, boolean>,
+): number[] {
+  return Object.keys(scheduleIdsByPresence)
+    .map((k) => Number(k))
+    .filter((id) => Number.isFinite(id))
+    .sort((a, b) => a - b);
+}
+
 /**
- * @param sortedScheduleIds `PlanItineraryMapRoutes`의 `orderedScheduleIdsForQueries`와 동일(정렬됨)
+ * @param sortedScheduleIds `sortedScheduleIdsForRouteColors` 결과(전체 일차, 정렬됨)
  * @param roomId 방마다 hue 오프셋(옵션)
  */
 export function scheduleIdsToRouteColors(

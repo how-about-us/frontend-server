@@ -13,9 +13,11 @@ import {
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
 import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
-import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
 import {
-  displayPositionsForOverlappingStops,
+  scheduleIdsToRouteColors,
+  sortedScheduleIdsForRouteColors,
+} from "@/lib/plan/planRouteDayColors";
+import {
   filterVisiblePlanMapStops,
   type PlanMapStopForOffset,
 } from "@/lib/plan/planItineraryMapMarkerOffset";
@@ -55,6 +57,7 @@ export function PlanItineraryMapRoutes() {
   const expandedByScheduleId = usePlanItineraryExpandedStore(
     (s) => s.expandedByScheduleId,
   );
+  const expansionOrder = usePlanItineraryExpandedStore((s) => s.expansionOrder);
   const expandedScheduleIds = useMemo(
     () =>
       Object.keys(expandedByScheduleId)
@@ -79,8 +82,11 @@ export function PlanItineraryMapRoutes() {
 
   const routeColorByScheduleId = useMemo(
     () =>
-      scheduleIdsToRouteColors(orderedScheduleIdsForQueries, rid || undefined),
-    [orderedScheduleIdsForQueries, rid],
+      scheduleIdsToRouteColors(
+        sortedScheduleIdsForRouteColors(expandedByScheduleId),
+        rid || undefined,
+      ),
+    [expandedByScheduleId, rid],
   );
   const fallbackRouteStroke = "#f12d33";
 
@@ -189,13 +195,8 @@ export function PlanItineraryMapRoutes() {
   }, [orderedScheduleIdsForQueries, buckets, selectedNorm]);
 
   const visibleStops = useMemo(
-    () => filterVisiblePlanMapStops(stopsForOffset),
-    [stopsForOffset],
-  );
-
-  const displayPosByStopId = useMemo(
-    () => displayPositionsForOverlappingStops(visibleStops),
-    [visibleStops],
+    () => filterVisiblePlanMapStops(stopsForOffset, expansionOrder),
+    [stopsForOffset, expansionOrder],
   );
 
   const placeByScheduleAndItemId = useMemo(() => {
@@ -228,13 +229,10 @@ export function PlanItineraryMapRoutes() {
     const legacyId = normalizeGooglePlaceResourceId(gid);
     const dayColor =
       routeColorByScheduleId.get(scheduleId) ?? fallbackRouteStroke;
-    const stopKey = `${scheduleId}-${place.itemId}`;
-    const markerPos = displayPosByStopId.get(stopKey) ?? loc;
-
     stopMarkers.push(
       <AdvancedMarker
         key={`plan-stop-${scheduleId}-${place.itemId}`}
-        position={markerPos}
+        position={loc}
         title={place.title}
         onClick={(e) => {
           e.stop();
