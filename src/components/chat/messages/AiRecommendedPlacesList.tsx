@@ -10,8 +10,8 @@ import {
   chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { requestPlaceDetail } from "@/lib/api/places";
 import {
-  fetchPlaceDetail,
   placeDetailQueryDefaults,
   placeDetailQueryKey,
 } from "@/lib/places/place-queries";
@@ -41,7 +41,8 @@ function AiRecommendedPlaceRow({
     place.userRatingCount === undefined;
   const { data: enriched } = useQuery({
     queryKey: placeDetailQueryKey(place.placeId),
-    queryFn: () => fetchPlaceDetail(place.placeId),
+    // queryFn에서 fetchPlaceDetail(동일 queryKey fetchQuery)을 쓰면 대기 데드락
+    queryFn: () => requestPlaceDetail(place.placeId),
     select: (detail) => ({
       photoName: detail.photoNames?.[0]?.trim() || null,
       rating:
