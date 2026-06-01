@@ -16,6 +16,7 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
   MAP_MAX_ZOOM,
   MAP_MIN_ZOOM,
+  MAP_PAN_RESTRICTION,
   readDestinationLatLngFromSession,
   viewportSearchRadiusMetersFromBounds,
   writeDestinationLatLngToSession,
@@ -365,6 +366,7 @@ export default function Map() {
             defaultZoom={bootstrap.zoom}
             minZoom={MAP_MIN_ZOOM}
             maxZoom={MAP_MAX_ZOOM}
+            restriction={MAP_PAN_RESTRICTION}
             mapId="DEMO_MAP_ID"
             gestureHandling="greedy"
             disableDefaultUI

@@ -71,6 +71,19 @@ export const MAP_MIN_ZOOM = 3;
 /** `google.maps.Map` maxZoom — 로드맵에서 흔한 상한 */
 export const MAP_MAX_ZOOM = 21;
 
+/** Web Mercator 타일이 있는 위·경도 범위 — 극지·가로 끝 회색 영역 패닝 방지 */
+export const MAP_WORLD_LAT_LNG_BOUNDS: google.maps.LatLngBoundsLiteral = {
+  north: 85,
+  south: -85,
+  west: -180,
+  east: 180,
+};
+
+export const MAP_PAN_RESTRICTION: google.maps.MapRestriction = {
+  latLngBounds: MAP_WORLD_LAT_LNG_BOUNDS,
+  strictBounds: true,
+};
+
 /** Google Places 리소스 id(`places/…`) 접두를 제거한 레거시 id */
 export function normalizeGooglePlaceResourceId(id: string): string {
   const prefix = "places/";
