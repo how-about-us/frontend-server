@@ -1,56 +1,33 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
-import { useMemo } from "react";
 
 import { useMobileView } from "@/contexts/MobileViewContext";
-import { useChat } from "@/hooks/useChat";
-import { useSectionWidth } from "@/contexts/SectionWidthContext";
-import { width, CHAT_PANEL_DOCKED_WIDTH, mainPanelMaxWidthFromContentToken } from "@/lib/layout-tokens";
-
-const WIDTH_TRANSITION = {
-  duration: 0.45,
-  ease: [0.4, 0, 0.2, 1] as const,
-};
-
-function isPlanPath(pathname: string): boolean {
-  return pathname === "/plan" || pathname.startsWith("/plan/");
-}
+import { useMainChromeLayoutWidth } from "@/contexts/MainChromeLayoutWidthContext";
 
 export default function LeftSection({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const { maxWidth } = useSectionWidth();
-  const { chatState } = useChat();
   const { isMobileDevice } = useMobileView();
-
-  const planPath = isPlanPath(pathname);
-
-  const animateMaxWidth = useMemo(() => {
-    if (isMobileDevice) return "100%";
-    if (planPath) {
-      return chatState === "maximized" ? width.s1 : width.s2;
-    }
-    return maxWidth.trim()
-      ? mainPanelMaxWidthFromContentToken(maxWidth.trim())
-      : "none";
-  }, [isMobileDevice, planPath, maxWidth, chatState]);
-
-  const animateMinWidth = isMobileDevice ? 0 : CHAT_PANEL_DOCKED_WIDTH;
+  const {
+    setLeftSectionRef,
+    leftSectionAnimateMaxWidth,
+    leftSectionAnimateMinWidth,
+    layoutTransition,
+  } = useMainChromeLayoutWidth();
 
   return (
     <motion.section
+      ref={setLeftSectionRef}
       className={`relative flex flex-1 flex-col ${isMobileDevice ? "min-w-0 w-full border-r-0" : "border-r border-gray-border"}`}
       initial={false}
       animate={{
-        maxWidth: animateMaxWidth,
-        minWidth: animateMinWidth,
+        maxWidth: leftSectionAnimateMaxWidth,
+        minWidth: leftSectionAnimateMinWidth,
       }}
-      transition={WIDTH_TRANSITION}
+      transition={layoutTransition}
     >
       {children}
     </motion.section>

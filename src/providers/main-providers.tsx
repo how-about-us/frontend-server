@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { MainChromeLayoutWidthProvider } from "@/contexts/MainChromeLayoutWidthContext";
 import { SelectedPlaceProvider } from "@/contexts/SelectedPlaceContext";
 import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
 
@@ -13,7 +14,9 @@ import { SectionWidthProvider } from "@/contexts/SectionWidthContext";
 export function MainChromeProviders({ children }: { children: ReactNode }) {
   return (
     <SectionWidthProvider>
-      <SelectedPlaceProvider>{children}</SelectedPlaceProvider>
+      <MainChromeLayoutWidthProvider>
+        <SelectedPlaceProvider>{children}</SelectedPlaceProvider>
+      </MainChromeLayoutWidthProvider>
     </SectionWidthProvider>
   );
 }

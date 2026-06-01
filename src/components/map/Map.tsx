@@ -29,6 +29,7 @@ import {
   readRoomMapViewport,
   writeRoomMapViewport,
 } from "@/lib/map-room-viewport-storage";
+import { isPlanPath } from "@/lib/layout/mainChromeLayoutWidth";
 import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
@@ -257,10 +258,6 @@ function MapSearchResultPins() {
         ))}
     </>
   );
-}
-
-function isPlanPath(pathname: string): boolean {
-  return pathname === "/plan" || pathname.startsWith("/plan/");
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────

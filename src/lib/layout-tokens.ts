@@ -6,12 +6,7 @@ export const width = {
 /** SideBar·HeaderBar 홈 열 `w-13` (Tailwind spacing 13 = 3.25rem) */
 export const MAIN_SIDEBAR_RAIL_WIDTH = "3.25rem" as const;
 
-/** SetSectionMaxWidth 본문 토큰 + 사이드바 레일 → LeftSection 전체 maxWidth */
-export function mainPanelMaxWidthFromContentToken(contentWidth: string): string {
-  return `calc(${contentWidth} + ${MAIN_SIDEBAR_RAIL_WIDTH})`;
-}
-
-/** 채팅 패널 펼침 너비 — `ChatPanel` 의 `w-[400px]`·LeftSection `minWidth` 와 동기화 */
+/** 채팅·LeftSection 최소 폭. maximized `ChatPanel`은 LeftSection 실측(`style.width`)까지 확장 */
 export const CHAT_PANEL_DOCKED_WIDTH = width.s1;
 
 /**
