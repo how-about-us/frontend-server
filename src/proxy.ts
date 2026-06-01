@@ -30,6 +30,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname === "/") {
+    if (hasSession) {
+      return withRefreshedCookies(
+        NextResponse.redirect(new URL("/home", request.url)),
+        setCookies,
+      );
+    }
+    return NextResponse.next();
+  }
+
   if (!isProtectedAppPath(pathname)) {
     return NextResponse.next();
   }
