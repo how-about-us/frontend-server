@@ -1,7 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+
+import { useMapToolbarLayout } from "@/contexts/MapToolbarLayoutContext";
+import {
+  MAP_TOOLBAR_ELEVATED_Z_CLASS,
+  MAP_TOOLBAR_Z_CLASS,
+} from "@/lib/layout/mapDetailPanelLayout";
+import { cn } from "@/lib/utils";
 
 import MapFilter from "./MapFilter";
 import { MapCategoryChips } from "./MapCategoryChips";
@@ -25,8 +33,21 @@ export function MapDiscoverToolbar({
   setRating,
   setOpenNow,
 }: MapDiscoverToolbarProps) {
+  const { setToolbarRef } = useMapToolbarLayout();
+  const [ratingDropdownOpen, setRatingDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (selectedCategoryId == null) setRatingDropdownOpen(false);
+  }, [selectedCategoryId]);
+
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-[15] mt-4 max-w-full overflow-visible px-4">
+    <div
+      ref={setToolbarRef}
+      className={cn(
+        "pointer-events-none absolute inset-x-0 top-0 mt-4 max-w-full overflow-visible px-4",
+        ratingDropdownOpen ? MAP_TOOLBAR_ELEVATED_Z_CLASS : MAP_TOOLBAR_Z_CLASS,
+      )}
+    >
       <AnimatePresence mode="wait" initial={false}>
         {selectedCategoryId == null ? (
           <motion.div
@@ -50,6 +71,7 @@ export function MapDiscoverToolbar({
               openNow={openNow}
               setRating={setRating}
               setOpenNow={setOpenNow}
+              onRatingDropdownOpenChange={setRatingDropdownOpen}
             />
             <button
               type="button"

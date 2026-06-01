@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 
 import { FilterDropdown } from "@/components/filter-dropdown";
+import { MAP_FILTER_DROPDOWN_MENU_Z_CLASS } from "@/lib/layout/mapDetailPanelLayout";
 import {
   mapFilterChipActiveFilledClassName,
   mapFilterChipInactiveClassName,
@@ -18,6 +19,7 @@ type MapFilterProps = {
   openNow: OpenValue;
   setRating: (v: RatingValue) => void;
   setOpenNow: (v: OpenValue) => void;
+  onRatingDropdownOpenChange?: (open: boolean) => void;
   className?: string;
 };
 
@@ -26,6 +28,7 @@ export default function MapFilter({
   openNow,
   setRating,
   setOpenNow,
+  onRatingDropdownOpenChange,
   className,
 }: MapFilterProps) {
   const isOpenOnly = openNow === "open";
@@ -37,6 +40,8 @@ export default function MapFilter({
         options={RATING_OPTIONS}
         value={rating}
         onChange={setRating}
+        onOpenChange={onRatingDropdownOpenChange}
+        menuClassName={MAP_FILTER_DROPDOWN_MENU_Z_CLASS}
       />
       <button
         type="button"

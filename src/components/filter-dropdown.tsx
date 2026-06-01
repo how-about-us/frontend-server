@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ interface FilterDropdownProps<T extends string> {
   options: FilterOption<T>[];
   value: T;
   onChange: (v: T) => void;
+  onOpenChange?: (open: boolean) => void;
+  menuClassName?: string;
 }
 
 export function FilterDropdown<T extends string>({
@@ -24,10 +26,25 @@ export function FilterDropdown<T extends string>({
   options,
   value,
   onChange,
+  onOpenChange,
+  menuClassName,
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useOnClickOutside(ref, () => setOpen(false));
+
+  const setOpenTracked = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      setOpen((prev) => {
+        const resolved =
+          typeof next === "function" ? next(prev) : next;
+        if (resolved !== prev) onOpenChange?.(resolved);
+        return resolved;
+      });
+    },
+    [onOpenChange],
+  );
+
+  useOnClickOutside(ref, () => setOpenTracked(false));
 
   const isActive = value !== "all";
   const selectedLabel = options.find((o) => o.value === value)?.label ?? label;
@@ -35,7 +52,7 @@ export function FilterDropdown<T extends string>({
   return (
     <div ref={ref} className="relative shrink-0">
       <button
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => setOpenTracked((prev) => !prev)}
         className={cn(
           "flex items-center gap-1",
           isActive
@@ -58,13 +75,18 @@ export function FilterDropdown<T extends string>({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 min-w-[136px] overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
+        <div
+          className={cn(
+            "absolute left-0 top-full mt-1.5 min-w-[136px] overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg",
+            menuClassName ?? "z-30",
+          )}
+        >
           {options.map((opt) => (
             <button
               key={opt.value}
               onClick={() => {
                 onChange(opt.value);
-                setOpen(false);
+                setOpenTracked(false);
               }}
               className={cn(
                 "w-full cursor-pointer px-3 py-2 text-left text-xs transition hover:bg-gray-50",
