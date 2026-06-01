@@ -47,7 +47,7 @@ export function HomeHeader() {
   const handleLogout = async () => {
     await logout();
     tearDownClientSession({ queryClient });
-    router.replace("/login");
+    router.replace("/");
   };
 
   return (
