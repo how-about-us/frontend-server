@@ -35,7 +35,7 @@ export function MainContentScrollArea({ children }: { children: ReactNode }) {
       className={cn(
         "min-h-0 min-w-0 flex-1 pt-2.5",
         searchPage
-          ? "overflow-hidden"
+          ? "flex flex-col overflow-hidden"
           : cn(
               "overflow-x-hidden overflow-y-auto",
               MAIN_SCROLLBAR_GUTTER_CLASS,
@@ -45,6 +45,7 @@ export function MainContentScrollArea({ children }: { children: ReactNode }) {
       <div
         className={cn(
           "min-w-0",
+          searchPage && "flex min-h-0 flex-1 flex-col",
           !searchPage && MAIN_PAGE_INLINE_PADDING_CLASS,
         )}
       >

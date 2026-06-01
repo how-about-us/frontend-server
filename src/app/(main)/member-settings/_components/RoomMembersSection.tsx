@@ -7,6 +7,10 @@ import { toast } from "sonner";
 
 import { DeleteConfirmModal } from "@/app/home/_components/DeleteConfirmModal";
 import {
+  SettingsActionButton,
+  SettingsActionButtonRow,
+} from "@/components/settings/SettingsActionButton";
+import {
   pageToolbarButtonCompactGapClass,
   pageToolbarButtonCompactIconClass,
   pageToolbarButtonCompactIconStroke,
@@ -20,9 +24,6 @@ import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
 import { MemberCard } from "./MemberCard";
-
-const roomActionButtonHoverClass =
-  "transition-colors hover:border-brand-red/40 hover:bg-brand-red/5 hover:text-brand-red";
 
 export function RoomMembersSection() {
   const router = useRouter();
@@ -282,24 +283,11 @@ export function RoomMembersSection() {
         </section>
       )}
 
-      {/* 하단 버튼 */}
       <div className="flex flex-col gap-2 border-t border-gray-border pt-4">
         {!showLeaveConfirm ? (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {isHost && currentRoom && (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className={cn(
-                  "w-full cursor-pointer rounded-xl border border-brand-red/40 py-2.5 text-sm font-medium text-brand-red",
-                  roomActionButtonHoverClass,
-                )}
-              >
-                여행 삭제
-              </button>
-            )}
-            <button
-              type="button"
+          <SettingsActionButtonRow className="pt-0">
+            <SettingsActionButton
+              variant="secondary"
               disabled={isHost && isMembersLoading}
               onClick={() => {
                 if (hostNeedsManualDelegation) {
@@ -308,14 +296,18 @@ export function RoomMembersSection() {
                 }
                 setShowLeaveConfirm(true);
               }}
-              className={cn(
-                "w-full cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-border disabled:hover:bg-transparent disabled:hover:text-dark-gray",
-                roomActionButtonHoverClass,
-              )}
             >
               방 나가기
-            </button>
-          </div>
+            </SettingsActionButton>
+            {isHost && currentRoom && (
+              <SettingsActionButton
+                variant="primary"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                여행 삭제
+              </SettingsActionButton>
+            )}
+          </SettingsActionButtonRow>
         ) : (
           <div className="rounded-xl border border-brand-red/30 bg-brand-red/5 p-4">
             <p className="mb-3 text-sm font-medium text-gray-800">
@@ -329,17 +321,16 @@ export function RoomMembersSection() {
                 </span>
               )}
             </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
+            <SettingsActionButtonRow className="pt-0">
+              <SettingsActionButton
+                variant="secondary"
                 onClick={() => setShowLeaveConfirm(false)}
                 disabled={isLeaving}
-                className="flex-1 cursor-pointer rounded-xl border border-gray-border py-2.5 text-sm font-medium text-dark-gray transition-colors hover:border-gray-400 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 취소
-              </button>
-              <button
-                type="button"
+              </SettingsActionButton>
+              <SettingsActionButton
+                variant="primary"
                 onClick={() => {
                   void handleLeaveRoom();
                 }}
@@ -349,11 +340,10 @@ export function RoomMembersSection() {
                   hostNeedsManualDelegation ||
                   (isHost && isMembersLoading)
                 }
-                className="flex-1 cursor-pointer rounded-xl bg-brand-red py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLeaving ? "처리 중…" : "나가기"}
-              </button>
-            </div>
+              </SettingsActionButton>
+            </SettingsActionButtonRow>
           </div>
         )}
       </div>
@@ -390,13 +380,14 @@ export function RoomMembersSection() {
             <p className="mt-3 text-sm leading-relaxed text-dark-gray">
               멤버에게 방장을 넘긴 뒤 나가실 수 있어요.
             </p>
-            <button
-              type="button"
+            <SettingsActionButton
+              variant="primary"
+              flex={false}
+              className="mt-6 w-full"
               onClick={() => setShowDelegateFirstModal(false)}
-              className="mt-6 w-full cursor-pointer rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               확인
-            </button>
+            </SettingsActionButton>
           </div>
         </div>
       )}

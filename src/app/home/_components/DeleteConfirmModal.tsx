@@ -3,6 +3,10 @@
 import { useEffect } from "react";
 import { Trash2 } from "lucide-react";
 
+import {
+  SettingsActionButton,
+  SettingsActionButtonRow,
+} from "@/components/settings/SettingsActionButton";
 import { RoomListItem } from "@/lib/api/rooms";
 import { useDeleteRoom } from "@/hooks/useRooms";
 
@@ -51,24 +55,22 @@ export function DeleteConfirmModal({ room, onClose, onDeleted }: Props) {
             삭제됩니다.
           </p>
         </div>
-        <div className="flex gap-2 px-6 py-5">
-          <button
-            type="button"
+        <SettingsActionButtonRow className="px-6 py-5 pt-0">
+          <SettingsActionButton
+            variant="secondary"
             onClick={onClose}
             disabled={isPending}
-            className="flex-1 rounded-full border border-gray-border py-2.5 text-sm font-semibold text-dark-gray transition hover:bg-bubble-gray disabled:opacity-40"
           >
             취소
-          </button>
-          <button
-            type="button"
+          </SettingsActionButton>
+          <SettingsActionButton
+            variant="primary"
             onClick={handleDelete}
             disabled={isPending}
-            className="flex-1 rounded-full bg-brand-red py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
           >
             {isPending ? "삭제 중…" : "삭제하기"}
-          </button>
-        </div>
+          </SettingsActionButton>
+        </SettingsActionButtonRow>
       </div>
     </div>
   );

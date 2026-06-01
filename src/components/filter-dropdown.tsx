@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { cn } from "@/lib/utils";
@@ -32,19 +32,11 @@ export function FilterDropdown<T extends string>({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const setOpenTracked = useCallback(
-    (next: boolean | ((prev: boolean) => boolean)) => {
-      setOpen((prev) => {
-        const resolved =
-          typeof next === "function" ? next(prev) : next;
-        if (resolved !== prev) onOpenChange?.(resolved);
-        return resolved;
-      });
-    },
-    [onOpenChange],
-  );
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
-  useOnClickOutside(ref, () => setOpenTracked(false));
+  useOnClickOutside(ref, () => setOpen(false));
 
   const isActive = value !== "all";
   const selectedLabel = options.find((o) => o.value === value)?.label ?? label;
@@ -52,7 +44,7 @@ export function FilterDropdown<T extends string>({
   return (
     <div ref={ref} className="relative shrink-0">
       <button
-        onClick={() => setOpenTracked((prev) => !prev)}
+        onClick={() => setOpen((prev) => !prev)}
         className={cn(
           "flex items-center gap-1",
           isActive
@@ -86,7 +78,7 @@ export function FilterDropdown<T extends string>({
               key={opt.value}
               onClick={() => {
                 onChange(opt.value);
-                setOpenTracked(false);
+                setOpen(false);
               }}
               className={cn(
                 "w-full cursor-pointer px-3 py-2 text-left text-xs transition hover:bg-gray-50",

@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  SettingsActionButton,
+  SettingsActionButtonRow,
+} from "@/components/settings/SettingsActionButton";
 import { TripFormFields } from "@/components/rooms/TripFormFields";
 import { useUpdateRoom } from "@/hooks/useRooms";
 import {
@@ -117,24 +121,22 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
       )}
 
       {!readOnly && (
-        <div className="flex gap-2 pt-2">
-          <button
-            type="button"
+        <SettingsActionButtonRow>
+          <SettingsActionButton
+            variant="secondary"
             onClick={handleCancel}
             disabled={!isDirty || isPending}
-            className="flex-1 rounded-full border border-gray-border py-2.5 text-sm font-semibold text-dark-gray transition hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-40"
           >
             취소
-          </button>
-          <button
-            type="button"
+          </SettingsActionButton>
+          <SettingsActionButton
+            variant="primary"
             onClick={handleApply}
             disabled={!canApply}
-            className="flex-1 rounded-full bg-brand-red py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isPending ? "저장 중…" : "적용하기"}
-          </button>
-        </div>
+          </SettingsActionButton>
+        </SettingsActionButtonRow>
       )}
     </div>
   );

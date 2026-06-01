@@ -237,7 +237,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="flex h-full max-h-full min-h-0 w-full min-w-0 flex-col border-b border-gray-border">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
 
       {/* 검색 입력 — focus ring이 잘리지 않도록 상·좌우 여백 */}
@@ -385,7 +385,7 @@ export default function SearchPage() {
           )}
 
         {!hasActiveSearch && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-1 text-[#99A1AF]">
+          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1 text-[#99A1AF]">
             <Search className="h-8 w-8" />
             <span className="text-sm">검색어를 입력해 주세요.</span>
           </div>
