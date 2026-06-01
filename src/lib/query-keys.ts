@@ -83,12 +83,6 @@ export type ActiveSearchMapPin = {
   lng: number;
 };
 
-export const activeSearchMapPinsQueryKey = [
-  "places",
-  "search",
-  "active-map-pins",
-] as const;
-
 // ─── Rooms / members ─────────────────────────────────────────────────────────
 
 export const ROOMS_QUERY_KEY = ["rooms"] as const;

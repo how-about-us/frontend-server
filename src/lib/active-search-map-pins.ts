@@ -1,22 +1,12 @@
-import type { QueryClient } from "@tanstack/react-query";
+import type { ActiveSearchMapPin } from "@/lib/query-keys";
+import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 
-import {
-  activeSearchMapPinsQueryKey,
-  type ActiveSearchMapPin,
-} from "@/lib/query-keys";
-
-export function setActiveSearchMapPins(
-  queryClient: QueryClient,
-  pins: ActiveSearchMapPin[],
-): void {
-  queryClient.setQueryData(activeSearchMapPinsQueryKey, pins);
+export function setActiveSearchMapPins(pins: ActiveSearchMapPin[]): void {
+  useSearchMapPinsStore.getState().setPins(pins);
 }
 
-export function clearActiveSearchMapPins(queryClient: QueryClient): void {
-  queryClient.setQueryData<ActiveSearchMapPin[]>(
-    activeSearchMapPinsQueryKey,
-    [],
-  );
+export function clearActiveSearchMapPins(): void {
+  useSearchMapPinsStore.getState().clearPins();
 }
 
 export function placeSearchResultsToMapPins(

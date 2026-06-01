@@ -48,6 +48,7 @@ import {
   updateBookmarkCategory,
   updateRoom,
   type RoomDetail,
+  type RoomListItem,
   type RoomListResponse,
   type RoomSchedule,
 } from "@/lib/api/rooms";
@@ -97,6 +98,47 @@ export function useCreateRoom() {
   return useMutation({
     mutationFn: (data: RoomCreateRequest) => createRoom(data),
     onSuccess: async (room) => {
+      const rid = room.id.trim();
+      if (rid.length) {
+        queryClient.setQueryData<RoomDetail>(roomDetailQueryKey(rid), {
+          id: room.id,
+          title: room.title,
+          destination: room.destination,
+          startDate: room.startDate,
+          endDate: room.endDate,
+          inviteCode: room.inviteCode,
+          memberCount: room.memberCount,
+          role: room.role,
+          createdAt: room.createdAt,
+        });
+        const listItem: RoomListItem = {
+          id: room.id,
+          title: room.title,
+          destination: room.destination,
+          startDate: room.startDate,
+          endDate: room.endDate,
+          role: room.role,
+          joinedAt: room.createdAt,
+        };
+        queryClient.setQueryData<RoomListResponse>(ROOMS_QUERY_KEY, (prev) => {
+          if (!prev) {
+            return {
+              rooms: [listItem],
+              nextCursor: null,
+              hasNext: false,
+            };
+          }
+          if (prev.rooms.some((r) => r.id === rid)) {
+            return {
+              ...prev,
+              rooms: prev.rooms.map((r) =>
+                r.id === rid ? { ...r, ...listItem } : r,
+              ),
+            };
+          }
+          return { ...prev, rooms: [listItem, ...prev.rooms] };
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ROOMS_QUERY_KEY });
       await hydrateRoomSchedulesFromServer(queryClient, room.id);
       await syncRoomDetailFromServer(queryClient, room.id);

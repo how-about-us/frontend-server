@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import {
@@ -30,11 +29,12 @@ import {
   writeRoomMapViewport,
 } from "@/lib/map-room-viewport-storage";
 import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
-import { activeSearchMapPinsQueryKey, type ActiveSearchMapPin } from "@/lib/query-keys";
 import { useMapCenterStore } from "@/stores/map-center-store";
+import { useSearchMapPinsStore } from "@/stores/search-map-pins-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useMapPinsFocusStore } from "@/stores/map-pins-focus-store";
 import { usePlanItineraryStopNormalizedPlaceIds } from "@/hooks/usePlanItineraryStopNormalizedPlaceIds";
+import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
@@ -184,15 +184,7 @@ function DestinationPanController({
 }
 
 function MapSearchResultPins() {
-  const { data: pins = [] } = useQuery<ActiveSearchMapPin[]>({
-    queryKey: activeSearchMapPinsQueryKey,
-    queryFn: (): ActiveSearchMapPin[] => [],
-    initialData: [],
-    staleTime: Number.POSITIVE_INFINITY,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
+  const pins = useSearchMapPinsStore((s) => s.pins);
   const pinsFocus = useMapPinsFocusStore((s) => s.focus);
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const selectedPlaceId = selectedPlace?.googlePlaceId?.trim() ?? "";
@@ -247,14 +239,21 @@ export default function Map() {
 
   const currentRoomId = useSessionStore((s) => s.currentRoomId);
   const { data: roomsData, isFetched: roomsFetched } = useRoomsList();
-  const destination =
+  const { data: roomDetail, isFetched: roomDetailFetched } =
+    useRoomDetail(currentRoomId);
+  const listDestination =
     roomsData?.rooms.find((r) => r.id === currentRoomId)?.destination ?? null;
+  const detailDestination =
+    roomDetail?.id === currentRoomId ? (roomDetail.destination ?? null) : null;
+  const destination = listDestination ?? detailDestination;
+  const mapMetaReady =
+    roomsFetched || (roomDetailFetched && Boolean(destination?.trim()));
 
   const geocodingLib = useMapsLibrary("geocoding");
   const bootstrap = useTripMapBootstrap(
     currentRoomId,
     destination,
-    roomsFetched,
+    mapMetaReady,
     geocodingLib,
   );
 
@@ -361,7 +360,7 @@ export default function Map() {
           />
         ) : (
           <GoogleMap
-            key={currentRoomId ?? "no-room"}
+            key={`${currentRoomId ?? "no-room"}:${destination ?? ""}`}
             defaultCenter={bootstrap.center}
             defaultZoom={bootstrap.zoom}
             minZoom={MAP_MIN_ZOOM}

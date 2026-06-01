@@ -10,7 +10,8 @@ import { parseRoomMemberMessage } from "@/lib/stomp/member-events";
 import { dispatchRoomMemberEvent } from "@/lib/stomp/members-dispatch";
 import {
   dispatchRoomPresence,
-  syncRoomMembersIfCacheEmpty,
+  optimisticPatchSelfOnline,
+  scheduleRoomMembersResyncAfterSubscribe,
 } from "@/lib/stomp/presence-dispatch";
 import { parseRoomScheduleMessage } from "@/lib/stomp/schedule-events";
 import { dispatchRoomScheduleEvent } from "@/lib/stomp/schedules-dispatch";
@@ -96,7 +97,11 @@ export function subscribeRoomStompTopics(
     },
   );
 
-  void syncRoomMembersIfCacheEmpty(queryClientRef.current, subscribedRoomId);
+  optimisticPatchSelfOnline(queryClientRef.current, subscribedRoomId);
+  scheduleRoomMembersResyncAfterSubscribe(
+    queryClientRef.current,
+    subscribedRoomId,
+  );
 
   return () => {
     membersSub.unsubscribe();

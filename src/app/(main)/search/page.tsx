@@ -9,7 +9,6 @@ import {
 } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,7 +44,6 @@ import {
 
 export default function SearchPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const qParam = searchParams.get("q")?.trim() ?? "";
@@ -88,7 +86,7 @@ export default function SearchPage() {
         return;
       }
 
-      clearActiveSearchMapPins(queryClient);
+      clearActiveSearchMapPins();
       searchPinsEpochRef.current =
         useMapPinsFocusStore.getState().claimFocus("search");
       const snapshot = buildSearchMapSnapshotFromMapCenterStore();
@@ -104,7 +102,7 @@ export default function SearchPage() {
       setSearchRadius(snapshot.radius);
       setSearchGeneration((g) => g + 1);
     },
-    [queryClient],
+    [],
   );
 
   useLayoutEffect(() => {
@@ -185,32 +183,32 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!hasActiveSearch) {
-      clearActiveSearchMapPins(queryClient);
+      clearActiveSearchMapPins();
       useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
       return;
     }
 
     if (isFetching) {
-      clearActiveSearchMapPins(queryClient);
+      clearActiveSearchMapPins();
       return;
     }
 
     if (isError) {
-      clearActiveSearchMapPins(queryClient);
+      clearActiveSearchMapPins();
       return;
     }
 
     if (!searchPinWriteStillValid(searchPinsEpochRef.current)) return;
-    setActiveSearchMapPins(queryClient, placeSearchResultsToMapPins(items));
-  }, [hasActiveSearch, isFetching, isError, items, queryClient]);
+    setActiveSearchMapPins(placeSearchResultsToMapPins(items));
+  }, [hasActiveSearch, isFetching, isError, items]);
 
   useEffect(
     () => () => {
-      clearActiveSearchMapPins(queryClient);
+      clearActiveSearchMapPins();
       useMapPinsFocusStore.getState().releaseSearchFocusIfActive();
       useSearchRecenterStore.getState().clearSearchSnapshot();
     },
-    [queryClient],
+    [],
   );
 
   const shareModeActive = isShareMode && hasRoom;

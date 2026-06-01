@@ -26,7 +26,6 @@ import {
   useMapPinsFocusStore,
 } from "@/stores/map-pins-focus-store";
 import { clearActiveSearchMapPins } from "@/lib/active-search-map-pins";
-import { getQueryClient } from "@/lib/query-client";
 
 import { MAP_PLACE_CATEGORIES } from "./map-place-categories";
 import type { OpenValue, RatingValue } from "./map-filters";
@@ -274,8 +273,7 @@ export function MapDiscoverPlaces({
       prevCategoryIdRef.current = selectedCategoryId;
       useSearchRecenterStore.getState().setDiscoverSnapshot(snap);
       const epoch = useMapPinsFocusStore.getState().claimFocus("discover");
-      const qc = getQueryClient();
-      if (qc) clearActiveSearchMapPins(qc);
+      clearActiveSearchMapPins();
       queueMicrotask(() => {
         void runDiscoverSearch(
           snap,
@@ -292,8 +290,7 @@ export function MapDiscoverPlaces({
       useSearchRecenterStore.getState().discoverSnapshot;
     if (!existing) return;
     const epochFilter = useMapPinsFocusStore.getState().claimFocus("discover");
-    const qc = getQueryClient();
-    if (qc) clearActiveSearchMapPins(qc);
+    clearActiveSearchMapPins();
     queueMicrotask(() => {
       void runDiscoverSearch(
         existing,
@@ -320,8 +317,7 @@ export function MapDiscoverPlaces({
     if (!snapshot) return;
     useSearchRecenterStore.getState().setDiscoverSnapshot(snapshot);
     const epochRecenter = useMapPinsFocusStore.getState().claimFocus("discover");
-    const qc = getQueryClient();
-    if (qc) clearActiveSearchMapPins(qc);
+    clearActiveSearchMapPins();
     queueMicrotask(() => {
       void runDiscoverSearch(
         snapshot,
