@@ -14,7 +14,11 @@ import {
 } from "@/lib/maps";
 import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
 import { scheduleIdsToRouteColors } from "@/lib/plan/planRouteDayColors";
-import { displayPositionsForOverlappingStops } from "@/lib/plan/planItineraryMapMarkerOffset";
+import {
+  displayPositionsForOverlappingStops,
+  filterVisiblePlanMapStops,
+  type PlanMapStopForOffset,
+} from "@/lib/plan/planItineraryMapMarkerOffset";
 import {
   flattenPlanItinerarySegmentsFromPlaces,
 } from "@/lib/plan/planItineraryMapSegments";
@@ -161,14 +165,10 @@ export function PlanItineraryMapRoutes() {
   });
 
   const stopsForOffset = useMemo(() => {
-    const out: Array<{
-      scheduleId: number;
-      itemId: number;
-      location: google.maps.LatLngLiteral;
-    }> = [];
+    const out: PlanMapStopForOffset[] = [];
     orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
       const places = buckets[bucketIdx] ?? [];
-      places.forEach((place) => {
+      places.forEach((place, orderIndex) => {
         const loc = place.location;
         const gid =
           typeof place.googlePlaceId === "string"
@@ -177,67 +177,88 @@ export function PlanItineraryMapRoutes() {
         if (!loc || typeof place.itemId !== "number" || !gid.length) return;
         const legacyId = normalizeGooglePlaceResourceId(gid);
         if (selectedNorm != null && legacyId === selectedNorm) return;
-        out.push({ scheduleId, itemId: place.itemId, location: loc });
+        out.push({
+          scheduleId,
+          itemId: place.itemId,
+          orderIndex,
+          location: loc,
+        });
       });
     });
     return out;
   }, [orderedScheduleIdsForQueries, buckets, selectedNorm]);
 
-  const displayPosByStopId = useMemo(
-    () => displayPositionsForOverlappingStops(stopsForOffset),
+  const visibleStops = useMemo(
+    () => filterVisiblePlanMapStops(stopsForOffset),
     [stopsForOffset],
   );
 
-  const stopMarkers: Array<JSX.Element> = [];
-  orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
-    const places = buckets[bucketIdx] ?? [];
-    places.forEach((place, orderIdx) => {
-      const loc = place.location;
-      const gid =
-        typeof place.googlePlaceId === "string"
-          ? place.googlePlaceId.trim()
-          : "";
-      if (!loc || typeof place.itemId !== "number" || !gid.length) return;
+  const displayPosByStopId = useMemo(
+    () => displayPositionsForOverlappingStops(visibleStops),
+    [visibleStops],
+  );
 
-      const legacyId = normalizeGooglePlaceResourceId(gid);
-      if (selectedNorm != null && legacyId === selectedNorm) return;
-
-      const dayColor =
-        routeColorByScheduleId.get(scheduleId) ?? fallbackRouteStroke;
-
-      const stopKey = `${scheduleId}-${place.itemId}`;
-      const markerPos =
-        displayPosByStopId.get(stopKey) ?? loc;
-
-      stopMarkers.push(
-        <AdvancedMarker
-          key={`plan-stop-${scheduleId}-${place.itemId}`}
-          position={markerPos}
-          title={place.title}
-          onClick={(e) => {
-            e.stop();
-            setSelectedPlace(
-              {
-                name: place.title,
-                category: "",
-                rating: null,
-                googlePlaceId: legacyId,
-                location: loc,
-                address: place.subtitle,
-              },
-              { preserveMapZoom: true },
-            );
-          }}
-        >
-          <PlanItineraryStopMapPin
-            orderLabel={orderIdx + 1}
-            pinColor={dayColor}
-            className="cursor-pointer scale-90 select-none"
-          />
-        </AdvancedMarker>,
-      );
+  const placeByScheduleAndItemId = useMemo(() => {
+    const map = new Map<
+      string,
+      { place: (typeof buckets)[number][number]; scheduleId: number }
+    >();
+    orderedScheduleIdsForQueries.forEach((scheduleId, bucketIdx) => {
+      const places = buckets[bucketIdx] ?? [];
+      places.forEach((place) => {
+        if (typeof place.itemId !== "number") return;
+        map.set(`${scheduleId}-${place.itemId}`, { place, scheduleId });
+      });
     });
-  });
+    return map;
+  }, [orderedScheduleIdsForQueries, buckets]);
+
+  const stopMarkers: Array<JSX.Element> = [];
+  for (const stop of visibleStops) {
+    const entry = placeByScheduleAndItemId.get(
+      `${stop.scheduleId}-${stop.itemId}`,
+    );
+    if (!entry) continue;
+    const { place, scheduleId } = entry;
+    const loc = place.location;
+    const gid =
+      typeof place.googlePlaceId === "string" ? place.googlePlaceId.trim() : "";
+    if (!loc || !gid.length) continue;
+
+    const legacyId = normalizeGooglePlaceResourceId(gid);
+    const dayColor =
+      routeColorByScheduleId.get(scheduleId) ?? fallbackRouteStroke;
+    const stopKey = `${scheduleId}-${place.itemId}`;
+    const markerPos = displayPosByStopId.get(stopKey) ?? loc;
+
+    stopMarkers.push(
+      <AdvancedMarker
+        key={`plan-stop-${scheduleId}-${place.itemId}`}
+        position={markerPos}
+        title={place.title}
+        onClick={(e) => {
+          e.stop();
+          setSelectedPlace(
+            {
+              name: place.title,
+              category: "",
+              rating: null,
+              googlePlaceId: legacyId,
+              location: loc,
+              address: place.subtitle,
+            },
+            { preserveMapZoom: true },
+          );
+        }}
+      >
+        <PlanItineraryStopMapPin
+          orderLabel={stop.orderIndex + 1}
+          pinColor={dayColor}
+          className="cursor-pointer scale-90 select-none"
+        />
+      </AdvancedMarker>,
+    );
+  }
 
   return (
     <>
