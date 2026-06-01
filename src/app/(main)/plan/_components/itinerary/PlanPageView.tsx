@@ -83,11 +83,13 @@ export function PlanPageView() {
 
   const lastDayIndex =
     sortedSchedules.length > 0 ? sortedSchedules.length - 1 : -1;
+  const canDeleteScheduleDay = sortedSchedules.length > 1;
 
   const handleDeleteScheduleDay = useCallback(
     (dayIndex: number) => {
       if (!roomId.length) return;
       if (isDeletingSchedule) return;
+      if (!canDeleteScheduleDay) return;
       if (dayIndex !== lastDayIndex) return;
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
@@ -95,6 +97,7 @@ export function PlanPageView() {
       deleteSchedule({ roomId, scheduleId: sid });
     },
     [
+      canDeleteScheduleDay,
       deleteSchedule,
       isDeletingSchedule,
       lastDayIndex,
@@ -207,6 +210,7 @@ export function PlanPageView() {
               ? () => handleDeleteScheduleDay(dayIndex)
               : undefined
           }
+          isDeleteScheduleDisabled={!canDeleteScheduleDay}
         >
           {sortedSchedules[dayIndex] ? (
             <PlanItinerary

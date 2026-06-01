@@ -23,6 +23,8 @@ export type PlanDaySectionProps = {
    * 지정 시 헤더 우측에 휴지통 아이콘이 표시됩니다.
    */
   onRequestDeleteSchedule?: () => void;
+  /** 일차가 1개뿐일 때 등 삭제 불가 — 버튼은 보이되 비활성화 */
+  isDeleteScheduleDisabled?: boolean;
 };
 
 export function PlanDaySection({
@@ -32,6 +34,7 @@ export function PlanDaySection({
   itineraryScheduleId,
   children,
   onRequestDeleteSchedule,
+  isDeleteScheduleDisabled = false,
 }: PlanDaySectionProps) {
   const panelId = useId();
 
@@ -115,11 +118,18 @@ export function PlanDaySection({
           <button
             type="button"
             aria-label="일차 삭제"
+            disabled={isDeleteScheduleDisabled}
             onClick={(e) => {
               e.stopPropagation();
+              if (isDeleteScheduleDisabled) return;
               onRequestDeleteSchedule();
             }}
-            className="shrink-0 cursor-pointer self-center rounded-lg p-2 text-dark-gray transition-colors hover:bg-bubble-gray/60"
+            className={cn(
+              "shrink-0 self-center rounded-lg p-2 text-dark-gray transition-colors",
+              isDeleteScheduleDisabled
+                ? "cursor-not-allowed opacity-40"
+                : "cursor-pointer hover:bg-bubble-gray/60",
+            )}
           >
             <Trash2 className="h-5 w-5" aria-hidden />
           </button>
