@@ -12,7 +12,13 @@ import { ChatPanelHeader } from "./ChatPanelHeader";
 import { ChatMessageList } from "./messages/ChatMessageList";
 import { ChatInputBar } from "./ChatInputBar";
 import { ChatRateLimitBanner } from "./ChatRateLimitBanner";
+import { ChatPanelMinimizedResizeHandle } from "./ChatPanelMinimizedResizeHandle";
 import { useChatRateLimitStore } from "@/stores/chat-rate-limit-store";
+import { useChatPanelMinimizedSize } from "@/hooks/useChatPanelMinimizedSize";
+import {
+  CHAT_PANEL_MINIMIZED_VIEWPORT_INSET_PX,
+  CHAT_PANEL_MINIMIZED_VIEWPORT_INSET_RIGHT_PX,
+} from "@/lib/chat/chat-panel-minimized-size";
 import {
   panelVariants,
   panelTransition,
@@ -48,6 +54,8 @@ export function ChatPanel() {
   const rid = typeof roomId === "string" ? roomId.trim() : "";
   const rateLimit = useChatRateLimitStore((s) => s.rateLimit);
   const isSendBlocked = useChatRateLimitStore((s) => s.isSendBlocked);
+  const { size: minimizedSize, setSize, persistSize, clampSize } =
+    useChatPanelMinimizedSize();
 
   function handlePlusClick() {
     if (!rid) return;
@@ -103,14 +111,25 @@ export function ChatPanel() {
       {chatState === "minimized" ? (
         <motion.div
           key="chat-panel-minimized"
-          layout
           variants={panelVariants}
           initial="hidden"
           animate={getPanelAnimate(true)}
           exit="exit"
           transition={panelTransition}
-          className="absolute bottom-6 right-6 z-20 flex h-[460px] w-72 flex-col overflow-hidden border border-gray-border bg-white"
+          style={{
+            width: minimizedSize.width,
+            height: minimizedSize.height,
+            bottom: CHAT_PANEL_MINIMIZED_VIEWPORT_INSET_PX,
+            right: CHAT_PANEL_MINIMIZED_VIEWPORT_INSET_RIGHT_PX,
+          }}
+          className="absolute z-20 flex flex-col overflow-hidden rounded-2xl border border-gray-border bg-white"
         >
+          <ChatPanelMinimizedResizeHandle
+            size={minimizedSize}
+            onResize={setSize}
+            onResizeEnd={persistSize}
+            clampSize={clampSize}
+          />
           {panelBody}
         </motion.div>
       ) : null}
