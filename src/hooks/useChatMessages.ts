@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import {
   deriveAiRequestConversationState,
+  maxSequenceInMessages,
   mergeServerMessageLists,
   newestServerMessageByCreatedAt,
   normalizeFetchedRoomMessages,
@@ -43,6 +44,17 @@ function chatHistoryGateKey(
   return `${uid ?? "anon"}:${roomId.trim()}`;
 }
 
+function bumpRoomLastSequence(
+  map: Map<string, number>,
+  rid: string,
+  msgs: readonly ServerChatMessage[],
+) {
+  const mx = maxSequenceInMessages(msgs);
+  if (mx == null) return;
+  const prev = map.get(rid);
+  map.set(rid, prev != null ? Math.max(prev, mx) : mx);
+}
+
 export function useChatMessages(
   roomId: string | null,
   options: UseChatMessagesOptions,
@@ -71,6 +83,10 @@ export function useChatMessages(
   const hasMoreByRoomRef = useRef<Map<string, boolean>>(new Map());
   /** 방별 after 이후 더 불러올 메시지 존재 여부 */
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
+  /** 방별 마지막 수신 sequence — STOMP gap 감지용 */
+  const lastSequenceByRoomRef = useRef<Map<string, number>>(new Map());
+  /** afterSequence 복구 fetch 진행 중인 방 */
+  const recoveringSequenceRoomsRef = useRef<Set<string>>(new Set());
   const isFetchingOlderRef = useRef(false);
   const isFetchingNewerRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
@@ -139,6 +155,8 @@ export function useChatMessages(
       historyFetchedRoomIdsRef.current.clear();
       hasMoreByRoomRef.current.clear();
       hasMoreNewerByRoomRef.current.clear();
+      lastSequenceByRoomRef.current.clear();
+      recoveringSequenceRoomsRef.current.clear();
       setHasMore(true);
       setHasMoreNewer(false);
       setIsFetchingOlder(false);
@@ -204,6 +222,7 @@ export function useChatMessages(
             transientMessagesDuringRoomHistoryFetch(prev),
           ),
         );
+        bumpRoomLastSequence(lastSequenceByRoomRef.current, roomId, out.serverSlice);
         historyFetchedRoomIdsRef.current.add(gateKey);
         void warmPlacePhotoQueriesFromChatHistory(queryClient, out.warmHistory);
 
@@ -258,6 +277,7 @@ export function useChatMessages(
         setRawMessages((prev) =>
           mergeServerMessageLists(normalizedHistory, prev),
         );
+        bumpRoomLastSequence(lastSequenceByRoomRef.current, rid, normalizedHistory);
         void warmPlacePhotoQueriesFromChatHistory(
           queryClient,
           normalizedHistory,
@@ -299,6 +319,7 @@ export function useChatMessages(
         setRawMessages((prev) =>
           mergeServerMessageLists(prev, normalizedHistory),
         );
+        bumpRoomLastSequence(lastSequenceByRoomRef.current, rid, normalizedHistory);
         void warmPlacePhotoQueriesFromChatHistory(
           queryClient,
           normalizedHistory,
@@ -312,6 +333,31 @@ export function useChatMessages(
         setIsFetchingNewer(false);
       });
   }, [roomId, queryClient]);
+
+  const recoverMissingMessages = useCallback(
+    (rid: string, afterSeq: number) => {
+      if (recoveringSequenceRoomsRef.current.has(rid)) return;
+      recoveringSequenceRoomsRef.current.add(rid);
+
+      void getRoomMessages(rid, {
+        afterSequence: String(afterSeq),
+        size: CHAT_MESSAGE_PAGE_SIZE,
+      })
+        .then((rows) => {
+          const normalized = normalizeFetchedRoomMessages(rows);
+          setRawMessages((prev) => mergeServerMessageLists(prev, normalized));
+          bumpRoomLastSequence(lastSequenceByRoomRef.current, rid, normalized);
+          void warmPlacePhotoQueriesFromChatHistory(queryClient, normalized);
+        })
+        .catch(() => {
+          /* 다음 STOMP 수신 시 재감지 */
+        })
+        .finally(() => {
+          recoveringSequenceRoomsRef.current.delete(rid);
+        });
+    },
+    [queryClient],
+  );
 
   const jumpToLatest = useCallback(() => {
     const rid = roomId;
@@ -329,9 +375,11 @@ export function useChatMessages(
         setInitialScrollAnchorId(undefined);
         setHasMore(more);
         setHasMoreNewer(false);
+        lastSequenceByRoomRef.current.delete(rid);
         setRawMessages([]);
         queueMicrotask(() => {
           setRawMessages(normalized);
+          bumpRoomLastSequence(lastSequenceByRoomRef.current, rid, normalized);
           void warmPlacePhotoQueriesFromChatHistory(queryClient, normalized);
         });
       })
@@ -347,7 +395,11 @@ export function useChatMessages(
     }
 
     const handler = (msg: ServerChatMessage) => {
+      const rid = roomId.trim();
+      const lastSeq = lastSequenceByRoomRef.current.get(rid);
+      const seq = msg.sequence;
       const isNew = !rawMessagesRef.current.some((m) => m.id === msg.id);
+
       setRawMessages((prev) => {
         const i = prev.findIndex((m) => m.id === msg.id);
         if (i < 0) return [...prev, msg];
@@ -355,11 +407,30 @@ export function useChatMessages(
         next[i] = msg;
         return next;
       });
+
+      const atTail = hasMoreNewerByRoomRef.current.get(rid) !== true;
+      if (
+        atTail &&
+        seq != null &&
+        lastSeq != null &&
+        seq > lastSeq + 1 &&
+        !recoveringSequenceRoomsRef.current.has(rid)
+      ) {
+        recoverMissingMessages(rid, lastSeq);
+      }
+
+      if (seq != null) {
+        lastSequenceByRoomRef.current.set(
+          rid,
+          Math.max(lastSeq ?? seq, seq),
+        );
+      }
+
       onIncomingMessage(msg, isNew);
     };
     setRoomChatMessageHandler(handler);
     return () => setRoomChatMessageHandler(null);
-  }, [roomId, setRoomChatMessageHandler, onIncomingMessage]);
+  }, [roomId, setRoomChatMessageHandler, onIncomingMessage, recoverMissingMessages]);
 
   return {
     messages,

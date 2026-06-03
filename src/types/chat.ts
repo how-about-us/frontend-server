@@ -112,4 +112,6 @@ export interface ServerChatMessage {
   metadata?: Record<string, string>;
   createdAt: string;
   clientMessageId?: string;
+  /** 방별 단조 증가 sequence — STOMP gap 감지·afterSequence 복구용 */
+  sequence?: number;
 }

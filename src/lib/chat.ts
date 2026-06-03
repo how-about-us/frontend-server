@@ -110,6 +110,8 @@ export function normalizeServerChatMessage(
 
   const metadata = normalizeMetadataRecord(r.metadata);
 
+  const sequence = parseFiniteNumber(r.sequence ?? r.seq);
+
   return {
     id,
     roomId,
@@ -119,6 +121,7 @@ export function normalizeServerChatMessage(
     createdAt,
     clientMessageId,
     metadata,
+    ...(sequence !== undefined ? { sequence } : {}),
   };
 }
 
@@ -645,6 +648,18 @@ export function newestServerMessageByCreatedAt(
     if (m.createdAt.localeCompare(newest.createdAt) > 0) newest = m;
   }
   return newest;
+}
+
+/** 목록 중 최대 sequence (gap 추적용). 없으면 undefined */
+export function maxSequenceInMessages(
+  msgs: readonly ServerChatMessage[],
+): number | undefined {
+  let max: number | undefined;
+  for (const m of msgs) {
+    if (m.sequence == null) continue;
+    max = max == null ? m.sequence : Math.max(max, m.sequence);
+  }
+  return max;
 }
 
 /**

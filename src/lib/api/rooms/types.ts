@@ -97,6 +97,7 @@ export type RoomMessage = {
   metadata?: Record<string, string>;
   createdAt: string;
   clientMessageId?: string;
+  sequence?: number;
 };
 
 // ─── Bookmark categories ───────────────────────────────────────────────────
