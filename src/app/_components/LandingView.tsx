@@ -2,6 +2,7 @@ import { Bookmark, CalendarDays, MessageCircle } from "lucide-react";
 
 import { LandingActionLink } from "@/app/_components/LandingActionLink";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 const FEATURES = [
   {
@@ -80,6 +81,8 @@ export function LandingView() {
           </div>
         </section>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

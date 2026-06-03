@@ -6,6 +6,7 @@ import { useChat } from "@/hooks/useChat";
 import { useHostJoinRequestsBadgeCount } from "@/hooks/useHostJoinRequestsBadgeCount";
 
 import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
+import { SidebarContactButton } from "./SidebarContactButton";
 import { SidebarFeedbackFormButton } from "./SidebarFeedbackFormButton";
 import { SidebarNavItem } from "./SidebarNavItem";
 
@@ -66,8 +67,9 @@ function SideBar() {
 
       </div>
 
-      <div className="mt-auto px-1 pb-4">
+      <div className="mt-auto flex flex-col items-center gap-2 px-1 pb-4">
         <SidebarFeedbackFormButton />
+        <SidebarContactButton />
       </div>
     </aside>
   );

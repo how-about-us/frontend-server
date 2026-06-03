@@ -14,6 +14,8 @@ import {
 } from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 import { RoomListItem } from "@/lib/api/rooms";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+
 import { HomeHeader } from "./_components/HomeHeader";
 import { RoomGrid } from "./_components/RoomGrid";
 import { DeleteConfirmModal } from "./_components/DeleteConfirmModal";
@@ -26,11 +28,11 @@ export default function HomePage() {
   const [deletingRoom, setDeletingRoom] = useState<RoomListItem | null>(null);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="flex min-h-screen flex-col bg-white">
       <MobileReadOnlyNotice />
       <HomeHeader />
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
         {!isMobileDevice ? (
           <div className="flex items-center justify-end">
             <Link
@@ -60,6 +62,8 @@ export default function HomePage() {
           />
         </div>
       </main>
+
+      <SiteFooter />
 
       {deletingRoom && (
         <DeleteConfirmModal

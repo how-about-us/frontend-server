@@ -8,6 +8,7 @@ export function isProtectedAppPath(pathname: string): boolean {
     "/member-settings",
     "/room-settings",
     "/settings",
+    "/contact",
     "/waiting",
   ];
   return prefixes.some(
