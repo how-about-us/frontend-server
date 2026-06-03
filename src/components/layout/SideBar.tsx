@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 import { useChat } from "@/hooks/useChat";
 import { useHostJoinRequestsBadgeCount } from "@/hooks/useHostJoinRequestsBadgeCount";
+import { sidebarIcons } from "@/lib/public-assets";
 
 import { SidebarChatUnreadBadge } from "./SidebarChatUnreadBadge";
 import { SidebarContactButton } from "./SidebarContactButton";
@@ -11,11 +12,19 @@ import { SidebarFeedbackFormButton } from "./SidebarFeedbackFormButton";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 const SIDEBAR_ITEMS = [
-  { key: "search", href: "/search", icon: "/search.svg" },
-  { key: "plan", href: "/plan", icon: "/calendar-days.svg" },
-  { key: "bookmark", href: "/bookmark", icon: "/bookmark.svg" },
-  { key: "member-settings", href: "/member-settings", icon: "/user-cog.svg" },
-  { key: "room-settings", href: "/room-settings", icon: "/settings.svg" },
+  { key: "search", href: "/search", icon: sidebarIcons.search },
+  { key: "plan", href: "/plan", icon: sidebarIcons.plan },
+  { key: "bookmark", href: "/bookmark", icon: sidebarIcons.bookmark },
+  {
+    key: "member-settings",
+    href: "/member-settings",
+    icon: sidebarIcons.memberSettings,
+  },
+  {
+    key: "room-settings",
+    href: "/room-settings",
+    icon: sidebarIcons.roomSettings,
+  },
 ] as const;
 
 function isSidebarItemActive(pathname: string, key: string, href: string) {
@@ -46,7 +55,7 @@ function SideBar() {
         }`}
         aria-label="sidebar-chat"
       >
-        <img src="/chat.svg" alt="" className="h-9 w-9 brightness-0 invert" />
+        <img src={sidebarIcons.chat} alt="" className="h-9 w-9 brightness-0 invert" />
         <SidebarChatUnreadBadge />
       </button>
 

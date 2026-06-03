@@ -3,6 +3,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppRootProviders } from "@/providers/root-providers";
+import { brandAssets } from "@/lib/public-assets";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -17,13 +18,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/favicon.png",
+        url: brandAssets.favicon,
         type: "image/png",
         sizes: "1254x1254",
       },
     ],
-    apple: "/favicon.png",
-    shortcut: "/favicon.png",
+    apple: brandAssets.favicon,
+    shortcut: brandAssets.favicon,
   },
 };
 

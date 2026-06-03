@@ -12,6 +12,7 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-app-inter)", "sans-serif"],
         heading: ["var(--font-app-inter)", "sans-serif"],
+        landing: ["var(--font-landing)", "sans-serif"],
       },
       colors: {
         "brand-red": "#f12d33",

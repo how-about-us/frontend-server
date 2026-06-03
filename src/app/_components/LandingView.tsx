@@ -21,17 +21,25 @@ import {
   LANDING_SECTION_PY,
   LANDING_SPLIT_SECTIONS,
 } from "@/lib/landing/landing-content";
+import { LANDING_FONT_VARIABLE } from "@/lib/landing/landing-font";
+import { landingTypography } from "@/lib/landing/landing-typography";
 import { LANDING_HERO_SCREENSHOT } from "@/lib/landing/landing-screenshots";
+import { cn } from "@/lib/utils";
 
 export function LandingView() {
   return (
-    <div className="relative flex min-h-screen flex-col bg-gradient-to-b from-bubble-gray/80 via-white to-white">
+    <div
+      className={cn(
+        LANDING_FONT_VARIABLE,
+        "relative flex min-h-screen flex-col bg-gradient-to-b from-bubble-gray/80 via-white to-white",
+      )}
+    >
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(241,45,51,0.08),_transparent_55%)]"
         aria-hidden
       />
 
-      <header className="sticky top-0 z-20 border-b border-gray-border/60 bg-white/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-20 border-b border-gray-border/60 bg-white/80 font-sans backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
           <BrandLogo alt="우때" />
           <LandingActionLink href="/login" className="px-5">
@@ -40,7 +48,7 @@ export function LandingView() {
         </div>
       </header>
 
-      <main className="relative z-10 flex flex-1 flex-col">
+      <main className="relative z-10 flex flex-1 flex-col font-sans antialiased">
         <section className={`mx-auto w-full max-w-5xl px-6 ${LANDING_SECTION_PY}`}>
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
             <LandingReveal
@@ -50,15 +58,16 @@ export function LandingView() {
             >
               <BrandLogo alt="" style={{ width: 116, height: 66 }} />
               <div className="flex flex-col gap-3">
-                <h1 className="text-3xl font-bold tracking-tight text-black sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-                  함께 만드는 여행
-                </h1>
-                <p className="max-w-md text-sm leading-relaxed text-dark-gray sm:text-base">
+                <h1 className={landingTypography.heroTitle}>함께 만드는 여행</h1>
+                <p className={landingTypography.heroBody}>
                   실시간으로 장소를 모으고, 일정을 짜고, AI와 함께 완성도 높은
                   여행을 준비하세요.
                 </p>
               </div>
-              <LandingActionLink href="/login" className="px-8 py-3 text-base">
+              <LandingActionLink
+                href="/login"
+                className={cn("px-8 py-3", landingTypography.primaryAction)}
+              >
                 지금 시작하기
               </LandingActionLink>
             </LandingReveal>
@@ -132,21 +141,24 @@ export function LandingView() {
             variant="scale"
             className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 text-center"
           >
-            <h2 className="text-2xl font-bold tracking-tight text-black sm:text-3xl">
+            <h2 className={landingTypography.ctaTitle}>
               지금 바로 함께 여행을 만들어보세요
             </h2>
-            <p className="text-sm leading-relaxed text-dark-gray sm:text-base">
+            <p className={landingTypography.ctaBody}>
               로그인하고 여행 방을 만들면, 친구를 초대해 바로 계획을 시작할 수
               있어요.
             </p>
-            <LandingActionLink href="/login" className="px-8 py-3 text-base">
+            <LandingActionLink
+              href="/login"
+              className={cn("px-8 py-3", landingTypography.primaryAction)}
+            >
               지금 시작하기
             </LandingActionLink>
           </LandingReveal>
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter className="font-sans" />
     </div>
   );
 }

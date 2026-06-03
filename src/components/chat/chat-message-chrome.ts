@@ -2,6 +2,8 @@
  * 채팅 메시지 말풍선·아바타 래퍼 등 레이아웃·배경 토큰.
  * 글자 크기·행간은 `chatTypography` 를 사용합니다.
  */
+import { chatAssets } from "@/lib/public-assets";
+
 export const chatMessageChrome = {
   bubbleBase: "w-fit rounded-xl px-4 py-2",
   otherBubble: "bg-[#f4f6f8] text-gray-900",
@@ -12,7 +14,7 @@ export const chatMessageChrome = {
     "max-w-[min(100%,20rem)] rounded-full bg-black/25 px-4 py-2 text-center text-white",
   avatarSm:
     "h-10 w-10 shrink-0 overflow-hidden rounded-xl shadow-sm ring-1 ring-gray-border",
-  wooriIconSrc: "/woori.svg",
+  wooriIconSrc: chatAssets.woori,
 } as const;
 
 /** 최소화 패널용 — 말풍선·시스템 띠 패딩 살짝 축소 */

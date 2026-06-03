@@ -9,11 +9,8 @@ import {
   LANDING_FEATURE_SCREENSHOTS,
   type LandingScreenshotSpec,
 } from "@/lib/landing/landing-screenshots";
+import { landingTypography } from "@/lib/landing/landing-typography";
 import { cn } from "@/lib/utils";
-
-const headingClassName =
-  "text-2xl font-bold tracking-tight text-black sm:text-3xl";
-const bodyClassName = "text-sm leading-relaxed text-dark-gray sm:text-base";
 
 export function LandingSectionIntro({
   id,
@@ -28,10 +25,10 @@ export function LandingSectionIntro({
 }) {
   return (
     <div className={cn("text-center", className)}>
-      <h2 id={id} className={headingClassName}>
+      <h2 id={id} className={landingTypography.sectionTitle}>
         {title}
       </h2>
-      <p className={cn("mt-3", bodyClassName)}>{subtitle}</p>
+      <p className={cn("mt-3", landingTypography.sectionSubtitle)}>{subtitle}</p>
     </div>
   );
 }
@@ -42,10 +39,10 @@ export function LandingBulletList({ items }: { items: readonly string[] }) {
       {items.map((point) => (
         <li
           key={point}
-          className={cn("flex items-start gap-2.5", bodyClassName)}
+          className={cn("flex items-start gap-2.5", landingTypography.chipBody)}
         >
           <span
-            className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-red"
+            className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-red"
             aria-hidden
           />
           {point}
@@ -69,8 +66,8 @@ export function LandingIconChip({
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
         <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
       </div>
-      <h3 className="text-base font-semibold text-black">{title}</h3>
-      <p className={bodyClassName}>{description}</p>
+      <h3 className={landingTypography.chipTitle}>{title}</h3>
+      <p className={landingTypography.chipBody}>{description}</p>
     </article>
   );
 }
@@ -86,11 +83,16 @@ export function LandingStepCard({
 }) {
   return (
     <article className="flex h-full flex-col gap-3 rounded-2xl border border-gray-border bg-white/95 p-6 shadow-sm">
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red text-sm font-bold text-white">
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-full bg-brand-red",
+          landingTypography.stepBadge,
+        )}
+      >
         {step}
       </span>
-      <h3 className="text-base font-semibold text-black">{title}</h3>
-      <p className={bodyClassName}>{description}</p>
+      <h3 className={landingTypography.stepTitle}>{title}</h3>
+      <p className={landingTypography.stepBody}>{description}</p>
     </article>
   );
 }
@@ -106,14 +108,12 @@ function LandingSplitCopy({
   return (
     <>
       {section.eyebrow ? (
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-red">
-          {section.eyebrow}
-        </p>
+        <p className={landingTypography.splitEyebrow}>{section.eyebrow}</p>
       ) : null}
-      <h2 id={`landing-${section.id}-heading`} className={headingClassName}>
+      <h2 id={`landing-${section.id}-heading`} className={landingTypography.sectionTitle}>
         {section.title}
       </h2>
-      <p className={bodyClassName}>{section.description}</p>
+      <p className={landingTypography.sectionSubtitle}>{section.description}</p>
       <LandingBulletList items={section.points} />
     </>
   );
@@ -188,7 +188,7 @@ export function LandingProblemBanner({ children }: { children: ReactNode }) {
       aria-label="문제와 해결"
     >
       <LandingReveal variant="scale">
-        <p className="mx-auto max-w-3xl px-6 text-center text-base font-medium leading-relaxed text-black sm:text-lg">
+        <p className={cn("mx-auto max-w-3xl px-6", landingTypography.banner)}>
           {children}
         </p>
       </LandingReveal>
