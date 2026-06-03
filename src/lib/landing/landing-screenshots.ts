@@ -33,6 +33,12 @@ export const LANDING_FEATURE_SCREENSHOTS = {
     width: 960,
     height: 600,
   },
+  ai: {
+    src: "/landing/feature-ai.png",
+    alt: "우때 AI WOORI — 팀과 함께 보는 장소 추천과 대화 요약",
+    width: 960,
+    height: 600,
+  },
 } satisfies Record<string, LandingScreenshotSpec>;
 
 export type LandingFeatureScreenshotKey = keyof typeof LANDING_FEATURE_SCREENSHOTS;
