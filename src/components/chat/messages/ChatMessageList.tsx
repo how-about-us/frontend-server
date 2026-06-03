@@ -63,7 +63,9 @@ export function ChatMessageList({
   onLoadOlder,
   hasMoreOlder = false,
   isLoadingOlder = false,
+  onLoadNewer,
   hasMoreNewer = false,
+  isLoadingNewer = false,
   onJumpToLatest,
   initialScrollAnchorId,
   onAtBottom,
@@ -74,7 +76,9 @@ export function ChatMessageList({
   onLoadOlder?: () => void;
   hasMoreOlder?: boolean;
   isLoadingOlder?: boolean;
+  onLoadNewer?: () => void;
   hasMoreNewer?: boolean;
+  isLoadingNewer?: boolean;
   onJumpToLatest?: () => void;
   /** 최초 로드 시 이 메시지로 스크롤 정렬 (없으면 최하단) */
   initialScrollAnchorId?: string;
@@ -83,6 +87,7 @@ export function ChatMessageList({
 }) {
   const groups = groupConsecutiveMessages(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const { data: sessionUser } = useSessionUser();
@@ -233,6 +238,25 @@ export function ChatMessageList({
     obs.observe(sentinel);
     return () => obs.disconnect();
   }, [onLoadOlder, hasMoreOlder, isLoadingOlder]);
+
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    const sentinel = bottomSentinelRef.current;
+    if (!root || !sentinel || !onLoadNewer || !hasMoreNewer) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.some((e) => e.isIntersecting);
+        if (hit && !isLoadingNewer) {
+          onLoadNewer();
+        }
+      },
+      { root, rootMargin: "0px 0px 48px 0px", threshold: 0 },
+    );
+
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [onLoadNewer, hasMoreNewer, isLoadingNewer]);
 
   useEffect(() => {
     if (!smoothJumpToBottom) return;
@@ -390,6 +414,22 @@ export function ChatMessageList({
               </motion.div>
             );
           })}
+          {isLoadingNewer ? (
+            <div
+              className={cn(
+                "mt-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
+                isMinimized && "mt-1.5 min-h-4 text-[10px]",
+              )}
+              aria-live="polite"
+            >
+              다음 메시지 불러오는 중…
+            </div>
+          ) : null}
+          <div
+            ref={bottomSentinelRef}
+            className={cn("shrink-0", isMinimized ? "min-h-1" : "min-h-2")}
+            aria-hidden
+          />
           <div ref={bottomRef} />
         </div>
       </div>

@@ -43,10 +43,12 @@ export function ChatPanel() {
     sendAiMessage,
     sendCancelAiRequest,
     fetchOlderMessages,
+    fetchNewerMessages,
     jumpToLatest,
     hasMore,
     hasMoreNewer,
     isFetchingOlder,
+    isFetchingNewer,
     initialScrollAnchorId,
     markMessagesRead,
   } = useChatMessages(roomId, { fetchHistory: panelOpen });
@@ -81,7 +83,9 @@ export function ChatPanel() {
         onLoadOlder={fetchOlderMessages}
         hasMoreOlder={hasMore}
         isLoadingOlder={isFetchingOlder}
+        onLoadNewer={fetchNewerMessages}
         hasMoreNewer={hasMoreNewer}
+        isLoadingNewer={isFetchingNewer}
         onJumpToLatest={jumpToLatest}
         initialScrollAnchorId={initialScrollAnchorId}
         onAtBottom={markMessagesRead}

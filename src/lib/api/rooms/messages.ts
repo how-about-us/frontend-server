@@ -16,6 +16,18 @@ export async function getRoomMessages(
   });
 }
 
+export async function getRoomMessageReadStatus(
+  roomId: string,
+): Promise<{ lastReadMessageId: string | null }> {
+  return requestJson(
+    apiUrl(`/rooms/${roomId}/messages/read-status`),
+    undefined,
+    {
+      errorMessage: "읽음 위치 조회 실패",
+    },
+  );
+}
+
 export async function getRoomUnreadCount(
   roomId: string,
 ): Promise<{ unreadCount: number }> {

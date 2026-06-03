@@ -13,7 +13,7 @@ import {
 } from "@/lib/chat";
 import { useStompContext } from "@/contexts/StompContext";
 import { useSessionUser } from "@/hooks/useSessionUser";
-import { getRoomMessages } from "@/lib/api/rooms";
+import { getRoomMessageReadStatus, getRoomMessages } from "@/lib/api/rooms";
 import type { RoomMember } from "@/lib/api/rooms";
 import { useRoomMembers } from "@/hooks/useRooms";
 import { useChatActions } from "@/hooks/useChatActions";
@@ -24,7 +24,7 @@ import {
   loadInitialRoomHistory,
 } from "@/lib/chat/initialRoomHistory";
 
-export const CHAT_MESSAGE_PAGE_SIZE = 30;
+export const CHAT_MESSAGE_PAGE_SIZE = 15;
 
 export type UseChatMessagesOptions = {
   /**
@@ -56,6 +56,7 @@ export function useChatMessages(
   const [rawMessages, setRawMessages] = useState<ServerChatMessage[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingOlder, setIsFetchingOlder] = useState(false);
+  const [isFetchingNewer, setIsFetchingNewer] = useState(false);
   const [hasMoreNewer, setHasMoreNewer] = useState(false);
   const [initialScrollAnchorId, setInitialScrollAnchorId] = useState<
     string | undefined
@@ -71,6 +72,7 @@ export function useChatMessages(
   /** 방별 after 이후 더 불러올 메시지 존재 여부 */
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
   const isFetchingOlderRef = useRef(false);
+  const isFetchingNewerRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
   rawMessagesRef.current = rawMessages;
 
@@ -140,7 +142,9 @@ export function useChatMessages(
       setHasMore(true);
       setHasMoreNewer(false);
       setIsFetchingOlder(false);
+      setIsFetchingNewer(false);
       isFetchingOlderRef.current = false;
+      isFetchingNewerRef.current = false;
       return;
     }
 
@@ -157,6 +161,8 @@ export function useChatMessages(
     }
 
     prevRoomForHistoryGateRef.current = roomId;
+
+    if (userId == null) return;
 
     const gateKey = chatHistoryGateKey(userId, roomId);
 
@@ -177,9 +183,12 @@ export function useChatMessages(
 
     void (async () => {
       try {
+        const { lastReadMessageId } = await getRoomMessageReadStatus(roomId);
+        if (cancelled) return;
+
         const out = await loadInitialRoomHistory(
           roomId,
-          null,
+          lastReadMessageId,
           CHAT_MESSAGE_PAGE_SIZE,
         );
         if (cancelled) return;
@@ -198,8 +207,10 @@ export function useChatMessages(
         historyFetchedRoomIdsRef.current.add(gateKey);
         void warmPlacePhotoQueriesFromChatHistory(queryClient, out.warmHistory);
 
+        const caughtUpAtBottom =
+          !out.initialScrollAnchorId && !out.hasMoreNewer;
         const newest = newestServerMessageByCreatedAt(out.serverSlice);
-        if (newest) {
+        if (caughtUpAtBottom && newest) {
           resetReadDedup();
           markMessagesRead(newest.id);
         }
@@ -261,6 +272,47 @@ export function useChatMessages(
       });
   }, [roomId, queryClient]);
 
+  const fetchNewerMessages = useCallback(() => {
+    const rid = roomId;
+    if (!rid) return;
+    if (isFetchingNewerRef.current) return;
+    if (hasMoreNewerByRoomRef.current.get(rid) !== true) return;
+
+    const newest = newestServerMessageByCreatedAt(rawMessagesRef.current);
+    if (!newest) return;
+
+    isFetchingNewerRef.current = true;
+    setIsFetchingNewer(true);
+
+    void getRoomMessages(rid, {
+      afterId: newest.id,
+      size: CHAT_MESSAGE_PAGE_SIZE,
+    })
+      .then((history) => {
+        const normalizedHistory = normalizeFetchedRoomMessages(history);
+        const more = hasOlderHistoryPage(
+          normalizedHistory.length,
+          CHAT_MESSAGE_PAGE_SIZE,
+        );
+        hasMoreNewerByRoomRef.current.set(rid, more);
+        setHasMoreNewer(more);
+        setRawMessages((prev) =>
+          mergeServerMessageLists(prev, normalizedHistory),
+        );
+        void warmPlacePhotoQueriesFromChatHistory(
+          queryClient,
+          normalizedHistory,
+        );
+      })
+      .catch(() => {
+        /* 유지: hasMoreNewer 그대로, 다음 스크롤에서 재시도 가능 */
+      })
+      .finally(() => {
+        isFetchingNewerRef.current = false;
+        setIsFetchingNewer(false);
+      });
+  }, [roomId, queryClient]);
+
   const jumpToLatest = useCallback(() => {
     const rid = roomId;
     if (!rid) return;
@@ -315,10 +367,12 @@ export function useChatMessages(
     sendAiMessage,
     sendCancelAiRequest,
     fetchOlderMessages,
+    fetchNewerMessages,
     jumpToLatest,
     hasMore,
     hasMoreNewer,
     isFetchingOlder,
+    isFetchingNewer,
     initialScrollAnchorId,
     markMessagesRead,
   };

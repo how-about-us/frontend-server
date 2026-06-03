@@ -84,4 +84,8 @@ export {
 
 export { getRoomMembers, kickMember, leaveRoom, transferHost } from "./members";
 
-export { getRoomMessages, getRoomUnreadCount } from "./messages";
+export {
+  getRoomMessageReadStatus,
+  getRoomMessages,
+  getRoomUnreadCount,
+} from "./messages";

@@ -70,12 +70,6 @@ export function useChatMessageRead({
   );
 
   useEffect(() => {
-    if (!panelOpen || !roomId?.trim()) return;
-    lastPublishedReadIdRef.current = null;
-    markMessagesRead();
-  }, [panelOpen, roomId, connected, markMessagesRead]);
-
-  useEffect(() => {
     if (!roomId) {
       lastPublishedReadIdRef.current = null;
     }
