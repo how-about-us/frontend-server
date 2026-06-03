@@ -40,6 +40,9 @@ module.exports = {
       screens: {
         s1: layoutTokens.width.s1,
         s2: layoutTokens.width.s2,
+        /** 랜딩 전용 — 기본 sm(640)·lg(1024)보다 낮은 기준 */
+        "landing-sm": "480px",
+        "landing-lg": "720px",
       },
       keyframes: {
         chatHistoryIn: {

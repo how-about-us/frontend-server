@@ -113,7 +113,9 @@ function LandingSplitCopy({
       <h2 id={`landing-${section.id}-heading`} className={landingTypography.sectionTitle}>
         {section.title}
       </h2>
-      <p className={landingTypography.sectionSubtitle}>{section.description}</p>
+      <p className={cn(landingTypography.sectionSubtitle, "whitespace-pre-line")}>
+        {section.description}
+      </p>
       <LandingBulletList items={section.points} />
     </>
   );
@@ -139,12 +141,12 @@ export function LandingSplitSectionBlock({
       )}
       aria-labelledby={`landing-${section.id}-heading`}
     >
-      <div className="mx-auto grid max-w-5xl items-center gap-10 px-6 lg:grid-cols-2 lg:gap-16">
+      <div className="mx-auto grid max-w-5xl items-center gap-10 px-6 landing-lg:grid-cols-2 landing-lg:gap-16">
         <LandingReveal
           variant={textVariant}
           className={cn(
             "flex flex-col gap-5",
-            section.reverse ? "lg:order-2" : "lg:order-1",
+            section.reverse ? "landing-lg:order-2" : "landing-lg:order-1",
           )}
         >
           <LandingSplitCopy section={section} />
@@ -153,7 +155,7 @@ export function LandingSplitSectionBlock({
         <LandingReveal
           variant={imageVariant}
           delay={0.12}
-          className={cn(section.reverse ? "lg:order-1" : "lg:order-2")}
+          className={cn(section.reverse ? "landing-lg:order-1" : "landing-lg:order-2")}
         >
           <LandingScreenshot
             screenshot={screenshot}
@@ -188,9 +190,9 @@ export function LandingProblemBanner({ children }: { children: ReactNode }) {
       aria-label="문제와 해결"
     >
       <LandingReveal variant="scale">
-        <p className={cn("mx-auto max-w-3xl px-6", landingTypography.banner)}>
+        <div className="mx-auto flex max-w-3xl flex-col gap-1.5 px-6">
           {children}
-        </p>
+        </div>
       </LandingReveal>
     </section>
   );

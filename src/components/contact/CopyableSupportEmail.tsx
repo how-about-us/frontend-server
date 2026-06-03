@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 type CopyableSupportEmailProps = {
   variant?: "inline" | "card";
+  /** brand-red 등 진한 배경 위 */
+  tone?: "default" | "onBrand";
   className?: string;
 };
 
@@ -22,8 +24,11 @@ async function copySupportEmail() {
 
 export function CopyableSupportEmail({
   variant = "inline",
+  tone = "default",
   className,
 }: CopyableSupportEmailProps) {
+  const onBrand = tone === "onBrand";
+
   if (variant === "card") {
     return (
       <div
@@ -63,22 +68,39 @@ export function CopyableSupportEmail({
       <button
         type="button"
         onClick={() => void copySupportEmail()}
-        className="group inline-flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 transition hover:bg-light-gray hover:text-black"
+        className={cn(
+          "group inline-flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 transition",
+          onBrand
+            ? "text-white hover:bg-white/10"
+            : "hover:bg-light-gray hover:text-black",
+        )}
         aria-label={`${SUPPORT_EMAIL} 복사`}
       >
         <span className="select-text">{SUPPORT_EMAIL}</span>
         <Copy
-          className="h-3.5 w-3.5 shrink-0 text-dark-gray/70 transition group-hover:text-black"
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 transition",
+            onBrand
+              ? "text-white/70 group-hover:text-white"
+              : "text-dark-gray/70 group-hover:text-black",
+          )}
           strokeWidth={2}
           aria-hidden
         />
       </button>
       <a
         href={`mailto:${SUPPORT_EMAIL}`}
-        className="inline-flex items-center justify-center rounded-full p-0.5 transition hover:bg-light-gray hover:text-black"
+        className={cn(
+          "inline-flex items-center justify-center rounded-full p-0.5 transition",
+          onBrand ? "text-white/80 hover:bg-white/10 hover:text-white" : "hover:bg-light-gray hover:text-black",
+        )}
         aria-label="메일 앱으로 문의하기"
       >
-        <Mail className="h-3.5 w-3.5 opacity-70" strokeWidth={2} aria-hidden />
+        <Mail
+          className={cn("h-3.5 w-3.5", onBrand ? "opacity-90" : "opacity-70")}
+          strokeWidth={2}
+          aria-hidden
+        />
       </a>
     </span>
   );

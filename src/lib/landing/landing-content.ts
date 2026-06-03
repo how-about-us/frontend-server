@@ -37,12 +37,12 @@ export const LANDING_FEATURE_CHIPS: readonly LandingFeatureChip[] = [
   {
     icon: MessageCircle,
     title: "실시간 채팅",
-    description: "멤버와 동시에 대화하며 장소를 공유해요.",
+    description: "친구들과 대화하며 장소를 공유해요.",
   },
   {
     icon: MapPin,
-    title: "지도 탐색",
-    description: "카테고리·필터로 장소를 찾고 모아요.",
+    title: "장소 탐색",
+    description: "검색과 필터로 장소를 찾고 모아요.",
   },
   {
     icon: Bot,
@@ -72,7 +72,7 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
     screenshotKey: "chat",
     title: "실시간 채팅 협업",
     description:
-      "여행 멤버와 같은 채팅방에서 장소를 공유하고, AI 추천까지 받으며 계획을 세워보세요.",
+      "여행 멤버와 같은 채팅방에서 장소를 공유하고, \nAI 추천까지 받으며 계획을 세워보세요.",
     points: [
       "접속 중인 멤버를 바로 확인",
       "메시지와 장소 카드가 즉시 반영",
@@ -86,14 +86,14 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
     screenshotKey: "map",
     title: "지도로 장소 모으기",
     description:
-      "지도에서 장소를 찾고 북마크에 모아두세요. 함께 고른 장소를 한눈에 확인할 수 있어요.",
+      "지도에서 장소를 찾고 북마크에 모아두세요. \n함께 고른 장소를 한눈에 확인할 수 있어요.",
     points: [
       "카테고리별 장소 탐색",
       "필터로 원하는 조건만 보기",
       "북마크에 모아 팀과 공유",
     ],
     reverse: true,
-    background: "muted",
+    background: "white",
   },
   {
     id: "plan",
@@ -115,7 +115,7 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
     eyebrow: "WOORI",
     title: "팀이 함께 쓰는 AI",
     description:
-      "장소 추천과 대화 요약을 모두가 같은 창에서 확인하세요. 혼자 쓰는 AI가 아니라, 여행 멤버 전원이 함께 보는 AI 어시스턴트예요.",
+      "장소 추천과 대화 요약을 모두가 같은 창에서 확인하세요.\n혼자 쓰는 AI가 아니라, 여행 멤버 전원이 함께 보는 AI 어시스턴트예요.",
     points: [
       "채팅 맥락을 반영한 장소 추천",
       "긴 대화를 요약해 빠르게 파악",
@@ -145,6 +145,6 @@ export const LANDING_ONBOARDING_STEPS: readonly LandingOnboardingStep[] = [
 ];
 
 export const LANDING_FEATURE_SCREENSHOT_SIZES =
-  "(max-width: 1024px) 100vw, 480px";
+  "(max-width: 720px) 100vw, 480px";
 
-export const LANDING_SECTION_PY = "py-16 lg:py-20";
+export const LANDING_SECTION_PY = "py-16 landing-lg:py-20";

@@ -41,7 +41,7 @@ export function LandingView() {
 
       <header className="sticky top-0 z-20 border-b border-gray-border/60 bg-white/80 font-sans backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-          <BrandLogo alt="우때" />
+          <BrandLogo alt="우때" variant="favicon" />
           <LandingActionLink href="/login" className="px-5">
             로그인
           </LandingActionLink>
@@ -49,19 +49,24 @@ export function LandingView() {
       </header>
 
       <main className="relative z-10 flex flex-1 flex-col font-sans antialiased">
-        <section className={`mx-auto w-full max-w-5xl px-6 ${LANDING_SECTION_PY}`}>
-          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+        <section
+          className={`mx-auto w-full max-w-5xl px-6 ${LANDING_SECTION_PY}`}
+        >
+          <div className="grid items-center gap-10 landing-lg:grid-cols-2 landing-lg:gap-12">
             <LandingReveal
               immediate
               variant="slide-left"
-              className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left"
+              className="flex flex-col items-center gap-6 text-center landing-lg:items-start landing-lg:text-left"
             >
               <BrandLogo alt="" style={{ width: 116, height: 66 }} />
               <div className="flex flex-col gap-3">
-                <h1 className={landingTypography.heroTitle}>함께 만드는 여행</h1>
+                <h1 className={landingTypography.heroTitle}>
+                  함께 만드는 여행
+                </h1>
                 <p className={landingTypography.heroBody}>
-                  실시간으로 장소를 모으고, 일정을 짜고, AI와 함께 완성도 높은
-                  여행을 준비하세요.
+                  친구들과 실시간으로 장소를 찾고, 일정을 짜고,
+                  <br />
+                  AI와 함께 완성도 높은 여행을 준비해보세요!
                 </p>
               </div>
               <LandingActionLink
@@ -77,12 +82,24 @@ export function LandingView() {
         </section>
 
         <LandingProblemBanner>
-          단톡방, 지도 앱, 메모장을 오가지 마세요 —{" "}
-          <span className="text-brand-red">한 화면에서 동시에.</span>
+          <p className={landingTypography.bannerHighlight}>
+            한 화면에서 동시에
+          </p>
+          <p className={landingTypography.bannerLead}>
+            단톡방, 지도 앱, 메모장을 오가지 마세요
+          </p>
         </LandingProblemBanner>
 
+        {LANDING_SPLIT_SECTIONS.map((section) => (
+          <LandingSplitSectionBlock
+            key={section.id}
+            section={section}
+            sectionClassName={LANDING_SECTION_PY}
+          />
+        ))}
+
         <section
-          className={`mx-auto w-full max-w-5xl px-6 ${LANDING_SECTION_PY}`}
+          className={`mx-auto w-full max-w-5xl border-t border-gray-border/40 px-6 ${LANDING_SECTION_PY}`}
           aria-labelledby="landing-features-heading"
         >
           <LandingReveal variant="fade" className="mb-10">
@@ -93,7 +110,7 @@ export function LandingView() {
             />
           </LandingReveal>
 
-          <LandingRevealStagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <LandingRevealStagger className="grid gap-4 landing-sm:grid-cols-2 landing-lg:grid-cols-3">
             {LANDING_FEATURE_CHIPS.map((chip, index) => (
               <LandingRevealItem
                 key={chip.title}
@@ -104,14 +121,6 @@ export function LandingView() {
             ))}
           </LandingRevealStagger>
         </section>
-
-        {LANDING_SPLIT_SECTIONS.map((section) => (
-          <LandingSplitSectionBlock
-            key={section.id}
-            section={section}
-            sectionClassName={LANDING_SECTION_PY}
-          />
-        ))}
 
         <section
           className={`border-t border-gray-border/40 bg-bubble-gray/40 ${LANDING_SECTION_PY}`}
@@ -126,7 +135,10 @@ export function LandingView() {
               />
             </LandingReveal>
 
-            <LandingRevealStagger stagger={0.14} className="grid gap-4 sm:grid-cols-3">
+            <LandingRevealStagger
+              stagger={0.14}
+              className="grid gap-4 landing-sm:grid-cols-3"
+            >
               {LANDING_ONBOARDING_STEPS.map((step) => (
                 <LandingRevealItem key={step.step} variant="scale">
                   <LandingStepCard {...step} />
@@ -136,7 +148,9 @@ export function LandingView() {
           </div>
         </section>
 
-        <section className={`border-t border-gray-border/40 ${LANDING_SECTION_PY}`}>
+        <section
+          className={`border-t border-gray-border/40 ${LANDING_SECTION_PY}`}
+        >
           <LandingReveal
             variant="scale"
             className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 text-center"

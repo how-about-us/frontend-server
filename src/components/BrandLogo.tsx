@@ -3,29 +3,41 @@ import type { ImgHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { brandAssets } from "@/lib/public-assets";
 
-const LOGO_SRC = brandAssets.logo;
 const LOGO_INTRINSIC_WIDTH = 58;
 const LOGO_INTRINSIC_HEIGHT = 40;
+const FAVICON_DISPLAY_SIZE = 36;
 
-export type BrandLogoProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src">;
+export type BrandLogoProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
+  variant?: "logo" | "favicon";
+};
 
 /**
  * 앱 공식 `brand/logo.svg` — Safari 호환을 위해 네이티브 `<img>` 사용.
- * 표시 크기는 SVG 고유 비율(49×28)을 따릅니다.
+ * `favicon` variant는 헤더 등 compact 영역용.
  */
-export function BrandLogo({ alt, className, style, ...rest }: BrandLogoProps) {
+export function BrandLogo({
+  alt,
+  className,
+  style,
+  variant = "logo",
+  ...rest
+}: BrandLogoProps) {
+  const isFavicon = variant === "favicon";
+  const width = isFavicon ? FAVICON_DISPLAY_SIZE : LOGO_INTRINSIC_WIDTH;
+  const height = isFavicon ? FAVICON_DISPLAY_SIZE : LOGO_INTRINSIC_HEIGHT;
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- local SVG; Safari-safe
+    // eslint-disable-next-line @next/next/no-img-element -- local brand asset; Safari-safe
     <img
-      src={LOGO_SRC}
+      src={isFavicon ? brandAssets.favicon : brandAssets.logo}
       alt={alt}
-      width={LOGO_INTRINSIC_WIDTH}
-      height={LOGO_INTRINSIC_HEIGHT}
+      width={width}
+      height={height}
       decoding="async"
-      className={cn("block shrink-0", className)}
+      className={cn("block shrink-0", isFavicon && "rounded-lg", className)}
       style={{
-        width: LOGO_INTRINSIC_WIDTH,
-        height: LOGO_INTRINSIC_HEIGHT,
+        width,
+        height,
         ...style,
       }}
       {...rest}

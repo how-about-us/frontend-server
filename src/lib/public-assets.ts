@@ -20,8 +20,7 @@ export const chatAssets = {
 
 /** 웹 URL 참고용 — `next/font/local` path는 `landing-font.ts`에 정적 리터럴로 둠 */
 export const fontFiles = {
-  landingRegular: "laundrygothic-regular.woff",
-  landingBold: "laundrygothic-bold.woff",
+  landingBmjua: "bmjua.otf",
 } as const;
 
 export const landingAssetDir = "/landing" as const;
