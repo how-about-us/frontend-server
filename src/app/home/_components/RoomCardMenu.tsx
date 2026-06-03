@@ -1,21 +1,25 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { LogOut, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { RoomListItem } from "@/lib/api/rooms";
+import { isHostRole } from "@/lib/rooms";
 import { cn } from "@/lib/utils";
 
 type Props = {
   room: RoomListItem;
   onDelete: (room: RoomListItem) => void;
+  onLeave: (room: RoomListItem) => void;
 };
 
-export function RoomCardMenu({ room, onDelete }: Props) {
+export function RoomCardMenu({ room, onDelete, onLeave }: Props) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(menuRef, () => setOpen(false));
+
+  const isHost = isHostRole(room.role);
 
   return (
     <div ref={menuRef} className="relative">
@@ -41,18 +45,33 @@ export function RoomCardMenu({ room, onDelete }: Props) {
 
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              setOpen(false);
-              onDelete(room);
-            }}
-            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-red transition hover:bg-bubble-gray"
-          >
-            <Trash2 size={13} />
-            삭제하기
-          </button>
+          {isHost ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setOpen(false);
+                onDelete(room);
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-red transition hover:bg-bubble-gray"
+            >
+              <Trash2 size={13} />
+              삭제하기
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setOpen(false);
+                onLeave(room);
+              }}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
+            >
+              <LogOut size={13} />
+              방 나가기
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -5,7 +5,6 @@ import { MapPin } from "lucide-react";
 
 import { RoomListItem } from "@/lib/api/rooms";
 import { planPathForRoom } from "@/lib/join-room-workflow";
-import { isHostRole } from "@/lib/rooms";
 import { getRoomGradient } from "@/stores/rooms-store";
 import { useSessionStore } from "@/stores/session-store";
 import { RoomCardMenu } from "./RoomCardMenu";
@@ -14,9 +13,10 @@ import { formatTripYmdRangeShortKo as formatDateRange } from "@/lib/plan/tripRan
 type Props = {
   room: RoomListItem;
   onDelete: (room: RoomListItem) => void;
+  onLeave: (room: RoomListItem) => void;
 };
 
-export function RoomCard({ room, onDelete }: Props) {
+export function RoomCard({ room, onDelete, onLeave }: Props) {
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
   const gradient = getRoomGradient(room.id);
 
@@ -40,9 +40,7 @@ export function RoomCard({ room, onDelete }: Props) {
             <MapPin size={18} className="text-white" strokeWidth={2.25} />
           </div>
 
-          <div
-            className={`min-w-0 flex-1 ${isHostRole(room.role) ? "pr-7" : ""}`}
-          >
+          <div className="min-w-0 flex-1 pr-7">
             <p className="truncate text-sm font-semibold">{room.title}</p>
             <p className="mt-0.5 truncate text-xs text-dark-gray">
               {room.destination}
@@ -54,11 +52,9 @@ export function RoomCard({ room, onDelete }: Props) {
         </div>
       </Link>
 
-      {isHostRole(room.role) ? (
-        <div className="absolute right-3 top-3 z-10">
-          <RoomCardMenu room={room} onDelete={onDelete} />
-        </div>
-      ) : null}
+      <div className="absolute right-3 top-3 z-10">
+        <RoomCardMenu room={room} onDelete={onDelete} onLeave={onLeave} />
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ type Props = {
   isError: boolean;
   onRetry: () => void;
   onDelete: (room: RoomListItem) => void;
+  onLeave: (room: RoomListItem) => void;
 };
 
 export function RoomGrid({
@@ -17,6 +18,7 @@ export function RoomGrid({
   isError,
   onRetry,
   onDelete,
+  onLeave,
 }: Props) {
   if (isLoading) {
     return (
@@ -57,7 +59,12 @@ export function RoomGrid({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rooms.map((room) => (
-        <RoomCard key={room.id} room={room} onDelete={onDelete} />
+        <RoomCard
+          key={room.id}
+          room={room}
+          onDelete={onDelete}
+          onLeave={onLeave}
+        />
       ))}
     </div>
   );

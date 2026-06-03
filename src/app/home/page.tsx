@@ -19,6 +19,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { HomeHeader } from "./_components/HomeHeader";
 import { RoomGrid } from "./_components/RoomGrid";
 import { DeleteConfirmModal } from "./_components/DeleteConfirmModal";
+import { LeaveConfirmModal } from "./_components/LeaveConfirmModal";
 
 export default function HomePage() {
   const { isMobileDevice } = useMobileView();
@@ -26,6 +27,7 @@ export default function HomePage() {
   const rooms = data?.rooms ?? [];
 
   const [deletingRoom, setDeletingRoom] = useState<RoomListItem | null>(null);
+  const [leavingRoom, setLeavingRoom] = useState<RoomListItem | null>(null);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -59,6 +61,7 @@ export default function HomePage() {
             isError={isError}
             onRetry={refetch}
             onDelete={setDeletingRoom}
+            onLeave={setLeavingRoom}
           />
         </div>
       </main>
@@ -69,6 +72,13 @@ export default function HomePage() {
         <DeleteConfirmModal
           room={deletingRoom}
           onClose={() => setDeletingRoom(null)}
+        />
+      )}
+
+      {leavingRoom && (
+        <LeaveConfirmModal
+          room={leavingRoom}
+          onClose={() => setLeavingRoom(null)}
         />
       )}
     </div>
