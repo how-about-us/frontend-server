@@ -4,9 +4,10 @@ import {
   LandingIconChip,
   LandingProblemBanner,
   LandingSectionIntro,
+  LandingHighlightSectionsRow,
   LandingSplitSectionBlock,
-  LandingStepCard,
 } from "@/app/_components/LandingSections";
+import { LandingOnboardingCarousel } from "@/app/_components/LandingOnboardingCarousel";
 import {
   LANDING_CHIP_REVEAL_VARIANTS,
   LandingReveal,
@@ -17,7 +18,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import {
   LANDING_FEATURE_CHIPS,
-  LANDING_ONBOARDING_STEPS,
+  LANDING_HIGHLIGHT_SECTIONS,
   LANDING_SECTION_PY,
   LANDING_SPLIT_SECTIONS,
 } from "@/lib/landing/landing-content";
@@ -98,6 +99,11 @@ export function LandingView() {
           />
         ))}
 
+        <LandingHighlightSectionsRow
+          sections={LANDING_HIGHLIGHT_SECTIONS}
+          sectionClassName={LANDING_SECTION_PY}
+        />
+
         <section
           className={`mx-auto w-full max-w-5xl border-t border-gray-border/40 px-6 ${LANDING_SECTION_PY}`}
           aria-labelledby="landing-features-heading"
@@ -135,16 +141,9 @@ export function LandingView() {
               />
             </LandingReveal>
 
-            <LandingRevealStagger
-              stagger={0.14}
-              className="grid gap-4 landing-sm:grid-cols-3"
-            >
-              {LANDING_ONBOARDING_STEPS.map((step) => (
-                <LandingRevealItem key={step.step} variant="scale">
-                  <LandingStepCard {...step} />
-                </LandingRevealItem>
-              ))}
-            </LandingRevealStagger>
+            <LandingReveal variant="fade" className="flex justify-center">
+              <LandingOnboardingCarousel />
+            </LandingReveal>
           </div>
         </section>
 

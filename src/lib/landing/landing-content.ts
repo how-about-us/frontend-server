@@ -27,6 +27,15 @@ export type LandingSplitSection = {
   eyebrow?: string;
 };
 
+export type LandingHighlightSection = {
+  id: string;
+  screenshotKey: LandingFeatureScreenshotKey;
+  title: string;
+  description: string;
+  points: readonly string[];
+  eyebrow?: string;
+};
+
 export type LandingOnboardingStep = {
   step: number;
   title: string;
@@ -68,20 +77,6 @@ export const LANDING_FEATURE_CHIPS: readonly LandingFeatureChip[] = [
 
 export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
   {
-    id: "chat",
-    screenshotKey: "chat",
-    title: "실시간 채팅 협업",
-    description:
-      "여행 멤버와 같은 채팅방에서 장소를 공유하고, \nAI 추천까지 받으며 계획을 세워보세요.",
-    points: [
-      "접속 중인 멤버를 바로 확인",
-      "메시지와 장소 카드가 즉시 반영",
-      "채팅에서 바로 장소 카드 공유",
-    ],
-    reverse: false,
-    background: "white",
-  },
-  {
     id: "map",
     screenshotKey: "map",
     title: "지도로 장소 모으기",
@@ -96,6 +91,20 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
     background: "white",
   },
   {
+    id: "place-share",
+    screenshotKey: "placeShare",
+    title: "장소를 찾고 공유하기",
+    description:
+      "지도에서 고른 장소를 상세 패널에서 확인하고,\n채팅·북마크·일정으로 팀과 바로 이어 보내세요.",
+    points: [
+      "채팅으로 보내기 — 사진·평점·주소가 담긴 장소 카드를 팀 채팅에 공유",
+      "북마크에 추가 — 폴더에 모아 팀과 후보 장소를 함께 관리",
+      "일정에 추가 — 날짜·순서에 맞춰 여행 일정에 바로 반영",
+    ],
+    reverse: false,
+    background: "white",
+  },
+  {
     id: "plan",
     screenshotKey: "plan",
     title: "날짜별 일정과 동선",
@@ -106,8 +115,24 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
       "드래그로 순서를 쉽게 조정",
       "이동수단과 지도 경로 확인",
     ],
-    reverse: false,
+    reverse: true,
     background: "white",
+  },
+];
+
+/** 05·06 — 한 행 좌우 2열 (`LandingHighlightSectionsRow`) */
+export const LANDING_HIGHLIGHT_SECTIONS: readonly LandingHighlightSection[] = [
+  {
+    id: "chat",
+    screenshotKey: "chat",
+    title: "실시간 채팅 협업",
+    description:
+      "여행 멤버와 같은 채팅방에서 장소를 공유하고, \nAI 추천까지 받으며 계획을 세워보세요.",
+    points: [
+      "접속 중인 멤버를 바로 확인",
+      "메시지와 장소 카드가 즉시 반영",
+      "채팅에서 바로 장소 카드 공유",
+    ],
   },
   {
     id: "ai",
@@ -121,8 +146,6 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
       "긴 대화를 요약해 빠르게 파악",
       "팀원 모두 같은 AI 답변 확인",
     ],
-    reverse: false,
-    background: "white",
   },
 ];
 
