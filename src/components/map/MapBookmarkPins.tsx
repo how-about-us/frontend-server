@@ -17,8 +17,11 @@ import {
 } from "@/lib/places/place-queries";
 import { roomBookmarksQueryKey } from "@/lib/query-keys";
 
-/** 맵 북마크 마커 아이콘 테두리 */
-const BOOKMARK_MAP_MARKER_STROKE = "#000000";
+import {
+  MAP_PIN_BORDER_STROKE,
+  MAP_PIN_BORDER_STROKE_WIDTH,
+  MAP_PIN_DISPLAY_SIZE_PX,
+} from "./map-pin-stroke";
 
 export type MapBookmarkPinsProps = {
   roomId: string | null;
@@ -149,14 +152,21 @@ export function MapBookmarkPins({
             }}
           >
             <span
-              className="flex h-[42px] w-[42px] items-center justify-center drop-shadow-md"
-              style={{ color: row.colorCode }}
+              className="flex items-center justify-center drop-shadow-md"
+              style={{
+                color: row.colorCode,
+                width: MAP_PIN_DISPLAY_SIZE_PX,
+                height: MAP_PIN_DISPLAY_SIZE_PX,
+              }}
             >
               <Bookmark
-                className="h-9 w-9"
+                style={{
+                  width: MAP_PIN_DISPLAY_SIZE_PX,
+                  height: MAP_PIN_DISPLAY_SIZE_PX,
+                }}
                 fill="currentColor"
-                stroke={BOOKMARK_MAP_MARKER_STROKE}
-                strokeWidth={2.5}
+                stroke={MAP_PIN_BORDER_STROKE}
+                strokeWidth={MAP_PIN_BORDER_STROKE_WIDTH}
                 strokeLinejoin="round"
                 aria-hidden
               />

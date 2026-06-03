@@ -41,6 +41,10 @@ import { useRoomsList } from "@/hooks/useRooms";
 import { MapPinIcon } from "@/components/icons";
 import { MapPinWithPlaceName } from "@/components/map/MapPinWithPlaceName";
 import { MapBookmarkPins } from "./MapBookmarkPins";
+import {
+  MAP_PIN_SELECTED_DISPLAY_SIZE_PX,
+  mapPinBodyBorderProps,
+} from "./map-pin-stroke";
 import { MapSearchHereButton } from "./MapSearchHereButton";
 import { MapDiscoverToolbar } from "./MapDiscoverToolbar";
 import { MapDiscoverPlaces } from "./MapDiscoverPlaces";
@@ -453,7 +457,7 @@ export default function Map() {
               onClick={(e) => e.stop()}
             >
               <span
-                className={`block scale-110 drop-shadow-lg ${
+                className={`block drop-shadow-md ${
                   selectedPlace.fromBookmark
                     ? selectedPlace.bookmarkCategoryColor?.trim()
                       ? ""
@@ -467,7 +471,10 @@ export default function Map() {
                     : undefined
                 }
               >
-                <MapPinIcon size={44} />
+                <MapPinIcon
+                  size={MAP_PIN_SELECTED_DISPLAY_SIZE_PX}
+                  {...mapPinBodyBorderProps}
+                />
               </span>
             </AdvancedMarker>
           )}

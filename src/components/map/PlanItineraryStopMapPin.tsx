@@ -3,7 +3,10 @@
 import { MapPinIconWithoutCircle } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
-const PIN_SIZE_PX = 36;
+import {
+  MAP_PIN_DISPLAY_SIZE_PX,
+  mapPinBodyBorderProps,
+} from "./map-pin-stroke";
 
 export type PlanItineraryStopMapPinProps = {
   /** 표시 순번 (1부터). 호출부에서 `orderIdx + 1` 전달 권장 */
@@ -33,8 +36,9 @@ export function PlanItineraryStopMapPin({
       )}
     >
       <MapPinIconWithoutCircle
-        size={PIN_SIZE_PX}
+        size={MAP_PIN_DISPLAY_SIZE_PX}
         color={trimmed.length > 0 ? trimmed : "currentColor"}
+        {...mapPinBodyBorderProps}
       />
       <span
         className={cn(

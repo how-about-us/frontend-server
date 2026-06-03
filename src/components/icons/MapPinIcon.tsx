@@ -1,17 +1,35 @@
-import { MAP_PIN_BODY_PATH } from "./MapPinIconWithoutCircle";
+import {
+  MAP_PIN_BODY_PATH,
+  MAP_PIN_ICON_VIEW_BOX,
+} from "./MapPinIconWithoutCircle";
 
-export function MapPinIcon({ size = 24, color = "currentColor" }) {
+export function MapPinIcon({
+  size = 24,
+  color = "currentColor",
+  stroke,
+  strokeWidth,
+}: {
+  size?: number;
+  color?: string;
+  stroke?: string;
+  strokeWidth?: number;
+}) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox={MAP_PIN_ICON_VIEW_BOX}
       fill="none"
+      overflow="visible"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* 핀 몸체 (Path) */}
-      <path d={MAP_PIN_BODY_PATH} fill={color} />
-      {/* 내부 흰색 원 (Circle) */}
+      <path
+        d={MAP_PIN_BODY_PATH}
+        fill={color}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
       <circle
         cx="50"
         cy="35"
