@@ -15,9 +15,15 @@ export const metadata: Metadata = {
   title: "우때",
   description: "실시간 협업 여행 플래너",
   icons: {
-    icon: "/우때.svg",
-    apple: "/우때.svg",
-    shortcut: "/우때.svg",
+    icon: [
+      {
+        url: "/favicon.png",
+        type: "image/png",
+        sizes: "1254x1254",
+      },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
   },
 };
 
