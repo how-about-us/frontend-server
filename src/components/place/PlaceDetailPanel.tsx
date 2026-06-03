@@ -145,7 +145,7 @@ export function PlaceDetailPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable] [scrollbar-color:rgba(0,0,0,0.15)_transparent] [&::-webkit-scrollbar]:w-4 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/[0.15] [&::-webkit-scrollbar-track]:border-l [&::-webkit-scrollbar-track]:border-gray-200 [&::-webkit-scrollbar-track]:bg-transparent">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:rgba(0,0,0,0.15)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/[0.15] [&::-webkit-scrollbar-track]:bg-transparent">
         <PlaceSummaryHeader
           name={displayName}
           category={displayCategory}

@@ -37,7 +37,7 @@ export const LANDING_FEATURE_CHIPS: readonly LandingFeatureChip[] = [
   {
     icon: MessageCircle,
     title: "실시간 채팅",
-    description: "친구들과 대화하며 장소를 공유해요.",
+    description: "친구들과 대화하며 계획을 공유해요.",
   },
   {
     icon: MapPin,
@@ -57,7 +57,7 @@ export const LANDING_FEATURE_CHIPS: readonly LandingFeatureChip[] = [
   {
     icon: CalendarDays,
     title: "날짜별 일정",
-    description: "날짜마다 일정을 짜고 메모를 남겨요.",
+    description: "일차마다 체류시간을 정하고 메모를 남겨요.",
   },
   {
     icon: Route,

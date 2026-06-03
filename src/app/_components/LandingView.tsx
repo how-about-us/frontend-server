@@ -50,9 +50,9 @@ export function LandingView() {
 
       <main className="relative z-10 flex flex-1 flex-col font-sans antialiased">
         <section
-          className={`mx-auto w-full max-w-5xl px-6 ${LANDING_SECTION_PY}`}
+          className={`mx-auto w-full max-w-6xl px-6 ${LANDING_SECTION_PY}`}
         >
-          <div className="grid items-center gap-10 landing-lg:grid-cols-2 landing-lg:gap-12">
+          <div className="grid items-center gap-10 landing-lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.35fr)] landing-lg:gap-x-14 landing-lg:gap-y-12">
             <LandingReveal
               immediate
               variant="slide-left"

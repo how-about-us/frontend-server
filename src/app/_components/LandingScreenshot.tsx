@@ -21,7 +21,7 @@ export function LandingScreenshot({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-gray-border bg-white shadow-[0_24px_80px_-24px_rgba(15,23,42,0.18)]",
+        "overflow-hidden rounded-lg border border-gray-border bg-white shadow-[0_24px_80px_-24px_rgba(15,23,42,0.18)]",
         frameClassName,
       )}
     >

@@ -7,6 +7,7 @@ import type { LandingSplitSection } from "@/lib/landing/landing-content";
 import { LANDING_FEATURE_SCREENSHOT_SIZES } from "@/lib/landing/landing-content";
 import {
   LANDING_FEATURE_SCREENSHOTS,
+  LANDING_HERO_SCREENSHOT_SIZES,
   type LandingScreenshotSpec,
 } from "@/lib/landing/landing-screenshots";
 import { landingTypography } from "@/lib/landing/landing-typography";
@@ -62,7 +63,7 @@ export function LandingIconChip({
   description: string;
 }) {
   return (
-    <article className="flex h-full flex-col gap-3 rounded-2xl border border-gray-border bg-white/95 p-5 shadow-sm">
+    <article className="flex h-full flex-col gap-3 rounded-lg border border-gray-border bg-white/95 p-5 shadow-sm">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
         <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
       </div>
@@ -82,7 +83,7 @@ export function LandingStepCard({
   description: string;
 }) {
   return (
-    <article className="flex h-full flex-col gap-3 rounded-2xl border border-gray-border bg-white/95 p-6 shadow-sm">
+    <article className="flex h-full flex-col gap-3 rounded-lg border border-gray-border bg-white/95 p-6 shadow-sm">
       <span
         className={cn(
           "flex h-9 w-9 items-center justify-center rounded-full bg-brand-red",
@@ -173,11 +174,17 @@ export function LandingHeroScreenshot({
   screenshot: LandingScreenshotSpec;
 }) {
   return (
-    <LandingReveal variant="slide-right" delay={0.15} immediate>
+    <LandingReveal
+      variant="slide-right"
+      delay={0.15}
+      immediate
+      className="w-full landing-lg:min-w-0"
+    >
       <LandingScreenshot
         screenshot={screenshot}
         priority
-        sizes={LANDING_FEATURE_SCREENSHOT_SIZES}
+        sizes={LANDING_HERO_SCREENSHOT_SIZES}
+        frameClassName="landing-lg:shadow-[0_28px_96px_-28px_rgba(15,23,42,0.22)]"
       />
     </LandingReveal>
   );
