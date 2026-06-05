@@ -23,6 +23,9 @@
 # Cursor — project rules are local-only (Agent still reads them from disk)
 .cursor/rules/
 
+# Agent-only local context (read from disk, not committed)
+SERVICE_CONTEXT.md
+
 # misc
 .DS_Store
 *.pem
