@@ -7,7 +7,7 @@ const bodySm =
   "font-sans font-medium text-xs leading-[1.65] text-dark-gray landing-sm:text-sm";
 
 export const landingTypography = {
-  heroTitle: `${emphasis} text-[2.125rem] leading-[1.12] text-black landing-sm:text-5xl landing-lg:text-[3.5rem]`,
+  heroTitle: `${emphasis} text-[2rem] leading-[1.12] text-black landing-sm:text-[2.75rem] landing-lg:text-[3.25rem]`,
   heroBody: `${bodyMd} max-w-md`,
   bannerHighlight: `${emphasis} text-center text-2xl leading-[1.2] text-brand-red landing-sm:text-3xl landing-sm:leading-tight`,
   bannerLead: `${emphasis} text-center text-lg leading-[1.55] text-black landing-sm:text-xl landing-sm:leading-relaxed`,

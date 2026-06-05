@@ -111,9 +111,9 @@ export const LANDING_SPLIT_SECTIONS: readonly LandingSplitSection[] = [
     description:
       "날짜별로 일정을 구성하고, 이동 경로까지 확인하며 완성도 높은 여행을 준비하세요.",
     points: [
-      "날짜·시간·메모로 일정 구성",
-      "드래그로 순서를 쉽게 조정",
-      "이동수단과 지도 경로 확인",
+      "날짜·체류 시간·메모로 일정 구성하기",
+      "드래그로 순서를 쉽게 조정하기",
+      "이동수단과 지도 경로 확인하기",
     ],
     reverse: true,
     background: "white",
@@ -127,12 +127,8 @@ export const LANDING_HIGHLIGHT_SECTIONS: readonly LandingHighlightSection[] = [
     screenshotKey: "chat",
     title: "실시간 채팅 협업",
     description:
-      "여행 멤버와 같은 채팅방에서 장소를 공유하고, \nAI 추천까지 받으며 계획을 세워보세요.",
-    points: [
-      "접속 중인 멤버를 바로 확인",
-      "메시지와 장소 카드가 즉시 반영",
-      "채팅에서 바로 장소 카드 공유",
-    ],
+      "여행 멤버와 같은 채팅방에서 장소를 공유하고, \n자유롭게 이야기를 나누어보세요.",
+    points: ["채팅에서 장소 카드 공유하기", "장소 상세 정보에서 공유하기"],
   },
   {
     id: "ai",
@@ -140,12 +136,8 @@ export const LANDING_HIGHLIGHT_SECTIONS: readonly LandingHighlightSection[] = [
     eyebrow: "WOORI",
     title: "팀이 함께 쓰는 AI",
     description:
-      "장소 추천과 대화 요약을 모두가 같은 창에서 확인하세요.\n혼자 쓰는 AI가 아니라, 여행 멤버 전원이 함께 보는 AI 어시스턴트예요.",
-    points: [
-      "채팅 맥락을 반영한 장소 추천",
-      "긴 대화를 요약해 빠르게 파악",
-      "팀원 모두 같은 AI 답변 확인",
-    ],
+      "AI 어시스턴트도 한명의 참여자예요.\n장소 추천과 대화 요약을 채팅창에서 확인하세요.",
+    points: ["채팅 맥락을 반영한 장소 추천", "긴 대화를 요약해 빠르게 파악"],
   },
 ];
 
