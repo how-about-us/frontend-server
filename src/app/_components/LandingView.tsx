@@ -41,7 +41,7 @@ export function LandingView() {
       />
 
       <header className="sticky top-0 z-20 border-b border-gray-border/60 bg-white/80 font-sans backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 py-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-3 py-3">
           <div className="flex items-center">
             <BrandLogo alt="" variant="favicon" aria-hidden />
             <BrandLogo alt="우때" variant="logo" />
