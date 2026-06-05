@@ -10,11 +10,7 @@ import {
   chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { requestPlaceDetail } from "@/lib/api/places";
-import {
-  placeDetailQueryDefaults,
-  placeDetailQueryKey,
-} from "@/lib/places/place-queries";
+import { placePhotoNamesQueryOptions } from "@/lib/places/place-queries";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { stripRecommendedPlaceReasonPrefix } from "@/lib/recommended-place-reason";
 import type {
@@ -35,33 +31,15 @@ function AiRecommendedPlaceRow({
 
   const fromMeta =
     typeof place.photoName === "string" ? place.photoName.trim() : "";
-  const needsDetail = fromMeta.length === 0;
-  const { data: enriched } = useQuery({
-    queryKey: placeDetailQueryKey(place.placeId),
-    // queryFn에서 fetchPlaceDetail(동일 queryKey fetchQuery)을 쓰면 대기 데드락
-    queryFn: () => requestPlaceDetail(place.placeId),
-    select: (detail) => ({
-      photoName: detail.photoNames?.[0]?.trim() || null,
-      rating:
-        typeof detail.rating === "number" && Number.isFinite(detail.rating)
-          ? detail.rating
-          : null,
-      userRatingCount:
-        typeof detail.userRatingCount === "number" &&
-        Number.isFinite(detail.userRatingCount)
-          ? detail.userRatingCount
-          : null,
-    }),
-    enabled: needsDetail && place.placeId.trim().length > 0,
-    ...placeDetailQueryDefaults,
+  const needsPhotoNames = fromMeta.length === 0;
+  const { data: enrichedPhotoName } = useQuery({
+    ...placePhotoNamesQueryOptions(place.placeId),
+    select: (names) => names[0] ?? null,
+    enabled: needsPhotoNames && place.placeId.trim().length > 0,
   });
-  const photoName = fromMeta || enriched?.photoName?.trim() || "";
-  const displayRating =
-    place.rating !== undefined ? place.rating : (enriched?.rating ?? null);
-  const displayReviewCount =
-    place.userRatingCount !== undefined
-      ? place.userRatingCount
-      : (enriched?.userRatingCount ?? null);
+  const photoName = fromMeta || enrichedPhotoName?.trim() || "";
+  const displayRating = place.rating ?? null;
+  const displayReviewCount = place.userRatingCount ?? null;
 
   const reasonDisplay = place.reason
     ? stripRecommendedPlaceReasonPrefix(place.reason, place.placeId)

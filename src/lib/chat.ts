@@ -771,7 +771,7 @@ export function collectPlacePhotoNamesFromServerMessages(
   return [...names];
 }
 
-/** 메타에 `photoName`이 없어 디테일로 보강하는 AI 추천 — 히스토리 선warming용 */
+/** AI 추천 metadata에 `photoName`이 없을 때 `GET /places/{id}/photo-names` backfill 대상 placeId */
 export function collectGooglePlaceIdsForAiPhotoBackfill(
   messages: ServerChatMessage[],
 ): string[] {
