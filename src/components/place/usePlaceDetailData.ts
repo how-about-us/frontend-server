@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchPlaceDetail,
-  fetchPlacePhotoUrl,
+  fetchPlacePhotoNames,
   placeDetailQueryDefaults,
 } from "@/lib/places/place-queries";
 import type { PlaceDetailResult } from "./types";
@@ -11,24 +11,17 @@ export function usePlaceDetailData(googlePlaceId?: string) {
   return useQuery<PlaceDetailResult>({
     queryKey: ["places", "detail-panel", id],
     queryFn: async () => {
-      const detail = await fetchPlaceDetail(id);
-      const photoUrls = (
-        await Promise.all(
-          detail.photoNames.slice(0, 9).map(async (n) => {
-            try {
-              return await fetchPlacePhotoUrl(n);
-            } catch {
-              return null;
-            }
-          }),
-        )
-      ).filter((u): u is string => u !== null);
+      const [detail, allPhotoNames] = await Promise.all([
+        fetchPlaceDetail(id),
+        fetchPlacePhotoNames(id).catch(() => [] as string[]),
+      ]);
+      const photoNames = allPhotoNames.slice(0, 9);
       return {
         name: detail.name,
         primaryTypeDisplayName: detail.primaryTypeDisplayName,
         rating: detail.rating,
-        photoUrls,
-        photoName: detail.photoNames[0] ?? "",
+        photoNames,
+        photoName: photoNames[0] ?? "",
         formattedAddress: detail.formattedAddress,
         location: detail.location,
         phone: detail.phoneNumber,

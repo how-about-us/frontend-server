@@ -73,6 +73,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
         name: preview.name,
         address: preview.formattedAddress,
         photoName: preview.photoName,
+        primaryTypeDisplayName: preview.primaryTypeDisplayName,
         googlePlaceId: preview.googlePlaceId,
         location: preview.location,
       });

@@ -10,6 +10,7 @@ export type BookmarkPlacePreviewCardProps = {
   name: string;
   address?: string;
   photoName?: string;
+  primaryTypeDisplayName?: string;
   onClick?: () => void;
   className?: string;
 };
@@ -18,6 +19,7 @@ export function BookmarkPlacePreviewCard({
   name,
   address,
   photoName,
+  primaryTypeDisplayName,
   onClick,
   className,
 }: BookmarkPlacePreviewCardProps) {
@@ -36,9 +38,16 @@ export function BookmarkPlacePreviewCard({
       style={onClick ? { cursor: "pointer" } : undefined}
     >
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-semibold leading-5 tracking-tight text-brand-green">
-          {name}
-        </h3>
+        <div className="flex items-baseline gap-1.5">
+          <h3 className="truncate text-sm font-semibold leading-5 tracking-tight text-brand-green">
+            {name}
+          </h3>
+          {primaryTypeDisplayName ? (
+            <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
+              {primaryTypeDisplayName}
+            </span>
+          ) : null}
+        </div>
         {address ? (
           <div className="mt-1 flex items-center gap-1">
             <MapPin className="h-3 w-3 shrink-0 text-[#99A1AF]" />

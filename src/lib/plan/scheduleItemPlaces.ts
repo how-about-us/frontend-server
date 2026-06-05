@@ -490,6 +490,7 @@ async function planPlaceFromScheduleItem(
       title: preview.name,
       subtitle: preview.formattedAddress,
       photoName: preview.photoName,
+      primaryTypeDisplayName: preview.primaryTypeDisplayName,
       startTime: item.startTime,
       durationMinutes: item.durationMinutes,
       travelMode: item.travelMode,

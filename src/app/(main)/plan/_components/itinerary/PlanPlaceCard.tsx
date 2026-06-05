@@ -234,16 +234,23 @@ export function PlanPlaceCard({
             orderIndex={displayOrderIndex}
             backgroundColorHex={orderBadgeColor}
           />
-          <h3
-            className={cn(
-              "min-w-0 flex-1",
-              PLAN_PLACE_CARD_TW.titleCompact,
-              PLAN_PLACE_CARD_TW.titleClamp,
-            )}
-            title={place.title}
-          >
-            {place.title}
-          </h3>
+          <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+            <h3
+              className={cn(
+                "min-w-0 flex-1",
+                PLAN_PLACE_CARD_TW.titleCompact,
+                PLAN_PLACE_CARD_TW.titleClamp,
+              )}
+              title={place.title}
+            >
+              {place.title}
+            </h3>
+            {place.primaryTypeDisplayName ? (
+              <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
+                {place.primaryTypeDisplayName}
+              </span>
+            ) : null}
+          </div>
           {deleteButton ?
             <span className="flex shrink-0">{deleteButton}</span>
           : null}

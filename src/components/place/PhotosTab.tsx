@@ -3,17 +3,20 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { PhotoLightbox } from "./PhotoLightbox";
+import { usePlacePhotoUrlsQuery } from "@/hooks/usePlacePhotoUrl";
 
 type Props = {
-  photoUrls: string[];
+  photoNames: string[];
   isLoading: boolean;
   fallbackImage?: string;
 };
 
-export function PhotosTab({ photoUrls, isLoading, fallbackImage }: Props) {
+export function PhotosTab({ photoNames, isLoading, fallbackImage }: Props) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const { photoUrls, isLoading: photosLoading } =
+    usePlacePhotoUrlsQuery(photoNames);
 
-  if (isLoading) {
+  if (isLoading || photosLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16">
         <Loader2 className="h-5 w-5 animate-spin text-brand-green" />

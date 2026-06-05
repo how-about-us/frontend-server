@@ -98,7 +98,7 @@ export function PlaceDetailPanel({
   const phone = detailData?.phone;
   const website = detailData?.websiteUri;
   const hours = detailData?.weekdayDescriptions?.join("\n");
-  const photoUrls = detailData?.photoUrls ?? [];
+  const photoNames = detailData?.photoNames ?? [];
   const openNow = detailData?.openNow ?? propIsOpen;
   const userRatingCount = detailData?.userRatingCount ?? propUserRatingCount;
   const reviewSummary = detailData?.reviewSummary ?? propReviewSummary;
@@ -116,7 +116,7 @@ export function PlaceDetailPanel({
           <HeroSkeleton />
         ) : (
           <HeroGrid
-            photoUrls={photoUrls}
+            photoNames={photoNames}
             fallbackImage={image}
             name={displayName}
           />
@@ -207,7 +207,7 @@ export function PlaceDetailPanel({
         )}
         {activeTab === "사진" && (
           <PhotosTab
-            photoUrls={photoUrls}
+            photoNames={photoNames}
             isLoading={isDetailLoading && !!googlePlaceId}
             fallbackImage={image}
           />

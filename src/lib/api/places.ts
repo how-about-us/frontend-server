@@ -56,6 +56,11 @@ export type PlacePhotoResponse = {
   photoUrl: string;
 };
 
+/** Raw JSON from `GET /places/{googlePlaceId}/photo-names` */
+export type PlacePhotoNamesResponse = {
+  photoNames: string[];
+};
+
 /** Raw JSON from `GET /places/{googlePlaceId}/preview` */
 export type PlacePreviewResponse = {
   googlePlaceId: string;
@@ -63,6 +68,8 @@ export type PlacePreviewResponse = {
   formattedAddress: string;
   location: { latitude: number; longitude: number } | null;
   photoName: string | null;
+  primaryType: string;
+  primaryTypeDisplayName: string;
 };
 
 /** Client-normalized preview (coordinates match detail/search shape) */
@@ -72,6 +79,8 @@ export type PlacePreview = {
   formattedAddress: string;
   location?: { lat: number; lng: number };
   photoName?: string;
+  primaryType?: string;
+  primaryTypeDisplayName?: string;
 };
 
 // ─── API functions ─────────────────────────────────────────────────────────
@@ -121,6 +130,17 @@ export async function requestPlacePreview(
   );
   if (!res.ok) throw new Error(`Place preview failed: ${res.status}`);
   return res.json();
+}
+
+export async function requestPlacePhotoNames(
+  googlePlaceId: string,
+): Promise<string[]> {
+  const res = await apiFetch(
+    `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}/photo-names`,
+  );
+  if (!res.ok) throw new Error(`Place photo-names failed: ${res.status}`);
+  const data: PlacePhotoNamesResponse = await res.json();
+  return Array.isArray(data.photoNames) ? data.photoNames : [];
 }
 
 export async function requestPlacePhotoUrl(photoName: string): Promise<string> {

@@ -13,7 +13,8 @@ export type PlaceDetailResult = {
   name: string;
   primaryTypeDisplayName: string;
   rating: number | null;
-  photoUrls: string[];
+  /** `GET /places/{id}/photo-names` 결과 — 리프에서 `/places/photos`로 해석 */
+  photoNames: string[];
   /** 첫 번째 사진 리소스 이름 — 채팅 장소 공유(STOMP) 페이로드용 */
   photoName: string;
   formattedAddress: string;

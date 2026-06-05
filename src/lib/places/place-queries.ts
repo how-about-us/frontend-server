@@ -2,6 +2,7 @@ import type { SearchResultCardProps } from "@/types/place";
 
 import {
   requestPlaceDetail,
+  requestPlacePhotoNames,
   requestPlacePhotoUrl,
   requestPlacePreview,
   type PlaceDetail,
@@ -24,6 +25,17 @@ export const placePreviewQueryDefaults = {
   staleTime: 60_000,
   refetchOnWindowFocus: false,
 } as const;
+
+/** 로그인 사용자별 Rate Limit 대응 — 동일 장소 사진 이름 목록 재호출 최소화 */
+export const placePhotoNamesQueryDefaults = {
+  staleTime: 5 * 60_000,
+  refetchOnWindowFocus: false,
+} as const;
+
+export function placePhotoNamesQueryKey(googlePlaceId: string) {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  return ["places", "photoNames", id] as const;
+}
 
 export function placeDetailQueryKey(googlePlaceId: string) {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
@@ -63,6 +75,12 @@ export function normalizePreviewLocation(
   return { lat, lng };
 }
 
+function normalizeOptionalPreviewString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export function normalizePlacePreview(raw: PlacePreviewResponse): PlacePreview {
   const photoName =
     typeof raw.photoName === "string" && raw.photoName.trim().length > 0
@@ -74,6 +92,10 @@ export function normalizePlacePreview(raw: PlacePreviewResponse): PlacePreview {
     formattedAddress: raw.formattedAddress,
     location: normalizePreviewLocation(raw.location),
     photoName,
+    primaryType: normalizeOptionalPreviewString(raw.primaryType),
+    primaryTypeDisplayName: normalizeOptionalPreviewString(
+      raw.primaryTypeDisplayName,
+    ),
   };
 }
 
@@ -161,6 +183,41 @@ export async function fetchPlacePhotoUrl(photoName: string): Promise<string> {
   });
 }
 
+/** useQueries queryFn 등 중첩 fetchQuery 없이 photo-names API만 호출 */
+export async function loadPlacePhotoNames(
+  googlePlaceId: string,
+): Promise<string[]> {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  if (!id.length) {
+    throw new Error("loadPlacePhotoNames: empty googlePlaceId");
+  }
+  const names = await requestPlacePhotoNames(id);
+  return names
+    .map((n) => (typeof n === "string" ? n.trim() : ""))
+    .filter((n) => n.length > 0);
+}
+
+/** imperative — 동일 장소 사진 이름 목록 캐시 재사용으로 Rate Limit 반복 호출 방지 */
+export async function fetchPlacePhotoNames(
+  googlePlaceId: string,
+): Promise<string[]> {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  if (!id.length) {
+    throw new Error("fetchPlacePhotoNames: empty googlePlaceId");
+  }
+
+  const queryClient = getQueryClient();
+  if (!queryClient) {
+    return loadPlacePhotoNames(id);
+  }
+
+  return queryClient.fetchQuery({
+    queryKey: placePhotoNamesQueryKey(id),
+    queryFn: () => loadPlacePhotoNames(id),
+    ...placePhotoNamesQueryDefaults,
+  });
+}
+
 /** Preview API + first photo for bookmark/plan list cards. */
 export async function fetchPlaceCardProps(
   googlePlaceId: string,
@@ -176,7 +233,7 @@ export async function fetchPlaceCardProps(
   }
   return {
     name: preview.name,
-    category: "",
+    category: preview.primaryTypeDisplayName ?? "",
     rating: null,
     address: preview.formattedAddress,
     googlePlaceId: preview.googlePlaceId,

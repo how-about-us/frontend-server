@@ -3,7 +3,6 @@
 import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
 import {
   chatAiBubbleListTextClass,
-  chatAiBubbleMutedListClass,
   chatAiBubbleOverviewBodyClass,
   chatAiBubbleSectionLabelClass,
   chatAiBubbleBlockTitleClass,
@@ -22,7 +21,6 @@ export function AiConversationSummaryContent({
   const bodyCls = chatAiBubbleOverviewBodyClass(isMinimized);
   const sectionTitleCls = chatAiBubbleSectionLabelClass(isMinimized);
   const listCls = chatAiBubbleListTextClass(isMinimized);
-  const mentionListCls = chatAiBubbleMutedListClass(isMinimized);
 
   return (
     <div className="mt-2 space-y-3 border-t border-slate-300/80 pt-2">
@@ -49,29 +47,6 @@ export function AiConversationSummaryContent({
         );
       })}
 
-      {summary.mentionedPlaces?.length ? (
-        <div className="space-y-1">
-          <div className={sectionTitleCls}>언급된 장소</div>
-          <ul className={mentionListCls}>
-            {summary.mentionedPlaces.map((mp, idx) => (
-              <li key={`${mp.name}-${idx}`}>
-                <span className="font-medium text-gray-900">{mp.name}</span>
-                {mp.source ? (
-                  <span className="text-[9px] text-gray-500">
-                    {" "}
-                    · {mp.source}
-                  </span>
-                ) : null}
-                {mp.note ? (
-                  <span className="mt-0.5 block text-gray-600">
-                    <ChatMarkdownContent text={mp.note} variant="ai" />
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
     </div>
   );
 }

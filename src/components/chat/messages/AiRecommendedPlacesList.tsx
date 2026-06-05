@@ -35,10 +35,7 @@ function AiRecommendedPlaceRow({
 
   const fromMeta =
     typeof place.photoName === "string" ? place.photoName.trim() : "";
-  const needsDetail =
-    fromMeta.length === 0 ||
-    place.rating === undefined ||
-    place.userRatingCount === undefined;
+  const needsDetail = fromMeta.length === 0;
   const { data: enriched } = useQuery({
     queryKey: placeDetailQueryKey(place.placeId),
     // queryFn에서 fetchPlaceDetail(동일 queryKey fetchQuery)을 쓰면 대기 데드락

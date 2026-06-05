@@ -1,3 +1,7 @@
+"use client";
+
+import { usePlacePhotoUrlsQuery } from "@/hooks/usePlacePhotoUrl";
+
 export function HeroSkeleton() {
   return (
     <div className="flex h-full gap-0.5 overflow-hidden">
@@ -11,14 +15,15 @@ export function HeroSkeleton() {
 }
 
 export function HeroGrid({
-  photoUrls,
+  photoNames,
   fallbackImage,
   name,
 }: {
-  photoUrls: string[];
+  photoNames: string[];
   fallbackImage?: string;
   name: string;
 }) {
+  const { photoUrls } = usePlacePhotoUrlsQuery(photoNames);
   const photos =
     photoUrls.length > 0 ? photoUrls : fallbackImage ? [fallbackImage] : [];
 

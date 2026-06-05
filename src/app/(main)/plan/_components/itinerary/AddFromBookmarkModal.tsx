@@ -317,6 +317,7 @@ export function AddFromBookmarkModal({
                       name={preview.name}
                       address={preview.formattedAddress}
                       photoName={preview.photoName}
+                      primaryTypeDisplayName={preview.primaryTypeDisplayName}
                       className={cn(
                         "w-full border-x-0 px-5",
                         alreadyAdded && "opacity-50",

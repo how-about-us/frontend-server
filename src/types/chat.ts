@@ -36,17 +36,10 @@ export interface AiConversationSummarySection {
   items: string[];
 }
 
-export interface AiConversationSummaryMentionedPlace {
-  name: string;
-  source?: string;
-  note?: string;
-}
-
 export interface AiConversationSummaryPayload {
   title: string;
   overview: string;
   sections?: AiConversationSummarySection[];
-  mentionedPlaces?: AiConversationSummaryMentionedPlace[];
 }
 
 /** AI_RESPONSE.place_recommendation 블록 헤더(metadata.place_recommendation.title 등) */

@@ -386,25 +386,6 @@ function parseSections(
   return sections;
 }
 
-function parseMentionedPlaces(raw: unknown) {
-  if (!Array.isArray(raw)) return undefined;
-  const out: NonNullable<AiConversationSummaryPayload["mentionedPlaces"]> =
-    [];
-  for (const row of raw) {
-    if (!isRecord(row)) continue;
-    const name = pickString(row.name)?.trim();
-    if (!name) continue;
-    const source = pickString(row.source);
-    const note = pickString(row.note);
-    out.push({
-      name,
-      ...(source ? { source } : {}),
-      ...(note ? { note } : {}),
-    });
-  }
-  return out.length > 0 ? out : undefined;
-}
-
 function parseConversationSummaryPayload(
   raw: unknown,
 ): AiConversationSummaryPayload | undefined {
@@ -413,15 +394,11 @@ function parseConversationSummaryPayload(
   const overview = pickString(raw.overview)?.trim();
   if (!title || !overview) return undefined;
   const sections = parseSections(raw.sections);
-  const mentionedPlaces = parseMentionedPlaces(
-    raw.mentionedPlaces ?? raw.mentioned_places,
-  );
 
   const payload: AiConversationSummaryPayload = {
     title,
     overview,
     ...(sections.length > 0 ? { sections } : {}),
-    ...(mentionedPlaces ? { mentionedPlaces } : {}),
   };
   return payload;
 }

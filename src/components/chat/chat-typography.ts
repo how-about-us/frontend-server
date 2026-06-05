@@ -85,13 +85,6 @@ export function chatAiBubbleListTextClass(isMinimized: boolean): string {
   );
 }
 
-export function chatAiBubbleMutedListClass(isMinimized: boolean): string {
-  return cn(
-    "space-y-1 text-gray-600",
-    isMinimized ? "text-[10px] leading-snug" : "text-[11px] leading-snug",
-  );
-}
-
 /** AI 장소 추천 블록·reason 공통 `**강조**` — 본문 슬레이트 톤과 어울리는 브랜드 그린 */
 export const chatAiBubblePlaceRecommendationEmphasisClass =
   "font-semibold text-brand-green";
