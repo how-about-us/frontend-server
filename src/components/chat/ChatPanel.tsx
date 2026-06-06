@@ -49,7 +49,9 @@ export function ChatPanel() {
     hasMoreNewer,
     isFetchingOlder,
     isFetchingNewer,
-    initialScrollAnchorId,
+    readMarkerMessageId,
+    readDividerPlacement,
+    scrollToAnchor,
     markMessagesRead,
   } = useChatMessages(roomId, { fetchHistory: panelOpen });
 
@@ -87,7 +89,9 @@ export function ChatPanel() {
         hasMoreNewer={hasMoreNewer}
         isLoadingNewer={isFetchingNewer}
         onJumpToLatest={jumpToLatest}
-        initialScrollAnchorId={initialScrollAnchorId}
+        readMarkerMessageId={readMarkerMessageId}
+        readDividerPlacement={readDividerPlacement}
+        scrollToAnchor={scrollToAnchor}
         onAtBottom={markMessagesRead}
       />
       <AnimatePresence initial={false}>

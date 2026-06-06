@@ -283,14 +283,14 @@ export function ChatInputBar({
     >
       <div
         ref={inputShellRef}
-        className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-2"
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-2 pt-1"
       >
         <AnimatePresence>
           {aiEnabled && (
             <motion.span
               key="ai-overlay"
               className={cn(
-                "pointer-events-none absolute left-0 top-2",
+                "pointer-events-none absolute left-0 top-1",
                 typo.inputAiLabel,
               )}
               style={{ paddingLeft: chatTypography.aiOverlayInset }}

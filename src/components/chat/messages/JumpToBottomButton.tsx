@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,16 +10,8 @@ export function JumpToBottomButton({
   onClick: () => void;
   isMinimized?: boolean;
 }) {
-  const reduceMotion = useReducedMotion();
-
   return (
-    <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
-      transition={{ duration: reduceMotion ? 0 : 0.18, ease: "easeOut" }}
-      className="pointer-events-none absolute bottom-3 right-3 z-10"
-    >
+    <div className="pointer-events-none absolute bottom-3 right-3 z-10">
       <button
         type="button"
         onClick={onClick}
@@ -36,6 +27,6 @@ export function JumpToBottomButton({
           aria-hidden
         />
       </button>
-    </motion.div>
+    </div>
   );
 }

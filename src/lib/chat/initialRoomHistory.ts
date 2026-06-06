@@ -1,9 +1,6 @@
 import type { ServerChatMessage } from "@/types/chat";
 import { getRoomMessages } from "@/lib/api/rooms";
-import {
-  normalizeFetchedRoomMessages,
-  oldestServerMessageByCreatedAt,
-} from "@/lib/chat";
+import { normalizeFetchedRoomMessages } from "@/lib/chat";
 
 export function hasOlderHistoryPage(
   fetchedLength: number,
@@ -14,13 +11,15 @@ export function hasOlderHistoryPage(
 
 /**
  * 패널 최초 히스토리 GET — `useChatMessages`에서만 사용.
- * lastReadMessageId 기준 afterId·latest fallback 분기는 여기서만 유지한다.
+ * lastReadMessageId 기준 beforeId(exclusive)·latest fallback 분기는 여기서만 유지한다.
+ * lastRead·unread 슬라이스는 호출 측 bridge fetch로 보강한다.
  */
 export type InitialRoomHistoryLoadResult = {
   serverSlice: ServerChatMessage[];
   hasMoreOlder: boolean;
   hasMoreNewer: boolean;
-  initialScrollAnchorId: string | undefined;
+  /** read-status의 lastReadMessageId — 스크롤·구분선 기준 (null이면 마커 없음) */
+  lastReadMessageId: string | null;
   warmHistory: ServerChatMessage[];
 };
 
@@ -34,7 +33,7 @@ async function loadLatestRoomHistoryPage(
     serverSlice: normalized,
     hasMoreOlder: hasOlderHistoryPage(normalized.length, pageSize),
     hasMoreNewer: false,
-    initialScrollAnchorId: undefined,
+    lastReadMessageId: null,
     warmHistory: normalized,
   };
 }
@@ -48,23 +47,17 @@ export async function loadInitialRoomHistory(
     return loadLatestRoomHistoryPage(roomId, pageSize);
   }
 
-  const afterRows = await getRoomMessages(roomId, {
-    afterId: lastReadMessageId,
+  const beforeRows = await getRoomMessages(roomId, {
+    beforeId: lastReadMessageId,
     size: pageSize,
   });
-  const normalizedAfter = normalizeFetchedRoomMessages(afterRows);
-
-  if (normalizedAfter.length === 0) {
-    return loadLatestRoomHistoryPage(roomId, pageSize);
-  }
-
-  const anchor = oldestServerMessageByCreatedAt(normalizedAfter);
+  const normalizedBefore = normalizeFetchedRoomMessages(beforeRows);
 
   return {
-    serverSlice: normalizedAfter,
-    hasMoreOlder: true,
-    hasMoreNewer: hasOlderHistoryPage(normalizedAfter.length, pageSize),
-    initialScrollAnchorId: anchor?.id,
-    warmHistory: normalizedAfter,
+    serverSlice: normalizedBefore,
+    hasMoreOlder: hasOlderHistoryPage(normalizedBefore.length, pageSize),
+    hasMoreNewer: true,
+    lastReadMessageId,
+    warmHistory: normalizedBefore,
   };
 }

@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import type { ChatMessage } from "@/types/chat";
-import { motion, useReducedMotion } from "framer-motion";
 import { ChatMemberAvatarRing } from "@/components/chat/messages/ChatMemberAvatarRing";
 
 export function PlaceShareCard({
@@ -20,7 +19,6 @@ export function PlaceShareCard({
   isMinimized?: boolean;
 }) {
   const typo = resolveChatMessageTypography(isMinimized);
-  const reduceMotion = useReducedMotion();
   const place = message.place;
   const { data: sessionUser } = useSessionUser();
   const myId = sessionUser?.id;
@@ -75,32 +73,20 @@ export function PlaceShareCard({
 
   return (
     <div className="flex gap-2">
-      <motion.div
-        layout="position"
-        className="flex flex-col items-center gap-1"
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : {
-                type: "tween",
-                duration: 0.18,
-                ease: [0.25, 0.1, 0.25, 1],
-              }
-        }
-      >
+      <div className="flex flex-col items-center gap-1">
         <ChatMemberAvatarRing
           chromeAvatarClassName={chatMessageChrome.avatarSm}
           avatarUrl={message.avatar}
           alt={message.sender ?? ""}
           senderNotInRoom={message.senderNotInRoom}
-          reduceMotion={reduceMotion}
+          reduceMotion
         />
         <span
           className={cn("max-w-[4rem] truncate text-center", typo.metaMuted)}
         >
           {message.sender}
         </span>
-      </motion.div>
+      </div>
       <div className="flex min-w-0 flex-col items-start gap-1">
         {cardButton}
         {timeRow}

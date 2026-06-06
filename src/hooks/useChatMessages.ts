@@ -24,19 +24,24 @@ import {
   hasOlderHistoryPage,
   loadInitialRoomHistory,
 } from "@/lib/chat/initialRoomHistory";
-
-export const CHAT_MESSAGE_PAGE_SIZE = 15;
+import {
+  CHAT_MESSAGE_PAGE_SIZE,
+  EMPTY_READ_DIVIDER_PLACEMENT,
+  mergeSliceWithReadBridge,
+  resolveReadDividerPlacement,
+  type ChatScrollAnchorRequest,
+  type ReadDividerPlacement,
+} from "@/lib/chat/readBoundary";
 
 export type UseChatMessagesOptions = {
   /**
    * `false`: 패널 닫힘 — GET 없음. STOMP만 유지.
    * `true`: 이 `roomId`에 대해 **이번 페이지 수명 내 아직 GET을 한 적 없을 때만** 히스토리 GET.
-   * (닫았다 다시 열 때는 같은 방이면 재요청 안 함.)
+   * (닫았다 다시 열 때는 같은 방이면 히스토리 GET 없이 read-status로 마커·스크롤만 복원.)
    */
   fetchHistory: boolean;
 };
 
-/** 히스토리 GET 1회 가드 — userId가 나중에 채워지면 afterId 경로로 다시 가져갈 수 있게 분리 */
 function chatHistoryGateKey(
   uid: number | null | undefined,
   roomId: string,
@@ -55,6 +60,35 @@ function bumpRoomLastSequence(
   map.set(rid, prev != null ? Math.max(prev, mx) : mx);
 }
 
+function applyBridgedSlice(
+  roomId: string,
+  bridged: Awaited<ReturnType<typeof mergeSliceWithReadBridge>>,
+  refs: {
+    hasMoreNewerByRoom: Map<string, boolean>;
+    lastSequenceByRoom: Map<string, number>;
+  },
+  setters: {
+    setHasMoreNewer: (v: boolean) => void;
+    setRawMessages: (msgs: ServerChatMessage[]) => void;
+  },
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  if (bridged.bridgedHasMoreNewer == null) return;
+
+  refs.hasMoreNewerByRoom.set(roomId, bridged.bridgedHasMoreNewer);
+  setters.setHasMoreNewer(bridged.bridgedHasMoreNewer);
+  setters.setRawMessages(bridged.slice);
+
+  if (bridged.bridgedSlice?.length) {
+    bumpRoomLastSequence(
+      refs.lastSequenceByRoom,
+      roomId,
+      bridged.bridgedSlice,
+    );
+    void warmPlacePhotoQueriesFromChatHistory(queryClient, bridged.bridgedSlice);
+  }
+}
+
 export function useChatMessages(
   roomId: string | null,
   options: UseChatMessagesOptions,
@@ -70,22 +104,27 @@ export function useChatMessages(
   const [isFetchingOlder, setIsFetchingOlder] = useState(false);
   const [isFetchingNewer, setIsFetchingNewer] = useState(false);
   const [hasMoreNewer, setHasMoreNewer] = useState(false);
-  const [initialScrollAnchorId, setInitialScrollAnchorId] = useState<
-    string | undefined
-  >(undefined);
+  const [readMarkerMessageId, setReadMarkerMessageId] = useState<
+    string | null
+  >(null);
+  const [readDividerPlacement, setReadDividerPlacement] =
+    useState<ReadDividerPlacement>(EMPTY_READ_DIVIDER_PLACEMENT);
+  const [scrollToAnchor, setScrollToAnchor] =
+    useState<ChatScrollAnchorRequest | null>(null);
   const { sendChatMessage, sendAiMessage, sendCancelAiRequest } =
     useChatActions();
 
   const prevRoomForHistoryGateRef = useRef<string | null>(null);
-  /** 같은 탭·새로고침 전까지 `roomId`별 히스토리 GET 1회만 */
+  const prevFetchHistoryRef = useRef(false);
+  const reopenScrollKeyRef = useRef(0);
   const historyFetchedRoomIdsRef = useRef<Set<string>>(new Set());
-  /** 방별 과거 메시지 추가 로드 가능 여부 */
   const hasMoreByRoomRef = useRef<Map<string, boolean>>(new Map());
-  /** 방별 after 이후 더 불러올 메시지 존재 여부 */
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
-  /** 방별 마지막 수신 sequence — STOMP gap 감지용 */
   const lastSequenceByRoomRef = useRef<Map<string, number>>(new Map());
-  /** afterSequence 복구 fetch 진행 중인 방 */
+  const lastReadMarkerByRoomRef = useRef<Map<string, string>>(new Map());
+  const readDividerPlacementByRoomRef = useRef<Map<string, ReadDividerPlacement>>(
+    new Map(),
+  );
   const recoveringSequenceRoomsRef = useRef<Set<string>>(new Set());
   const isFetchingOlderRef = useRef(false);
   const isFetchingNewerRef = useRef(false);
@@ -147,15 +186,57 @@ export function useChatMessages(
     ],
   );
 
+  const publishScrollToAnchor = useCallback(
+    (lastReadMessageId: string | null | undefined) => {
+      reopenScrollKeyRef.current += 1;
+      setScrollToAnchor({
+        anchorId: lastReadMessageId ?? undefined,
+        key: reopenScrollKeyRef.current,
+      });
+    },
+    [],
+  );
+
+  const applySessionReadBoundary = useCallback(
+    (
+      rid: string,
+      lastReadMessageId: string | null,
+      placement: ReadDividerPlacement,
+    ) => {
+      if (lastReadMessageId) {
+        lastReadMarkerByRoomRef.current.set(rid, lastReadMessageId);
+        readDividerPlacementByRoomRef.current.set(rid, placement);
+        setReadMarkerMessageId(lastReadMessageId);
+      } else {
+        lastReadMarkerByRoomRef.current.delete(rid);
+        readDividerPlacementByRoomRef.current.delete(rid);
+        setReadMarkerMessageId(null);
+      }
+      setReadDividerPlacement(placement);
+    },
+    [],
+  );
+
+  const clearSessionReadBoundary = useCallback((rid: string) => {
+    lastReadMarkerByRoomRef.current.delete(rid);
+    readDividerPlacementByRoomRef.current.delete(rid);
+    setReadMarkerMessageId(null);
+    setReadDividerPlacement(EMPTY_READ_DIVIDER_PLACEMENT);
+  }, []);
+
   useEffect(() => {
     if (!roomId) {
       setRawMessages([]);
-      setInitialScrollAnchorId(undefined);
+      setReadMarkerMessageId(null);
+      setReadDividerPlacement(EMPTY_READ_DIVIDER_PLACEMENT);
       prevRoomForHistoryGateRef.current = null;
+      prevFetchHistoryRef.current = false;
       historyFetchedRoomIdsRef.current.clear();
       hasMoreByRoomRef.current.clear();
       hasMoreNewerByRoomRef.current.clear();
       lastSequenceByRoomRef.current.clear();
+      lastReadMarkerByRoomRef.current.clear();
+      readDividerPlacementByRoomRef.current.clear();
       recoveringSequenceRoomsRef.current.clear();
       setHasMore(true);
       setHasMoreNewer(false);
@@ -163,6 +244,7 @@ export function useChatMessages(
       setIsFetchingNewer(false);
       isFetchingOlderRef.current = false;
       isFetchingNewerRef.current = false;
+      setScrollToAnchor(null);
       return;
     }
 
@@ -170,33 +252,107 @@ export function useChatMessages(
       const prevR = prevRoomForHistoryGateRef.current;
       if (prevR !== null && prevR !== roomId) {
         setRawMessages([]);
-        setInitialScrollAnchorId(undefined);
         setHasMore(true);
         setHasMoreNewer(false);
       }
       prevRoomForHistoryGateRef.current = roomId;
+      prevFetchHistoryRef.current = false;
+      setReadMarkerMessageId(null);
+      setReadDividerPlacement(EMPTY_READ_DIVIDER_PLACEMENT);
+      setScrollToAnchor(null);
       return;
     }
 
+    const reopened = prevFetchHistoryRef.current === false;
+    prevFetchHistoryRef.current = true;
     prevRoomForHistoryGateRef.current = roomId;
 
     if (userId == null) return;
 
     const gateKey = chatHistoryGateKey(userId, roomId);
+    const ridTrim = roomId.trim();
 
     if (historyFetchedRoomIdsRef.current.has(gateKey)) {
       const hm = hasMoreByRoomRef.current.get(roomId);
       setHasMore(hm !== false);
       const hmn = hasMoreNewerByRoomRef.current.get(roomId);
       setHasMoreNewer(hmn === true);
-      setInitialScrollAnchorId(undefined);
-      return;
+
+      const savedLastRead = lastReadMarkerByRoomRef.current.get(ridTrim);
+      const savedPlacement = readDividerPlacementByRoomRef.current.get(ridTrim);
+      if (reopened && savedLastRead && savedPlacement) {
+        setReadMarkerMessageId(savedLastRead);
+        setReadDividerPlacement(savedPlacement);
+      }
+
+      if (!reopened) return;
+
+      let cancelledReopen = false;
+      void (async () => {
+        try {
+          const { lastReadMessageId } =
+            await getRoomMessageReadStatus(roomId);
+          if (cancelledReopen) return;
+
+          if (lastReadMessageId) {
+            const beforeSlice = [...rawMessagesRef.current];
+            const bridged = await mergeSliceWithReadBridge(
+              roomId,
+              lastReadMessageId,
+              beforeSlice,
+              beforeSlice,
+            );
+            if (cancelledReopen) return;
+
+            applyBridgedSlice(
+              roomId,
+              bridged,
+              {
+                hasMoreNewerByRoom: hasMoreNewerByRoomRef.current,
+                lastSequenceByRoom: lastSequenceByRoomRef.current,
+              },
+              { setHasMoreNewer, setRawMessages },
+              queryClient,
+            );
+
+            applySessionReadBoundary(
+              ridTrim,
+              lastReadMessageId,
+              resolveReadDividerPlacement(
+                bridged.slice,
+                lastReadMessageId,
+                bridged.placementBeforeSlice,
+              ),
+            );
+          } else {
+            applySessionReadBoundary(
+              ridTrim,
+              null,
+              EMPTY_READ_DIVIDER_PLACEMENT,
+            );
+          }
+
+          publishScrollToAnchor(lastReadMessageId);
+        } catch {
+          const fallbackLastRead = lastReadMarkerByRoomRef.current.get(ridTrim);
+          const fallbackPlacement =
+            readDividerPlacementByRoomRef.current.get(ridTrim);
+          if (fallbackLastRead && fallbackPlacement) {
+            setReadMarkerMessageId(fallbackLastRead);
+            setReadDividerPlacement(fallbackPlacement);
+            publishScrollToAnchor(fallbackLastRead);
+          }
+        }
+      })();
+      return () => {
+        cancelledReopen = true;
+      };
     }
 
     setRawMessages([]);
     setHasMore(true);
     setHasMoreNewer(false);
-    setInitialScrollAnchorId(undefined);
+    setReadMarkerMessageId(null);
     let cancelled = false;
 
     void (async () => {
@@ -211,28 +367,64 @@ export function useChatMessages(
         );
         if (cancelled) return;
 
-        hasMoreByRoomRef.current.set(roomId, out.hasMoreOlder);
-        hasMoreNewerByRoomRef.current.set(roomId, out.hasMoreNewer);
-        setHasMore(out.hasMoreOlder);
-        setHasMoreNewer(out.hasMoreNewer);
-        setInitialScrollAnchorId(out.initialScrollAnchorId);
-        setRawMessages((prev) =>
-          mergeServerMessageLists(
-            out.serverSlice,
-            transientMessagesDuringRoomHistoryFetch(prev),
-          ),
+        let slice = mergeServerMessageLists(
+          out.serverSlice,
+          transientMessagesDuringRoomHistoryFetch(rawMessagesRef.current),
         );
-        bumpRoomLastSequence(lastSequenceByRoomRef.current, roomId, out.serverSlice);
-        historyFetchedRoomIdsRef.current.add(gateKey);
-        void warmPlacePhotoQueriesFromChatHistory(queryClient, out.warmHistory);
+        let hasMoreNewer = out.hasMoreNewer;
+        let warmHistory = [...out.warmHistory];
+        let placementBeforeSlice: readonly ServerChatMessage[] = out.serverSlice;
 
-        const caughtUpAtBottom =
-          !out.initialScrollAnchorId && !out.hasMoreNewer;
-        const newest = newestServerMessageByCreatedAt(out.serverSlice);
-        if (caughtUpAtBottom && newest) {
+        if (out.lastReadMessageId) {
+          const bridged = await mergeSliceWithReadBridge(
+            roomId,
+            out.lastReadMessageId,
+            slice,
+            out.serverSlice,
+          );
+          if (cancelled) return;
+          slice = bridged.slice;
+          placementBeforeSlice = bridged.placementBeforeSlice;
+          if (bridged.bridgedHasMoreNewer != null) {
+            hasMoreNewer = bridged.bridgedHasMoreNewer;
+          }
+          if (bridged.bridgedSlice?.length) {
+            warmHistory = mergeServerMessageLists(
+              warmHistory,
+              bridged.bridgedSlice,
+            );
+          }
+        }
+
+        hasMoreByRoomRef.current.set(roomId, out.hasMoreOlder);
+        hasMoreNewerByRoomRef.current.set(roomId, hasMoreNewer);
+        setHasMore(out.hasMoreOlder);
+        setHasMoreNewer(hasMoreNewer);
+
+        applySessionReadBoundary(
+          ridTrim,
+          out.lastReadMessageId,
+          out.lastReadMessageId
+            ? resolveReadDividerPlacement(
+                slice,
+                out.lastReadMessageId,
+                placementBeforeSlice,
+              )
+            : EMPTY_READ_DIVIDER_PLACEMENT,
+        );
+
+        setRawMessages(slice);
+        bumpRoomLastSequence(lastSequenceByRoomRef.current, roomId, slice);
+        historyFetchedRoomIdsRef.current.add(gateKey);
+        void warmPlacePhotoQueriesFromChatHistory(queryClient, warmHistory);
+
+        const newest = newestServerMessageByCreatedAt(slice);
+        if (newest && !hasMoreNewer) {
           resetReadDedup();
           markMessagesRead(newest.id);
         }
+
+        publishScrollToAnchor(out.lastReadMessageId);
       } catch {
         /* 실패 시 Set에 넣지 않음 → 다음 패널 오픈 시 재시도 */
       }
@@ -248,6 +440,8 @@ export function useChatMessages(
     userId,
     markMessagesRead,
     resetReadDedup,
+    publishScrollToAnchor,
+    applySessionReadBoundary,
   ]);
 
   const fetchOlderMessages = useCallback(() => {
@@ -372,7 +566,7 @@ export function useChatMessages(
         );
         hasMoreByRoomRef.current.set(rid, more);
         hasMoreNewerByRoomRef.current.set(rid, false);
-        setInitialScrollAnchorId(undefined);
+        clearSessionReadBoundary(rid.trim());
         setHasMore(more);
         setHasMoreNewer(false);
         lastSequenceByRoomRef.current.delete(rid);
@@ -386,7 +580,7 @@ export function useChatMessages(
       .catch(() => {
         /* noop */
       });
-  }, [roomId, queryClient]);
+  }, [roomId, queryClient, clearSessionReadBoundary]);
 
   useEffect(() => {
     if (!roomId) {
@@ -432,6 +626,22 @@ export function useChatMessages(
     return () => setRoomChatMessageHandler(null);
   }, [roomId, setRoomChatMessageHandler, onIncomingMessage, recoverMissingMessages]);
 
+  const rid = roomId?.trim() ?? "";
+  const effectiveReadMarkerMessageId =
+    fetchHistory && rid
+      ? readMarkerMessageId ?? lastReadMarkerByRoomRef.current.get(rid) ?? null
+      : null;
+  const savedPlacement = rid
+    ? readDividerPlacementByRoomRef.current.get(rid)
+    : undefined;
+  const effectiveReadDividerPlacement: ReadDividerPlacement | null =
+    fetchHistory && rid
+      ? readDividerPlacement.afterMessageId != null ||
+        readDividerPlacement.beforeFirst
+        ? readDividerPlacement
+        : (savedPlacement ?? null)
+      : null;
+
   return {
     messages,
     sendChatMessage,
@@ -444,7 +654,9 @@ export function useChatMessages(
     hasMoreNewer,
     isFetchingOlder,
     isFetchingNewer,
-    initialScrollAnchorId,
+    readMarkerMessageId: effectiveReadMarkerMessageId,
+    readDividerPlacement: effectiveReadDividerPlacement,
+    scrollToAnchor,
     markMessagesRead,
   };
 }
