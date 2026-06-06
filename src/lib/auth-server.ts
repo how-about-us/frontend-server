@@ -44,16 +44,33 @@ type SessionVerifyResult = {
   setCookies: string[];
 };
 
-async function fetchUsersMe(cookieHeader: string): Promise<Response> {
-  return fetch(`${API_BASE}/users/me`, {
+/**
+ * 백엔드 도달 불가(네트워크 오류 등)와 정상 응답을 구분하기 위한 래퍼.
+ * 도달 실패 시 `null`을 반환하고, 예외를 호출부로 전파하지 않습니다.
+ */
+async function safeFetch(
+  input: string,
+  init: RequestInit,
+): Promise<Response | null> {
+  try {
+    return await fetch(input, init);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchUsersMe(cookieHeader: string): Promise<Response | null> {
+  return safeFetch(`${API_BASE}/users/me`, {
     method: "GET",
     headers: { cookie: cookieHeader },
     cache: "no-store",
   });
 }
 
-async function fetchBackendRefresh(cookieHeader: string): Promise<Response> {
-  return fetch(`${API_BASE}/auth/refresh`, {
+async function fetchBackendRefresh(
+  cookieHeader: string,
+): Promise<Response | null> {
+  return safeFetch(`${API_BASE}/auth/refresh`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -63,9 +80,19 @@ async function fetchBackendRefresh(cookieHeader: string): Promise<Response> {
   });
 }
 
+function warnSessionFetchFailed(label: string): void {
+  if (process.env.NODE_ENV === "development") {
+    console.warn(`[auth-server] ${label} unreachable — treating as unauthenticated`);
+  }
+}
+
 /**
  * `users/me`로 세션 검증. access 만료(401 등)이고 refresh_token이 있으면
  * `POST /auth/refresh` 후 `users/me` 재시도.
+ *
+ * 백엔드 도달 불가(네트워크 오류)는 fail-closed(`ok: false`)로 처리합니다.
+ * 예외를 던지지 않아 미들웨어 크래시·dev 자동 리로드를 막고,
+ * fail-open 시 생기던 `/home`↔`/login` document 루프도 차단합니다.
  */
 export async function verifySessionWithOptionalRefresh(
   cookieHeader: string | null,
@@ -76,6 +103,10 @@ export async function verifySessionWithOptionalRefresh(
   }
 
   const meRes = await fetchUsersMe(cookie);
+  if (meRes === null) {
+    warnSessionFetchFailed("GET /users/me");
+    return { ok: false, setCookies: [] };
+  }
   if (meRes.ok) {
     return { ok: true, setCookies: [] };
   }
@@ -85,6 +116,10 @@ export async function verifySessionWithOptionalRefresh(
   }
 
   const refreshRes = await fetchBackendRefresh(cookie);
+  if (refreshRes === null) {
+    warnSessionFetchFailed("POST /auth/refresh");
+    return { ok: false, setCookies: [] };
+  }
   if (!refreshRes.ok) {
     return { ok: false, setCookies: [] };
   }
@@ -92,6 +127,10 @@ export async function verifySessionWithOptionalRefresh(
   const setCookies = getSetCookieHeaders(refreshRes);
   const retryCookie = mergeSetCookiesIntoCookieHeader(cookie, setCookies);
   const retryMe = await fetchUsersMe(retryCookie);
+  if (retryMe === null) {
+    warnSessionFetchFailed("GET /users/me (after refresh)");
+    return { ok: false, setCookies: [] };
+  }
 
   return {
     ok: retryMe.ok,

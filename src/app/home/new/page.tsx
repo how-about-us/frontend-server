@@ -12,6 +12,7 @@ import { useRedirectOnMobileDevice } from "@/hooks/useMobileRedirects";
 import { useCreateRoom } from "@/hooks/useRooms";
 import type { RoomDetail } from "@/lib/api/rooms";
 import { formatDateYmd } from "@/lib/plan/tripRange";
+import { isTripScheduleDayLimitExceeded } from "@/lib/plan/schedulePolicy";
 import {
   isTripDateRangeInvalid,
   ROOM_TRIP_TITLE_MAX_LENGTH,
@@ -45,7 +46,8 @@ export default function NewTripPage() {
     startDate &&
     endDate &&
     !isPending &&
-    !dateRangeInvalid;
+    !dateRangeInvalid &&
+    !isTripScheduleDayLimitExceeded(startDate, endDate);
 
   const handleSubmit = () => {
     if (!canSubmit || dateRangeInvalid) return;

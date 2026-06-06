@@ -11,8 +11,7 @@ export const planCopy = {
   },
   placesEmpty: {
     mobile: "아직 등록된 장소가 없습니다.",
-    desktop:
-      "아직 등록된 장소가 없습니다. 검색으로 장소를 추가해 보세요.",
+    desktop: "아직 등록된 장소가 없습니다.",
   },
 } as const;
 

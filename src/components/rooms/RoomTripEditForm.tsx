@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
   SettingsActionButton,
   SettingsActionButtonRow,
 } from "@/components/settings/SettingsActionButton";
+import { TripDateShrinkConfirmModal } from "@/components/rooms/TripDateShrinkConfirmModal";
 import { TripFormFields } from "@/components/rooms/TripFormFields";
-import { useUpdateRoom } from "@/hooks/useRooms";
+import { useRoomSchedules, useUpdateRoom } from "@/hooks/useRooms";
+import {
+  countSchedulesTrimmedByDateChange,
+  isTripScheduleDayLimitExceeded,
+} from "@/lib/plan/schedulePolicy";
 import {
   initialDestinationPlaceId,
   isTripDateRangeInvalid,
@@ -33,7 +38,9 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   );
   const [startDate, setStartDate] = useState(saved.startDate);
   const [endDate, setEndDate] = useState(saved.endDate);
+  const [shrinkConfirmOpen, setShrinkConfirmOpen] = useState(false);
 
+  const { data: schedules } = useRoomSchedules(room.id);
   const { mutate: updateRoom, isPending, error } = useUpdateRoom();
 
   useEffect(() => {
@@ -52,6 +59,11 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   ]);
 
   const dateRangeInvalid = isTripDateRangeInvalid(startDate, endDate);
+  const scheduleDayLimitExceeded = isTripScheduleDayLimitExceeded(
+    startDate,
+    endDate,
+  );
+  const scheduleCount = schedules?.length ?? 0;
 
   const isDirty =
     title !== saved.title ||
@@ -65,21 +77,11 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
     startDate &&
     endDate &&
     !dateRangeInvalid &&
+    !scheduleDayLimitExceeded &&
     !isPending &&
     isDirty;
 
-  function handleCancel() {
-    const next = toTripFormValues(room);
-    setTitle(next.title);
-    setDestination(next.destination);
-    setDestinationPlaceId(initialDestinationPlaceId(next.destination));
-    setStartDate(next.startDate);
-    setEndDate(next.endDate);
-  }
-
-  function handleApply() {
-    if (!canApply) return;
-
+  const submitUpdate = useCallback(() => {
     updateRoom(
       {
         roomId: room.id,
@@ -89,13 +91,54 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
           startDate,
           endDate,
         },
+        previousStartDate: saved.startDate,
+        previousEndDate: saved.endDate,
       },
       {
         onSuccess: () => {
+          setShrinkConfirmOpen(false);
           toast.success("여행 정보가 수정되었어요");
         },
       },
     );
+  }, [
+    destination,
+    endDate,
+    room.id,
+    saved.endDate,
+    saved.startDate,
+    startDate,
+    title,
+    updateRoom,
+  ]);
+
+  function handleCancel() {
+    const next = toTripFormValues(room);
+    setTitle(next.title);
+    setDestination(next.destination);
+    setDestinationPlaceId(initialDestinationPlaceId(next.destination));
+    setStartDate(next.startDate);
+    setEndDate(next.endDate);
+    setShrinkConfirmOpen(false);
+  }
+
+  function handleApply() {
+    if (!canApply) return;
+
+    const trimCount = countSchedulesTrimmedByDateChange(
+      scheduleCount,
+      saved.startDate,
+      saved.endDate,
+      startDate,
+      endDate,
+    );
+
+    if (trimCount > 0) {
+      setShrinkConfirmOpen(true);
+      return;
+    }
+
+    submitUpdate();
   }
 
   return (
@@ -137,6 +180,21 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
             {isPending ? "저장 중…" : "적용하기"}
           </SettingsActionButton>
         </SettingsActionButtonRow>
+      )}
+
+      {shrinkConfirmOpen && (
+        <TripDateShrinkConfirmModal
+          trimCount={countSchedulesTrimmedByDateChange(
+            scheduleCount,
+            saved.startDate,
+            saved.endDate,
+            startDate,
+            endDate,
+          )}
+          isPending={isPending}
+          onClose={() => setShrinkConfirmOpen(false)}
+          onConfirm={submitUpdate}
+        />
       )}
     </div>
   );

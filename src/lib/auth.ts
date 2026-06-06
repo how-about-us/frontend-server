@@ -4,6 +4,7 @@ import { isProtectedAppPath } from "@/lib/auth-session";
 import { clearUserScopedBrowserStorage, tearDownClientSession } from "@/lib/client-storage";
 import {
   fetchSessionUserRaw,
+  fetchSessionUserResult,
   fetchSessionUserWithRetry,
 } from "@/lib/session-user";
 import {
@@ -18,7 +19,12 @@ export {
   consumePendingInviteCode,
   setPendingInviteCode,
 } from "@/lib/session-user-flow";
-export { fetchSessionUserRaw, fetchSessionUserWithRetry };
+export {
+  fetchSessionUserRaw,
+  fetchSessionUserResult,
+  fetchSessionUserWithRetry,
+};
+export type { FetchSessionUserResult } from "@/lib/session-user";
 
 const RECONCILE_SKIP_PATH_PREFIXES = ["/auth/callback", "/login"] as const;
 
@@ -41,15 +47,20 @@ export async function reconcileClientSession(
 
   try {
     const prevUser = readSessionUserCache(queryClient);
-    const user = await fetchSessionUserRaw();
+    const result = await fetchSessionUserResult();
 
-    if (user) {
+    if (result.kind === "user") {
+      const user = result.user;
       if (prevUser != null && prevUser.id !== user.id) {
         clearUserScopedBrowserStorage();
         useSessionStore.getState().clearSessionRoomContext();
         setSessionUserCache(queryClient, null);
       }
       setSessionUserCache(queryClient, user);
+      return;
+    }
+
+    if (result.kind === "network_error") {
       return;
     }
 

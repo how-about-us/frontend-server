@@ -2,6 +2,10 @@
 
 import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
 import {
+  isTripScheduleDayLimitExceeded,
+  TRIP_SCHEDULE_DAY_LIMIT_MESSAGE,
+} from "@/lib/plan/schedulePolicy";
+import {
   isTripDateRangeInvalid,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   TRIP_DATE_RANGE_INVALID_MESSAGE,
@@ -41,6 +45,10 @@ export function TripFormFields({
 }: Props) {
   const { title, destination, startDate, endDate } = values;
   const dateRangeInvalid = isTripDateRangeInvalid(startDate, endDate);
+  const scheduleDayLimitExceeded = isTripScheduleDayLimitExceeded(
+    startDate,
+    endDate,
+  );
   const fieldClassName = readOnly
     ? TRIP_FORM_FIELD_READ_ONLY_CLASS
     : TRIP_FORM_FIELD_CLASS;
@@ -112,6 +120,11 @@ export function TripFormFields({
         {!readOnly && dateRangeInvalid && (
           <p className="mt-2 text-xs text-brand-red">
             {TRIP_DATE_RANGE_INVALID_MESSAGE}
+          </p>
+        )}
+        {!readOnly && !dateRangeInvalid && scheduleDayLimitExceeded && (
+          <p className="mt-2 text-xs text-brand-red">
+            {TRIP_SCHEDULE_DAY_LIMIT_MESSAGE}
           </p>
         )}
       </div>

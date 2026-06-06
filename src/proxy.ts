@@ -17,8 +17,19 @@ function withRefreshedCookies(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { ok: hasSession, setCookies } =
-    await verifySessionWithOptionalRefresh(request.headers.get("cookie"));
+
+  let hasSession = false;
+  let setCookies: string[] = [];
+  try {
+    const verified = await verifySessionWithOptionalRefresh(
+      request.headers.get("cookie"),
+    );
+    hasSession = verified.ok;
+    setCookies = verified.setCookies;
+  } catch {
+    hasSession = false;
+    setCookies = [];
+  }
 
   if (pathname === "/login") {
     if (hasSession) {
