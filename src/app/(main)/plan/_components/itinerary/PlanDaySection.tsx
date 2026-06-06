@@ -146,7 +146,7 @@ export function PlanDaySection({
         "rounded-2xl border border-gray-border bg-white",
         isDragging && "border-brand-red/80 ring-4 ring-inset ring-brand-red/45",
         isCrossDayItemDropTarget &&
-          "border-brand-red ring-[5px] ring-inset ring-brand-red/50",
+          "border-brand-red ring-3 ring-inset ring-brand-red/50",
       )}
       aria-label={subtitle ? `${title} ${subtitle}` : title}
     >
@@ -208,10 +208,7 @@ export function PlanDaySection({
             )}
           </span>
           {showScheduleMenu ? (
-            <div
-              ref={menuRef}
-              className="relative shrink-0 self-center"
-            >
+            <div ref={menuRef} className="relative shrink-0 self-center">
               <button
                 type="button"
                 aria-label="일차 메뉴"

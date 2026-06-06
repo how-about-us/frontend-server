@@ -17,17 +17,19 @@ import {
 import {
   beginPlanItemDrag,
   clampCrossDayTargetOrderIndex,
-  computeDisplayOrderIndex,
-  computeRowTranslateY,
+  computePlanItemRowPreviewOrderIndex,
+  computePlanItemRowPreviewTranslateY,
   executePlanItemCrossDayMove,
   getPlanItemRowReorderStyle,
   isPlanItemDrag,
+  type PlanItemRowPreviewMode,
   PlanItemRowLayoutSnapshot,
   readPlanItemDragIndex,
 } from "@/lib/plan/planItemReorder";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 import type { PlanPlace } from "@/lib/plan/types";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 type UsePlanItineraryReorderArgs = {
   roomId: string;
@@ -58,6 +60,9 @@ export function usePlanItineraryReorder({
   const { mutateAsync: moveMutate, isPending: isMovePending } =
     useMoveScheduleItemToSchedule();
   const beginItemDrag = usePlanItemCrossDayDragStore((s) => s.beginItemDrag);
+  const draggedRowHeight = usePlanItemCrossDayDragStore(
+    (s) => s.draggedRowHeight,
+  );
   const setHoverTarget = usePlanItemCrossDayDragStore((s) => s.setHoverTarget);
   const endItemDrag = usePlanItemCrossDayDragStore((s) => s.endItemDrag);
 
@@ -69,6 +74,7 @@ export function usePlanItineraryReorder({
   const layoutSnapshotRef = useRef(new PlanItemRowLayoutSnapshot());
   const pointerYRef = useRef(0);
   const dragOverRafRef = useRef(0);
+  const externalCaptureRafRef = useRef(0);
 
   const mutationLocked =
     interactionLocked || isReorderSettling || isMovePending;
@@ -81,6 +87,10 @@ export function usePlanItineraryReorder({
     setPreviewIndex(null);
     setIncomingExternalDrag(false);
     layoutSnapshotRef.current.clear();
+    if (externalCaptureRafRef.current) {
+      cancelAnimationFrame(externalCaptureRafRef.current);
+      externalCaptureRafRef.current = 0;
+    }
     endItemDrag();
   }, [endItemDrag]);
 
@@ -109,10 +119,45 @@ export function usePlanItineraryReorder({
     });
   }, [updatePreviewFromPointer]);
 
+  const beginExternalDragCapture = useCallback(
+    (pointerY: number) => {
+      const tryCapture = (attempt = 0) => {
+        const rowsReady =
+          places.length === 0 ||
+          rowRefs.current.some((el) => el instanceof HTMLElement);
+
+        if (rowsReady || attempt >= 8) {
+          layoutSnapshotRef.current.capture(rowRefs.current);
+          setIncomingExternalDrag(true);
+          setPreviewIndex(
+            places.length > 0
+              ? layoutSnapshotRef.current.previewIndexAt(pointerY)
+              : 0,
+          );
+          externalCaptureRafRef.current = 0;
+          return;
+        }
+
+        externalCaptureRafRef.current = requestAnimationFrame(() =>
+          tryCapture(attempt + 1),
+        );
+      };
+
+      if (externalCaptureRafRef.current) {
+        cancelAnimationFrame(externalCaptureRafRef.current);
+      }
+      tryCapture();
+    },
+    [places.length],
+  );
+
   useEffect(() => {
     return () => {
       if (dragOverRafRef.current) {
         cancelAnimationFrame(dragOverRafRef.current);
+      }
+      if (externalCaptureRafRef.current) {
+        cancelAnimationFrame(externalCaptureRafRef.current);
       }
     };
   }, []);
@@ -122,14 +167,16 @@ export function usePlanItineraryReorder({
       const itemId = places[index]?.itemId;
       if (mutationLocked || typeof itemId !== "number") return;
       const target = e.currentTarget;
-      if (target instanceof HTMLElement) {
-        beginPlanItemDrag(e.nativeEvent, target, index, {
-          scheduleId,
-          itemId,
-        });
-      }
-      beginItemDrag(scheduleId);
+      if (!(target instanceof HTMLElement)) return;
+      beginPlanItemDrag(e.nativeEvent, target, index, {
+        scheduleId,
+        itemId,
+      });
       layoutSnapshotRef.current.capture(rowRefs.current);
+      const rowHeight =
+        layoutSnapshotRef.current.heights()[index] ??
+        target.getBoundingClientRect().height;
+      beginItemDrag(scheduleId, rowHeight);
       setDragFromIndex(index);
       setPreviewIndex(index);
     },
@@ -156,24 +203,22 @@ export function usePlanItineraryReorder({
       pointerYRef.current = e.clientY;
 
       if (external) {
+        usePlanItineraryExpandedStore
+          .getState()
+          .setScheduleExpanded(scheduleId, true);
         setHoverTarget(scheduleId);
-        if (layoutSnapshotRef.current.isEmpty) {
-          layoutSnapshotRef.current.capture(rowRefs.current);
-          setIncomingExternalDrag(true);
-          setPreviewIndex(
-            places.length > 0
-              ? layoutSnapshotRef.current.previewIndexAt(e.clientY)
-              : 0,
-          );
+        if (layoutSnapshotRef.current.isEmpty && !incomingExternalDrag) {
+          beginExternalDragCapture(e.clientY);
         }
       }
 
       schedulePreviewUpdate();
     },
     [
+      beginExternalDragCapture,
       dragFromIndex,
+      incomingExternalDrag,
       mutationLocked,
-      places.length,
       scheduleId,
       schedulePreviewUpdate,
       setHoverTarget,
@@ -189,6 +234,10 @@ export function usePlanItineraryReorder({
         setIncomingExternalDrag(false);
         setPreviewIndex(null);
         layoutSnapshotRef.current.clear();
+        if (externalCaptureRafRef.current) {
+          cancelAnimationFrame(externalCaptureRafRef.current);
+          externalCaptureRafRef.current = 0;
+        }
         setHoverTarget(null);
         return;
       }
@@ -275,32 +324,40 @@ export function usePlanItineraryReorder({
       const fromIdx = dragFromIndex;
       const previewIdx = previewIndex;
       const snapshot = layoutSnapshotRef.current;
+      const insertHeight = draggedRowHeight ?? 0;
 
-      let translateY = 0;
+      let previewMode: PlanItemRowPreviewMode | null = null;
       if (
+        incomingExternalDrag &&
+        previewIdx !== null &&
+        insertHeight > 0
+      ) {
+        previewMode = {
+          kind: "insert",
+          previewIndex: previewIdx,
+          insertHeight,
+        };
+      } else if (
         fromIdx !== null &&
         previewIdx !== null &&
         fromIdx !== previewIdx &&
         !snapshot.isEmpty
       ) {
-        translateY = computeRowTranslateY(
-          index,
-          fromIdx,
-          previewIdx,
-          snapshot.heights(),
-        );
+        previewMode = {
+          kind: "reorder",
+          fromIndex: fromIdx,
+          previewIndex: previewIdx,
+          rowHeights: snapshot.heights(),
+        };
       }
 
+      const translateY = computePlanItemRowPreviewTranslateY(index, previewMode);
       const isDragging = fromIdx === index;
-      const displayOrderIndex =
-        fromIdx !== null && previewIdx !== null
-          ? computeDisplayOrderIndex(
-              index,
-              fromIdx,
-              previewIdx,
-              places.length,
-            )
-          : index + 1;
+      const displayOrderIndex = computePlanItemRowPreviewOrderIndex(
+        index,
+        places.length,
+        previewMode,
+      );
 
       return {
         ref: setRowRef(index),
@@ -321,8 +378,10 @@ export function usePlanItineraryReorder({
     },
     [
       dragFromIndex,
+      draggedRowHeight,
       handleDragEnd,
       handleDragStart,
+      incomingExternalDrag,
       mutationLocked,
       places,
       previewIndex,
@@ -336,10 +395,16 @@ export function usePlanItineraryReorder({
     onDrop: mutationLocked ? undefined : handleListDrop,
   };
 
+  const listReservePaddingBottom =
+    incomingExternalDrag && (draggedRowHeight ?? 0) > 0
+      ? (draggedRowHeight ?? 0)
+      : 0;
+
   return {
     getRowProps,
     listContainerProps,
     isDraggingActive,
     isReorderSettling: isReorderSettling || isMovePending,
+    listReservePaddingBottom,
   };
 }

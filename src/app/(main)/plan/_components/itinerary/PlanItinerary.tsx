@@ -31,6 +31,7 @@ import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanTravelTime } from "../travel-time/PlanTravelTime";
 import { AddFromBookmarkModal } from "./AddFromBookmarkModal";
 import { PlanAddPlaceControls } from "./PlanAddPlaceControls";
+import { PlanItineraryReorderRow } from "./PlanItineraryReorderRow";
 import { PlanPlaceCard } from "./PlanPlaceCard";
 import { PlanTravelSegment } from "./PlanTravelSegment";
 
@@ -93,6 +94,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     listContainerProps,
     isDraggingActive,
     isReorderSettling,
+    listReservePaddingBottom,
   } = usePlanItineraryReorder({
     roomId,
     scheduleId,
@@ -191,7 +193,14 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         </p>
       : null}
 
-      <div className="flex flex-col gap-0">
+      <div
+        className="flex flex-col gap-0"
+        style={
+          listReservePaddingBottom > 0
+            ? { paddingBottom: listReservePaddingBottom }
+            : undefined
+        }
+      >
         {places.map((place, index) => {
           const motionEnabled = isDraggingActive && !prefersReducedMotion;
           const { ref, style, placeCardDragProps } = getRowProps(
@@ -202,7 +211,11 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
           const segmentActive = activeInsertIndex === insertIndex;
 
           return (
-            <div key={place.id} ref={ref} style={style}>
+            <PlanItineraryReorderRow
+              key={place.id}
+              rowRef={ref}
+              style={style}
+            >
               <PlanPlaceCard
                 place={place}
                 orderBadgeColor={orderBadgeColor}
@@ -254,7 +267,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                   />
                 </PlanTravelSegment>
               : null}
-            </div>
+            </PlanItineraryReorderRow>
           );
         })}
       </div>

@@ -194,6 +194,76 @@ export function computePreviewIndex(
   return length - 1;
 }
 
+/** 외부(다른 일차)에서 삽입 시 `previewIndex` 이상 행을 아래로 밀기 */
+export function computeInsertTranslateY(
+  index: number,
+  previewIndex: number,
+  insertHeight: number,
+): number {
+  if (insertHeight <= 0 || previewIndex < 0) return 0;
+  return index >= previewIndex ? insertHeight : 0;
+}
+
+/** 외부 삽입 드래그 중 order badge 1-based 순번 */
+export function computeInsertDisplayOrderIndex(
+  index: number,
+  previewIndex: number,
+): number {
+  return index >= previewIndex ? index + 2 : index + 1;
+}
+
+export type PlanItemRowPreviewMode =
+  | {
+      kind: "reorder";
+      fromIndex: number;
+      previewIndex: number;
+      rowHeights: readonly number[];
+    }
+  | {
+      kind: "insert";
+      previewIndex: number;
+      insertHeight: number;
+    };
+
+/** 일차 내 reorder·일차 간 insert 공통 translateY */
+export function computePlanItemRowPreviewTranslateY(
+  index: number,
+  mode: PlanItemRowPreviewMode | null,
+): number {
+  if (mode == null) return 0;
+  if (mode.kind === "reorder") {
+    return computeRowTranslateY(
+      index,
+      mode.fromIndex,
+      mode.previewIndex,
+      mode.rowHeights,
+    );
+  }
+  return computeInsertTranslateY(
+    index,
+    mode.previewIndex,
+    mode.insertHeight,
+  );
+}
+
+/** 일차 내 reorder·일차 간 insert 공통 order badge */
+export function computePlanItemRowPreviewOrderIndex(
+  index: number,
+  placesLength: number,
+  mode: PlanItemRowPreviewMode | null,
+): number {
+  if (mode == null) return index + 1;
+  if (mode.kind === "insert") {
+    return computeInsertDisplayOrderIndex(index, mode.previewIndex);
+  }
+  return computeDisplayOrderIndex(
+    index,
+    mode.fromIndex,
+    mode.previewIndex,
+    placesLength,
+  );
+}
+
 /** `fromIndex` → `previewIndex` 이동 시 i번 행의 translateY(px). */
 export function computeRowTranslateY(
   index: number,

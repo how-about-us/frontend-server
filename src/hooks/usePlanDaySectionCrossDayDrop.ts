@@ -11,6 +11,7 @@ import {
   PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR,
 } from "@/lib/plan/planItemReorder";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 type UsePlanDaySectionCrossDayDropArgs = {
   roomId: string;
@@ -51,6 +52,9 @@ export function usePlanDaySectionCrossDayDrop({
 
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
+      usePlanItineraryExpandedStore
+        .getState()
+        .setScheduleExpanded(scheduleId, true);
       setHoverTarget(scheduleId);
     },
     [locked, scheduleId, setHoverTarget, sourceScheduleId],
