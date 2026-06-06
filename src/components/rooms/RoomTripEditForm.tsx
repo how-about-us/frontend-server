@@ -182,20 +182,13 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
         </SettingsActionButtonRow>
       )}
 
-      {shrinkConfirmOpen && (
+      {shrinkConfirmOpen ? (
         <TripDateShrinkConfirmModal
-          trimCount={countSchedulesTrimmedByDateChange(
-            scheduleCount,
-            saved.startDate,
-            saved.endDate,
-            startDate,
-            endDate,
-          )}
           isPending={isPending}
           onClose={() => setShrinkConfirmOpen(false)}
           onConfirm={submitUpdate}
         />
-      )}
+      ) : null}
     </div>
   );
 }

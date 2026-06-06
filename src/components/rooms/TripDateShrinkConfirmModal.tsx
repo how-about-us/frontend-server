@@ -9,14 +9,12 @@ import {
 } from "@/components/settings/SettingsActionButton";
 
 type Props = {
-  trimCount: number;
   isPending: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };
 
 export function TripDateShrinkConfirmModal({
-  trimCount,
   isPending,
   onClose,
   onConfirm,
@@ -58,9 +56,8 @@ export function TripDateShrinkConfirmModal({
             id="trip-date-shrink-dialog-desc"
             className="mt-1.5 text-sm leading-relaxed text-dark-gray"
           >
-            여행 기간을 줄이면{" "}
-            <span className="font-semibold">{trimCount}일차</span> 일정과
-            포함된 장소가 삭제돼요. 계속할까요?
+            여행 기간을 줄이면 해당 일차에 포함된 장소도 함께 삭제돼요.
+            계속할까요?
           </p>
         </div>
         <SettingsActionButtonRow className="px-6 py-5 pt-0">
