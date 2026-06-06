@@ -1,11 +1,19 @@
 "use client";
 
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
-import { useCallback, useId, useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  GripVertical,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useId, useRef, useState } from "react";
 import type { CSSProperties, DragEvent, ReactNode, Ref } from "react";
 
 export type PlanDaySectionDragHandleProps = {
@@ -28,11 +36,15 @@ export type PlanDaySectionProps = {
   children?: ReactNode;
   /**
    * 일차(schedule) 단위 삭제 — schedule-item(장소) 삭제와 구분됩니다.
-   * 지정 시 헤더 우측에 휴지통 아이콘이 표시됩니다.
+   * 지정 시 헤더 우측에 더보기 메뉴가 표시됩니다.
    */
   onRequestDeleteSchedule?: () => void;
-  /** 일차가 1개뿐일 때 등 삭제 불가 — 버튼은 보이되 비활성화 */
+  /** 해당 일차 바로 뒤에 빈 일차 삽입 */
+  onRequestInsertScheduleAfter?: () => void;
+  /** 일차가 1개뿐일 때 등 삭제 불가 — 메뉴 항목은 보이되 비활성화 */
   isDeleteScheduleDisabled?: boolean;
+  /** mutation·drag 중 메뉴 비활성화 */
+  isScheduleMenuDisabled?: boolean;
   sectionRef?: Ref<HTMLElement>;
   sectionStyle?: CSSProperties;
   dragHandleProps?: PlanDaySectionDragHandleProps;
@@ -51,7 +63,9 @@ export function PlanDaySection({
   itineraryScheduleId,
   children,
   onRequestDeleteSchedule,
+  onRequestInsertScheduleAfter,
   isDeleteScheduleDisabled = false,
+  isScheduleMenuDisabled = false,
   sectionRef,
   sectionStyle,
   dragHandleProps,
@@ -115,6 +129,13 @@ export function PlanDaySection({
     hoverTargetScheduleId === trackedSid;
 
   const isHighlighted = isDragging || isCrossDayItemDropTarget;
+
+  const showScheduleMenu =
+    onRequestDeleteSchedule != null || onRequestInsertScheduleAfter != null;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useOnClickOutside(menuRef, () => setMenuOpen(false));
 
   return (
     <section
@@ -186,25 +207,76 @@ export function PlanDaySection({
               <ChevronDown className="h-5 w-5" />
             )}
           </span>
-          {onRequestDeleteSchedule ? (
-            <button
-              type="button"
-              aria-label="일차 삭제"
-              disabled={isDeleteScheduleDisabled}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isDeleteScheduleDisabled) return;
-                onRequestDeleteSchedule();
-              }}
-              className={cn(
-                "shrink-0 self-center rounded-lg p-2 text-dark-gray transition-colors",
-                isDeleteScheduleDisabled
-                  ? "cursor-not-allowed opacity-40"
-                  : "cursor-pointer hover:bg-bubble-gray/60",
-              )}
+          {showScheduleMenu ? (
+            <div
+              ref={menuRef}
+              className="relative shrink-0 self-center"
             >
-              <Trash2 className="h-5 w-5" aria-hidden />
-            </button>
+              <button
+                type="button"
+                aria-label="일차 메뉴"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                disabled={isScheduleMenuDisabled}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isScheduleMenuDisabled) return;
+                  setMenuOpen((v) => !v);
+                }}
+                className={cn(
+                  "rounded-lg p-2 text-dark-gray transition-colors",
+                  isScheduleMenuDisabled
+                    ? "cursor-not-allowed opacity-40"
+                    : "cursor-pointer hover:bg-bubble-gray/60",
+                )}
+              >
+                <MoreHorizontal className="h-5 w-5" aria-hidden />
+              </button>
+              {menuOpen && !isScheduleMenuDisabled ? (
+                <div
+                  className="absolute right-0 top-full z-50 mt-1 w-max overflow-hidden rounded-xl border border-gray-border bg-white py-1 shadow-lg"
+                  role="menu"
+                >
+                  {onRequestInsertScheduleAfter ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex cursor-pointer items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onRequestInsertScheduleAfter();
+                      }}
+                    >
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                      일차 추가하기
+                    </button>
+                  ) : null}
+                  {onRequestDeleteSchedule ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={isDeleteScheduleDisabled}
+                      className={cn(
+                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-brand-red hover:bg-red-50",
+                        isDeleteScheduleDisabled
+                          ? "cursor-not-allowed opacity-40"
+                          : "cursor-pointer",
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        if (isDeleteScheduleDisabled) return;
+                        onRequestDeleteSchedule();
+                      }}
+                    >
+                      <Trash2 className="size-4 shrink-0" aria-hidden />
+                      일차 삭제하기
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </div>
         <div

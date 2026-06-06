@@ -13,6 +13,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import {
+  dayNumberForInsertAfterDayIndex,
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
@@ -117,6 +118,22 @@ export function PlanPageView() {
     });
   }, [createScheduleAsync, isCreatingSchedule, roomId]);
 
+  const handleInsertScheduleAfter = useCallback(
+    (dayIndex: number) => {
+      if (!roomId.length) return;
+      if (isCreatingSchedule) return;
+      const dayNumber = dayNumberForInsertAfterDayIndex(dayIndex);
+      void createScheduleAsync({ roomId, body: { dayNumber } }).catch((e) => {
+        toast.error(
+          e instanceof Error && e.message.trim()
+            ? e.message
+            : "일차를 추가하지 못했어요.",
+        );
+      });
+    },
+    [createScheduleAsync, isCreatingSchedule, roomId],
+  );
+
   const showInitialLoading = Boolean(
     roomId.length > 0 && isPending && schedules === undefined,
   );
@@ -214,6 +231,14 @@ export function PlanPageView() {
                   !isReadOnly && sortedSchedules[dayIndex]
                     ? () => handleDeleteScheduleDay(dayIndex)
                     : undefined
+                }
+                onRequestInsertScheduleAfter={
+                  !isReadOnly && sortedSchedules[dayIndex]
+                    ? () => handleInsertScheduleAfter(dayIndex)
+                    : undefined
+                }
+                isScheduleMenuDisabled={
+                  isCreatingSchedule || isDeletingSchedule || isMovePending
                 }
                 interactionLocked={
                   isReadOnly || isCreatingSchedule || isDeletingSchedule

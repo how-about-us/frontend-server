@@ -18,6 +18,8 @@ type PlanScheduleDayBlockProps = {
   title: string;
   subtitle?: string;
   onRequestDeleteSchedule?: () => void;
+  onRequestInsertScheduleAfter?: () => void;
+  isScheduleMenuDisabled?: boolean;
   sectionRef?: Ref<HTMLElement>;
   sectionStyle?: CSSProperties;
   dragHandleProps?: PlanDaySectionDragHandleProps;
@@ -30,6 +32,8 @@ export function PlanScheduleDayBlock({
   title,
   subtitle,
   onRequestDeleteSchedule,
+  onRequestInsertScheduleAfter,
+  isScheduleMenuDisabled = false,
   sectionRef,
   sectionStyle,
   dragHandleProps,
@@ -52,6 +56,8 @@ export function PlanScheduleDayBlock({
       subtitle={subtitle}
       itineraryScheduleId={scheduleId}
       onRequestDeleteSchedule={onRequestDeleteSchedule}
+      onRequestInsertScheduleAfter={onRequestInsertScheduleAfter}
+      isScheduleMenuDisabled={isScheduleMenuDisabled}
       sectionRef={sectionRef}
       sectionStyle={sectionStyle}
       dragHandleProps={dragHandleProps}
