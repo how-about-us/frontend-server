@@ -10,9 +10,12 @@ export type RoomSchedule = {
 };
 
 export type RoomScheduleCreateRequest = {
-  dayNumber: number;
-  /** `YYYY-MM-DD` */
-  date: string;
+  /** 생략 시 끝에 추가, 지정 시 해당 위치에 중간 삽입 */
+  dayNumber?: number;
+};
+
+export type RoomScheduleMoveRequest = {
+  targetDayNumber: number;
 };
 
 export async function createRoomSchedule(
@@ -40,5 +43,17 @@ export async function deleteRoomSchedule(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}`),
     { method: "DELETE" },
     { errorMessage: "일정 삭제 실패" },
+  );
+}
+
+export async function moveRoomSchedule(
+  roomId: string,
+  scheduleId: number,
+  body: RoomScheduleMoveRequest,
+): Promise<void> {
+  return requestVoid(
+    apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/move`),
+    { method: "PATCH", ...jsonBody(body) },
+    { errorMessage: "일정 이동 실패" },
   );
 }

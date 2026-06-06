@@ -31,6 +31,11 @@ export type ReorderScheduleItemRequest = {
   newOrderIndex: number;
 };
 
+export type MoveScheduleItemToScheduleRequest = {
+  targetScheduleId: number;
+  targetOrderIndex: number;
+};
+
 /** GET …/route — 현재 항목 → 다음 항목 구간 단일 레그 */
 export type ScheduleItemRouteLeg = {
   distanceMeters: number;
@@ -130,5 +135,20 @@ export async function reorderScheduleItem(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/order`),
     { method: "PATCH", ...jsonBody(body) },
     { errorMessage: "일정 순서 변경 실패" },
+  );
+}
+
+export async function moveScheduleItemToSchedule(
+  roomId: string,
+  sourceScheduleId: number,
+  itemId: number,
+  body: MoveScheduleItemToScheduleRequest,
+): Promise<RoomScheduleItem> {
+  return requestJson(
+    apiUrl(
+      `/rooms/${roomId}/schedules/${sourceScheduleId}/items/${itemId}/move`,
+    ),
+    { method: "PATCH", ...jsonBody(body) },
+    { errorMessage: "일정 항목 이동 실패" },
   );
 }

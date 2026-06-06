@@ -1,6 +1,6 @@
 export type RoomScheduleEventType =
-  | "SCHEDULE_CREATED"
-  | "SCHEDULE_DELETED"
+  | "ROOM_SCHEDULES_RESYNCED"
+  | "SCHEDULE_ITEM_MOVED"
   | "SCHEDULE_ITEM_CREATED"
   | "SCHEDULE_ITEM_UPDATED"
   | "SCHEDULE_ITEM_DELETED"
@@ -8,21 +8,34 @@ export type RoomScheduleEventType =
 
 /** `/topic/rooms/{roomId}/schedules` 브로드캐스트 본문 */
 export type RoomScheduleChangedEvent = {
-  actorUserId: number;
-  itemId: number;
   roomId: string;
-  scheduleId: number;
+  actorUserId: number;
   type: RoomScheduleEventType;
+  scheduleId: number | null;
+  itemId: number | null;
+  affectedRouteItemIds: number[] | null;
+  scheduleIds: number[] | null;
 };
 
 const KNOWN_TYPES = new Set<string>([
-  "SCHEDULE_CREATED",
-  "SCHEDULE_DELETED",
+  "ROOM_SCHEDULES_RESYNCED",
+  "SCHEDULE_ITEM_MOVED",
   "SCHEDULE_ITEM_CREATED",
   "SCHEDULE_ITEM_UPDATED",
   "SCHEDULE_ITEM_DELETED",
   "SCHEDULE_ITEMS_REORDERED",
 ]);
+
+const ITEM_EVENT_TYPES = new Set<string>([
+  "SCHEDULE_ITEM_CREATED",
+  "SCHEDULE_ITEM_UPDATED",
+  "SCHEDULE_ITEM_DELETED",
+  "SCHEDULE_ITEMS_REORDERED",
+]);
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
 
 export function parseRoomScheduleMessage(
   body: string,
@@ -30,30 +43,35 @@ export function parseRoomScheduleMessage(
   try {
     const raw = JSON.parse(body) as Partial<RoomScheduleChangedEvent>;
     const roomId = String(raw.roomId ?? "").trim();
-    const scheduleId = raw.scheduleId;
     const type = raw.type;
-    if (
-      !roomId ||
-      typeof scheduleId !== "number" ||
-      typeof type !== "string" ||
-      !KNOWN_TYPES.has(type)
-    ) {
+    if (!roomId || typeof type !== "string" || !KNOWN_TYPES.has(type)) {
       return null;
     }
-    if (
-      type === "SCHEDULE_ITEM_DELETED" ||
-      type === "SCHEDULE_ITEM_CREATED" ||
-      type === "SCHEDULE_ITEMS_REORDERED" ||
-      type === "SCHEDULE_ITEM_UPDATED"
-    ) {
+
+    if (type === "ROOM_SCHEDULES_RESYNCED") {
+      return raw as RoomScheduleChangedEvent;
+    }
+
+    if (type === "SCHEDULE_ITEM_MOVED") {
+      const scheduleIds = raw.scheduleIds;
       if (
-        typeof raw.itemId !== "number" ||
-        !Number.isFinite(raw.itemId)
+        !Array.isArray(scheduleIds) ||
+        scheduleIds.length < 2 ||
+        !scheduleIds.every(isFiniteNumber)
       ) {
         return null;
       }
+      return raw as RoomScheduleChangedEvent;
     }
-    return raw as RoomScheduleChangedEvent;
+
+    if (ITEM_EVENT_TYPES.has(type)) {
+      if (!isFiniteNumber(raw.scheduleId) || !isFiniteNumber(raw.itemId)) {
+        return null;
+      }
+      return raw as RoomScheduleChangedEvent;
+    }
+
+    return null;
   } catch {
     return null;
   }

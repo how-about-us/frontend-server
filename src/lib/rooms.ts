@@ -90,8 +90,10 @@ export function selectHostRoom(
 }
 
 /**
- * `GET /rooms/{roomId}/schedules`로 서버 일정을 가져와 React Query 캐시에 넣습니다.
- * 방 생성(서버 시딩) 직후 플랜 첫 진입 시 빈 목록·레이스를 줄입니다.
+ * `GET /rooms/{roomId}/schedules`로 서버 일정을 **항상** 재조회해 React Query 캐시에 넣습니다.
+ * `fetchQuery`는 `staleTime: Infinity` 캐시를 재사용할 수 있어 일차 이동(dayNumber shift) 후
+ * 순서가 UI에 반영되지 않을 수 있으므로 API를 직접 호출합니다.
+ * 신규 일차만 항목 캐시를 `[]`로 시딩하고, 기존 scheduleId의 항목 캐시는 보존합니다.
  */
 export async function hydrateRoomSchedulesFromServer(
   queryClient: QueryClient,
@@ -100,21 +102,32 @@ export async function hydrateRoomSchedulesFromServer(
   const rid = roomId.trim();
   if (!rid.length) return [];
 
-  const schedules = await queryClient.fetchQuery({
-    queryKey: roomSchedulesQueryKey(rid),
-    queryFn: () => getRoomSchedules(rid),
-  });
+  const schedules = await getRoomSchedules(rid);
   const sorted = sortRoomSchedules(schedules);
+
+  const prevSchedules =
+    queryClient.getQueryData<RoomSchedule[]>(roomSchedulesQueryKey(rid)) ?? [];
+  const prevIds = prevSchedules.map((s) => s.scheduleId);
+
   queryClient.setQueryData<RoomSchedule[]>(
     roomSchedulesQueryKey(rid),
     sorted,
   );
-  for (const s of sorted) {
-    queryClient.setQueryData<PlanPlace[]>(
-      scheduleItemsQueryKey(rid, s.scheduleId),
-      [],
-    );
+
+  const nextIds = new Set(sorted.map((s) => s.scheduleId));
+  for (const prevId of prevIds) {
+    if (!nextIds.has(prevId)) {
+      removeCachesForDeletedSchedule(queryClient, rid, prevId);
+    }
   }
+
+  for (const s of sorted) {
+    const key = scheduleItemsQueryKey(rid, s.scheduleId);
+    if (queryClient.getQueryData<PlanPlace[]>(key) === undefined) {
+      queryClient.setQueryData<PlanPlace[]>(key, []);
+    }
+  }
+
   return sorted;
 }
 

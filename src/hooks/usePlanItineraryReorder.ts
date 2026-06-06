@@ -10,17 +10,24 @@ import {
 import { toast } from "sonner";
 
 import { useDragAutoScroll } from "@/hooks/useDragAutoScroll";
-import { useReorderScheduleItem } from "@/hooks/useRooms";
+import {
+  useMoveScheduleItemToSchedule,
+  useReorderScheduleItem,
+} from "@/hooks/useRooms";
 import {
   beginPlanItemDrag,
+  clampCrossDayTargetOrderIndex,
   computeDisplayOrderIndex,
   computeRowTranslateY,
+  executePlanItemCrossDayMove,
   getPlanItemRowReorderStyle,
+  isPlanItemDrag,
   PlanItemRowLayoutSnapshot,
   readPlanItemDragIndex,
 } from "@/lib/plan/planItemReorder";
 import { newOrderIndexAfterMove } from "@/lib/plan/scheduleItemPlaces";
 import type { PlanPlace } from "@/lib/plan/types";
+import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
 
 type UsePlanItineraryReorderArgs = {
   roomId: string;
@@ -30,6 +37,16 @@ type UsePlanItineraryReorderArgs = {
   interactionLocked?: boolean;
 };
 
+function normalizeSameDayDropIndex(
+  previewIndex: number | null,
+  placesLength: number,
+): number | null {
+  if (previewIndex === null || !Number.isFinite(previewIndex)) return null;
+  if (placesLength <= 0) return 0;
+  if (previewIndex >= placesLength) return placesLength - 1;
+  return previewIndex;
+}
+
 export function usePlanItineraryReorder({
   roomId,
   scheduleId,
@@ -38,25 +55,34 @@ export function usePlanItineraryReorder({
 }: UsePlanItineraryReorderArgs) {
   const { mutateAsync: reorderMutate, isReorderSettling } =
     useReorderScheduleItem();
+  const { mutateAsync: moveMutate, isPending: isMovePending } =
+    useMoveScheduleItemToSchedule();
+  const beginItemDrag = usePlanItemCrossDayDragStore((s) => s.beginItemDrag);
+  const setHoverTarget = usePlanItemCrossDayDragStore((s) => s.setHoverTarget);
+  const endItemDrag = usePlanItemCrossDayDragStore((s) => s.endItemDrag);
+
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [incomingExternalDrag, setIncomingExternalDrag] = useState(false);
 
   const rowRefs = useRef<(HTMLElement | null)[]>([]);
   const layoutSnapshotRef = useRef(new PlanItemRowLayoutSnapshot());
   const pointerYRef = useRef(0);
   const dragOverRafRef = useRef(0);
 
-  const dragLocked =
-    interactionLocked || isReorderSettling || places.length < 2;
-  const isDraggingActive = dragFromIndex !== null;
+  const mutationLocked =
+    interactionLocked || isReorderSettling || isMovePending;
+  const isDraggingActive = dragFromIndex !== null || incomingExternalDrag;
 
   useDragAutoScroll({ active: isDraggingActive });
 
   const resetDragPreview = useCallback(() => {
     setDragFromIndex(null);
     setPreviewIndex(null);
+    setIncomingExternalDrag(false);
     layoutSnapshotRef.current.clear();
-  }, []);
+    endItemDrag();
+  }, [endItemDrag]);
 
   const setRowRef = useCallback(
     (index: number) => (el: HTMLElement | null) => {
@@ -66,13 +92,14 @@ export function usePlanItineraryReorder({
   );
 
   const updatePreviewFromPointer = useCallback(() => {
-    if (dragFromIndex === null || layoutSnapshotRef.current.isEmpty) return;
+    if (layoutSnapshotRef.current.isEmpty) return;
+    if (dragFromIndex === null && !incomingExternalDrag) return;
 
     const nextPreview = layoutSnapshotRef.current.previewIndexAt(
       pointerYRef.current,
     );
     setPreviewIndex((prev) => (prev === nextPreview ? prev : nextPreview));
-  }, [dragFromIndex]);
+  }, [dragFromIndex, incomingExternalDrag]);
 
   const schedulePreviewUpdate = useCallback(() => {
     if (dragOverRafRef.current) return;
@@ -92,16 +119,21 @@ export function usePlanItineraryReorder({
 
   const handleDragStart = useCallback(
     (index: number) => (e: DragEvent<Element>) => {
-      if (dragLocked || typeof places[index]?.itemId !== "number") return;
+      const itemId = places[index]?.itemId;
+      if (mutationLocked || typeof itemId !== "number") return;
       const target = e.currentTarget;
       if (target instanceof HTMLElement) {
-        beginPlanItemDrag(e.nativeEvent, target, index);
+        beginPlanItemDrag(e.nativeEvent, target, index, {
+          scheduleId,
+          itemId,
+        });
       }
+      beginItemDrag(scheduleId);
       layoutSnapshotRef.current.capture(rowRefs.current);
       setDragFromIndex(index);
       setPreviewIndex(index);
     },
-    [dragLocked, places],
+    [beginItemDrag, mutationLocked, places, scheduleId],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -114,35 +146,86 @@ export function usePlanItineraryReorder({
 
   const handleListDragOver = useCallback(
     (e: DragEvent<Element>) => {
-      if (dragLocked || dragFromIndex === null) return;
+      if (mutationLocked) return;
+
+      const external = dragFromIndex === null && isPlanItemDrag(e.dataTransfer);
+      if (dragFromIndex === null && !external) return;
+
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       pointerYRef.current = e.clientY;
+
+      if (external) {
+        setHoverTarget(scheduleId);
+        if (layoutSnapshotRef.current.isEmpty) {
+          layoutSnapshotRef.current.capture(rowRefs.current);
+          setIncomingExternalDrag(true);
+          setPreviewIndex(
+            places.length > 0
+              ? layoutSnapshotRef.current.previewIndexAt(e.clientY)
+              : 0,
+          );
+        }
+      }
+
       schedulePreviewUpdate();
     },
-    [dragFromIndex, dragLocked, schedulePreviewUpdate],
+    [
+      dragFromIndex,
+      mutationLocked,
+      places.length,
+      scheduleId,
+      schedulePreviewUpdate,
+      setHoverTarget,
+    ],
   );
 
   const handleListDragLeave = useCallback(
     (e: DragEvent<Element>) => {
       const next = e.relatedTarget as Node | null;
       if (next && e.currentTarget.contains(next)) return;
+
+      if (incomingExternalDrag) {
+        setIncomingExternalDrag(false);
+        setPreviewIndex(null);
+        layoutSnapshotRef.current.clear();
+        setHoverTarget(null);
+        return;
+      }
+
       if (dragFromIndex === null) return;
       setPreviewIndex(dragFromIndex);
     },
-    [dragFromIndex],
+    [dragFromIndex, incomingExternalDrag, setHoverTarget],
   );
 
   const handleListDrop = useCallback(
     async (e: DragEvent<Element>) => {
       e.preventDefault();
 
-      const fromIndex = readPlanItemDragIndex(e.dataTransfer);
-      const toIndex =
+      const dataTransfer = e.dataTransfer;
+      const fromIndex = readPlanItemDragIndex(dataTransfer);
+      const dropPreviewIndex =
         previewIndex ??
         (Number.isFinite(fromIndex) ? fromIndex : null);
 
+      const crossDayHandled = await executePlanItemCrossDayMove({
+        dataTransfer,
+        roomId,
+        targetScheduleId: scheduleId,
+        targetOrderIndex: clampCrossDayTargetOrderIndex(
+          dropPreviewIndex ?? 0,
+          places.length,
+        ),
+        moveMutate,
+        onError: (message) => toast.error(message),
+      });
+
       resetDragPreview();
+
+      if (crossDayHandled) return;
+
+      const toIndex = normalizeSameDayDropIndex(dropPreviewIndex, places.length);
 
       if (
         !Number.isFinite(fromIndex) ||
@@ -176,7 +259,15 @@ export function usePlanItineraryReorder({
         toast.error("순서를 바꾸지 못했어요.");
       }
     },
-    [places, previewIndex, reorderMutate, resetDragPreview, roomId, scheduleId],
+    [
+      moveMutate,
+      places,
+      previewIndex,
+      reorderMutate,
+      resetDragPreview,
+      roomId,
+      scheduleId,
+    ],
   );
 
   const getRowProps = useCallback(
@@ -222,7 +313,7 @@ export function usePlanItineraryReorder({
           displayOrderIndex,
           isDragging,
           dragDisabled:
-            dragLocked || typeof places[index]?.itemId !== "number",
+            mutationLocked || typeof places[index]?.itemId !== "number",
           onDragStart: handleDragStart(index),
           onDragEnd: handleDragEnd,
         },
@@ -230,9 +321,9 @@ export function usePlanItineraryReorder({
     },
     [
       dragFromIndex,
-      dragLocked,
       handleDragEnd,
       handleDragStart,
+      mutationLocked,
       places,
       previewIndex,
       setRowRef,
@@ -240,15 +331,15 @@ export function usePlanItineraryReorder({
   );
 
   const listContainerProps = {
-    onDragOver: dragLocked ? undefined : handleListDragOver,
-    onDragLeave: dragLocked ? undefined : handleListDragLeave,
-    onDrop: dragLocked ? undefined : handleListDrop,
+    onDragOver: mutationLocked ? undefined : handleListDragOver,
+    onDragLeave: mutationLocked ? undefined : handleListDragLeave,
+    onDrop: mutationLocked ? undefined : handleListDrop,
   };
 
   return {
     getRowProps,
     listContainerProps,
     isDraggingActive,
-    isReorderSettling,
+    isReorderSettling: isReorderSettling || isMovePending,
   };
 }

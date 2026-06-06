@@ -48,9 +48,14 @@ export {
   updateRoom,
 } from "./core";
 
-export type { RoomSchedule, RoomScheduleCreateRequest } from "./schedules";
+export type {
+  RoomSchedule,
+  RoomScheduleCreateRequest,
+  RoomScheduleMoveRequest,
+} from "./schedules";
 
 export type {
+  MoveScheduleItemToScheduleRequest,
   RoomScheduleItem,
   RoomScheduleItemCreateRequest,
   RoomScheduleItemUpdateRequest,
@@ -63,6 +68,7 @@ export {
   createRoomSchedule,
   deleteRoomSchedule,
   getRoomSchedules,
+  moveRoomSchedule,
 } from "./schedules";
 
 export {
@@ -70,6 +76,7 @@ export {
   deleteScheduleItem,
   getScheduleItems,
   getScheduleItemRoute,
+  moveScheduleItemToSchedule,
   reorderScheduleItem,
   updateScheduleItem,
 } from "./schedule-items";

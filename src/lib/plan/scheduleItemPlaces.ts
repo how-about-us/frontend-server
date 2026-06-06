@@ -11,6 +11,7 @@ import {
 import { fetchPlacePreview } from "@/lib/places/place-queries";
 import { getQueryClient } from "@/lib/query-client";
 import {
+  invalidateScheduleItemRouteForWholeSchedule,
   invalidateScheduleItemRoutesAfterDelete,
   invalidateScheduleItemRoutesAfterItemCreated,
   invalidateScheduleItemRoutesAfterReorder,
@@ -20,6 +21,7 @@ import {
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
+import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
 /** `orderIndex` 기준 정렬(비변형) */
 export function sortRoomScheduleItemsByOrder(
@@ -141,6 +143,13 @@ async function mergeScheduleItemsIntoPlanPlaces(
   return out;
 }
 
+async function buildPlanPlacesFromScheduleItems(
+  items: RoomScheduleItem[],
+): Promise<PlanPlace[]> {
+  const sorted = sortRoomScheduleItemsByOrder(items);
+  return Promise.all(sorted.map((item) => planPlaceFromScheduleItem(item)));
+}
+
 /** DELETE 직후 `schedule-items`에서 항목만 제거(Preview·Photo 재조회 없음). */
 export function removeScheduleItemFromPlanPlacesCache(
   queryClient: QueryClient,
@@ -228,7 +237,37 @@ export async function mergeOrRefetchSchedulePlanPlacesFromItems(
     queryClient.setQueryData(key, merged);
     return;
   }
-  await refetchSchedulePlanPlacesIntoCache(queryClient, rid, scheduleId);
+  const places = await buildPlanPlacesFromScheduleItems(items);
+  queryClient.setQueryData(key, places);
+}
+
+/** cross-day item 이동 후 source/target 일차 items·route 캐시 동기화 */
+export async function syncAfterCrossScheduleItemMove(
+  queryClient: QueryClient,
+  roomId: string,
+  sourceScheduleId: number,
+  targetScheduleId: number,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+
+  const scheduleIds =
+    sourceScheduleId === targetScheduleId
+      ? [sourceScheduleId]
+      : [sourceScheduleId, targetScheduleId];
+
+  for (const sid of scheduleIds) {
+    const items = await getScheduleItems(rid, sid);
+    await mergeOrRefetchSchedulePlanPlacesFromItems(
+      queryClient,
+      rid,
+      sid,
+      items,
+    );
+    await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+  }
+
+  usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
 }
 
 /** `schedule-items` 캐시가 있으면 Preview 없이 반환, 없을 때만 전체 enrich. */
@@ -636,6 +675,5 @@ export async function fetchScheduleItemsAsPlanPlaces(
   scheduleId: number,
 ): Promise<PlanPlace[]> {
   const items = await getScheduleItems(roomId, scheduleId);
-  const sorted = sortRoomScheduleItemsByOrder(items);
-  return Promise.all(sorted.map((item) => planPlaceFromScheduleItem(item)));
+  return buildPlanPlacesFromScheduleItems(items);
 }

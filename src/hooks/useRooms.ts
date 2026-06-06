@@ -20,6 +20,7 @@ import {
   createScheduleItem,
   deleteScheduleItem,
   reorderScheduleItem,
+  moveScheduleItemToSchedule,
   updateScheduleItem,
   deleteRoomBookmark,
   deleteBookmarkCategory,
@@ -36,6 +37,7 @@ import {
   joinRoom,
   kickMember,
   leaveRoom,
+  moveRoomSchedule,
   regenerateInviteCode,
   rejectJoinRequest,
   type BookmarkCategory,
@@ -59,9 +61,10 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
   fetchScheduleItemsAsPlanPlaces,
+  refetchSchedulePlanPlacesIntoCache,
+  syncAfterCrossScheduleItemMove,
   syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
-import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
@@ -82,8 +85,10 @@ import {
   pathSuspendsStomp,
 } from "@/lib/stomp/stompPathPolicy";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
+import { invalidateScheduleItemRouteForWholeSchedule } from "@/lib/plan/scheduleStompRouteScope";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 import type { PlanPlace } from "@/lib/plan/types";
+import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 import { useSessionUser } from "@/hooks/useSessionUser";
 
 export function useRoomsList() {
@@ -183,6 +188,7 @@ export function useScheduleItemRoute(
 }
 
 export function useDeleteRoomSchedule() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       roomId,
@@ -191,13 +197,29 @@ export function useDeleteRoomSchedule() {
       roomId: string;
       scheduleId: number;
     }) => deleteRoomSchedule(roomId, scheduleId),
-    /** UI·캐시는 `SCHEDULE_DELETED` STOMP(`dispatchRoomScheduleEvent`)에서만 갱신합니다. */
+    onSuccess: async (_data, { roomId, scheduleId }) => {
+      const id = roomId.trim();
+      if (!id.length) return;
+
+      const sorted = await hydrateRoomSchedulesFromServer(queryClient, id);
+      const scheduleStillExists = sorted.some((s) => s.scheduleId === scheduleId);
+      if (scheduleStillExists) {
+        await refetchSchedulePlanPlacesIntoCache(queryClient, id, scheduleId);
+        await invalidateScheduleItemRouteForWholeSchedule(
+          queryClient,
+          id,
+          scheduleId,
+        );
+        usePlanMapDirectionsEpochStore.getState().bumpForDirections(id);
+      }
+
+      await syncRoomDetailFromServer(queryClient, id);
+    },
   });
 }
 
 /**
- * 일차(schedule) 생성 — 액터는 POST 응답으로 목록 캐시를 즉시 머지하고,
- * 다른 클라이언트는 STOMP `SCHEDULE_CREATED`로 갱신합니다.
+ * 일차(schedule) 생성 — 액터는 POST `onSuccess`, 원격은 STOMP `ROOM_SCHEDULES_RESYNCED`로 갱신합니다.
  */
 export function useCreateRoomSchedule() {
   const queryClient = useQueryClient();
@@ -209,17 +231,71 @@ export function useCreateRoomSchedule() {
       roomId: string;
       body: RoomScheduleCreateRequest;
     }) => createRoomSchedule(roomId, body),
-    onSuccess: async (created, { roomId }) => {
+    onSuccess: async (_created, { roomId }) => {
       const id = roomId.trim();
       if (!id.length) return;
-      queryClient.setQueryData<RoomSchedule[]>(
-        roomSchedulesQueryKey(id),
-        (prev) => {
-          const list = prev ? [...prev, created] : [created];
-          return sortRoomSchedules(list);
-        },
-      );
+      await hydrateRoomSchedulesFromServer(queryClient, id);
       await syncRoomDetailFromServer(queryClient, id);
+    },
+  });
+}
+
+/** 일차(schedule) 이동 — shift 후 전체 재조회로 갱신 (원격: STOMP `ROOM_SCHEDULES_RESYNCED`) */
+export function useMoveRoomSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      scheduleId,
+      targetDayNumber,
+    }: {
+      roomId: string;
+      scheduleId: number;
+      targetDayNumber: number;
+    }) => moveRoomSchedule(roomId, scheduleId, { targetDayNumber }),
+    onSuccess: async (_data, { roomId }) => {
+      const id = roomId.trim();
+      if (!id.length) return;
+      await hydrateRoomSchedulesFromServer(queryClient, id);
+    },
+  });
+}
+
+/** 일정 항목을 다른 일차로 이동 — 같은 일차 내 순서는 `useReorderScheduleItem` 사용 */
+export function useMoveScheduleItemToSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      sourceScheduleId,
+      itemId,
+      targetScheduleId,
+      targetOrderIndex,
+    }: {
+      roomId: string;
+      sourceScheduleId: number;
+      itemId: number;
+      targetScheduleId: number;
+      targetOrderIndex: number;
+    }) => {
+      if (sourceScheduleId === targetScheduleId) {
+        throw new Error("같은 일차 안에서는 순서 변경만 가능해요.");
+      }
+      return moveScheduleItemToSchedule(roomId, sourceScheduleId, itemId, {
+        targetScheduleId,
+        targetOrderIndex,
+      });
+    },
+    onSuccess: async (
+      _moved,
+      { roomId, sourceScheduleId, targetScheduleId },
+    ) => {
+      await syncAfterCrossScheduleItemMove(
+        queryClient,
+        roomId,
+        sourceScheduleId,
+        targetScheduleId,
+      );
     },
   });
 }
@@ -381,8 +457,13 @@ export function useUpdateRoom() {
     }: {
       roomId: string;
       data: RoomUpdateRequest;
+      previousStartDate?: string | null;
+      previousEndDate?: string | null;
     }) => updateRoom(roomId, data),
-    onSuccess: (updated, { roomId }) => {
+    onSuccess: async (
+      updated,
+      { roomId, data, previousStartDate, previousEndDate },
+    ) => {
       queryClient.setQueryData<RoomListResponse>(ROOMS_QUERY_KEY, (prev) => {
         if (!prev) return prev;
         return {
@@ -413,6 +494,16 @@ export function useUpdateRoom() {
             }
           : prev,
       );
+
+      const prevStart = previousStartDate?.trim() ?? "";
+      const prevEnd = previousEndDate?.trim() ?? "";
+      const datesChanged =
+        (data.startDate !== undefined && data.startDate !== prevStart) ||
+        (data.endDate !== undefined && data.endDate !== prevEnd);
+
+      if (datesChanged) {
+        await hydrateRoomSchedulesFromServer(queryClient, roomId);
+      }
     },
   });
 }

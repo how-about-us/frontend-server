@@ -10,6 +10,7 @@ import {
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
+import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import {
   formatAdjacentScheduleConflictMessage,
@@ -21,6 +22,8 @@ import {
   sortedScheduleIdsForRouteColors,
 } from "@/lib/plan/planRouteDayColors";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
+import { cn } from "@/lib/utils";
 
 import type { PlanPlace } from "@/lib/plan/types";
 
@@ -154,8 +157,21 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
 
   const addControlsDisabled = isAdding || isReadOnly;
 
+  const crossDayItemDragActive = usePlanItemCrossDayDragStore(
+    (s) => s.sourceScheduleId !== null,
+  );
+
   return (
-    <div>
+    <div
+      {...listContainerProps}
+      {...{ [PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR]: "" }}
+      className={cn(
+        !isLoading &&
+          places.length === 0 &&
+          crossDayItemDragActive &&
+          "min-h-12",
+      )}
+    >
       {isLoading ?
         <div className="flex items-center justify-center gap-2 py-8 text-dark-gray">
           <Loader2 className="h-5 w-5 animate-spin text-brand-green" />
@@ -175,7 +191,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         </p>
       : null}
 
-      <div className="flex flex-col gap-0" {...listContainerProps}>
+      <div className="flex flex-col gap-0">
         {places.map((place, index) => {
           const motionEnabled = isDraggingActive && !prefersReducedMotion;
           const { ref, style, placeCardDragProps } = getRowProps(

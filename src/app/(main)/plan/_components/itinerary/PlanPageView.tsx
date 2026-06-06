@@ -13,7 +13,6 @@ import { useSessionStore } from "@/stores/session-store";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 
 import {
-  buildNextScheduleCreateBody,
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
@@ -27,10 +26,10 @@ import {
 import { cn } from "@/lib/utils";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 
+import { usePlanScheduleDayReorder } from "@/hooks/usePlanScheduleDayReorder";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PlanContainerRefProvider } from "../plan-container";
-import { PlanDaySection } from "./PlanDaySection";
-import { PlanItinerary } from "./PlanItinerary";
+import { PlanScheduleDayBlock } from "./PlanScheduleDayBlock";
 
 export function PlanPageView() {
   const { isReadOnly, copy } = usePlanMobileReadOnly();
@@ -59,6 +58,13 @@ export function PlanPageView() {
     [scheduleList],
   );
 
+  const { getSectionProps, listContainerProps, isMovePending } =
+    usePlanScheduleDayReorder({
+      roomId,
+      schedules: sortedSchedules,
+      interactionLocked: isReadOnly || isCreatingSchedule || isDeletingSchedule,
+    });
+
   const scheduleExpansionSyncKey = useMemo(
     () => sortedSchedules.map((s) => s.scheduleId).join(","),
     [sortedSchedules],
@@ -81,49 +87,42 @@ export function PlanPageView() {
     [scheduleList],
   );
 
-  const lastDayIndex =
-    sortedSchedules.length > 0 ? sortedSchedules.length - 1 : -1;
-  const canDeleteScheduleDay = sortedSchedules.length > 1;
-
   const handleDeleteScheduleDay = useCallback(
     (dayIndex: number) => {
       if (!roomId.length) return;
       if (isDeletingSchedule) return;
-      if (!canDeleteScheduleDay) return;
-      if (dayIndex !== lastDayIndex) return;
       const sid = sortedSchedules[dayIndex]?.scheduleId;
       if (sid == null) return;
-      if (!confirm("이 일차를 삭제할까요?")) return;
+
+      const isLastScheduleDay = sortedSchedules.length === 1;
+      const confirmMessage = isLastScheduleDay
+        ? "마지막 일차는 삭제할 수 없어요. 일차의 장소 목록만 비워질까요?"
+        : "이 일차를 삭제할까요?";
+      if (!confirm(confirmMessage)) return;
+
       deleteSchedule({ roomId, scheduleId: sid });
     },
-    [
-      canDeleteScheduleDay,
-      deleteSchedule,
-      isDeletingSchedule,
-      lastDayIndex,
-      roomId,
-      sortedSchedules,
-    ],
+    [deleteSchedule, isDeletingSchedule, roomId, sortedSchedules],
   );
 
   const handleAddSchedule = useCallback(() => {
     if (!roomId.length) return;
     if (isCreatingSchedule) return;
-    const body = buildNextScheduleCreateBody(sortedSchedules);
-    void createScheduleAsync({ roomId, body }).catch((e) => {
+    void createScheduleAsync({ roomId, body: {} }).catch((e) => {
       toast.error(
         e instanceof Error && e.message.trim()
           ? e.message
           : "일차를 추가하지 못했어요.",
       );
     });
-  }, [createScheduleAsync, isCreatingSchedule, roomId, sortedSchedules]);
+  }, [createScheduleAsync, isCreatingSchedule, roomId]);
 
   const showInitialLoading = Boolean(
     roomId.length > 0 && isPending && schedules === undefined,
   );
 
-  const canAddSchedule = roomId.length > 0 && !isCreatingSchedule;
+  const canAddSchedule =
+    roomId.length > 0 && !isCreatingSchedule && !isMovePending;
 
   const pageContentClassName =
     "@container/plan space-y-2.5 overflow-x-auto pb-8";
@@ -197,29 +196,34 @@ export function PlanPageView() {
         </p>
       ) : null}
 
-      {planDays.map((day, dayIndex) => (
-        <PlanDaySection
-          key={day.id}
-          title={day.dayLabel}
-          subtitle={day.dateLabel}
-          itineraryScheduleId={sortedSchedules[dayIndex]?.scheduleId ?? null}
-          onRequestDeleteSchedule={
-            !isReadOnly &&
-            sortedSchedules[dayIndex] &&
-            dayIndex === lastDayIndex
-              ? () => handleDeleteScheduleDay(dayIndex)
-              : undefined
-          }
-          isDeleteScheduleDisabled={!canDeleteScheduleDay}
-        >
-          {sortedSchedules[dayIndex] ? (
-            <PlanItinerary
-              roomId={roomId}
-              scheduleId={sortedSchedules[dayIndex].scheduleId}
-            />
-          ) : null}
-        </PlanDaySection>
-      ))}
+      {planDays.length > 0 ? (
+        <div className="space-y-2.5" {...listContainerProps}>
+          {planDays.map((day, dayIndex) => {
+            const sectionProps = !isReadOnly
+              ? getSectionProps(dayIndex)
+              : {};
+
+            return (
+              <PlanScheduleDayBlock
+                key={day.id}
+                roomId={roomId}
+                scheduleId={sortedSchedules[dayIndex]!.scheduleId}
+                title={day.dayLabel}
+                subtitle={day.dateLabel}
+                onRequestDeleteSchedule={
+                  !isReadOnly && sortedSchedules[dayIndex]
+                    ? () => handleDeleteScheduleDay(dayIndex)
+                    : undefined
+                }
+                interactionLocked={
+                  isReadOnly || isCreatingSchedule || isDeletingSchedule
+                }
+                {...sectionProps}
+              />
+            );
+          })}
+        </div>
+      ) : null}
       </div>
     </PlanContainerRefProvider>
   );

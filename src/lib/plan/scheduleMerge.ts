@@ -1,23 +1,15 @@
-import type {
-  RoomSchedule,
-  RoomScheduleCreateRequest,
-} from "@/lib/api/rooms/schedules";
+import type { RoomSchedule } from "@/lib/api/rooms/schedules";
 import type { PlanDayData } from "@/lib/plan/types";
 
 import {
-  formatDateYmd,
   formatKoreanDateLabel,
   parseLocalYmd,
-  startOfLocalDay,
 } from "@/lib/plan/tripRange";
 
-export function sortRoomSchedules<T extends { dayNumber: number; date: string }>(
+export function sortRoomSchedules<T extends { dayNumber: number }>(
   schedules: T[],
 ): T[] {
-  return [...schedules].sort((a, b) => {
-    if (a.dayNumber !== b.dayNumber) return a.dayNumber - b.dayNumber;
-    return a.date.localeCompare(b.date);
-  });
+  return [...schedules].sort((a, b) => a.dayNumber - b.dayNumber);
 }
 
 export function mergeSchedulesWithPlaces(schedules: RoomSchedule[]): PlanDayData[] {
@@ -28,17 +20,4 @@ export function mergeSchedulesWithPlaces(schedules: RoomSchedule[]): PlanDayData
     dateLabel: formatKoreanDateLabel(parseLocalYmd(s.date)),
     places: [],
   }));
-}
-
-/** 정렬된 일차 목록 기준으로 다음 일차 생성 요청 바디(마지막 날 +1일 또는 첫 일차). */
-export function buildNextScheduleCreateBody(
-  sorted: RoomSchedule[],
-): RoomScheduleCreateRequest {
-  if (sorted.length === 0) {
-    return { dayNumber: 1, date: formatDateYmd(startOfLocalDay(new Date())) };
-  }
-  const last = sorted[sorted.length - 1]!;
-  const d = new Date(parseLocalYmd(last.date));
-  d.setDate(d.getDate() + 1);
-  return { dayNumber: last.dayNumber + 1, date: formatDateYmd(d) };
 }

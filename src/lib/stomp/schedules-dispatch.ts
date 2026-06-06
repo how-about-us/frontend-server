@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import {
   mergeOrRefetchSchedulePlanPlacesFromItems,
   refetchSchedulePlanPlacesIntoCache,
+  syncAfterCrossScheduleItemMove,
 } from "@/lib/plan/scheduleItemPlaces";
 import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import {
@@ -14,11 +15,8 @@ import {
   readOrderedItemIdsFromScheduleItemsCache,
   removeRouteQueriesForDeletedItemSource,
 } from "@/lib/plan/scheduleStompRouteScope";
-import type { RoomSchedule } from "@/lib/api/rooms";
-import type { PlanPlace } from "@/lib/plan/types";
-import { roomSchedulesQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
 import {
-  removeCachesForDeletedSchedule,
+  hydrateRoomSchedulesFromServer,
   syncRoomDetailFromServer,
 } from "@/lib/rooms";
 import type { RoomScheduleChangedEvent } from "@/lib/stomp/schedule-events";
@@ -164,10 +162,8 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
 
 /**
  * Plan 화면 등이 쓰는 캐시만, 스키마의 `type`별로 갱신합니다.
- * — `room-schedules` CREATE: 다른 클라이언트만 무효화(GET); 액터는 POST `onSuccess` 머지로 레이스 방지
- * — `SCHEDULE_DELETED`: 삭제 일차의 route·items 캐시 제거 후 `room-schedules` 무효화 및 방 상세 동기화(발신 탭 포함 동일)
- * — 일정 생성 시 `schedule-items`: 빈 일차는 `[]`로 시드해 불필요한 GET 방지
- * — `schedule-items`: 그 외 일차별 장소 목록
+ * — `ROOM_SCHEDULES_RESYNCED`: `room-schedules` 전체 재조회 + 방 상세 동기화 (원격 탭; 액터는 mutation `onSuccess`)
+ * — `schedule-items`: 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
  * — `SCHEDULE_ITEM_UPDATED`: 일정 목록만 동기화할 때 사용(원격 탭); 경로(`schedule-item-route`)는 무효화하지 않음
  * — 맵 polyline: 구간별 에폭(`bumpSegments`); 폴백 시 방 단위(`bumpForDirections`)
@@ -178,46 +174,55 @@ export async function dispatchRoomScheduleEvent(
 ): Promise<void> {
   const rid = String(event.roomId ?? "").trim();
   if (!rid) return;
-  const sid = event.scheduleId;
   const epochStore = usePlanMapDirectionsEpochStore.getState();
 
   switch (event.type) {
-    case "SCHEDULE_CREATED": {
-      queryClient.setQueryData<PlanPlace[]>(
-        scheduleItemsQueryKey(rid, sid),
-        [],
-      );
-      const existing = queryClient.getQueryData<RoomSchedule[]>(
-        roomSchedulesQueryKey(rid),
-      );
-      const alreadyHas = existing?.some((s) => s.scheduleId === sid) ?? false;
+    case "ROOM_SCHEDULES_RESYNCED": {
       const me = readSessionUserId(queryClient);
-      const isScheduleCreateActor =
+      const actorIsMe =
         typeof me === "number" &&
         Number.isFinite(me) &&
         me === event.actorUserId;
-
-      if (!alreadyHas && !isScheduleCreateActor) {
-        await queryClient.invalidateQueries({
-          queryKey: roomSchedulesQueryKey(rid),
-          refetchType: "active",
-        });
+      /** 본인 mutation은 `onSuccess`에서 schedules·room-detail 캐시 갱신 */
+      if (actorIsMe) {
+        return;
       }
+
+      await hydrateRoomSchedulesFromServer(queryClient, rid);
       await syncRoomDetailFromServer(queryClient, rid);
       return;
     }
 
-    case "SCHEDULE_DELETED": {
-      removeCachesForDeletedSchedule(queryClient, rid, sid);
-      await queryClient.invalidateQueries({
-        queryKey: roomSchedulesQueryKey(rid),
-        refetchType: "active",
-      });
-      await syncRoomDetailFromServer(queryClient, rid);
+    case "SCHEDULE_ITEM_MOVED": {
+      const scheduleIds = event.scheduleIds;
+      if (!scheduleIds || scheduleIds.length < 2) return;
+
+      const sourceScheduleId = scheduleIds[0]!;
+      const targetScheduleId = scheduleIds[1]!;
+
+      const me = readSessionUserId(queryClient);
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        me === event.actorUserId;
+      if (actorIsMe) {
+        return;
+      }
+
+      await syncAfterCrossScheduleItemMove(
+        queryClient,
+        rid,
+        sourceScheduleId,
+        targetScheduleId,
+      );
       return;
     }
 
     case "SCHEDULE_ITEM_DELETED": {
+      const sid = event.scheduleId;
+      const itemId = event.itemId;
+      if (sid == null || itemId == null) return;
+
       const me = readSessionUserId(queryClient);
       const actorIsMe =
         typeof me === "number" &&
@@ -233,7 +238,7 @@ export async function dispatchRoomScheduleEvent(
         rid,
         sid,
       );
-      removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, event.itemId);
+      removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, itemId);
 
       const items = await getScheduleItems(rid, sid);
       await mergeOrRefetchSchedulePlanPlacesFromItems(
@@ -245,7 +250,7 @@ export async function dispatchRoomScheduleEvent(
 
       const { sources, useFallback } = collectSegmentSourcesForDelete(
         oldIds,
-        event.itemId,
+        itemId,
       );
       if (useFallback) {
         await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
@@ -258,6 +263,10 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEM_CREATED": {
+      const sid = event.scheduleId;
+      const itemId = event.itemId;
+      if (sid == null || itemId == null) return;
+
       const me = readSessionUserId(queryClient);
       const actorIsMe =
         typeof me === "number" &&
@@ -277,7 +286,7 @@ export async function dispatchRoomScheduleEvent(
       );
       const { sources, useFallback } = collectSegmentSourcesForCreate(
         newIds,
-        event.itemId,
+        itemId,
       );
       if (useFallback) {
         await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
@@ -290,6 +299,10 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEMS_REORDERED": {
+      const sid = event.scheduleId;
+      const itemId = event.itemId;
+      if (sid == null || itemId == null) return;
+
       const me = readSessionUserId(queryClient);
       const actorIsMe =
         typeof me === "number" &&
@@ -321,7 +334,7 @@ export async function dispatchRoomScheduleEvent(
       const { sources, useFallback } = collectSegmentSourcesForReorder(
         oldIds,
         newIds,
-        event.itemId,
+        itemId,
       );
       enqueueDebouncedInvalidateScheduleRoutes(
         queryClient,
@@ -334,10 +347,9 @@ export async function dispatchRoomScheduleEvent(
     }
 
     case "SCHEDULE_ITEM_UPDATED": {
+      const sid = event.scheduleId;
       const itemId = event.itemId;
-      if (typeof itemId !== "number" || !Number.isFinite(itemId)) {
-        return;
-      }
+      if (sid == null || itemId == null) return;
 
       const me = readSessionUserId(queryClient);
       const actorIsMe =
