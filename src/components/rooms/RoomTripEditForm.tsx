@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -18,8 +18,10 @@ import {
   initialDestinationPlaceId,
   isTripDateRangeInvalid,
   isTripDestinationValid,
+  isTripStartBeforeMin,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   toTripFormValues,
+  tripEndDateMinYmd,
   type RoomTripFormSource,
 } from "@/lib/rooms/trip-form";
 
@@ -39,6 +41,14 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   const [startDate, setStartDate] = useState(saved.startDate);
   const [endDate, setEndDate] = useState(saved.endDate);
   const [shrinkConfirmOpen, setShrinkConfirmOpen] = useState(false);
+
+  const baselineStartRef = useRef(saved.startDate);
+  useEffect(() => {
+    baselineStartRef.current = toTripFormValues(room).startDate;
+  }, [room.id]);
+
+  const baselineStartYmd = baselineStartRef.current;
+  const endDateMin = tripEndDateMinYmd(startDate, baselineStartYmd);
 
   const { data: schedules } = useRoomSchedules(room.id);
   const { mutate: updateRoom, isPending, error } = useUpdateRoom();
@@ -77,6 +87,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
     startDate &&
     endDate &&
     !dateRangeInvalid &&
+    !isTripStartBeforeMin(startDate, baselineStartYmd) &&
     !scheduleDayLimitExceeded &&
     !isPending &&
     isDirty;
@@ -147,7 +158,8 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
         idPrefix={`trip-${room.id}`}
         values={{ title, destination, startDate, endDate }}
         readOnly={readOnly}
-        endDateMin={startDate || undefined}
+        startDateMin={baselineStartYmd || undefined}
+        endDateMin={endDateMin || undefined}
         onTitleChange={setTitle}
         onDestinationChange={setDestination}
         onDestinationResolved={setDestinationPlaceId}

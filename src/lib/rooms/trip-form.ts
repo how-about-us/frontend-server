@@ -12,6 +12,25 @@ export const TRIP_FORM_FIELD_READ_ONLY_CLASS =
 export const TRIP_DATE_RANGE_INVALID_MESSAGE =
   "종료일은 시작일 이후여야 해요." as const;
 
+export const TRIP_START_BEFORE_MIN_MESSAGE =
+  "시작일은 최초 여행 시작일 이전으로 바꿀 수 없어요." as const;
+
+/** 종료일 date input `min` — floor 이전·시작일 이전 선택 방지 */
+export function tripEndDateMinYmd(startDate: string, floorYmd: string): string {
+  const floor = floorYmd.trim();
+  if (!floor) return startDate.trim();
+  if (startDate.trim() && startDate > floor) return startDate;
+  return floor;
+}
+
+export function isTripStartBeforeMin(
+  startDate: string,
+  minYmd: string,
+): boolean {
+  const min = minYmd.trim();
+  return Boolean(min && startDate.trim() && startDate < min);
+}
+
 export type RoomTripFormSource = {
   id: string;
   title: string;

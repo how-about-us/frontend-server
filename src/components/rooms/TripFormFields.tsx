@@ -7,10 +7,12 @@ import {
 } from "@/lib/plan/schedulePolicy";
 import {
   isTripDateRangeInvalid,
+  isTripStartBeforeMin,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   TRIP_DATE_RANGE_INVALID_MESSAGE,
   TRIP_FORM_FIELD_CLASS,
   TRIP_FORM_FIELD_READ_ONLY_CLASS,
+  TRIP_START_BEFORE_MIN_MESSAGE,
   type TripFormValues,
 } from "@/lib/rooms/trip-form";
 
@@ -45,6 +47,8 @@ export function TripFormFields({
 }: Props) {
   const { title, destination, startDate, endDate } = values;
   const dateRangeInvalid = isTripDateRangeInvalid(startDate, endDate);
+  const startBeforeMin =
+    startDateMin != null && isTripStartBeforeMin(startDate, startDateMin);
   const scheduleDayLimitExceeded = isTripScheduleDayLimitExceeded(
     startDate,
     endDate,
@@ -117,12 +121,20 @@ export function TripFormFields({
             readOnly={readOnly}
           />
         </div>
-        {!readOnly && dateRangeInvalid && (
+        {!readOnly && startBeforeMin && (
+          <p className="mt-2 text-xs text-brand-red">
+            {TRIP_START_BEFORE_MIN_MESSAGE}
+          </p>
+        )}
+        {!readOnly && !startBeforeMin && dateRangeInvalid && (
           <p className="mt-2 text-xs text-brand-red">
             {TRIP_DATE_RANGE_INVALID_MESSAGE}
           </p>
         )}
-        {!readOnly && !dateRangeInvalid && scheduleDayLimitExceeded && (
+        {!readOnly &&
+          !startBeforeMin &&
+          !dateRangeInvalid &&
+          scheduleDayLimitExceeded && (
           <p className="mt-2 text-xs text-brand-red">
             {TRIP_SCHEDULE_DAY_LIMIT_MESSAGE}
           </p>
