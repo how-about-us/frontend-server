@@ -70,7 +70,7 @@ export function HomeHeader() {
         setShowWithdrawConfirm(false);
         queryClient.clear();
         tearDownClientSession({ queryClient });
-        router.replace("/login");
+        router.replace("/");
         return;
       }
       if (result.kind === "host_delegation_required") {
