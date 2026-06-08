@@ -21,7 +21,12 @@ import {
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
 import type { PlanPlace } from "@/lib/plan/types";
-import { scheduleItemRouteQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
+import {
+  roomSchedulesQueryKey,
+  scheduleItemRouteQueryKey,
+  scheduleItemsQueryKey,
+} from "@/lib/query-keys";
+import { awaitRoomSchedulesHydrated } from "@/lib/rooms";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
 export const PLAN_PLACE_PREVIEW_ERROR_TITLE = "장소 정보를 불러올 수 없음";
@@ -30,6 +35,45 @@ export function planPlacesNeedPreviewEnrich(
   places: readonly PlanPlace[],
 ): boolean {
   return places.some((place) => place.title === PLAN_PLACE_PREVIEW_ERROR_TITLE);
+}
+
+/** `includeItems` hydrate 후 room-schedules 캐시에서 일차별 raw items를 읽습니다. */
+export function readScheduleItemsFromRoomCache(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): RoomScheduleItem[] | null {
+  const rid = roomId.trim();
+  if (!rid.length) return null;
+
+  const schedules = queryClient.getQueryData<RoomScheduleWithItems[]>(
+    roomSchedulesQueryKey(rid),
+  );
+  if (!schedules) return null;
+
+  const schedule = schedules.find((s) => s.scheduleId === scheduleId);
+  if (!schedule) return null;
+
+  return Array.isArray(schedule.items) ? schedule.items : [];
+}
+
+/** room-schedules 캐시 miss 시 `includeItems` hydrate 후 items를 반환합니다. */
+export async function resolveScheduleItemsFromCacheOrHydrate(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): Promise<RoomScheduleItem[]> {
+  const cached = readScheduleItemsFromRoomCache(
+    queryClient,
+    roomId,
+    scheduleId,
+  );
+  if (cached !== null) return cached;
+
+  await awaitRoomSchedulesHydrated(queryClient, roomId);
+  return (
+    readScheduleItemsFromRoomCache(queryClient, roomId, scheduleId) ?? []
+  );
 }
 
 function sortRoomScheduleItemsByOrder(
@@ -196,6 +240,66 @@ function batchRouteItemToResponse(
     durationSeconds: item.durationSeconds,
     travelMode: item.travelMode,
   };
+}
+
+const inFlightDrivingRoutesBatch = new Map<string, Promise<void>>();
+
+function drivingRoutesBatchKey(
+  roomId: string,
+  scheduleId: number,
+  places: readonly PlanPlace[],
+): string {
+  const itemIds = places
+    .slice(0, -1)
+    .map((place) => place.itemId)
+    .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
+    .join(",");
+  return `${roomId.trim()}:${scheduleId}:${itemIds}`;
+}
+
+/** 일차 DRIVING 구간 경로를 batch로 시딩합니다 (in-flight dedup). */
+export async function fetchAndSeedScheduleDrivingRoutes(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+  places: readonly PlanPlace[],
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length || places.length < 2) return;
+
+  const key = drivingRoutesBatchKey(rid, scheduleId, places);
+  const inFlight = inFlightDrivingRoutesBatch.get(key);
+  if (inFlight) return inFlight;
+
+  const promise = hydrateScheduleDrivingRoutes(
+    queryClient,
+    rid,
+    scheduleId,
+    places,
+  ).finally(() => {
+    inFlightDrivingRoutesBatch.delete(key);
+  });
+
+  inFlightDrivingRoutesBatch.set(key, promise);
+  return promise;
+}
+
+/** prefetch 중인 DRIVING batch가 끝날 때까지 대기합니다. */
+export async function awaitScheduleDrivingRoutesBatch(
+  roomId: string,
+  scheduleId: number,
+): Promise<void> {
+  const rid = roomId.trim();
+  if (!rid.length) return;
+
+  const prefix = `${rid}:${scheduleId}:`;
+  const pending = [...inFlightDrivingRoutesBatch.entries()]
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, promise]) => promise);
+
+  if (pending.length) {
+    await Promise.all(pending);
+  }
 }
 
 export async function hydrateScheduleDrivingRoutes(

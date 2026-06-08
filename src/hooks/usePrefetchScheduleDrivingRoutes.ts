@@ -1,36 +1,62 @@
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { hydrateScheduleDrivingRoutes } from "@/lib/plan/schedule-bulk-hydration";
+import { fetchAndSeedScheduleDrivingRoutes } from "@/lib/plan/schedule-bulk-hydration";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import type { PlanPlace } from "@/lib/plan/types";
 
-/** 일차별 DRIVING 구간 경로를 batch API로 prefetch해 per-segment N+1을 줄입니다. */
+/**
+ * 페이지 진입·새로고침 시 일차별 DRIVING 경로를 `routes/batch`로 1회 시딩합니다.
+ * 리오더·추가·삭제 등으로 장소 목록이 바뀌면 batch는 재호출하지 않고, 무효화된 구간만 개별 GET합니다.
+ */
 export function usePrefetchScheduleDrivingRoutes(
   roomId: string,
   scheduleId: number,
   places: readonly PlanPlace[],
   enabled: boolean,
-): void {
+): boolean {
   const queryClient = useQueryClient();
-  const lastFingerprintRef = useRef("");
+  const [batchDone, setBatchDone] = useState(false);
+  const initialBatchCompletedKeysRef = useRef(new Set<string>());
 
-  useEffect(() => {
-    if (!enabled || !roomId.trim() || places.length < 2) return;
+  const scheduleKey = `${roomId.trim()}:${scheduleId}`;
 
-    const fingerprint = places
-      .map((p) => p.itemId)
-      .filter((id): id is number => typeof id === "number")
-      .join(",");
-    if (!fingerprint.length || fingerprint === lastFingerprintRef.current) {
+  const fingerprint = useMemo(
+    () => schedulePlacesFingerprint([...places]),
+    [places],
+  );
+
+  useLayoutEffect(() => {
+    if (!enabled || !roomId.trim() || places.length < 2 || !fingerprint.length) {
+      setBatchDone(false);
       return;
     }
-    lastFingerprintRef.current = fingerprint;
 
-    void hydrateScheduleDrivingRoutes(
+    if (initialBatchCompletedKeysRef.current.has(scheduleKey)) {
+      setBatchDone(true);
+      return;
+    }
+
+    let cancelled = false;
+    setBatchDone(false);
+
+    void fetchAndSeedScheduleDrivingRoutes(
       queryClient,
       roomId,
       scheduleId,
       places,
-    );
-  }, [enabled, places, queryClient, roomId, scheduleId]);
+    ).finally(() => {
+      if (!cancelled) {
+        initialBatchCompletedKeysRef.current.add(scheduleKey);
+        setBatchDone(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, fingerprint, places, queryClient, roomId, scheduleId, scheduleKey]);
+
+  /** enabled 전환 직후 이전 true 잔존으로 GET이 먼저 나가지 않도록 — batch 완료 전엔 false */
+  return !enabled || batchDone;
 }

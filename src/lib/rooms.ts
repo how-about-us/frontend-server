@@ -100,7 +100,7 @@ export function selectHostRoom(
 export async function hydrateRoomSchedulesFromServer(
   queryClient: QueryClient,
   roomId: string,
-): Promise<RoomSchedule[]> {
+): Promise<RoomScheduleWithItems[]> {
   const rid = roomId.trim();
   if (!rid.length) return [];
 
@@ -108,13 +108,14 @@ export async function hydrateRoomSchedulesFromServer(
   const sorted = sortRoomSchedules(schedules);
 
   const prevSchedules =
-    queryClient.getQueryData<RoomSchedule[]>(roomSchedulesQueryKey(rid)) ?? [];
+    queryClient.getQueryData<RoomScheduleWithItems[]>(
+      roomSchedulesQueryKey(rid),
+    ) ?? [];
   const prevIds = prevSchedules.map((s) => s.scheduleId);
 
-  const scheduleMeta = sorted.map(({ items: _items, ...schedule }) => schedule);
-  queryClient.setQueryData<RoomSchedule[]>(
+  queryClient.setQueryData<RoomScheduleWithItems[]>(
     roomSchedulesQueryKey(rid),
-    scheduleMeta,
+    sorted,
   );
 
   const nextIds = new Set(sorted.map((s) => s.scheduleId));
@@ -137,14 +138,14 @@ export async function hydrateRoomSchedulesFromServer(
     }
   }
 
-  return scheduleMeta;
+  return sorted;
 }
 
 /** `useRoomSchedules`와 동일 경로로 일정·장소 preview hydrate가 끝날 때까지 대기합니다. */
 export async function awaitRoomSchedulesHydrated(
   queryClient: QueryClient,
   roomId: string,
-): Promise<RoomSchedule[]> {
+): Promise<RoomScheduleWithItems[]> {
   const rid = roomId.trim();
   if (!rid.length) return [];
 

@@ -81,7 +81,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     places.length >= 2 &&
     scheduleFingerprint.length > 0;
 
-  usePrefetchScheduleDrivingRoutes(
+  const routesBatchSettled = usePrefetchScheduleDrivingRoutes(
     roomId,
     scheduleId,
     places,
@@ -276,6 +276,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                     routeQueryEnabled={
                       placesData !== undefined &&
                       !isFetchingPlaces &&
+                      routesBatchSettled &&
                       existingItemIds.has(place.itemId) &&
                       existingItemIds.has(places[index + 1].itemId!)
                     }

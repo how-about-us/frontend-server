@@ -60,7 +60,6 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
   ensureSchedulePlanPlacesEnriched,
-  refetchSchedulePlanPlacesIntoCache,
   syncAfterCrossScheduleItemMove,
   syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
@@ -207,7 +206,6 @@ export function useDeleteRoomSchedule() {
       const sorted = await hydrateRoomSchedulesFromServer(queryClient, id);
       const scheduleStillExists = sorted.some((s) => s.scheduleId === scheduleId);
       if (scheduleStillExists) {
-        await refetchSchedulePlanPlacesIntoCache(queryClient, id, scheduleId);
         await invalidateScheduleItemRouteForWholeSchedule(
           queryClient,
           id,
@@ -291,13 +289,14 @@ export function useMoveScheduleItemToSchedule() {
     },
     onSuccess: async (
       _moved,
-      { roomId, sourceScheduleId, targetScheduleId },
+      { roomId, sourceScheduleId, targetScheduleId, itemId },
     ) => {
       await syncAfterCrossScheduleItemMove(
         queryClient,
         roomId,
         sourceScheduleId,
         targetScheduleId,
+        itemId,
       );
     },
   });

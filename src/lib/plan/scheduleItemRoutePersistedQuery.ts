@@ -6,13 +6,17 @@ import type {
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
+import { awaitScheduleDrivingRoutesBatch } from "@/lib/plan/schedule-bulk-hydration";
 import { scheduleItemRouteQueryKey } from "@/lib/query-keys";
 import { getQueryClient } from "@/lib/query-client";
 import {
   readScheduleRouteFromSessionStorage,
   writeScheduleRouteToSessionStorage,
 } from "@/lib/plan/planTravelLocalStorage";
-import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
+import {
+  SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
+  type ScheduleTravelModeValue,
+} from "@/lib/plan/scheduleTravelMode";
 
 type RouteCached = ScheduleItemRouteResponse | null;
 
@@ -99,6 +103,12 @@ export function persistedScheduleItemRouteQueryOptions(
         keyMode,
       );
       const qc = getQueryClient();
+      const isDriving = keyMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
+
+      if (isDriving && rid.length > 0 && sidOk) {
+        await awaitScheduleDrivingRoutesBatch(rid, sid!);
+      }
+
       if (qc) {
         const cached = qc.getQueryData<RouteCached>(routeKey);
         if (cached !== undefined) {

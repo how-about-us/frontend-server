@@ -15,6 +15,7 @@ import {
   buildPlanPlacesFromItemsWithPreviewEnrichment,
   planPlaceFromItemAndPreview,
   planPlacesNeedPreviewEnrich,
+  resolveScheduleItemsFromCacheOrHydrate,
 } from "@/lib/plan/schedule-bulk-hydration";
 import { getQueryClient } from "@/lib/query-client";
 import {
@@ -217,7 +218,7 @@ export async function applyScheduleItemDeletedOnClient(
   );
 }
 
-/** `staleTime: Infinity` 캐시를 우회해 목록을 다시 가져와 `schedule-items`에 반영합니다. */
+/** STOMP·뮤테이션 동기화: 해당 일차만 `GET …/items`로 `schedule-items` 캐시를 갱신합니다. */
 export async function refetchSchedulePlanPlacesIntoCache(
   queryClient: QueryClient,
   roomId: string,
@@ -225,10 +226,14 @@ export async function refetchSchedulePlanPlacesIntoCache(
 ): Promise<PlanPlace[]> {
   const rid = roomId.trim();
   if (!rid.length) return [];
-  const key = scheduleItemsQueryKey(rid, scheduleId);
-  const places = await fetchScheduleItemsAsPlanPlaces(rid, scheduleId);
-  queryClient.setQueryData(key, places);
-  return places;
+  const items = await getScheduleItems(rid, scheduleId);
+  await mergeOrRefetchSchedulePlanPlacesFromItems(
+    queryClient,
+    rid,
+    scheduleId,
+    items,
+  );
+  return readSchedulePlanPlacesFromCache(queryClient, rid, scheduleId);
 }
 
 /**
@@ -260,6 +265,7 @@ export async function syncAfterCrossScheduleItemMove(
   roomId: string,
   sourceScheduleId: number,
   targetScheduleId: number,
+  movedItemId?: number,
 ): Promise<void> {
   const rid = roomId.trim();
   if (!rid.length) return;
@@ -269,6 +275,15 @@ export async function syncAfterCrossScheduleItemMove(
       ? [sourceScheduleId]
       : [sourceScheduleId, targetScheduleId];
 
+  const oldSourceOrderedIds =
+    movedItemId != null
+      ? readOrderedItemIdsFromScheduleItemsCache(
+          queryClient,
+          rid,
+          sourceScheduleId,
+        )
+      : null;
+
   for (const sid of scheduleIds) {
     const items = await getScheduleItems(rid, sid);
     await mergeOrRefetchSchedulePlanPlacesFromItems(
@@ -277,6 +292,26 @@ export async function syncAfterCrossScheduleItemMove(
       sid,
       items,
     );
+  }
+
+  if (movedItemId != null) {
+    await invalidateScheduleItemRoutesAfterDelete(
+      queryClient,
+      rid,
+      sourceScheduleId,
+      movedItemId,
+      oldSourceOrderedIds,
+    );
+    await invalidateScheduleItemRoutesAfterItemCreated(
+      queryClient,
+      rid,
+      targetScheduleId,
+      movedItemId,
+    );
+    return;
+  }
+
+  for (const sid of scheduleIds) {
     await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
   }
 
@@ -297,7 +332,11 @@ export async function ensureSchedulePlanPlacesEnriched(
     return cached;
   }
 
-  const items = await getScheduleItems(rid, scheduleId);
+  const items = await resolveScheduleItemsFromCacheOrHydrate(
+    queryClient,
+    rid,
+    scheduleId,
+  );
   const places = await buildPlanPlacesFromItemsWithPreviewEnrichment(
     queryClient,
     items,
@@ -741,10 +780,16 @@ export async function fetchScheduleItemsAsPlanPlaces(
   if (qc) {
     const cached = qc.getQueryData<PlanPlace[]>(key);
     if (cached != null) return cached;
+
+    const items = await resolveScheduleItemsFromCacheOrHydrate(
+      qc,
+      rid,
+      scheduleId,
+    );
+    const places = await buildPlanPlacesFromScheduleItems(items);
+    qc.setQueryData(key, places);
+    return places;
   }
 
-  const items = await getScheduleItems(rid, scheduleId);
-  const places = await buildPlanPlacesFromScheduleItems(items);
-  qc?.setQueryData(key, places);
-  return places;
+  return [];
 }

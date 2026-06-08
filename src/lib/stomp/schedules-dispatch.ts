@@ -199,6 +199,7 @@ export async function dispatchRoomScheduleEvent(
 
       const sourceScheduleId = scheduleIds[0]!;
       const targetScheduleId = scheduleIds[1]!;
+      const itemId = event.itemId;
 
       const me = readSessionUserId(queryClient);
       const actorIsMe =
@@ -214,6 +215,7 @@ export async function dispatchRoomScheduleEvent(
         rid,
         sourceScheduleId,
         targetScheduleId,
+        itemId ?? undefined,
       );
       return;
     }
