@@ -6,10 +6,12 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { LoginErrorAlert } from "@/app/login/login-error-alert";
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LoginAgreementsSection } from "@/app/login/_components/LoginAgreementsSection";
+import type { LoginAgreementsState } from "@/app/login/_components/LoginAgreementsSection";
 import {
   buildGoogleAuthorizationUrl,
   messageForOAuthLoginErrorParam,
-  OAUTH_STATE_SESSION_KEY,
+  saveOAuthPendingSession,
 } from "@/lib/google-oauth";
 
 function GoogleMark({ className }: { className?: string }) {
@@ -43,6 +45,11 @@ function GoogleMark({ className }: { className?: string }) {
 function LoginPageContent() {
   const searchParams = useSearchParams();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [agreementsState, setAgreementsState] = useState<LoginAgreementsState>({
+    isLoading: true,
+    isError: false,
+    canProceed: false,
+  });
 
   const oauthErrorCode = searchParams.get("error");
 
@@ -54,10 +61,17 @@ function LoginPageContent() {
   const clearError = useCallback(() => setErrorMessage(null), []);
 
   const handleContinueWithGoogle = () => {
+    if (!agreementsState.canProceed) return;
+
     const state = crypto.randomUUID();
-    sessionStorage.setItem(OAUTH_STATE_SESSION_KEY, state);
+    saveOAuthPendingSession({ state, agreementsAccepted: true });
     window.location.href = `${buildGoogleAuthorizationUrl()}&state=${state}`;
   };
+
+  const googleLoginDisabled =
+    agreementsState.isLoading ||
+    agreementsState.isError ||
+    !agreementsState.canProceed;
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4 py-12">
@@ -79,10 +93,14 @@ function LoginPageContent() {
             <LoginErrorAlert message={errorMessage} onDismiss={clearError} />
           )}
 
+          <LoginAgreementsSection onStateChange={setAgreementsState} />
+
           <button
             type="button"
             onClick={handleContinueWithGoogle}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-[15px] font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow"
+            disabled={googleLoginDisabled}
+            aria-disabled={googleLoginDisabled}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-[15px] font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleMark className="h-5 w-5 shrink-0" />
             <span>Google로 계속하기</span>

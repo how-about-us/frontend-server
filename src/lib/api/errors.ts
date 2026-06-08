@@ -1,5 +1,15 @@
 import { MAX_SCHEDULES_PER_ROOM } from "@/lib/plan/schedulePolicy";
 
+export const AGREEMENTS_NOT_ACCEPTED_ERROR_CODE = "AGREEMENTS_NOT_ACCEPTED";
+export const AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE =
+  "AGREEMENTS_REACCEPTANCE_REQUIRED";
+
+const AGREEMENTS_NOT_ACCEPTED_DEFAULT_MESSAGE =
+  "변경된 약관에 동의해야 서비스를 이용할 수 있습니다.";
+
+const AGREEMENTS_REACCEPTANCE_REQUIRED_DEFAULT_MESSAGE =
+  "변경된 약관에 다시 동의해 주세요.";
+
 /** 북마크 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
 const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
   "BOOKMARK_ALREADY_EXISTS",
@@ -37,6 +47,55 @@ export function isScheduleLimitExceededFromBody(body: unknown): boolean {
   const raw = readApiErrorCodeFromJson(body);
   if (!raw) return false;
   return raw.toUpperCase().replace(/-/g, "_") === "SCHEDULE_LIMIT_EXCEEDED";
+}
+
+export function readNormalizedApiErrorCode(body: unknown): string | undefined {
+  const raw = readApiErrorCodeFromJson(body);
+  if (!raw) return undefined;
+  return raw.toUpperCase().replace(/-/g, "_");
+}
+
+export function isAgreementsNotAcceptedFromBody(body: unknown): boolean {
+  return (
+    readNormalizedApiErrorCode(body) === AGREEMENTS_NOT_ACCEPTED_ERROR_CODE
+  );
+}
+
+export function isAgreementsReacceptanceRequiredFromBody(
+  body: unknown,
+): boolean {
+  return (
+    readNormalizedApiErrorCode(body) ===
+    AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE
+  );
+}
+
+/** Google 로그인·약관 재동의 API 오류 JSON → 사용자 메시지 */
+export function messageForGoogleLoginError(
+  body: unknown,
+  fallback = "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+): string {
+  if (isAgreementsNotAcceptedFromBody(body)) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      AGREEMENTS_NOT_ACCEPTED_DEFAULT_MESSAGE
+    );
+  }
+  if (isAgreementsReacceptanceRequiredFromBody(body)) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      AGREEMENTS_REACCEPTANCE_REQUIRED_DEFAULT_MESSAGE
+    );
+  }
+  return readUserFacingMessageFromApiBody(body) ?? fallback;
+}
+
+/** 약관 재동의 API 오류 JSON → 사용자 메시지 */
+export function messageForAgreementsAcceptError(
+  body: unknown,
+  fallback = "약관 동의 처리에 실패했습니다.",
+): string {
+  return messageForGoogleLoginError(body, fallback);
 }
 
 /** `SCHEDULE_LIMIT_EXCEEDED` 등 — 서버 메시지에 30개 상한을 덧붙입니다. */

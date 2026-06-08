@@ -12,8 +12,8 @@ import {
 } from "@/lib/auth";
 import { tearDownClientSession } from "@/lib/client-storage";
 import {
-  getGoogleOAuthRedirectUri,
-  OAUTH_STATE_SESSION_KEY,
+  consumeOAuthPendingSession,
+  loginErrorQueryForExchangeFailure,
 } from "@/lib/google-oauth";
 import { setSessionUserCache } from "@/lib/session-user-cache";
 import { useSessionStore } from "@/stores/session-store";
@@ -25,7 +25,7 @@ function AuthCallbackContent() {
   const setSessionReady = useSessionStore((s) => s.setSessionReady);
 
   // React Strict Mode (Next dev) 에서 useEffect 가 두 번 실행되면
-  // sessionStorage 의 pendingInviteCode/oauth_state 가 첫 실행에서 비워져
+  // sessionStorage 의 pendingInviteCode/oauth_pending 가 첫 실행에서 비워져
   // 두 번째 실행이 home/login 으로 잘못 리다이렉트한다. 코드 교환도 1회만 시도.
   const ranRef = useRef(false);
 
@@ -35,19 +35,24 @@ function AuthCallbackContent() {
 
     const code = searchParams.get("code");
     const returnedState = searchParams.get("state");
-    const savedState = sessionStorage.getItem(OAUTH_STATE_SESSION_KEY);
-    sessionStorage.removeItem(OAUTH_STATE_SESSION_KEY);
+    const pending = consumeOAuthPendingSession();
 
     // 인증 흐름의 어떤 결과든 pendingInviteCode 를 한 번에 소비해
     // 다음 진입(예: 재로그인)에서 홀더 값이 남아있지 않도록 한다.
     const pendingInviteCode = consumePendingInviteCode();
 
-    if (!code || !returnedState || returnedState !== savedState) {
+    if (
+      !code ||
+      !returnedState ||
+      !pending ||
+      returnedState !== pending.state ||
+      !pending.agreementsAccepted
+    ) {
       router.replace("/login?error=OAuthCallback");
       return;
     }
 
-    exchangeGoogleCode(code, getGoogleOAuthRedirectUri())
+    exchangeGoogleCode(code, pending.agreementsAccepted)
       .then(async (result) => {
         if (result.ok) {
           const me = await fetchSessionUserWithRetry();
@@ -64,9 +69,11 @@ function AuthCallbackContent() {
           } else {
             router.replace("/home");
           }
-        } else {
-          router.replace("/login?error=OAuthCallback");
+          return;
         }
+
+        const errorQuery = loginErrorQueryForExchangeFailure(result.errorCode);
+        router.replace(`/login?error=${errorQuery}`);
       })
       .catch(() => {
         router.replace("/login?error=OAuthCallback");

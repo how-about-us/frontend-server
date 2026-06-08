@@ -1,21 +1,40 @@
+import {
+  messageForGoogleLoginError,
+  readNormalizedApiErrorCode,
+} from "@/lib/api/errors";
+import { tryParseJson } from "@/lib/api/http";
+
 const FETCH_OPTS: RequestInit = {
   credentials: "include",
 };
 
+export type ExchangeGoogleCodeResult =
+  | { ok: true }
+  | { ok: false; status: number; errorCode?: string; message?: string };
+
 export async function exchangeGoogleCode(
   code: string,
-  /** 인가 요청에 쓴 값과 동일해야 Google 토큰 교환이 성공한다. */
-  redirectUri: string,
-): Promise<{ ok: true } | { ok: false; status: number }> {
+  agreementsAccepted: boolean,
+): Promise<ExchangeGoogleCodeResult> {
   const res = await fetch("/api/auth/google", {
     ...FETCH_OPTS,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, redirect_uri: redirectUri }),
+    body: JSON.stringify({ code, agreementsAccepted }),
   });
 
   if (res.ok) return { ok: true };
-  return { ok: false, status: res.status };
+
+  const body = await tryParseJson(res);
+  const errorCode = readNormalizedApiErrorCode(body);
+  const message = messageForGoogleLoginError(body);
+
+  return {
+    ok: false,
+    status: res.status,
+    errorCode,
+    message,
+  };
 }
 
 async function refreshToken(): Promise<
