@@ -1,7 +1,7 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
@@ -9,9 +9,7 @@ import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useAllRoomBookmarks, useBookmarkCategories } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import type { PlacePreview } from "@/lib/api/places";
-import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
-import { seededPlacePreviewQueryOptions } from "@/lib/places/place-queries";
-import { getQueryClient } from "@/lib/query-client";
+import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 
 import {
   MAP_PIN_BORDER_STROKE,
@@ -90,40 +88,14 @@ export function MapBookmarkPins({
     return out;
   }, [allBookmarks, categoryColorById, listsSettled]);
 
-  const uniquePlaceIds = useMemo(
-    () => [...new Set(flattenedBookmarks.map((row) => row.googlePlaceId))],
-    [flattenedBookmarks],
-  );
-
-  const [previewsSeeded, setPreviewsSeeded] = useState(false);
-
-  useEffect(() => {
-    if (!roomId || uniquePlaceIds.length === 0) {
-      setPreviewsSeeded(true);
-      return;
-    }
-
-    let cancelled = false;
-    setPreviewsSeeded(false);
-    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient()).then(() => {
-      if (!cancelled) setPreviewsSeeded(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [roomId, uniquePlaceIds]);
-
   const placeQueryDefs = useMemo(() => {
     if (!roomId || !listsSettled || flattenedBookmarks.length === 0) {
       return [];
     }
     return flattenedBookmarks.map((row) =>
-      seededPlacePreviewQueryOptions(row.googlePlaceId, {
-        enabled: previewsSeeded,
-      }),
+      placePreviewQueryOptions(row.googlePlaceId),
     );
-  }, [roomId, listsSettled, flattenedBookmarks, previewsSeeded]);
+  }, [roomId, listsSettled, flattenedBookmarks]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 

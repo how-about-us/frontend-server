@@ -1,11 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 
-import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
-import { seededPlacePreviewQueryOptions } from "@/lib/places/place-queries";
-import { getQueryClient } from "@/lib/query-client";
+import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useAllRoomBookmarks, useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
@@ -46,34 +44,6 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     [bookmarkRowsRaw],
   );
 
-  const uniquePlaceIds = useMemo(
-    () =>
-      [
-        ...new Set(
-          bookmarkRows
-            .map((b) => trimGooglePlaceId(b.googlePlaceId))
-            .filter((id) => id.length > 0),
-        ),
-      ],
-    [bookmarkRows],
-  );
-
-  const [previewsSeeded, setPreviewsSeeded] = useState(false);
-
-  const seedBookmarkPreviews = useCallback(async () => {
-    if (!roomId || uniquePlaceIds.length === 0) {
-      setPreviewsSeeded(true);
-      return;
-    }
-    setPreviewsSeeded(false);
-    await fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
-    setPreviewsSeeded(true);
-  }, [roomId, uniquePlaceIds]);
-
-  useEffect(() => {
-    void seedBookmarkPreviews();
-  }, [seedBookmarkPreviews]);
-
   const bookmarkListReady =
     !bookmarksLoading && bookmarkRowsRaw !== undefined && !!roomId;
 
@@ -85,13 +55,11 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
         if (!googlePlaceId.length) return null;
         return {
           bookmarkId: b.bookmarkId,
-          ...seededPlacePreviewQueryOptions(googlePlaceId, {
-            enabled: previewsSeeded,
-          }),
+          ...placePreviewQueryOptions(googlePlaceId),
         };
       })
       .filter((q): q is NonNullable<typeof q> => q != null);
-  }, [bookmarkListReady, bookmarkRows, previewsSeeded]);
+  }, [bookmarkListReady, bookmarkRows]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
@@ -116,17 +84,24 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
   }, [bookmarkRows, placeQueryDefs, placeQueries]);
 
   const cardsLoading =
-    bookmarkListReady && bookmarkRows.length > 0 && !previewsSeeded;
+    bookmarkListReady &&
+    bookmarkRows.length > 0 &&
+    placeQueries.some((q) => q.isPending || q.isFetching);
 
   const cardsError =
     bookmarkListReady &&
     bookmarkRows.length > 0 &&
-    previewsSeeded &&
     places.length === 0 &&
     placeQueries.length > 0 &&
     placeQueries.every((q) => q.isError);
 
   const firstPlaceError = placeQueries.find((q) => q.isError)?.error;
+
+  const retryPlacePreviews = () => {
+    for (const q of placeQueries) {
+      void q.refetch();
+    }
+  };
 
   if (!roomId) {
     return null;
@@ -198,9 +173,7 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => {
-                  void seedBookmarkPreviews();
-                }}
+                onClick={retryPlacePreviews}
                 className="cursor-pointer text-sm font-medium text-neutral-900 underline"
               >
                 다시 시도

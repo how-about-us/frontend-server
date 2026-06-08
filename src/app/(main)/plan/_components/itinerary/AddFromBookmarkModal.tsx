@@ -16,9 +16,7 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
 } from "@/lib/plan/scheduleItemPlaces";
-import { seededPlacePreviewQueryOptions } from "@/lib/places/place-queries";
-import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
-import { getQueryClient } from "@/lib/query-client";
+import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
@@ -89,39 +87,6 @@ export function AddFromBookmarkModal({
     ? bookmarkRows
     : [];
 
-  const uniquePlaceIds = useMemo(
-    () =>
-      [
-        ...new Set(
-          bookmarkItems
-            .map((b) =>
-              typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "",
-            )
-            .filter((id) => id.length > 0),
-        ),
-      ],
-    [bookmarkItems],
-  );
-
-  const [previewsSeeded, setPreviewsSeeded] = useState(false);
-
-  useEffect(() => {
-    if (!roomId || uniquePlaceIds.length === 0) {
-      setPreviewsSeeded(true);
-      return;
-    }
-
-    let cancelled = false;
-    setPreviewsSeeded(false);
-    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient()).then(() => {
-      if (!cancelled) setPreviewsSeeded(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [roomId, uniquePlaceIds]);
-
   const placeQueryDefs = useMemo(() => {
     if (!bookmarkListReady) return [];
     return bookmarkItems
@@ -131,13 +96,11 @@ export function AddFromBookmarkModal({
         if (!googlePlaceId.length) return null;
         return {
           bookmarkId: b.bookmarkId,
-          ...seededPlacePreviewQueryOptions(googlePlaceId, {
-            enabled: previewsSeeded,
-          }),
+          ...placePreviewQueryOptions(googlePlaceId),
         };
       })
       .filter((q): q is NonNullable<typeof q> => q != null);
-  }, [bookmarkListReady, bookmarkItems, previewsSeeded]);
+  }, [bookmarkListReady, bookmarkItems]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
@@ -159,7 +122,9 @@ export function AddFromBookmarkModal({
   }, [bookmarkItems, placeQueryDefs, placeQueries]);
 
   const cardsLoading =
-    bookmarkListReady && bookmarkItems.length > 0 && !previewsSeeded;
+    bookmarkListReady &&
+    bookmarkItems.length > 0 &&
+    placeQueries.some((q) => q.isPending || q.isFetching);
 
   const existingPlaceIds = useMemo(() => {
     const ids = new Set<string>();

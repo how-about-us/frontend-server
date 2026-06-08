@@ -40,6 +40,7 @@ import {
   regenerateInviteCode,
   rejectJoinRequest,
   type BookmarkCategory,
+  type RoomBookmark,
   type RoomCreateRequest,
   type RoomScheduleCreateRequest,
   type ReorderScheduleItemRequest,
@@ -65,6 +66,10 @@ import {
 } from "@/lib/plan/scheduleItemPlaces";
 import { planPlacesNeedPreviewEnrich } from "@/lib/plan/schedule-bulk-hydration";
 import { fetchAndSeedAllRoomBookmarks } from "@/lib/bookmarks/bookmark-bulk-cache";
+import {
+  appendBookmarkCategoryToCache,
+  appendRoomBookmarksToCache,
+} from "@/lib/bookmarks/bookmark-cache-patch";
 import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
@@ -693,10 +698,8 @@ export function useCreateBookmarkCategory() {
       name: string;
       colorCode: string;
     }) => createBookmarkCategory(roomId, { name, colorCode }),
-    onSuccess: (_, { roomId }) => {
-      queryClient.invalidateQueries({
-        queryKey: bookmarkCategoriesQueryKey(roomId),
-      });
+    onSuccess: (created, { roomId }) => {
+      appendBookmarkCategoryToCache(queryClient, roomId, created);
     },
   });
 }
@@ -785,7 +788,7 @@ export function useCreateRoomBookmark() {
       googlePlaceId: string;
       categoryId: number;
     }) => createRoomBookmark(roomId, { googlePlaceId, categoryId }),
-    onSuccess: (_, { roomId, categoryId }) => {
+    onSuccess: (created, { roomId, categoryId }) => {
       queryClient.setQueryData<BookmarkCategory[]>(
         bookmarkCategoriesQueryKey(roomId),
         (prev) => {
@@ -797,12 +800,7 @@ export function useCreateRoomBookmark() {
           );
         },
       );
-      void queryClient.invalidateQueries({
-        queryKey: roomBookmarksQueryKey(roomId, categoryId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: roomAllBookmarksQueryKey(roomId),
-      });
+      appendRoomBookmarksToCache(queryClient, roomId, [created]);
     },
   });
 }
@@ -814,6 +812,7 @@ export type CreateRoomBookmarksInCategoriesResult = {
   firstHardError: Error | null;
   /** Categories that received a successful POST (for local cache only). */
   addedCategoryIds: number[];
+  bookmarks: RoomBookmark[];
 };
 
 /** POST 한 번으로 `googlePlaceId` + `categoryIds` 배열 전달. STOMP와 함께 목록 캐시도 즉시 무효화합니다. */
@@ -842,6 +841,7 @@ export function useCreateRoomBookmarksInCategories() {
           skippedDuplicate,
           firstHardError: null,
           addedCategoryIds,
+          bookmarks,
         };
       } catch (e) {
         if (e instanceof HttpError && e.status === 409) {
@@ -850,6 +850,7 @@ export function useCreateRoomBookmarksInCategories() {
             skippedDuplicate: categoryIds.length,
             firstHardError: null,
             addedCategoryIds: [],
+            bookmarks: [],
           };
         }
         return {
@@ -857,6 +858,7 @@ export function useCreateRoomBookmarksInCategories() {
           skippedDuplicate: 0,
           firstHardError: e instanceof Error ? e : new Error(String(e)),
           addedCategoryIds: [],
+          bookmarks: [],
         };
       }
     },
@@ -874,12 +876,7 @@ export function useCreateRoomBookmarksInCategories() {
           );
         },
       );
-      void queryClient.invalidateQueries({
-        queryKey: roomBookmarksByRoomRootQueryKey(roomId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: roomAllBookmarksQueryKey(roomId),
-      });
+      appendRoomBookmarksToCache(queryClient, roomId, result.bookmarks);
     },
   });
 }
