@@ -1,6 +1,14 @@
 import { pickProfileImageUrl } from "@/lib/api/profileImage";
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
-import type { RoomMember, RoomMemberListResponse } from "./types";
+import type {
+  RoomMember,
+  RoomMemberListResponse,
+  RoomMemberStatus,
+} from "./types";
+
+export function isActiveRoomMember(member: RoomMember): boolean {
+  return member.status === "ACTIVE";
+}
 
 function normalizeMemberListPayload(
   res: RoomMemberListResponse,
@@ -11,11 +19,14 @@ function normalizeMemberListPayload(
     members: members.map((m) => {
       const picked = pickProfileImageUrl(m as unknown as Record<string, unknown>);
       const url = picked ?? m.profileImageUrl ?? null;
-      const raw = m as RoomMember & { isOnline?: boolean };
+      const raw = m as RoomMember & { isOnline?: boolean; status?: string };
+      const status: RoomMemberStatus =
+        raw.status === "LEFT" ? "LEFT" : "ACTIVE";
       return {
         ...m,
         profileImageUrl: url,
-        isOnline: Boolean(raw.isOnline),
+        status,
+        isOnline: status === "LEFT" ? false : Boolean(raw.isOnline),
       } satisfies RoomMember;
     }),
   };

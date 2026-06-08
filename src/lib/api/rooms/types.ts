@@ -63,11 +63,14 @@ export type JoinRoomResponse = {
   role: string;
 };
 
+export type RoomMemberStatus = "ACTIVE" | "LEFT";
+
 export type RoomMember = {
   userId: number;
   nickname: string;
   profileImageUrl: string | null;
   role: "HOST" | "MEMBER";
+  status: RoomMemberStatus;
   joinedAt: string;
   isOnline: boolean;
 };

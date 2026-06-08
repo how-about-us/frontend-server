@@ -69,6 +69,8 @@ export function dispatchRoomMemberEvent(
               ...cur,
               nickname: d.nickname,
               profileImageUrl: d.profileImageUrl,
+              status: "ACTIVE",
+              isOnline: true,
             };
             return prev ? { ...prev, members: next } : { members: next };
           }
@@ -78,6 +80,7 @@ export function dispatchRoomMemberEvent(
             nickname: d.nickname,
             profileImageUrl: d.profileImageUrl,
             role: "MEMBER",
+            status: "ACTIVE",
             joinedAt,
             isOnline: true,
           };

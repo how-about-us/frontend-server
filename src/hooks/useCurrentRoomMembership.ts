@@ -5,6 +5,7 @@ import { useRoomDetail } from "@/hooks/useRoomDetail";
 import { useRoomMembers, useRoomsList } from "@/hooks/useRooms";
 import { useSessionUser } from "@/hooks/useSessionUser";
 import type { RoomDetail, RoomListItem } from "@/lib/api/rooms";
+import { isActiveRoomMember } from "@/lib/api/rooms/members";
 import { resolveViewerIsHost } from "@/lib/rooms";
 
 type RoomSource = RoomListItem | RoomDetail;
@@ -24,6 +25,7 @@ export function useCurrentRoomMembership() {
     (roomDetail && roomDetail.id === currentRoomId ? roomDetail : null);
 
   const members = membersData?.members ?? [];
+  const activeMembers = members.filter(isActiveRoomMember);
   const me = members.find((m) => m.userId === user?.id);
   const isHost = resolveViewerIsHost({
     listRole: currentRoom?.role,
@@ -38,8 +40,9 @@ export function useCurrentRoomMembership() {
     roomDetail,
     roomSource,
     members,
+    activeMembers,
     me,
-    others: members.filter((m) => m.userId !== user?.id),
+    others: activeMembers.filter((m) => m.userId !== user?.id),
     isHost,
     isLoading: isRoomsLoading || isDetailLoading || isMembersLoading,
     isMembersLoading,

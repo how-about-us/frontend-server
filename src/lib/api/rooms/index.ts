@@ -18,6 +18,7 @@ export type {
   RoomListResponse,
   RoomMember,
   RoomMemberListResponse,
+  RoomMemberStatus,
   RoomMessage,
   RoomUpdateRequest,
 } from "./types";
