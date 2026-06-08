@@ -4,9 +4,9 @@
 export const PLACE_PHOTO_QUERY_GC_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const placePhotoUrlQueryDefaults = {
-  staleTime: 60_000,
+  staleTime: Infinity,
   gcTime: PLACE_PHOTO_QUERY_GC_MS,
-  refetchOnMount: true,
+  refetchOnMount: false,
   refetchOnWindowFocus: false,
   refetchOnReconnect: false,
   retry: 2,

@@ -5,9 +5,10 @@ import {
   collectPlacePhotoNamesFromServerMessages,
 } from "@/lib/chat";
 import {
-  fetchFirstPlacePhotoName,
-  fetchPlacePhotoUrl,
-} from "@/lib/places/place-queries";
+  fetchAndSeedPlacePhotoNames,
+  fetchAndSeedPlacePhotoUrls,
+} from "@/lib/places/place-batch-cache";
+import { placePhotoNamesQueryKey } from "@/lib/places/place-queries";
 import type { ServerChatMessage } from "@/types/chat";
 
 /**
@@ -15,24 +16,24 @@ import type { ServerChatMessage } from "@/types/chat";
  * `/places/photos`를 React Query 캐시에 예열합니다.
  */
 export async function warmPlacePhotoQueriesFromChatHistory(
-  _queryClient: QueryClient,
+  queryClient: QueryClient,
   history: ServerChatMessage[],
 ): Promise<void> {
   const names = new Set(collectPlacePhotoNamesFromServerMessages(history));
 
-  const backfillResults = await Promise.allSettled(
-    collectGooglePlaceIdsForAiPhotoBackfill(history).map((placeId) =>
-      fetchFirstPlacePhotoName(placeId),
-    ),
-  );
-  for (const r of backfillResults) {
-    if (r.status !== "fulfilled" || !r.value) continue;
-    names.add(r.value);
+  const backfillPlaceIds = collectGooglePlaceIdsForAiPhotoBackfill(history);
+  if (backfillPlaceIds.length) {
+    await fetchAndSeedPlacePhotoNames(backfillPlaceIds, queryClient);
+    for (const placeId of backfillPlaceIds) {
+      const cached = queryClient.getQueryData<string[]>(
+        placePhotoNamesQueryKey(placeId.trim()),
+      );
+      const first = cached?.[0]?.trim();
+      if (first) names.add(first);
+    }
   }
 
-  await Promise.allSettled(
-    [...names].map(async (name) => {
-      await fetchPlacePhotoUrl(name);
-    }),
-  );
+  if (names.size) {
+    await fetchAndSeedPlacePhotoUrls([...names], queryClient);
+  }
 }

@@ -26,6 +26,10 @@ export function roomBookmarksByRoomRootQueryKey(roomId: string) {
   return [ROOM_BOOKMARKS, roomId] as const;
 }
 
+export function roomAllBookmarksQueryKey(roomId: string | null) {
+  return ["room-bookmarks-all", roomId] as const;
+}
+
 /** 해당 방 아래 장소 카드(place detail) 미리보기 쿼리 제거용 접두 */
 export function placeCardBookmarkRootQueryKey(roomId: string) {
   return [PLACE_CARD_BOOKMARK, roomId] as const;

@@ -15,6 +15,7 @@ import {
 } from "@/components/layout/page-toolbar-button";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
+  useAllRoomBookmarks,
   useBookmarkCategories,
   useCreateBookmarkCategory,
   useDeleteBookmarkCategory,
@@ -31,6 +32,7 @@ import { FolderRibbonIcon } from "./FolderRibbonIcon";
 export function BookmarkFoldersView() {
   const roomId = useSessionStore((s) => s.currentRoomId);
   const { folders } = useBookmarkFolders();
+  useAllRoomBookmarks(roomId);
   const { isPending, isError, error, refetch } = useBookmarkCategories(roomId);
   const { mutate: createCategory, isPending: isCreating } =
     useCreateBookmarkCategory();

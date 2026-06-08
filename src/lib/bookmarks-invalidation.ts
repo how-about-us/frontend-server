@@ -2,9 +2,25 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import {
   bookmarkCategoriesQueryKey,
+  roomAllBookmarksQueryKey,
+  roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
 } from "@/lib/query-keys";
 import type { RoomBookmarkChangedEvent } from "@/types/roomBookmarkStomp";
+
+async function invalidateAllRoomBookmarkQueries(
+  queryClient: QueryClient,
+  roomId: string,
+): Promise<void> {
+  await queryClient.invalidateQueries({
+    queryKey: roomAllBookmarksQueryKey(roomId),
+    refetchType: "all",
+  });
+  await queryClient.invalidateQueries({
+    queryKey: roomBookmarksByRoomRootQueryKey(roomId),
+    refetchType: "all",
+  });
+}
 
 /** STOMP `RoomBookmarkChangedEvent.type`별 최소 범위 무효화·제거만 수행합니다. */
 export async function invalidateRoomBookmarkQueries(
@@ -22,6 +38,7 @@ export async function invalidateRoomBookmarkQueries(
         queryKey: roomBookmarksQueryKey(rid, categoryId),
         refetchType: "all",
       });
+      await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
@@ -33,6 +50,7 @@ export async function invalidateRoomBookmarkQueries(
         queryKey: roomBookmarksQueryKey(rid, categoryId),
         refetchType: "all",
       });
+      await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
@@ -44,6 +62,7 @@ export async function invalidateRoomBookmarkQueries(
         queryKey: roomBookmarksQueryKey(rid, categoryId),
         refetchType: "all",
       });
+      await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",
@@ -62,6 +81,7 @@ export async function invalidateRoomBookmarkQueries(
       queryClient.removeQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
       });
+      await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
         refetchType: "all",

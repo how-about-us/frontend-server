@@ -1,5 +1,7 @@
 import { API_BASE } from "./config";
 import { apiFetch } from "./client";
+import { chunkArray, PLACE_BATCH_MAX_SIZE } from "./batch-chunk";
+import { apiUrl, jsonBody, requestJson } from "./http";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -83,6 +85,45 @@ export type PlacePreview = {
   primaryTypeDisplayName?: string;
 };
 
+// ─── Batch response types ──────────────────────────────────────────────────
+
+export type PlacePreviewBatchItem =
+  | ({
+      status: "OK";
+      googlePlaceId: string;
+      name: string;
+      formattedAddress: string;
+      location: { latitude: number; longitude: number } | null;
+      photoName: string | null;
+      primaryType: string;
+      primaryTypeDisplayName: string;
+    })
+  | {
+      status: "ERROR";
+      googlePlaceId: string;
+      errorCode?: string;
+    };
+
+export type PlacePreviewBatchResponse = {
+  items: PlacePreviewBatchItem[];
+};
+
+export type PlacePhotoNamesBatchItem =
+  | { status: "OK"; googlePlaceId: string; photoNames: string[] }
+  | { status: "ERROR"; googlePlaceId: string; errorCode?: string };
+
+export type PlacePhotoNamesBatchResponse = {
+  items: PlacePhotoNamesBatchItem[];
+};
+
+export type PlacePhotoUrlBatchItem =
+  | { status: "OK"; photoName: string; photoUrl: string }
+  | { status: "ERROR"; photoName: string; errorCode?: string };
+
+export type PlacePhotoUrlBatchResponse = {
+  items: PlacePhotoUrlBatchItem[];
+};
+
 // ─── API functions ─────────────────────────────────────────────────────────
 
 export async function searchPlaces(params: {
@@ -151,4 +192,97 @@ export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
   return data.photoUrl;
+}
+
+async function requestPlacePreviewsBatchChunk(
+  googlePlaceIds: string[],
+): Promise<PlacePreviewBatchItem[]> {
+  const data = await requestJson<PlacePreviewBatchResponse>(
+    apiUrl("/places/previews/batch"),
+    { method: "POST", ...jsonBody({ googlePlaceIds }) },
+    { errorMessage: "장소 미리보기 일괄 조회 실패" },
+  );
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function requestPlacePreviewsBatch(
+  googlePlaceIds: readonly string[],
+): Promise<PlacePreviewBatchItem[]> {
+  const ids = [
+    ...new Set(
+      googlePlaceIds
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter((id) => id.length > 0),
+    ),
+  ];
+  if (!ids.length) return [];
+
+  const chunks = chunkArray(ids, PLACE_BATCH_MAX_SIZE);
+  const out: PlacePreviewBatchItem[] = [];
+  for (const chunk of chunks) {
+    out.push(...(await requestPlacePreviewsBatchChunk(chunk)));
+  }
+  return out;
+}
+
+async function requestPlacePhotoNamesBatchChunk(
+  googlePlaceIds: string[],
+): Promise<PlacePhotoNamesBatchItem[]> {
+  const data = await requestJson<PlacePhotoNamesBatchResponse>(
+    apiUrl("/places/photo-names/batch"),
+    { method: "POST", ...jsonBody({ googlePlaceIds }) },
+    { errorMessage: "장소 사진 이름 일괄 조회 실패" },
+  );
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function requestPlacePhotoNamesBatch(
+  googlePlaceIds: readonly string[],
+): Promise<PlacePhotoNamesBatchItem[]> {
+  const ids = [
+    ...new Set(
+      googlePlaceIds
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter((id) => id.length > 0),
+    ),
+  ];
+  if (!ids.length) return [];
+
+  const chunks = chunkArray(ids, PLACE_BATCH_MAX_SIZE);
+  const out: PlacePhotoNamesBatchItem[] = [];
+  for (const chunk of chunks) {
+    out.push(...(await requestPlacePhotoNamesBatchChunk(chunk)));
+  }
+  return out;
+}
+
+async function requestPlacePhotoUrlsBatchChunk(
+  photoNames: string[],
+): Promise<PlacePhotoUrlBatchItem[]> {
+  const data = await requestJson<PlacePhotoUrlBatchResponse>(
+    apiUrl("/places/photos/batch"),
+    { method: "POST", ...jsonBody({ photoNames }) },
+    { errorMessage: "장소 사진 URL 일괄 조회 실패" },
+  );
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function requestPlacePhotoUrlsBatch(
+  photoNames: readonly string[],
+): Promise<PlacePhotoUrlBatchItem[]> {
+  const names = [
+    ...new Set(
+      photoNames
+        .map((n) => (typeof n === "string" ? n.trim() : ""))
+        .filter((n) => n.length > 0),
+    ),
+  ];
+  if (!names.length) return [];
+
+  const chunks = chunkArray(names, PLACE_BATCH_MAX_SIZE);
+  const out: PlacePhotoUrlBatchItem[] = [];
+  for (const chunk of chunks) {
+    out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk)));
+  }
+  return out;
 }

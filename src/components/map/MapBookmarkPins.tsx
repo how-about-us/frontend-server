@@ -1,21 +1,19 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useBookmarkCategories } from "@/hooks/useRooms";
-import { getRoomBookmarks } from "@/lib/api/rooms/bookmarks";
+import { useAllRoomBookmarks, useBookmarkCategories } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import type { PlacePreview } from "@/lib/api/places";
+import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
 import {
-  loadPlacePreview,
-  placePreviewQueryDefaults,
-  placePreviewQueryKey,
+  placePreviewQueryOptions,
 } from "@/lib/places/place-queries";
-import { roomBookmarksQueryKey } from "@/lib/query-keys";
+import { getQueryClient } from "@/lib/query-client";
 
 import {
   MAP_PIN_BORDER_STROKE,
@@ -58,55 +56,57 @@ export function MapBookmarkPins({
   const { data: categories, isSuccess: categoriesReady } =
     useBookmarkCategories(roomId, { enabled: !!roomId });
 
+  const {
+    data: allBookmarks,
+    isSuccess: bookmarksReady,
+    isError: bookmarksError,
+  } = useAllRoomBookmarks(roomId, { enabled: !!roomId });
+
   const categoryList = categories ?? [];
+  const categoryColorById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const cat of categoryList) {
+      map.set(cat.categoryId, cat.colorCode?.trim() || "#16a34a");
+    }
+    return map;
+  }, [categoryList]);
 
-  const bookmarkListQueries = useQueries({
-    queries: categoryList.map((cat) => ({
-      queryKey: roomBookmarksQueryKey(roomId, cat.categoryId),
-      queryFn: () => getRoomBookmarks(roomId!, cat.categoryId),
-      enabled: !!roomId && categoriesReady,
-      staleTime: 0,
-    })),
-  });
-
-  const listsSettled = useMemo(() => {
-    if (!categoriesReady) return false;
-    if (categoryList.length === 0) return true;
-    if (bookmarkListQueries.length !== categoryList.length) return false;
-    return bookmarkListQueries.every((q) => q.isSuccess || q.isError);
-  }, [categoriesReady, categoryList.length, bookmarkListQueries]);
+  const listsSettled =
+    categoriesReady && (bookmarksReady || bookmarksError || categoryList.length === 0);
 
   const flattenedBookmarks = useMemo((): BookmarkRowAugmented[] => {
-    if (!listsSettled || !categoryList.length) return [];
+    if (!listsSettled || !Array.isArray(allBookmarks)) return [];
     const out: BookmarkRowAugmented[] = [];
-    categoryList.forEach((cat, i) => {
-      const rows = bookmarkListQueries[i]?.data;
-      if (!Array.isArray(rows) || !rows.length) return;
-      const colorCode = cat.colorCode?.trim() || "#16a34a";
-      for (const b of rows) {
-        const gid =
-          typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
-        if (!gid.length) continue;
-        out.push({
-          bookmarkId: b.bookmarkId,
-          googlePlaceId: gid,
-          colorCode,
-        });
-      }
-    });
+    for (const b of allBookmarks) {
+      const gid =
+        typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "";
+      if (!gid.length) continue;
+      const colorCode =
+        categoryColorById.get(b.categoryId) ?? "#16a34a";
+      out.push({
+        bookmarkId: b.bookmarkId,
+        googlePlaceId: gid,
+        colorCode,
+      });
+    }
     return out;
-  }, [categoryList, bookmarkListQueries, listsSettled]);
+  }, [allBookmarks, categoryColorById, listsSettled]);
+
+  const uniquePlaceIds = useMemo(
+    () => [...new Set(flattenedBookmarks.map((row) => row.googlePlaceId))],
+    [flattenedBookmarks],
+  );
+
+  useEffect(() => {
+    if (!roomId || uniquePlaceIds.length === 0) return;
+    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
+  }, [roomId, uniquePlaceIds]);
 
   const placeQueryDefs = useMemo(() => {
     if (!roomId || !listsSettled || flattenedBookmarks.length === 0) {
       return [];
     }
-    return flattenedBookmarks.map((row) => ({
-      queryKey: placePreviewQueryKey(row.googlePlaceId),
-      queryFn: () => loadPlacePreview(row.googlePlaceId),
-      staleTime: placePreviewQueryDefaults.staleTime,
-      retry: 1,
-    }));
+    return flattenedBookmarks.map((row) => placePreviewQueryOptions(row.googlePlaceId));
   }, [roomId, listsSettled, flattenedBookmarks]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });

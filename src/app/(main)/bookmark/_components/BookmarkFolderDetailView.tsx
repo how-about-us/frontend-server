@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 
+import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
 import { placePreviewQueryOptions } from "@/lib/places/place-queries";
+import { getQueryClient } from "@/lib/query-client";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useRoomBookmarks } from "@/hooks/useRooms";
+import { useAllRoomBookmarks, useRoomBookmarks } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { BookmarkFolder, BookmarkedPlace } from "@/types/bookmark";
@@ -29,6 +31,8 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
   const categoryId = Number.parseInt(folder.id, 10);
   const categoryIdOk = Number.isFinite(categoryId) ? categoryId : null;
 
+  useAllRoomBookmarks(roomId);
+
   const {
     data: bookmarkRowsRaw,
     isPending: bookmarksLoading,
@@ -41,6 +45,23 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
     () => normalizeBookmarkRows(bookmarkRowsRaw),
     [bookmarkRowsRaw],
   );
+
+  const uniquePlaceIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          bookmarkRows
+            .map((b) => trimGooglePlaceId(b.googlePlaceId))
+            .filter((id) => id.length > 0),
+        ),
+      ],
+    [bookmarkRows],
+  );
+
+  useEffect(() => {
+    if (!roomId || uniquePlaceIds.length === 0) return;
+    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
+  }, [roomId, uniquePlaceIds]);
 
   const bookmarkListReady =
     !bookmarksLoading && bookmarkRowsRaw !== undefined && !!roomId;

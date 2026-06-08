@@ -8,7 +8,13 @@ import {
   updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
-import { fetchPlacePreview } from "@/lib/places/place-queries";
+import { fetchPlacePreview, placePreviewQueryKey, resolvePreviewGooglePlaceId } from "@/lib/places/place-queries";
+import {
+  fetchAndSeedPlacePreviews,
+} from "@/lib/places/place-batch-cache";
+import {
+  planPlaceFromItemAndPreview,
+} from "@/lib/plan/schedule-bulk-hydration";
 import { getQueryClient } from "@/lib/query-client";
 import {
   invalidateScheduleItemRouteForWholeSchedule,
@@ -21,6 +27,7 @@ import {
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
+import type { PlacePreview } from "@/lib/api/places";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
 /** `orderIndex` 기준 정렬(비변형) */
@@ -28,6 +35,15 @@ export function sortRoomScheduleItemsByOrder(
   items: RoomScheduleItem[],
 ): RoomScheduleItem[] {
   return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+}
+
+function readCachedPreviewForItem(
+  queryClient: QueryClient,
+  googlePlaceId: string,
+): PlacePreview | null {
+  const id = resolvePreviewGooglePlaceId(googlePlaceId);
+  if (!id.length) return null;
+  return queryClient.getQueryData(placePreviewQueryKey(id)) ?? null;
 }
 
 function memoFromScheduleItem(item: RoomScheduleItem): string | undefined {
@@ -147,6 +163,24 @@ async function buildPlanPlacesFromScheduleItems(
   items: RoomScheduleItem[],
 ): Promise<PlanPlace[]> {
   const sorted = sortRoomScheduleItemsByOrder(items);
+  const placeIds = sorted
+    .map((item) => item.googlePlaceId)
+    .filter((id) => typeof id === "string" && id.trim().length > 0);
+
+  const qc = getQueryClient();
+  if (placeIds.length) {
+    await fetchAndSeedPlacePreviews(placeIds, qc);
+  }
+
+  if (qc) {
+    return sorted.map((item) =>
+      planPlaceFromItemAndPreview(
+        item,
+        readCachedPreviewForItem(qc, item.googlePlaceId),
+      ),
+    );
+  }
+
   return Promise.all(sorted.map((item) => planPlaceFromScheduleItem(item)));
 }
 
@@ -674,6 +708,18 @@ export async function fetchScheduleItemsAsPlanPlaces(
   roomId: string,
   scheduleId: number,
 ): Promise<PlanPlace[]> {
-  const items = await getScheduleItems(roomId, scheduleId);
-  return buildPlanPlacesFromScheduleItems(items);
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+  const qc = getQueryClient();
+  if (qc) {
+    const cached = qc.getQueryData<PlanPlace[]>(key);
+    if (cached != null) return cached;
+  }
+
+  const items = await getScheduleItems(rid, scheduleId);
+  const places = await buildPlanPlacesFromScheduleItems(items);
+  qc?.setQueryData(key, places);
+  return places;
 }

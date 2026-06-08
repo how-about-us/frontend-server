@@ -31,7 +31,6 @@ import {
   getJoinStatus,
   getRoomBookmarks,
   getRoomMembers,
-  getRoomSchedules,
   patchRoomBookmarkCategory,
   getRooms,
   joinRoom,
@@ -65,9 +64,11 @@ import {
   syncAfterCrossScheduleItemMove,
   syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
+import { fetchAndSeedAllRoomBookmarks } from "@/lib/bookmarks/bookmark-bulk-cache";
 import {
   bookmarkCategoriesQueryKey,
   joinRequestsQueryKey,
+  roomAllBookmarksQueryKey,
   roomBookmarksByRoomRootQueryKey,
   roomBookmarksQueryKey,
   ROOMS_QUERY_KEY,
@@ -153,9 +154,10 @@ export function useCreateRoom() {
 
 export function useRoomSchedules(roomId: string | null) {
   const id = roomId?.trim() ?? "";
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: roomSchedulesQueryKey(id || null),
-    queryFn: () => getRoomSchedules(id),
+    queryFn: () => hydrateRoomSchedulesFromServer(queryClient, id),
     enabled: id.length > 0,
     staleTime: Infinity,
     refetchOnMount: false,
@@ -730,6 +732,22 @@ export function useDeleteBookmarkCategory() {
   });
 }
 
+export function useAllRoomBookmarks(
+  roomId: string | null,
+  options?: { enabled?: boolean },
+) {
+  const queryClient = useQueryClient();
+  const queryEnabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: roomAllBookmarksQueryKey(roomId),
+    queryFn: () => fetchAndSeedAllRoomBookmarks(queryClient, roomId!),
+    enabled: !!roomId && queryEnabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useRoomBookmarks(
   roomId: string | null,
   categoryId: number | null,
@@ -740,7 +758,9 @@ export function useRoomBookmarks(
     queryKey: roomBookmarksQueryKey(roomId, idOk ? categoryId : null),
     queryFn: () => getRoomBookmarks(roomId!, categoryId!),
     enabled: !!roomId && idOk,
-    staleTime: 0,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -770,6 +790,9 @@ export function useCreateRoomBookmark() {
       );
       void queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(roomId, categoryId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: roomAllBookmarksQueryKey(roomId),
       });
     },
   });
@@ -845,6 +868,9 @@ export function useCreateRoomBookmarksInCategories() {
       void queryClient.invalidateQueries({
         queryKey: roomBookmarksByRoomRootQueryKey(roomId),
       });
+      void queryClient.invalidateQueries({
+        queryKey: roomAllBookmarksQueryKey(roomId),
+      });
     },
   });
 }
@@ -872,6 +898,9 @@ export function useMoveRoomBookmark() {
       queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(roomId),
       });
+      queryClient.invalidateQueries({
+        queryKey: roomAllBookmarksQueryKey(roomId),
+      });
     },
   });
 }
@@ -890,6 +919,9 @@ export function useDeleteRoomBookmarkItem() {
       });
       queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(roomId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: roomAllBookmarksQueryKey(roomId),
       });
     },
   });

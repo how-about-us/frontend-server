@@ -35,6 +35,7 @@ export {
   createRoomBookmark,
   createRoomBookmarks,
   deleteRoomBookmark,
+  getAllRoomBookmarks,
   getRoomBookmarks,
   patchRoomBookmarkCategory,
 } from "./bookmarks";
@@ -52,6 +53,8 @@ export type {
   RoomSchedule,
   RoomScheduleCreateRequest,
   RoomScheduleMoveRequest,
+  RoomScheduleWithItems,
+  GetRoomSchedulesOptions,
 } from "./schedules";
 
 export type {
@@ -60,6 +63,8 @@ export type {
   RoomScheduleItemCreateRequest,
   RoomScheduleItemUpdateRequest,
   ReorderScheduleItemRequest,
+  ScheduleItemRouteBatchItem,
+  ScheduleItemRouteBatchRequestItem,
   ScheduleItemRouteLeg,
   ScheduleItemRouteResponse,
 } from "./schedule-items";
@@ -76,6 +81,7 @@ export {
   deleteScheduleItem,
   getScheduleItems,
   getScheduleItemRoute,
+  getScheduleItemRoutesBatch,
   moveScheduleItemToSchedule,
   reorderScheduleItem,
   updateScheduleItem,

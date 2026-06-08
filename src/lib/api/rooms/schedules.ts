@@ -1,4 +1,5 @@
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
+import type { RoomScheduleItem } from "./schedule-items";
 
 export type RoomSchedule = {
   scheduleId: number;
@@ -29,8 +30,23 @@ export async function createRoomSchedule(
   );
 }
 
-export async function getRoomSchedules(roomId: string): Promise<RoomSchedule[]> {
-  return requestJson(apiUrl(`/rooms/${roomId}/schedules`), undefined, {
+export type RoomScheduleWithItems = RoomSchedule & {
+  items?: RoomScheduleItem[];
+};
+
+export type GetRoomSchedulesOptions = {
+  includeItems?: boolean;
+};
+
+export async function getRoomSchedules(
+  roomId: string,
+  options?: GetRoomSchedulesOptions,
+): Promise<RoomScheduleWithItems[]> {
+  const url = new URL(apiUrl(`/rooms/${roomId}/schedules`));
+  if (options?.includeItems) {
+    url.searchParams.set("includeItems", "true");
+  }
+  return requestJson(url.toString(), undefined, {
     errorMessage: "일정 목록 조회 실패",
   });
 }

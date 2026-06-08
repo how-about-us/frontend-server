@@ -44,6 +44,18 @@ export async function getRoomBookmarks(
   return normalizeBookmarksResponse(body);
 }
 
+/** categoryId 없이 방 전체 북마크를 정렬된 목록으로 일괄 조회 */
+export async function getAllRoomBookmarks(
+  roomId: string,
+): Promise<RoomBookmark[]> {
+  const body = await requestJson<unknown>(
+    apiUrl(`/rooms/${roomId}/bookmarks`),
+    undefined,
+    { errorMessage: "북마크 목록 조회 실패" },
+  );
+  return normalizeBookmarksResponse(body);
+}
+
 export async function createRoomBookmarks(
   roomId: string,
   body: RoomBookmarkBulkCreateRequest,

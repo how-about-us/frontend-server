@@ -9,6 +9,7 @@ import {
   useCreateScheduleItem,
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
+import { usePrefetchScheduleDrivingRoutes } from "@/hooks/usePrefetchScheduleDrivingRoutes";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
@@ -67,6 +68,25 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   } = useSchedulePlanPlaces(roomId, scheduleId);
 
   const places = placesData ?? EMPTY_PLAN_PLACES;
+
+  const scheduleFingerprint = useMemo(
+    () => schedulePlacesFingerprint(places),
+    [places],
+  );
+
+  const routeQueryEnabled =
+    !isLoading &&
+    !isFetchingPlaces &&
+    !isError &&
+    places.length >= 2 &&
+    scheduleFingerprint.length > 0;
+
+  usePrefetchScheduleDrivingRoutes(
+    roomId,
+    scheduleId,
+    places,
+    routeQueryEnabled,
+  );
 
   const existingItemIds = useMemo(
     () =>
@@ -145,11 +165,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       }
     },
     [createItem, places, roomId, scheduleId],
-  );
-
-  const scheduleFingerprint = useMemo(
-    () => schedulePlacesFingerprint(places),
-    [places],
   );
 
   const scheduleConflictFlags = useMemo(

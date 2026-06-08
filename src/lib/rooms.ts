@@ -8,8 +8,10 @@ import type {
   RoomSchedule,
 } from "@/lib/api/rooms";
 import { getRoomDetail, getRoomSchedules } from "@/lib/api/rooms";
+import type { RoomScheduleWithItems } from "@/lib/api/rooms/schedules";
 import { apiUrl } from "@/lib/api/http";
 import { clearPersistedScheduleRoutesForSchedule } from "@/lib/plan/planTravelLocalStorage";
+import { hydrateScheduleItemsFromSchedulesWithItems } from "@/lib/plan/schedule-bulk-hydration";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import type { PlanPlace } from "@/lib/plan/types";
 import {
@@ -102,16 +104,17 @@ export async function hydrateRoomSchedulesFromServer(
   const rid = roomId.trim();
   if (!rid.length) return [];
 
-  const schedules = await getRoomSchedules(rid);
+  const schedules = await getRoomSchedules(rid, { includeItems: true });
   const sorted = sortRoomSchedules(schedules);
 
   const prevSchedules =
     queryClient.getQueryData<RoomSchedule[]>(roomSchedulesQueryKey(rid)) ?? [];
   const prevIds = prevSchedules.map((s) => s.scheduleId);
 
+  const scheduleMeta = sorted.map(({ items: _items, ...schedule }) => schedule);
   queryClient.setQueryData<RoomSchedule[]>(
     roomSchedulesQueryKey(rid),
-    sorted,
+    scheduleMeta,
   );
 
   const nextIds = new Set(sorted.map((s) => s.scheduleId));
@@ -121,6 +124,12 @@ export async function hydrateRoomSchedulesFromServer(
     }
   }
 
+  await hydrateScheduleItemsFromSchedulesWithItems(
+    queryClient,
+    rid,
+    sorted as RoomScheduleWithItems[],
+  );
+
   for (const s of sorted) {
     const key = scheduleItemsQueryKey(rid, s.scheduleId);
     if (queryClient.getQueryData<PlanPlace[]>(key) === undefined) {
@@ -128,7 +137,7 @@ export async function hydrateRoomSchedulesFromServer(
     }
   }
 
-  return sorted;
+  return scheduleMeta;
 }
 
 /** `GET /rooms/{roomId}` 결과로 room-detail·방 목록 캐시를 맞춥니다. */

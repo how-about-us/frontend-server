@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { FolderRibbonIcon } from "@/app/(main)/bookmark/_components/FolderRibbonIcon";
 import { BookmarkPlacePreviewCard } from "@/app/(main)/bookmark/_components/BookmarkPlacePreviewCard";
 import {
+  useAllRoomBookmarks,
   useBookmarkCategories,
   useCreateScheduleItem,
   useRoomBookmarks,
@@ -16,6 +17,8 @@ import {
   defaultNewItemStartTimeHmFromPlanPlaces,
 } from "@/lib/plan/scheduleItemPlaces";
 import { placePreviewQueryOptions } from "@/lib/places/place-queries";
+import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
+import { getQueryClient } from "@/lib/query-client";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
@@ -51,6 +54,8 @@ export function AddFromBookmarkModal({
     refetch: refetchCategories,
   } = useBookmarkCategories(roomId);
 
+  useAllRoomBookmarks(roomId);
+
   useEffect(() => {
     if (!categories?.length) return;
     setSelectedCategoryId((prev) => {
@@ -83,6 +88,25 @@ export function AddFromBookmarkModal({
   const bookmarkItems: RoomBookmark[] = Array.isArray(bookmarkRows)
     ? bookmarkRows
     : [];
+
+  const uniquePlaceIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          bookmarkItems
+            .map((b) =>
+              typeof b.googlePlaceId === "string" ? b.googlePlaceId.trim() : "",
+            )
+            .filter((id) => id.length > 0),
+        ),
+      ],
+    [bookmarkItems],
+  );
+
+  useEffect(() => {
+    if (!roomId || uniquePlaceIds.length === 0) return;
+    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
+  }, [roomId, uniquePlaceIds]);
 
   const placeQueryDefs = useMemo(() => {
     if (!bookmarkListReady) return [];

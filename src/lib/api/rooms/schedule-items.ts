@@ -1,4 +1,8 @@
 import { apiFetch } from "@/lib/api/client";
+import {
+  chunkArray,
+  SCHEDULE_ROUTES_BATCH_MAX_SIZE,
+} from "@/lib/api/batch-chunk";
 import { apiUrl, jsonBody, requestJson, requestVoid } from "@/lib/api/http";
 
 export type RoomScheduleItem = {
@@ -51,6 +55,30 @@ export type ScheduleItemRouteResponse = ScheduleItemRouteLeg & {
   modeRoutes?: ScheduleItemRouteLeg[];
 };
 
+export type ScheduleItemRouteBatchRequestItem = {
+  itemId: number;
+  travelMode: string;
+};
+
+export type ScheduleItemRouteBatchItem =
+  | ({
+      status: "OK";
+      itemId: number;
+      travelMode: string;
+      distanceMeters: number;
+      durationSeconds: number;
+    })
+  | {
+      status: "ERROR";
+      itemId: number;
+      travelMode: string;
+      errorCode?: string;
+    };
+
+export type ScheduleItemRouteBatchResponse = {
+  items: ScheduleItemRouteBatchItem[];
+};
+
 export async function getScheduleItemRoute(
   roomId: string,
   scheduleId: number,
@@ -75,6 +103,41 @@ export async function getScheduleItemRoute(
     throw new Error(`이동 정보 조회 실패: ${res.status}`);
   }
   return res.json() as Promise<ScheduleItemRouteResponse>;
+}
+
+async function getScheduleItemRoutesBatchChunk(
+  roomId: string,
+  scheduleId: number,
+  items: ScheduleItemRouteBatchRequestItem[],
+): Promise<ScheduleItemRouteBatchItem[]> {
+  const data = await requestJson<ScheduleItemRouteBatchResponse>(
+    apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/routes/batch`),
+    { method: "POST", ...jsonBody({ items }) },
+    { errorMessage: "이동 정보 일괄 조회 실패" },
+  );
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function getScheduleItemRoutesBatch(
+  roomId: string,
+  scheduleId: number,
+  items: readonly ScheduleItemRouteBatchRequestItem[],
+): Promise<ScheduleItemRouteBatchItem[]> {
+  const normalized = items.filter(
+    (it) =>
+      typeof it.itemId === "number" &&
+      Number.isFinite(it.itemId) &&
+      typeof it.travelMode === "string" &&
+      it.travelMode.trim().length > 0,
+  );
+  if (!normalized.length) return [];
+
+  const chunks = chunkArray(normalized, SCHEDULE_ROUTES_BATCH_MAX_SIZE);
+  const out: ScheduleItemRouteBatchItem[] = [];
+  for (const chunk of chunks) {
+    out.push(...(await getScheduleItemRoutesBatchChunk(roomId, scheduleId, chunk)));
+  }
+  return out;
 }
 
 export async function getScheduleItems(

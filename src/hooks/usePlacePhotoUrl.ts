@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { requestPlacePhotoUrl } from "@/lib/api/places";
+import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
 import {
   placePhotoUrlQueryDefaults,
   placePhotoUrlQueryKey,
 } from "@/lib/place-photo-query";
+import { getQueryClient } from "@/lib/query-client";
 
 export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
@@ -20,7 +22,7 @@ export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
 
 /**
  * 여러 photoName을 단일 카드와 동일한 `["places","photoUrl",name]` 캐시 키로 해석.
- * 같은 name은 캐시 재사용 → 불필요한 `/places/photos` 재호출 방지.
+ * 미캐시 name은 batch API 1회로 시딩 후 개별 query subscribe.
  */
 export function usePlacePhotoUrlsQuery(
   photoNames: readonly (string | null | undefined)[] | null | undefined,
@@ -32,6 +34,13 @@ export function usePlacePhotoUrlsQuery(
         .filter((n) => n.length > 0),
     [photoNames],
   );
+
+  const namesKey = names.join("\0");
+
+  useEffect(() => {
+    if (!namesKey.length) return;
+    void fetchAndSeedPlacePhotoUrls(names, getQueryClient());
+  }, [namesKey, names]);
 
   const results = useQueries({
     queries: names.map((name) => ({
