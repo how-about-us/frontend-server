@@ -76,8 +76,19 @@ export type ScheduleItemRouteBatchItem =
     };
 
 export type ScheduleItemRouteBatchResponse = {
-  items: ScheduleItemRouteBatchItem[];
+  /** 서버 명세 — `POST …/routes/batch` */
+  routes?: ScheduleItemRouteBatchItem[];
+  /** 레거시·내부 호환 */
+  items?: ScheduleItemRouteBatchItem[];
 };
+
+function readScheduleItemRouteBatchItems(
+  data: ScheduleItemRouteBatchResponse,
+): ScheduleItemRouteBatchItem[] {
+  if (Array.isArray(data.routes)) return data.routes;
+  if (Array.isArray(data.items)) return data.items;
+  return [];
+}
 
 export async function getScheduleItemRoute(
   roomId: string,
@@ -115,7 +126,7 @@ async function getScheduleItemRoutesBatchChunk(
     { method: "POST", ...jsonBody({ items }) },
     { errorMessage: "이동 정보 일괄 조회 실패" },
   );
-  return Array.isArray(data.items) ? data.items : [];
+  return readScheduleItemRouteBatchItems(data);
 }
 
 export async function getScheduleItemRoutesBatch(

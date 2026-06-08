@@ -1,10 +1,11 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
+import { useRoomSchedules } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
+import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -17,6 +18,8 @@ export function usePlanItineraryStopNormalizedPlaceIds(
 ): ReadonlySet<string> {
   const roomIdRaw = useSessionStore((s) => s.currentRoomId);
   const rid = typeof roomIdRaw === "string" ? roomIdRaw.trim() : "";
+  const queryClient = useQueryClient();
+  const { isSuccess: schedulesHydrated } = useRoomSchedules(rid || null);
 
   const expandedByScheduleId = usePlanItineraryExpandedStore(
     (s) => s.expandedByScheduleId,
@@ -39,12 +42,12 @@ export function usePlanItineraryStopNormalizedPlaceIds(
   const placesQueries = useQueries({
     queries: orderedScheduleIdsForQueries.map((scheduleId) => ({
       queryKey: scheduleItemsQueryKey(rid || null, scheduleId),
-      queryFn: () =>
-        rid.length === 0
-          ? Promise.resolve([])
-          : fetchSchedulePlanPlacesFromCacheOrApi(rid, scheduleId),
+      queryFn: () => readSchedulePlanPlacesFromCache(queryClient, rid, scheduleId),
       enabled:
-        enabled && rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
+        enabled &&
+        rid.length > 0 &&
+        orderedScheduleIdsForQueries.length > 0 &&
+        schedulesHydrated,
       staleTime: Infinity,
       refetchOnMount: false,
       refetchOnWindowFocus: false,

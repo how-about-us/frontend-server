@@ -4,6 +4,7 @@ import { Suspense, useLayoutEffect } from "react";
 import { useParams } from "next/navigation";
 
 import { PlanPageView } from "../_components/itinerary/PlanPageView";
+import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { useSessionStore } from "@/stores/session-store";
 
 function PlanRoomPageContent() {
@@ -15,6 +16,7 @@ function PlanRoomPageContent() {
     typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
 
   useLayoutEffect(() => {
+    usePlanItineraryExpandedStore.getState().resetForRoomChange();
     if (roomId.trim().length > 0) {
       setCurrentRoomId(roomId);
     }

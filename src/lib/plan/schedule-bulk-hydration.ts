@@ -14,6 +14,7 @@ import {
 } from "@/lib/places/place-batch-cache";
 import type { PlacePreview } from "@/lib/api/places";
 import {
+  fetchPlacePreview,
   placePreviewQueryKey,
   resolvePreviewGooglePlaceId,
 } from "@/lib/places/place-queries";
@@ -22,6 +23,14 @@ import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode
 import type { PlanPlace } from "@/lib/plan/types";
 import { scheduleItemRouteQueryKey, scheduleItemsQueryKey } from "@/lib/query-keys";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
+
+export const PLAN_PLACE_PREVIEW_ERROR_TITLE = "장소 정보를 불러올 수 없음";
+
+export function planPlacesNeedPreviewEnrich(
+  places: readonly PlanPlace[],
+): boolean {
+  return places.some((place) => place.title === PLAN_PLACE_PREVIEW_ERROR_TITLE);
+}
 
 function sortRoomScheduleItemsByOrder(
   items: RoomScheduleItem[],
@@ -60,7 +69,7 @@ function planPlaceFromItemAndPreview(
     id: `item-${item.itemId}`,
     itemId: item.itemId,
     googlePlaceId: item.googlePlaceId,
-    title: "장소 정보를 불러올 수 없음",
+    title: PLAN_PLACE_PREVIEW_ERROR_TITLE,
     subtitle: item.googlePlaceId,
     startTime: item.startTime,
     durationMinutes: item.durationMinutes,
@@ -90,6 +99,35 @@ function buildPlanPlacesFromItemsWithCache(
       readCachedPreview(queryClient, item.googlePlaceId),
     ),
   );
+}
+
+/** batch 시딩 후 preview 캐시 miss 항목만 GET `/preview`로 보강합니다. */
+export async function buildPlanPlacesFromItemsWithPreviewEnrichment(
+  queryClient: QueryClient,
+  items: RoomScheduleItem[],
+): Promise<PlanPlace[]> {
+  const sorted = sortRoomScheduleItemsByOrder(items);
+  const placeIds = sorted
+    .map((item) => item.googlePlaceId)
+    .filter((id) => typeof id === "string" && id.trim().length > 0);
+
+  if (placeIds.length) {
+    await fetchAndSeedPlacePreviews(placeIds, queryClient);
+  }
+
+  const out: PlanPlace[] = [];
+  for (const item of sorted) {
+    let preview = readCachedPreview(queryClient, item.googlePlaceId);
+    if (!preview) {
+      try {
+        preview = await fetchPlacePreview(item.googlePlaceId);
+      } catch {
+        preview = null;
+      }
+    }
+    out.push(planPlaceFromItemAndPreview(item, preview));
+  }
+  return out;
 }
 
 function collectGooglePlaceIdsFromSchedules(
@@ -136,7 +174,10 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
     if (typeof sid !== "number" || !Number.isFinite(sid)) continue;
 
     const items = Array.isArray(schedule.items) ? schedule.items : [];
-    const places = buildPlanPlacesFromItemsWithCache(queryClient, items);
+    const places = await buildPlanPlacesFromItemsWithPreviewEnrichment(
+      queryClient,
+      items,
+    );
     queryClient.setQueryData(scheduleItemsQueryKey(rid, sid), places);
     photoNames.push(...collectPhotoNamesFromPlanPlaces(places));
   }

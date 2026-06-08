@@ -203,6 +203,34 @@ export function placePreviewQueryOptions(googlePlaceId: string) {
   };
 }
 
+/**
+ * batch 시딩 후 캐시만 구독 — GET `/preview` fallback 없음.
+ * `enabled`는 batch 완료 후 true로 두세요.
+ */
+export function seededPlacePreviewQueryOptions(
+  googlePlaceId: string,
+  options?: { enabled?: boolean },
+) {
+  const id = resolvePreviewGooglePlaceId(googlePlaceId);
+  const enabled = (options?.enabled ?? true) && id.length > 0;
+  return {
+    queryKey: placePreviewQueryKey(id),
+    queryFn: (): PlacePreview => {
+      const queryClient = getQueryClient();
+      const cached = queryClient?.getQueryData<PlacePreview>(
+        placePreviewQueryKey(id),
+      );
+      if (cached) return cached;
+      throw new Error("Place preview not seeded");
+    },
+    enabled,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
+  };
+}
+
 export async function fetchPlacePreview(googlePlaceId: string): Promise<PlacePreview> {
   const id = resolvePreviewGooglePlaceId(googlePlaceId);
   if (!id.length) {

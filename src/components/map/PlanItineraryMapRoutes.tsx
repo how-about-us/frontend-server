@@ -3,16 +3,17 @@
 /// <reference types="google.maps" />
 
 import { AdvancedMarker, Polyline } from "@vis.gl/react-google-maps";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type JSX } from "react";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
+import { useRoomSchedules } from "@/hooks/useRooms";
 import {
   buildPlanItineraryRouteArrowIcons,
   fetchOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
-import { fetchSchedulePlanPlacesFromCacheOrApi } from "@/lib/plan/scheduleItemPlaces";
+import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import {
   scheduleIdsToRouteColors,
   sortedScheduleIdsForRouteColors,
@@ -46,6 +47,8 @@ import { PlanItineraryStopMapPin } from "./PlanItineraryStopMapPin";
 export function PlanItineraryMapRoutes() {
   const roomIdRaw = useSessionStore((s) => s.currentRoomId);
   const rid = typeof roomIdRaw === "string" ? roomIdRaw.trim() : "";
+  const queryClient = useQueryClient();
+  const { isSuccess: schedulesHydrated } = useRoomSchedules(rid || null);
 
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
   const selectedNorm =
@@ -93,11 +96,11 @@ export function PlanItineraryMapRoutes() {
   const placesQueries = useQueries({
     queries: orderedScheduleIdsForQueries.map((scheduleId) => ({
       queryKey: scheduleItemsQueryKey(rid || null, scheduleId),
-      queryFn: () =>
-        rid.length === 0
-          ? Promise.resolve([])
-          : fetchSchedulePlanPlacesFromCacheOrApi(rid, scheduleId),
-      enabled: rid.length > 0 && orderedScheduleIdsForQueries.length > 0,
+      queryFn: () => readSchedulePlanPlacesFromCache(queryClient, rid, scheduleId),
+      enabled:
+        rid.length > 0 &&
+        orderedScheduleIdsForQueries.length > 0 &&
+        schedulesHydrated,
       staleTime: Infinity,
       refetchOnMount: false,
       refetchOnWindowFocus: false,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
@@ -10,9 +10,7 @@ import { useAllRoomBookmarks, useBookmarkCategories } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import type { PlacePreview } from "@/lib/api/places";
 import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
-import {
-  placePreviewQueryOptions,
-} from "@/lib/places/place-queries";
+import { seededPlacePreviewQueryOptions } from "@/lib/places/place-queries";
 import { getQueryClient } from "@/lib/query-client";
 
 import {
@@ -97,17 +95,35 @@ export function MapBookmarkPins({
     [flattenedBookmarks],
   );
 
+  const [previewsSeeded, setPreviewsSeeded] = useState(false);
+
   useEffect(() => {
-    if (!roomId || uniquePlaceIds.length === 0) return;
-    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
+    if (!roomId || uniquePlaceIds.length === 0) {
+      setPreviewsSeeded(true);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewsSeeded(false);
+    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient()).then(() => {
+      if (!cancelled) setPreviewsSeeded(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [roomId, uniquePlaceIds]);
 
   const placeQueryDefs = useMemo(() => {
     if (!roomId || !listsSettled || flattenedBookmarks.length === 0) {
       return [];
     }
-    return flattenedBookmarks.map((row) => placePreviewQueryOptions(row.googlePlaceId));
-  }, [roomId, listsSettled, flattenedBookmarks]);
+    return flattenedBookmarks.map((row) =>
+      seededPlacePreviewQueryOptions(row.googlePlaceId, {
+        enabled: previewsSeeded,
+      }),
+    );
+  }, [roomId, listsSettled, flattenedBookmarks, previewsSeeded]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 

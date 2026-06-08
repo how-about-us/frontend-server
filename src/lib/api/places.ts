@@ -1,7 +1,8 @@
 import { API_BASE } from "./config";
 import { apiFetch } from "./client";
 import { chunkArray, PLACE_BATCH_MAX_SIZE } from "./batch-chunk";
-import { apiUrl, jsonBody, requestJson } from "./http";
+import { readUserFacingMessageFromApiBody } from "./errors";
+import { apiUrl, jsonBody, requestJson, tryParseJson } from "./http";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -105,24 +106,54 @@ export type PlacePreviewBatchItem =
     };
 
 export type PlacePreviewBatchResponse = {
-  items: PlacePreviewBatchItem[];
+  /** 서버 명세 — `POST /places/previews/batch` */
+  previews?: PlacePreviewBatchItem[];
+  /** 레거시·내부 호환 */
+  items?: PlacePreviewBatchItem[];
 };
 
 export type PlacePhotoNamesBatchItem =
-  | { status: "OK"; googlePlaceId: string; photoNames: string[] }
-  | { status: "ERROR"; googlePlaceId: string; errorCode?: string };
+  | {
+      status: "OK";
+      googlePlaceId: string;
+      photoName: string;
+      errorCode?: string | null;
+    }
+  | {
+      status: "ERROR";
+      googlePlaceId: string;
+      errorCode?: string;
+      photoName?: string | null;
+    };
 
 export type PlacePhotoNamesBatchResponse = {
-  items: PlacePhotoNamesBatchItem[];
+  /** 서버 명세 — `POST /places/photo-names/batch` */
+  photoNames?: PlacePhotoNamesBatchItem[];
+  /** 레거시·내부 호환 */
+  items?: PlacePhotoNamesBatchItem[];
 };
 
 export type PlacePhotoUrlBatchItem =
-  | { status: "OK"; photoName: string; photoUrl: string }
+  | { status: "OK"; photoName: string; photoUrl: string; errorCode?: string | null }
   | { status: "ERROR"; photoName: string; errorCode?: string };
 
 export type PlacePhotoUrlBatchResponse = {
-  items: PlacePhotoUrlBatchItem[];
+  /** 서버 명세 — `POST /places/photos/batch` */
+  photos?: PlacePhotoUrlBatchItem[];
+  /** 레거시·내부 호환 */
+  items?: PlacePhotoUrlBatchItem[];
 };
+
+function readBatchResponseList<T>(
+  data: Record<string, unknown>,
+  primaryKey: string,
+): T[] {
+  const primary = data[primaryKey];
+  if (Array.isArray(primary)) return primary as T[];
+  const legacy = data.items;
+  if (Array.isArray(legacy)) return legacy as T[];
+  return [];
+}
 
 // ─── API functions ─────────────────────────────────────────────────────────
 
@@ -202,7 +233,7 @@ async function requestPlacePreviewsBatchChunk(
     { method: "POST", ...jsonBody({ googlePlaceIds }) },
     { errorMessage: "장소 미리보기 일괄 조회 실패" },
   );
-  return Array.isArray(data.items) ? data.items : [];
+  return readBatchResponseList<PlacePreviewBatchItem>(data, "previews");
 }
 
 export async function requestPlacePreviewsBatch(
@@ -233,7 +264,7 @@ async function requestPlacePhotoNamesBatchChunk(
     { method: "POST", ...jsonBody({ googlePlaceIds }) },
     { errorMessage: "장소 사진 이름 일괄 조회 실패" },
   );
-  return Array.isArray(data.items) ? data.items : [];
+  return readBatchResponseList<PlacePhotoNamesBatchItem>(data, "photoNames");
 }
 
 export async function requestPlacePhotoNamesBatch(
@@ -259,12 +290,18 @@ export async function requestPlacePhotoNamesBatch(
 async function requestPlacePhotoUrlsBatchChunk(
   photoNames: string[],
 ): Promise<PlacePhotoUrlBatchItem[]> {
-  const data = await requestJson<PlacePhotoUrlBatchResponse>(
-    apiUrl("/places/photos/batch"),
-    { method: "POST", ...jsonBody({ photoNames }) },
-    { errorMessage: "장소 사진 URL 일괄 조회 실패" },
-  );
-  return Array.isArray(data.items) ? data.items : [];
+  const res = await apiFetch(apiUrl("/places/photos/batch"), {
+    method: "POST",
+    ...jsonBody({ photoNames }),
+  });
+  if (res.status === 204) return [];
+  if (!res.ok) {
+    const body = await tryParseJson(res);
+    const detail = readUserFacingMessageFromApiBody(body);
+    throw new Error(detail ?? `장소 사진 URL 일괄 조회 실패: ${res.status}`);
+  }
+  const data = (await res.json()) as PlacePhotoUrlBatchResponse;
+  return readBatchResponseList<PlacePhotoUrlBatchItem>(data, "photos");
 }
 
 export async function requestPlacePhotoUrlsBatch(

@@ -59,11 +59,12 @@ import {
   createScheduleItemAtPlanIndex,
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
-  fetchScheduleItemsAsPlanPlaces,
+  ensureSchedulePlanPlacesEnriched,
   refetchSchedulePlanPlacesIntoCache,
   syncAfterCrossScheduleItemMove,
   syncPlanPlacesAfterReorderSuccess,
 } from "@/lib/plan/scheduleItemPlaces";
+import { planPlacesNeedPreviewEnrich } from "@/lib/plan/schedule-bulk-hydration";
 import { fetchAndSeedAllRoomBookmarks } from "@/lib/bookmarks/bookmark-bulk-cache";
 import {
   bookmarkCategoriesQueryKey,
@@ -81,6 +82,7 @@ import {
   hydrateRoomSchedulesFromServer,
   syncRoomDetailFromServer,
 } from "@/lib/rooms";
+import type { PlanPlace } from "@/lib/plan/types";
 import {
   pathDefersRoomStompRoomTopics,
   pathSuspendsStomp,
@@ -88,7 +90,6 @@ import {
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import { invalidateScheduleItemRouteForWholeSchedule } from "@/lib/plan/scheduleStompRouteScope";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
-import type { PlanPlace } from "@/lib/plan/types";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 import { useSessionUser } from "@/hooks/useSessionUser";
 
@@ -308,13 +309,22 @@ export function useSchedulePlanPlaces(
 ) {
   const rid = roomId?.trim() ?? "";
   const sid = scheduleId;
+  const queryClient = useQueryClient();
+  const { isSuccess: schedulesHydrated } = useRoomSchedules(rid || null);
+
   return useQuery({
     queryKey: scheduleItemsQueryKey(rid || null, sid),
-    queryFn: () => fetchScheduleItemsAsPlanPlaces(rid, sid!),
+    queryFn: () => ensureSchedulePlanPlacesEnriched(queryClient, rid, sid!),
     enabled:
-      rid.length > 0 && typeof sid === "number" && Number.isFinite(sid),
+      rid.length > 0 &&
+      typeof sid === "number" &&
+      Number.isFinite(sid) &&
+      schedulesHydrated,
     staleTime: Infinity,
-    refetchOnMount: false,
+    refetchOnMount: (query) => {
+      const data = query.state.data;
+      return !Array.isArray(data) || planPlacesNeedPreviewEnrich(data);
+    },
     refetchOnWindowFocus: false,
   });
 }

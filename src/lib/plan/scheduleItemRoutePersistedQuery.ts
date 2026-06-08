@@ -7,6 +7,7 @@ import type {
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
 import { scheduleItemRouteQueryKey } from "@/lib/query-keys";
+import { getQueryClient } from "@/lib/query-client";
 import {
   readScheduleRouteFromSessionStorage,
   writeScheduleRouteToSessionStorage,
@@ -91,6 +92,20 @@ export function persistedScheduleItemRouteQueryOptions(
         }
       : {}),
     queryFn: async (): Promise<RouteCached> => {
+      const routeKey = scheduleItemRouteQueryKey(
+        keyRoom,
+        keySchedule,
+        keySegment,
+        keyMode,
+      );
+      const qc = getQueryClient();
+      if (qc) {
+        const cached = qc.getQueryData<RouteCached>(routeKey);
+        if (cached !== undefined) {
+          return cached;
+        }
+      }
+
       const fresh = await getScheduleItemRoute(
         rid,
         sid!,
@@ -110,9 +125,9 @@ export function persistedScheduleItemRouteQueryOptions(
       return fresh;
     },
     enabled,
-    /** 순수 로컬 캐시에만 의존하지 않도록 주기적으로 서버 재검증 */
+    /** batch·sessionStorage 시딩 후에는 캐시 우선 — 명시 invalidate 시에만 재조회 */
     staleTime: 1000 * 60 * 60 * 6,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: false,
   };

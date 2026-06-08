@@ -16,7 +16,7 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
 } from "@/lib/plan/scheduleItemPlaces";
-import { placePreviewQueryOptions } from "@/lib/places/place-queries";
+import { seededPlacePreviewQueryOptions } from "@/lib/places/place-queries";
 import { fetchAndSeedPlacePreviews } from "@/lib/places/place-batch-cache";
 import { getQueryClient } from "@/lib/query-client";
 import type { RoomBookmark } from "@/lib/api/rooms";
@@ -103,9 +103,23 @@ export function AddFromBookmarkModal({
     [bookmarkItems],
   );
 
+  const [previewsSeeded, setPreviewsSeeded] = useState(false);
+
   useEffect(() => {
-    if (!roomId || uniquePlaceIds.length === 0) return;
-    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient());
+    if (!roomId || uniquePlaceIds.length === 0) {
+      setPreviewsSeeded(true);
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewsSeeded(false);
+    void fetchAndSeedPlacePreviews(uniquePlaceIds, getQueryClient()).then(() => {
+      if (!cancelled) setPreviewsSeeded(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [roomId, uniquePlaceIds]);
 
   const placeQueryDefs = useMemo(() => {
@@ -117,11 +131,13 @@ export function AddFromBookmarkModal({
         if (!googlePlaceId.length) return null;
         return {
           bookmarkId: b.bookmarkId,
-          ...placePreviewQueryOptions(googlePlaceId),
+          ...seededPlacePreviewQueryOptions(googlePlaceId, {
+            enabled: previewsSeeded,
+          }),
         };
       })
       .filter((q): q is NonNullable<typeof q> => q != null);
-  }, [bookmarkListReady, bookmarkItems]);
+  }, [bookmarkListReady, bookmarkItems, previewsSeeded]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
@@ -143,9 +159,7 @@ export function AddFromBookmarkModal({
   }, [bookmarkItems, placeQueryDefs, placeQueries]);
 
   const cardsLoading =
-    bookmarkListReady &&
-    bookmarkItems.length > 0 &&
-    placeQueries.some((q) => q.isFetching);
+    bookmarkListReady && bookmarkItems.length > 0 && !previewsSeeded;
 
   const existingPlaceIds = useMemo(() => {
     const ids = new Set<string>();

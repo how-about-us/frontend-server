@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { awaitRoomSchedulesHydrated } from "@/lib/rooms";
+
 import {
   createScheduleItem,
   getScheduleItems,
@@ -8,12 +10,11 @@ import {
   updateScheduleItem,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
-import { fetchPlacePreview, placePreviewQueryKey, resolvePreviewGooglePlaceId } from "@/lib/places/place-queries";
+import { fetchPlacePreview } from "@/lib/places/place-queries";
 import {
-  fetchAndSeedPlacePreviews,
-} from "@/lib/places/place-batch-cache";
-import {
+  buildPlanPlacesFromItemsWithPreviewEnrichment,
   planPlaceFromItemAndPreview,
+  planPlacesNeedPreviewEnrich,
 } from "@/lib/plan/schedule-bulk-hydration";
 import { getQueryClient } from "@/lib/query-client";
 import {
@@ -35,15 +36,6 @@ export function sortRoomScheduleItemsByOrder(
   items: RoomScheduleItem[],
 ): RoomScheduleItem[] {
   return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
-}
-
-function readCachedPreviewForItem(
-  queryClient: QueryClient,
-  googlePlaceId: string,
-): PlacePreview | null {
-  const id = resolvePreviewGooglePlaceId(googlePlaceId);
-  if (!id.length) return null;
-  return queryClient.getQueryData(placePreviewQueryKey(id)) ?? null;
 }
 
 function memoFromScheduleItem(item: RoomScheduleItem): string | undefined {
@@ -162,25 +154,12 @@ async function mergeScheduleItemsIntoPlanPlaces(
 async function buildPlanPlacesFromScheduleItems(
   items: RoomScheduleItem[],
 ): Promise<PlanPlace[]> {
-  const sorted = sortRoomScheduleItemsByOrder(items);
-  const placeIds = sorted
-    .map((item) => item.googlePlaceId)
-    .filter((id) => typeof id === "string" && id.trim().length > 0);
-
   const qc = getQueryClient();
-  if (placeIds.length) {
-    await fetchAndSeedPlacePreviews(placeIds, qc);
-  }
-
   if (qc) {
-    return sorted.map((item) =>
-      planPlaceFromItemAndPreview(
-        item,
-        readCachedPreviewForItem(qc, item.googlePlaceId),
-      ),
-    );
+    return buildPlanPlacesFromItemsWithPreviewEnrichment(qc, items);
   }
 
+  const sorted = sortRoomScheduleItemsByOrder(items);
   return Promise.all(sorted.map((item) => planPlaceFromScheduleItem(item)));
 }
 
@@ -304,18 +283,64 @@ export async function syncAfterCrossScheduleItemMove(
   usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
 }
 
-/** `schedule-items` 캐시가 있으면 Preview 없이 반환, 없을 때만 전체 enrich. */
-export async function fetchSchedulePlanPlacesFromCacheOrApi(
+/** 캐시에 preview 에러 title이 있으면 enrich 후 `schedule-items`를 갱신합니다. */
+export async function ensureSchedulePlanPlacesEnriched(
+  queryClient: QueryClient,
   roomId: string,
   scheduleId: number,
 ): Promise<PlanPlace[]> {
   const rid = roomId.trim();
   if (!rid.length) return [];
   const key = scheduleItemsQueryKey(rid, scheduleId);
-  const cached = getQueryClient()?.getQueryData<PlanPlace[]>(key);
-  if (cached != null && cached.length > 0) {
+  const cached = queryClient.getQueryData<PlanPlace[]>(key);
+  if (cached != null && !planPlacesNeedPreviewEnrich(cached)) {
     return cached;
   }
+
+  const items = await getScheduleItems(rid, scheduleId);
+  const places = await buildPlanPlacesFromItemsWithPreviewEnrichment(
+    queryClient,
+    items,
+  );
+  queryClient.setQueryData(key, places);
+  return places;
+}
+
+/** hydrate가 채운 `schedule-items` 캐시를 읽습니다 (`[]` 포함). */
+export function readSchedulePlanPlacesFromCache(
+  queryClient: QueryClient,
+  roomId: string,
+  scheduleId: number,
+): PlanPlace[] {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+  return (
+    queryClient.getQueryData<PlanPlace[]>(scheduleItemsQueryKey(rid, scheduleId)) ??
+    []
+  );
+}
+
+/** `schedule-items` 캐시가 있으면 반환, 없으면 room hydrate 후 재시도·최후에만 enrich. */
+export async function fetchSchedulePlanPlacesFromCacheOrApi(
+  roomId: string,
+  scheduleId: number,
+  queryClient?: QueryClient | null,
+): Promise<PlanPlace[]> {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+  const qc = queryClient ?? getQueryClient();
+  const key = scheduleItemsQueryKey(rid, scheduleId);
+
+  if (qc) {
+    const cached = qc.getQueryData<PlanPlace[]>(key);
+    if (cached != null) return cached;
+
+    await awaitRoomSchedulesHydrated(qc, rid);
+
+    const afterHydrate = qc.getQueryData<PlanPlace[]>(key);
+    if (afterHydrate != null) return afterHydrate;
+  }
+
   return fetchScheduleItemsAsPlanPlaces(rid, scheduleId);
 }
 

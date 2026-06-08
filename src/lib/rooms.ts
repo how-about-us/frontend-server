@@ -140,6 +140,21 @@ export async function hydrateRoomSchedulesFromServer(
   return scheduleMeta;
 }
 
+/** `useRoomSchedules`와 동일 경로로 일정·장소 preview hydrate가 끝날 때까지 대기합니다. */
+export async function awaitRoomSchedulesHydrated(
+  queryClient: QueryClient,
+  roomId: string,
+): Promise<RoomSchedule[]> {
+  const rid = roomId.trim();
+  if (!rid.length) return [];
+
+  return queryClient.fetchQuery({
+    queryKey: roomSchedulesQueryKey(rid),
+    queryFn: () => hydrateRoomSchedulesFromServer(queryClient, rid),
+    staleTime: Infinity,
+  });
+}
+
 /** `GET /rooms/{roomId}` 결과로 room-detail·방 목록 캐시를 맞춥니다. */
 export async function syncRoomDetailFromServer(
   queryClient: QueryClient,
