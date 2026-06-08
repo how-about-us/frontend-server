@@ -21,12 +21,16 @@ function normalizeMemberListPayload(
       const url = picked ?? m.profileImageUrl ?? null;
       const raw = m as RoomMember & { isOnline?: boolean; status?: string };
       const status: RoomMemberStatus =
-        raw.status === "LEFT" ? "LEFT" : "ACTIVE";
+        raw.status === "LEFT"
+          ? "LEFT"
+          : raw.status === "PENDING"
+            ? "PENDING"
+            : "ACTIVE";
       return {
         ...m,
         profileImageUrl: url,
         status,
-        isOnline: status === "LEFT" ? false : Boolean(raw.isOnline),
+        isOnline: status === "ACTIVE" ? Boolean(raw.isOnline) : false,
       } satisfies RoomMember;
     }),
   };

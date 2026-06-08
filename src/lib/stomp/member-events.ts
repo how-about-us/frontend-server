@@ -2,6 +2,7 @@ import { pickProfileImageUrl } from "@/lib/api/profileImage";
 
 export type RoomMemberBroadcastType =
   | "MEMBER_JOINED"
+  | "MEMBER_JOIN_REQUESTED"
   | "MEMBER_LEFT"
   | "MEMBER_KICKED"
   | "HOST_DELEGATED";
@@ -31,6 +32,10 @@ export type HostDelegatedDetail = {
 export type RoomMemberPayload =
   | (RoomMemberPayloadBase & {
       type: "MEMBER_JOINED";
+      detail: MemberUserSnapshotDetail | null;
+    })
+  | (RoomMemberPayloadBase & {
+      type: "MEMBER_JOIN_REQUESTED";
       detail: MemberUserSnapshotDetail | null;
     })
   | (RoomMemberPayloadBase & {
@@ -116,6 +121,7 @@ export function parseRoomMemberMessage(body: string): RoomMemberPayload | null {
     const type = raw?.type;
     if (
       type !== "MEMBER_JOINED" &&
+      type !== "MEMBER_JOIN_REQUESTED" &&
       type !== "MEMBER_LEFT" &&
       type !== "MEMBER_KICKED" &&
       type !== "HOST_DELEGATED"
@@ -151,6 +157,7 @@ export function parseRoomMemberMessage(body: string): RoomMemberPayload | null {
 
     switch (type) {
       case "MEMBER_JOINED":
+      case "MEMBER_JOIN_REQUESTED":
         return {
           ...base,
           type,

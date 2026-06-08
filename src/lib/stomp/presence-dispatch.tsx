@@ -29,6 +29,7 @@ function patchMemberOnline(
   let touched = false;
   const members = cached.members.map((m) => {
     if (m.userId !== userId) return m;
+    if (m.status !== "ACTIVE") return m;
     touched = true;
     return { ...m, isOnline };
   });

@@ -63,7 +63,7 @@ export type JoinRoomResponse = {
   role: string;
 };
 
-export type RoomMemberStatus = "ACTIVE" | "LEFT";
+export type RoomMemberStatus = "ACTIVE" | "LEFT" | "PENDING";
 
 export type RoomMember = {
   userId: number;

@@ -12,6 +12,22 @@ import { readSessionUserId } from "@/lib/session-user-cache";
 
 import type { RoomMemberPayload } from "./member-events";
 
+function upsertMemberRow(
+  members: RoomMember[],
+  userId: number,
+  patch: Partial<RoomMember> & Pick<RoomMember, "status">,
+  fallback: Omit<RoomMember, "userId">,
+): RoomMember[] {
+  const idx = members.findIndex((m) => m.userId === userId);
+  if (idx >= 0) {
+    const next = [...members];
+    const cur = next[idx]!;
+    next[idx] = { ...cur, ...patch };
+    return next;
+  }
+  return [...members, { userId, ...fallback, ...patch }];
+}
+
 function patchRoomsRoleForHostDelegation(
   queryClient: QueryClient,
   roomId: string,
@@ -56,37 +72,65 @@ export function dispatchRoomMemberEvent(
         roomMembersQueryKey(rid),
         (prev) => {
           const members = prev?.members ?? [];
-          const idx = members.findIndex((m) => m.userId === d.userId);
           const joinedAt =
             event.createdAt.trim().length > 0
               ? event.createdAt
               : new Date().toISOString();
-
-          if (idx >= 0) {
-            const next = [...members];
-            const cur = next[idx]!;
-            next[idx] = {
-              ...cur,
+          const next = upsertMemberRow(
+            members,
+            d.userId,
+            {
               nickname: d.nickname,
               profileImageUrl: d.profileImageUrl,
               status: "ACTIVE",
               isOnline: true,
-            };
-            return prev ? { ...prev, members: next } : { members: next };
-          }
+            },
+            {
+              nickname: d.nickname,
+              profileImageUrl: d.profileImageUrl,
+              role: "MEMBER",
+              status: "ACTIVE",
+              joinedAt,
+              isOnline: true,
+            },
+          );
+          return prev ? { ...prev, members: next } : { members: next };
+        },
+      );
+      break;
+    }
 
-          const newMember: RoomMember = {
-            userId: d.userId,
-            nickname: d.nickname,
-            profileImageUrl: d.profileImageUrl,
-            role: "MEMBER",
-            status: "ACTIVE",
-            joinedAt,
-            isOnline: true,
-          };
-          return {
-            members: [...members, newMember],
-          };
+    case "MEMBER_JOIN_REQUESTED": {
+      const d = event.detail;
+      if (!d) return;
+
+      queryClient.setQueryData<RoomMemberListResponse>(
+        roomMembersQueryKey(rid),
+        (prev) => {
+          const members = prev?.members ?? [];
+          const joinedAt =
+            event.createdAt.trim().length > 0
+              ? event.createdAt
+              : new Date().toISOString();
+          const next = upsertMemberRow(
+            members,
+            d.userId,
+            {
+              nickname: d.nickname,
+              profileImageUrl: d.profileImageUrl,
+              status: "PENDING",
+              isOnline: false,
+            },
+            {
+              nickname: d.nickname,
+              profileImageUrl: d.profileImageUrl,
+              role: "MEMBER",
+              status: "PENDING",
+              joinedAt,
+              isOnline: false,
+            },
+          );
+          return prev ? { ...prev, members: next } : { members: next };
         },
       );
       break;
