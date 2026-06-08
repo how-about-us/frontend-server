@@ -6,6 +6,7 @@ import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
+import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
 import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
@@ -27,6 +28,9 @@ function SessionReconciler() {
 
   return null;
 }
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const shouldShowConsentFlow = Boolean(GA_MEASUREMENT_ID);
 
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => {
@@ -59,6 +63,9 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
       <StompProvider>
         <GoogleMapsProvider>
           <MobileChrome>{children}</MobileChrome>
+          {shouldShowConsentFlow && GA_MEASUREMENT_ID ? (
+            <ConsentGatedAnalytics gaId={GA_MEASUREMENT_ID} />
+          ) : null}
           <Toaster position="bottom-right" richColors />
         </GoogleMapsProvider>
       </StompProvider>

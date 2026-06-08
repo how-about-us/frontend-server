@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppRootProviders } from "@/providers/root-providers";
 import { brandAssets } from "@/lib/public-assets";
-
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,9 +34,6 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full w-full flex flex-col">
         <AppRootProviders>{children}</AppRootProviders>
-        {process.env.NODE_ENV === "production" && GA_MEASUREMENT_ID ? (
-          <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
-        ) : null}
       </body>
     </html>
   );
