@@ -9,6 +9,7 @@ import {
   useCreateScheduleItem,
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { usePrefetchScheduleDrivingRoutes } from "@/hooks/usePrefetchScheduleDrivingRoutes";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
@@ -158,6 +159,10 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
           googlePlaceId,
           insertIndex: index,
           placesSnapshot: places,
+        });
+        trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
+          place_id: googlePlaceId,
+          source: "search",
         });
         setActiveInsertIndex(null);
       } catch {

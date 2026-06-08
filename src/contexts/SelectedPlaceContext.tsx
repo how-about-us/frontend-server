@@ -9,6 +9,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
+import type { ItinerarySource } from "@/lib/analytics/track";
 import type { SearchResultCardProps } from "@/types/place";
 
 /** 장소 선택 직후 SelectedPlaceController가 적용하는 카메라 동작 */
@@ -22,6 +23,8 @@ export type SetSelectedPlaceOptions = {
    * `skipMapRecenter: true`이면 무시됩니다.
    */
   preserveMapZoom?: boolean;
+  /** `add_to_itinerary` GA4 `source` — 장소 상세에서 일정 추가 시 사용 */
+  itinerarySource?: ItinerarySource;
 };
 
 type SelectedPlaceContextType = {
@@ -31,26 +34,31 @@ type SelectedPlaceContextType = {
     options?: SetSelectedPlaceOptions,
   ) => void;
   placeSelectionCameraRef: MutableRefObject<PlaceSelectionCamera>;
+  itinerarySourceRef: MutableRefObject<ItinerarySource | null>;
 };
 
 const SelectedPlaceContext = createContext<SelectedPlaceContextType>({
   selectedPlace: null,
   setSelectedPlace: () => {},
   placeSelectionCameraRef: { current: "full" },
+  itinerarySourceRef: { current: null },
 });
 
 export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
   const [selectedPlace, setSelectedPlaceState] =
     useState<SearchResultCardProps | null>(null);
   const placeSelectionCameraRef = useRef<PlaceSelectionCamera>("full");
+  const itinerarySourceRef = useRef<ItinerarySource | null>(null);
 
   const setSelectedPlace = useCallback(
     (place: SearchResultCardProps | null, options?: SetSelectedPlaceOptions) => {
       if (place === null) {
         placeSelectionCameraRef.current = "full";
+        itinerarySourceRef.current = null;
         setSelectedPlaceState(null);
         return;
       }
+      itinerarySourceRef.current = options?.itinerarySource ?? null;
       if (options?.skipMapRecenter === true) {
         placeSelectionCameraRef.current = "none";
       } else if (options?.preserveMapZoom === true) {
@@ -65,7 +73,12 @@ export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <SelectedPlaceContext.Provider
-      value={{ selectedPlace, setSelectedPlace, placeSelectionCameraRef }}
+      value={{
+        selectedPlace,
+        setSelectedPlace,
+        placeSelectionCameraRef,
+        itinerarySourceRef,
+      }}
     >
       {children}
     </SelectedPlaceContext.Provider>

@@ -12,16 +12,23 @@ import {
   useCreateBookmarkCategory,
   useCreateRoomBookmarksInCategories,
 } from "@/hooks/useRooms";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   googlePlaceId: string;
+  placeName?: string;
   onClose: () => void;
   onAdded?: () => void;
 };
 
-export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
+export function AddToBookmarkModal({
+  googlePlaceId,
+  placeName,
+  onClose,
+  onAdded,
+}: Props) {
   const roomId = useSessionStore((s) => s.currentRoomId);
   const {
     data: categories,
@@ -124,6 +131,10 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
         onSuccess: (result) => {
           notifyResult(result);
           if (result.added > 0) {
+            trackAnalyticsEvent(AnalyticsEvents.addToBookmark, {
+              place_id: googlePlaceId,
+              place_name: placeName,
+            });
             onAdded?.();
           }
           if (!result.firstHardError && result.skippedDuplicate === 0) {
@@ -151,6 +162,7 @@ export function AddToBookmarkModal({ googlePlaceId, onClose, onAdded }: Props) {
       { roomId, name: resolvedName, colorCode: color },
       {
         onSuccess: (created) => {
+          trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
           setCreateFolderModalOpen(false);
           setSubmitFeedback(null);
           setSelectedIds((prev) => new Set(prev).add(created.categoryId));

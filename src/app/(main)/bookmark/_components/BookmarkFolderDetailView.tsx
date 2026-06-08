@@ -192,16 +192,19 @@ export function BookmarkFolderDetailView({ folder }: { folder: BookmarkFolder })
               roomId={roomId}
               currentCategoryId={categoryIdOk}
               onOpenDetail={() => {
-                setSelectedPlace({
-                  name: row.name,
-                  category: "",
-                  rating: null,
-                  address: row.address,
-                  googlePlaceId: row.googlePlaceId,
-                  location: row.location,
-                  fromBookmark: true,
-                  bookmarkCategoryColor: folder.color,
-                });
+                setSelectedPlace(
+                  {
+                    name: row.name,
+                    category: "",
+                    rating: null,
+                    address: row.address,
+                    googlePlaceId: row.googlePlaceId,
+                    location: row.location,
+                    fromBookmark: true,
+                    bookmarkCategoryColor: folder.color,
+                  },
+                  { itinerarySource: "bookmark" },
+                );
               }}
             />
           ))

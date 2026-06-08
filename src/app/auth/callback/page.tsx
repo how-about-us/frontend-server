@@ -15,6 +15,7 @@ import {
   consumeOAuthPendingSession,
   loginErrorQueryForExchangeFailure,
 } from "@/lib/google-oauth";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { setSessionUserCache } from "@/lib/session-user-cache";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -63,6 +64,7 @@ function AuthCallbackContent() {
           }
           setSessionUserCache(queryClient, me);
           setSessionReady(true);
+          trackAnalyticsEvent(AnalyticsEvents.login, { method: "google" });
 
           if (pendingInviteCode) {
             router.replace(`/join/${pendingInviteCode}`);

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { TripFormFields } from "@/components/rooms/TripFormFields";
 
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useRedirectOnMobileDevice } from "@/hooks/useMobileRedirects";
 import { useCreateRoom } from "@/hooks/useRooms";
 import type { RoomDetail } from "@/lib/api/rooms";
@@ -62,6 +63,7 @@ export default function NewTripPage() {
       },
       {
         onSuccess: (room) => {
+          trackAnalyticsEvent(AnalyticsEvents.createPlan);
           setCurrentRoomId(room.id);
           queryClient.setQueryData<RoomDetail>(
             roomDetailQueryKey(room.id),

@@ -16,6 +16,7 @@ import {
   defaultNewItemStartTimeHmAtInsertIndex,
   defaultNewItemStartTimeHmFromPlanPlaces,
 } from "@/lib/plan/scheduleItemPlaces";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -165,6 +166,10 @@ export function AddFromBookmarkModal({
           insertIndex: index,
           placesSnapshot: places,
           startTimeHm,
+        });
+        trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
+          place_id: gid,
+          source: "bookmark",
         });
         toast.success("일정에 추가했어요.");
         onClose();

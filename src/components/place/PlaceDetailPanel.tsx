@@ -4,8 +4,10 @@ import { ArrowLeft, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useChat } from "@/hooks/useChat";
 import { useChatActions } from "@/hooks/useChatActions";
+import type { ItinerarySource } from "@/lib/analytics/track";
 
 import type { SearchResultCardProps } from "./SearchResultCard";
 import { AddToBookmarkModal } from "./AddToBookmarkModal";
@@ -39,8 +41,12 @@ export function PlaceDetailPanel({
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
 
+  const { itinerarySourceRef } = useSelectedPlace();
   const { sendPlaceMessage, canSend } = useChatActions();
   const { openChat } = useChat();
+
+  const itinerarySource: ItinerarySource =
+    itinerarySourceRef.current ?? "search";
 
   const { data: detailData, isLoading: isDetailLoading } =
     usePlaceDetailData(googlePlaceId);
@@ -217,6 +223,7 @@ export function PlaceDetailPanel({
       {scheduleModalOpen && googlePlaceId && (
         <AddToScheduleModal
           googlePlaceId={googlePlaceId}
+          source={itinerarySource}
           onClose={() => setScheduleModalOpen(false)}
         />
       )}
@@ -224,6 +231,7 @@ export function PlaceDetailPanel({
       {bookmarkModalOpen && googlePlaceId && (
         <AddToBookmarkModal
           googlePlaceId={googlePlaceId}
+          placeName={displayName}
           onClose={() => setBookmarkModalOpen(false)}
         />
       )}

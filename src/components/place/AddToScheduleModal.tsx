@@ -5,6 +5,11 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { useCreateScheduleItem, useRoomSchedules } from "@/hooks/useRooms";
+import {
+  AnalyticsEvents,
+  trackAnalyticsEvent,
+  type ItinerarySource,
+} from "@/lib/analytics/track";
 import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
@@ -17,12 +22,14 @@ import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   googlePlaceId: string;
+  source?: ItinerarySource;
   onClose: () => void;
   onAdded?: () => void;
 };
 
 export function AddToScheduleModal({
   googlePlaceId,
+  source = "search",
   onClose,
   onAdded,
 }: Props) {
@@ -65,6 +72,10 @@ export function AddToScheduleModal({
         insertIndex: cached.length,
         placesSnapshot: cached,
         startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(cached),
+      });
+      trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
+        place_id: googlePlaceId,
+        source,
       });
       toast.success("일정에 추가했어요.");
       onAdded?.();

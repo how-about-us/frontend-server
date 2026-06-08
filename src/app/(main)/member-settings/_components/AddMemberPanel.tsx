@@ -5,6 +5,7 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 
 type Props = {
   roomId: string;
@@ -45,6 +46,7 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
   function handleCopy() {
     if (!inviteUrl) return;
     navigator.clipboard.writeText(inviteUrl).then(() => {
+      trackAnalyticsEvent(AnalyticsEvents.sharePlan, { method: "copy_link" });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

@@ -36,6 +36,7 @@ import {
   chatPlaceShareBannerGlowDurationSec,
   chatPlaceShareBannerSweepDurationSec,
 } from "@/components/chat/chat-animations";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useSessionStore } from "@/stores/session-store";
 import {
   searchPinWriteStillValid,
@@ -72,6 +73,8 @@ export default function SearchPage() {
   );
   /** 검색·재검색 커밋마다 증가 — `usePlacesSearch` pageToken 초기화 */
   const [searchGeneration, setSearchGeneration] = useState(0);
+  const lastTrackedSearchGenerationRef = useRef(0);
+  const searchPinsEpochRef = useRef(0);
 
   const commitSearchAtCurrentView = useCallback(
     (trimmedQuery: string) => {
@@ -141,6 +144,16 @@ export default function SearchPage() {
     commitSearchAtCurrentView(trimmed);
   }, [searchRecenterRequestId, query, commitSearchAtCurrentView]);
 
+  useEffect(() => {
+    if (searchGeneration === 0) return;
+    if (lastTrackedSearchGenerationRef.current === searchGeneration) return;
+    const term = query.trim();
+    if (!term.length || searchCoords === null) return;
+
+    lastTrackedSearchGenerationRef.current = searchGeneration;
+    trackAnalyticsEvent(AnalyticsEvents.search, { search_term: term });
+  }, [searchGeneration, query, searchCoords]);
+
   const {
     items,
     pageIndex,
@@ -167,7 +180,6 @@ export default function SearchPage() {
     hasActiveSearch && isSuccess && !isError && items.length > 0;
 
   const resultsScrollRef = useRef<HTMLDivElement>(null);
-  const searchPinsEpochRef = useRef(0);
 
   useEffect(() => {
     resultsScrollRef.current?.scrollTo({ top: 0 });
@@ -233,7 +245,10 @@ export default function SearchPage() {
       openChat();
       return;
     }
-    setSelectedPlace(result, { preserveMapZoom: true });
+    setSelectedPlace(result, {
+      preserveMapZoom: true,
+      itinerarySource: "search",
+    });
   }
 
   return (

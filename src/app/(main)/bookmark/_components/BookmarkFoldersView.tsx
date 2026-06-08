@@ -13,6 +13,7 @@ import {
   pageToolbarButtonCompactPaddingClass,
   pageToolbarButtonCompactTextClass,
 } from "@/components/layout/page-toolbar-button";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
   useAllRoomBookmarks,
@@ -128,6 +129,7 @@ export function BookmarkFoldersView() {
       { roomId, name: resolvedName, colorCode: color },
       {
         onSuccess: () => {
+          trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
           setModalOpen(false);
         },
         onError: (e) => {
