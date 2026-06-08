@@ -100,10 +100,37 @@ export function dispatchRoomMemberEvent(
       queryClient.setQueryData<RoomMemberListResponse>(
         roomMembersQueryKey(rid),
         (prev) => {
-          if (!prev?.members?.length) return prev;
+          const members = prev?.members ?? [];
+          const idx = members.findIndex((m) => m.userId === d.userId);
+
+          if (idx >= 0) {
+            const next = [...members];
+            const cur = next[idx]!;
+            next[idx] = {
+              ...cur,
+              nickname:
+                d.nickname.trim().length > 0 ? d.nickname : cur.nickname,
+              profileImageUrl: d.profileImageUrl ?? cur.profileImageUrl,
+              status: "LEFT",
+              isOnline: false,
+            };
+            return prev ? { ...prev, members: next } : { members: next };
+          }
+
+          const leftMember: RoomMember = {
+            userId: d.userId,
+            nickname: d.nickname,
+            profileImageUrl: d.profileImageUrl,
+            role: "MEMBER",
+            status: "LEFT",
+            joinedAt:
+              event.createdAt.trim().length > 0
+                ? event.createdAt
+                : new Date().toISOString(),
+            isOnline: false,
+          };
           return {
-            ...prev,
-            members: prev.members.filter((m) => m.userId !== d.userId),
+            members: [...members, leftMember],
           };
         },
       );

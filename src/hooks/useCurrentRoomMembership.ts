@@ -26,6 +26,7 @@ export function useCurrentRoomMembership() {
 
   const members = membersData?.members ?? [];
   const activeMembers = members.filter(isActiveRoomMember);
+  const leftMembers = members.filter((m) => m.status === "LEFT");
   const me = members.find((m) => m.userId === user?.id);
   const isHost = resolveViewerIsHost({
     listRole: currentRoom?.role,
@@ -41,8 +42,10 @@ export function useCurrentRoomMembership() {
     roomSource,
     members,
     activeMembers,
+    leftMembers,
     me,
     others: activeMembers.filter((m) => m.userId !== user?.id),
+    leftOthers: leftMembers.filter((m) => m.userId !== user?.id),
     isHost,
     isLoading: isRoomsLoading || isDetailLoading || isMembersLoading,
     isMembersLoading,

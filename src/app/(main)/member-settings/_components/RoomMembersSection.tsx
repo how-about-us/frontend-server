@@ -19,11 +19,33 @@ import {
 } from "@/components/layout/page-toolbar-button";
 import { useCurrentRoomMembership } from "@/hooks/useCurrentRoomMembership";
 import { useKickMember, useLeaveRoom, useTransferHost } from "@/hooks/useRooms";
+import type { RoomMember } from "@/lib/api/rooms";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
-import { MemberCard } from "./MemberCard";
+import { MemberCard, type MemberCardData } from "./MemberCard";
+
+function toMemberCardData(
+  member: RoomMember,
+  isCurrentUser: boolean,
+): MemberCardData {
+  const isLeft = member.status === "LEFT";
+  return {
+    id: String(member.userId),
+    name: member.nickname,
+    avatarInitial: member.nickname.charAt(0),
+    profileImageUrl: member.profileImageUrl,
+    role: member.role,
+    status: member.status,
+    isCurrentUser,
+    connectionStatus: isLeft
+      ? undefined
+      : member.isOnline
+        ? "online"
+        : "offline",
+  };
+}
 
 export function RoomMembersSection() {
   const router = useRouter();
@@ -39,9 +61,9 @@ export function RoomMembersSection() {
     user,
     roomId: currentRoomId,
     currentRoom,
-    members,
     me,
     others,
+    leftOthers,
     isHost,
     isMembersLoading,
   } = useCurrentRoomMembership();
@@ -148,15 +170,7 @@ export function RoomMembersSection() {
           </p>
           <div className="rounded-xl border border-gray-border bg-white">
             <MemberCard
-              member={{
-                id: String(me.userId),
-                name: me.nickname,
-                avatarInitial: me.nickname.charAt(0),
-                profileImageUrl: me.profileImageUrl,
-                role: me.role,
-                isCurrentUser: true,
-                connectionStatus: me.isOnline ? "online" : "offline",
-              }}
+              member={toMemberCardData(me, true)}
               isViewerHost={isHost}
               onKick={() => {}}
               onTransfer={() => {}}
@@ -182,15 +196,7 @@ export function RoomMembersSection() {
                   }
                 >
                   <MemberCard
-                    member={{
-                      id: String(member.userId),
-                      name: member.nickname,
-                      avatarInitial: member.nickname.charAt(0),
-                      profileImageUrl: member.profileImageUrl,
-                      role: member.role,
-                      isCurrentUser: false,
-                      connectionStatus: member.isOnline ? "online" : "offline",
-                    }}
+                    member={toMemberCardData(member, false)}
                     isViewerHost={isHost}
                     onKick={() => {
                       setTransferTargetId(null);
@@ -277,6 +283,32 @@ export function RoomMembersSection() {
                     </div>
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 이전 멤버 */}
+      {!isMembersLoading && leftOthers.length > 0 && (
+        <section>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
+            이전 멤버 · {leftOthers.length}
+          </p>
+          <div className="rounded-xl border border-gray-border bg-white">
+            {leftOthers.map((member, i) => (
+              <div
+                key={member.userId}
+                className={
+                  i < leftOthers.length - 1 ? "border-b border-gray-border" : ""
+                }
+              >
+                <MemberCard
+                  member={toMemberCardData(member, false)}
+                  isViewerHost={isHost}
+                  onKick={() => {}}
+                  onTransfer={() => {}}
+                />
               </div>
             ))}
           </div>

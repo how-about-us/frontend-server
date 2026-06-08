@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import type { RoomMemberStatus } from "@/lib/api/rooms";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +15,9 @@ export type MemberCardData = {
   avatarInitial: string;
   profileImageUrl?: string | null;
   role: MemberRole;
+  status?: RoomMemberStatus;
   isCurrentUser?: boolean;
-  /** GET /rooms/.../members 의 `isOnline` — 미지정 시 접속 상태 배지를 숨깁니다 */
+  /** GET /rooms/.../members 의 `isOnline` — LEFT 또는 미지정 시 접속 상태 배지를 숨깁니다 */
   connectionStatus?: "online" | "offline";
 };
 
@@ -54,8 +56,12 @@ function Avatar({
 }
 
 export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) {
+  const isLeft = member.status === "LEFT";
   const canAct =
-    isViewerHost && !member.isCurrentUser && member.role !== "HOST";
+    isViewerHost &&
+    !member.isCurrentUser &&
+    member.role !== "HOST" &&
+    !isLeft;
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -76,6 +82,7 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
       className={cn(
         "flex items-center gap-3 rounded-xl py-2.5",
         MAIN_CARD_INNER_PADDING_X_CLASS,
+        isLeft && "opacity-60",
       )}
     >
       {/* Avatar */}
@@ -104,15 +111,23 @@ export function MemberCard({ member, isViewerHost, onKick, onTransfer }: Props) 
           >
             {member.role}
           </span>
-          {member.connectionStatus === "online" && (
-            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-emerald-500/15 text-emerald-700">
-              온라인
-            </span>
-          )}
-          {member.connectionStatus === "offline" && (
+          {isLeft ? (
             <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-gray-100 text-dark-gray">
-              오프라인
+              방 나감
             </span>
+          ) : (
+            <>
+              {member.connectionStatus === "online" && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-emerald-500/15 text-emerald-700">
+                  온라인
+                </span>
+              )}
+              {member.connectionStatus === "offline" && (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none bg-gray-100 text-dark-gray">
+                  오프라인
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
