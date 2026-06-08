@@ -3,6 +3,8 @@ import { MAX_SCHEDULES_PER_ROOM } from "@/lib/plan/schedulePolicy";
 export const AGREEMENTS_NOT_ACCEPTED_ERROR_CODE = "AGREEMENTS_NOT_ACCEPTED";
 export const AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE =
   "AGREEMENTS_REACCEPTANCE_REQUIRED";
+export const WITHDRAWAL_REQUIRES_HOST_DELEGATION_ERROR_CODE =
+  "WITHDRAWAL_REQUIRES_HOST_DELEGATION";
 
 const AGREEMENTS_NOT_ACCEPTED_DEFAULT_MESSAGE =
   "변경된 약관에 동의해야 서비스를 이용할 수 있습니다.";
@@ -68,6 +70,47 @@ export function isAgreementsReacceptanceRequiredFromBody(
     readNormalizedApiErrorCode(body) ===
     AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE
   );
+}
+
+export function isWithdrawalRequiresHostDelegationFromBody(
+  body: unknown,
+): boolean {
+  return (
+    readNormalizedApiErrorCode(body) ===
+    WITHDRAWAL_REQUIRES_HOST_DELEGATION_ERROR_CODE
+  );
+}
+
+export type RoomRequiringDelegation = {
+  roomId: string;
+  title: string;
+};
+
+export function readRoomsRequiringDelegationFromBody(
+  body: unknown,
+): RoomRequiringDelegation[] {
+  if (body === null || typeof body !== "object") return [];
+  const raw = (body as Record<string, unknown>).roomsRequiringDelegation;
+  if (!Array.isArray(raw)) return [];
+
+  const rooms: RoomRequiringDelegation[] = [];
+  for (const item of raw) {
+    if (item === null || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const roomIdRaw = o.roomId;
+    const roomId =
+      typeof roomIdRaw === "string"
+        ? roomIdRaw.trim()
+        : roomIdRaw != null
+          ? String(roomIdRaw).trim()
+          : "";
+    const titleRaw = o.title;
+    const title =
+      typeof titleRaw === "string" ? titleRaw.trim() : "";
+    if (!roomId.length || !title.length) continue;
+    rooms.push({ roomId, title });
+  }
+  return rooms;
 }
 
 /** Google 로그인·약관 재동의 API 오류 JSON → 사용자 메시지 */
