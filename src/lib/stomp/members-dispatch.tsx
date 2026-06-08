@@ -7,10 +7,14 @@ import type {
   RoomMember,
   RoomMemberListResponse,
 } from "@/lib/api/rooms";
+import { CHAT_UNKNOWN_SENDER_LABEL } from "@/lib/chat";
 import { ROOMS_QUERY_KEY, roomMembersQueryKey } from "@/lib/query-keys";
 import { readSessionUserId } from "@/lib/session-user-cache";
 
-import type { RoomMemberPayload } from "./member-events";
+import type {
+  MemberUserSnapshotDetail,
+  RoomMemberPayload,
+} from "./member-events";
 
 function upsertMemberRow(
   members: RoomMember[],
@@ -26,6 +30,16 @@ function upsertMemberRow(
     return next;
   }
   return [...members, { userId, ...fallback, ...patch }];
+}
+
+function memberDisplayPatch(
+  d: MemberUserSnapshotDetail,
+): Partial<Pick<RoomMember, "nickname" | "profileImageUrl">> {
+  const patch: Partial<Pick<RoomMember, "nickname" | "profileImageUrl">> = {};
+  const nick = d.nickname?.trim();
+  if (nick && nick.length > 0) patch.nickname = nick;
+  if (d.profileImageUrl !== undefined) patch.profileImageUrl = d.profileImageUrl;
+  return patch;
 }
 
 function patchRoomsRoleForHostDelegation(
@@ -76,58 +90,22 @@ export function dispatchRoomMemberEvent(
             event.createdAt.trim().length > 0
               ? event.createdAt
               : new Date().toISOString();
+          const display = memberDisplayPatch(d);
           const next = upsertMemberRow(
             members,
             d.userId,
             {
-              nickname: d.nickname,
-              profileImageUrl: d.profileImageUrl,
+              ...display,
               status: "ACTIVE",
               isOnline: true,
             },
             {
-              nickname: d.nickname,
-              profileImageUrl: d.profileImageUrl,
+              nickname: display.nickname ?? CHAT_UNKNOWN_SENDER_LABEL,
+              profileImageUrl: display.profileImageUrl ?? null,
               role: "MEMBER",
               status: "ACTIVE",
               joinedAt,
               isOnline: true,
-            },
-          );
-          return prev ? { ...prev, members: next } : { members: next };
-        },
-      );
-      break;
-    }
-
-    case "MEMBER_JOIN_REQUESTED": {
-      const d = event.detail;
-      if (!d) return;
-
-      queryClient.setQueryData<RoomMemberListResponse>(
-        roomMembersQueryKey(rid),
-        (prev) => {
-          const members = prev?.members ?? [];
-          const joinedAt =
-            event.createdAt.trim().length > 0
-              ? event.createdAt
-              : new Date().toISOString();
-          const next = upsertMemberRow(
-            members,
-            d.userId,
-            {
-              nickname: d.nickname,
-              profileImageUrl: d.profileImageUrl,
-              status: "PENDING",
-              isOnline: false,
-            },
-            {
-              nickname: d.nickname,
-              profileImageUrl: d.profileImageUrl,
-              role: "MEMBER",
-              status: "PENDING",
-              joinedAt,
-              isOnline: false,
             },
           );
           return prev ? { ...prev, members: next } : { members: next };
@@ -146,15 +124,14 @@ export function dispatchRoomMemberEvent(
         (prev) => {
           const members = prev?.members ?? [];
           const idx = members.findIndex((m) => m.userId === d.userId);
+          const display = memberDisplayPatch(d);
 
           if (idx >= 0) {
             const next = [...members];
             const cur = next[idx]!;
             next[idx] = {
               ...cur,
-              nickname:
-                d.nickname.trim().length > 0 ? d.nickname : cur.nickname,
-              profileImageUrl: d.profileImageUrl ?? cur.profileImageUrl,
+              ...display,
               status: "LEFT",
               isOnline: false,
             };
@@ -163,8 +140,8 @@ export function dispatchRoomMemberEvent(
 
           const leftMember: RoomMember = {
             userId: d.userId,
-            nickname: d.nickname,
-            profileImageUrl: d.profileImageUrl,
+            nickname: display.nickname ?? CHAT_UNKNOWN_SENDER_LABEL,
+            profileImageUrl: display.profileImageUrl ?? null,
             role: "MEMBER",
             status: "LEFT",
             joinedAt:
@@ -191,24 +168,10 @@ export function dispatchRoomMemberEvent(
           if (!prev?.members?.length) return prev;
           const members = prev.members.map((m) => {
             if (m.userId === d.previousHostUserId) {
-              return {
-                ...m,
-                role: "MEMBER" as const,
-                nickname:
-                  d.previousHostNickname.trim().length > 0
-                    ? d.previousHostNickname
-                    : m.nickname,
-              };
+              return { ...m, role: "MEMBER" as const };
             }
             if (m.userId === d.newHostUserId) {
-              return {
-                ...m,
-                role: "HOST" as const,
-                nickname:
-                  d.newHostNickname.trim().length > 0
-                    ? d.newHostNickname
-                    : m.nickname,
-              };
+              return { ...m, role: "HOST" as const };
             }
             return m;
           });

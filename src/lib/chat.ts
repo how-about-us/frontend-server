@@ -89,7 +89,6 @@ export function normalizeServerChatMessage(
   const messageType = coerceServerChatMessageType(
     r.messageType ?? r.message_type,
   );
-  const content = typeof r.content === "string" ? r.content : "";
 
   const createdAt =
     typeof r.createdAt === "string"
@@ -117,10 +116,10 @@ export function normalizeServerChatMessage(
     roomId,
     senderId,
     messageType,
-    content,
     createdAt,
     clientMessageId,
     metadata,
+    ...(typeof r.content === "string" ? { content: r.content } : {}),
     ...(sequence !== undefined ? { sequence } : {}),
   };
 }
@@ -530,6 +529,38 @@ export type ChatMemberMap = Map<
 /** 방 멤버 GET 성공 시, 목록에 없는 타인 발신자 표시용 */
 export const CHAT_UNKNOWN_SENDER_LABEL = "(알 수 없음)" as const;
 
+function lookupMemberNickname(
+  memberMap: ChatMemberMap,
+  userIdRaw: string | undefined,
+): string {
+  const uid = parseFiniteNumber(userIdRaw);
+  if (uid === undefined) return CHAT_UNKNOWN_SENDER_LABEL;
+  const nick = memberMap.get(uid)?.nickname?.trim();
+  return nick && nick.length > 0 ? nick : CHAT_UNKNOWN_SENDER_LABEL;
+}
+
+/** SYSTEM metadata.eventType + 멤버 맵 lookup으로 표시 문구 조립 */
+export function formatSystemEventMessage(
+  metadata: Record<string, string> | undefined,
+  memberMap: ChatMemberMap,
+): string {
+  const eventType = readMetaString(metadata, "eventType", "event_type");
+  if (!eventType) return "";
+
+  switch (eventType) {
+    case "MEMBER_JOINED":
+      return `${lookupMemberNickname(memberMap, readMetaString(metadata, "userId", "user_id"))}님이 입장했어요`;
+    case "MEMBER_LEFT":
+      return `${lookupMemberNickname(memberMap, readMetaString(metadata, "userId", "user_id"))}님이 방을 나갔어요`;
+    case "MEMBER_KICKED":
+      return `${lookupMemberNickname(memberMap, readMetaString(metadata, "userId", "user_id"))}님이 추방되었어요`;
+    case "HOST_DELEGATED":
+      return `방장이 ${lookupMemberNickname(memberMap, readMetaString(metadata, "newHostUserId", "new_host_user_id"))}님으로 변경되었어요`;
+    default:
+      return "";
+  }
+}
+
 export type AiRequestReplyLookupEntry = { anchorId: string; quotePreview: string };
 
 function senderNotInRoomFromMemberMap(
@@ -658,7 +689,7 @@ function buildAiRequestReplyLookup(
   const map = new Map<string, AiRequestReplyLookupEntry>();
   for (const m of rawMessages) {
     if (normalizeMessageKind(m.messageType) !== "AI_REQUEST") continue;
-    const preview = formatQuotePreview(m.content);
+    const preview = formatQuotePreview(m.content ?? "");
     const entry: AiRequestReplyLookupEntry = {
       anchorId: m.id,
       quotePreview: preview,
@@ -842,7 +873,7 @@ export function serverMessageToChatMessage(
       return {
         id: msg.id,
         type: "place",
-        text: msg.content || "장소 공유",
+        text: msg.content?.trim() || "장소 공유",
         time,
         sender: displayNick,
         senderUserId,
@@ -854,17 +885,19 @@ export function serverMessageToChatMessage(
     return {
       id: msg.id,
       type: "system",
-      text: msg.content || "장소 공유",
+      text: msg.content?.trim() || "장소 공유",
       time,
       sender: `system:${msg.id}`,
     };
   }
 
   if (kind === "SYSTEM") {
+    const assembled = formatSystemEventMessage(msg.metadata, memberMap);
+    const legacy = msg.content?.trim() ?? "";
     return {
       id: msg.id,
       type: "system",
-      text: msg.content,
+      text: assembled || legacy,
       time,
       sender: `system:${msg.id}`,
     };
@@ -878,7 +911,7 @@ export function serverMessageToChatMessage(
     return {
       id: msg.id,
       type: "ai",
-      text: aiResponseDisplayText(msg.content, structured),
+      text: aiResponseDisplayText(msg.content ?? "", structured),
       time,
       sender: "WOORI",
       ...(reply
@@ -941,7 +974,7 @@ export function serverMessageToChatMessage(
       senderUserId,
       avatar,
       ...(notInRoom ? { senderNotInRoom: true as const } : {}),
-      text: msg.content,
+      text: msg.content ?? "",
       time,
       ...(kind === "AI_REQUEST"
         ? {
@@ -964,7 +997,7 @@ export function serverMessageToChatMessage(
   return {
     id: msg.id,
     type: "system",
-    text: msg.content,
+    text: msg.content ?? "",
     time,
     sender: `system:${msg.id}`,
   };

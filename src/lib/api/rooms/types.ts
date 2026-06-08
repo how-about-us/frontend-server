@@ -96,7 +96,8 @@ export type RoomMessage = {
   roomId: string;
   senderId: number;
   messageType: ServerChatMessageType;
-  content: string;
+  /** SYSTEM 등 — 백엔드에서 키 생략 가능 */
+  content?: string;
   metadata?: Record<string, string>;
   createdAt: string;
   clientMessageId?: string;
