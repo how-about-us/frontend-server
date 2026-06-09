@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
@@ -81,6 +83,14 @@ function LoginPageContent() {
       />
 
       <div className="relative w-full max-w-[600px] rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+        <Link
+          href="/"
+          aria-label="뒤로가기"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-red"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden />
+        </Link>
+
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
             <BrandLogo alt="" style={{ width: 116, height: 66 }} />
