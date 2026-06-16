@@ -3,7 +3,8 @@ import { ExternalLink } from "lucide-react";
 
 import { CopyableSupportEmail } from "@/components/contact/CopyableSupportEmail";
 import { MainSettingsPageLayout } from "@/components/layout/MainSettingsPageLayout";
-import { FEEDBACK_FORM_URL } from "@/components/layout/sidebarFeedbackForm";
+
+const CONTACT_FEEDBACK_FORM_URL = "https://forms.gle/LJMrWfYEgWCE3eCGA";
 
 export default function ContactPage() {
   return (
@@ -23,7 +24,7 @@ export default function ContactPage() {
         </p>
 
         <Link
-          href={FEEDBACK_FORM_URL}
+          href={CONTACT_FEEDBACK_FORM_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-brand-red transition hover:opacity-80"
