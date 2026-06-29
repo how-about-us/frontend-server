@@ -6,24 +6,18 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
-import {
-  consumePendingInviteCode,
-  fetchSessionUserWithRetry,
-} from "@/lib/auth";
-import { tearDownClientSession } from "@/lib/client-storage";
+import { AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE } from "@/lib/api/errors";
 import {
   consumeOAuthPendingSession,
   loginErrorQueryForExchangeFailure,
+  saveGoogleAgreementFlowSession,
 } from "@/lib/google-oauth";
-import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
-import { setSessionUserCache } from "@/lib/session-user-cache";
-import { useSessionStore } from "@/stores/session-store";
+import { finishGoogleLogin } from "@/lib/google-login-client";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const setSessionReady = useSessionStore((s) => s.setSessionReady);
 
   // React Strict Mode (Next dev) 에서 useEffect 가 두 번 실행되면
   // sessionStorage 의 pendingInviteCode/oauth_pending 가 첫 실행에서 비워져
@@ -38,16 +32,11 @@ function AuthCallbackContent() {
     const returnedState = searchParams.get("state");
     const pending = consumeOAuthPendingSession();
 
-    // 인증 흐름의 어떤 결과든 pendingInviteCode 를 한 번에 소비해
-    // 다음 진입(예: 재로그인)에서 홀더 값이 남아있지 않도록 한다.
-    const pendingInviteCode = consumePendingInviteCode();
-
     if (
       !code ||
       !returnedState ||
       !pending ||
-      returnedState !== pending.state ||
-      !pending.agreementsAccepted
+      returnedState !== pending.state
     ) {
       router.replace("/login?error=OAuthCallback");
       return;
@@ -55,22 +44,28 @@ function AuthCallbackContent() {
 
     exchangeGoogleCode(code, pending.agreementsAccepted)
       .then(async (result) => {
-        if (result.ok) {
-          const me = await fetchSessionUserWithRetry();
-          if (!me) {
-            tearDownClientSession();
-            router.replace("/login?error=OAuthCallback");
-            return;
-          }
-          setSessionUserCache(queryClient, me);
-          setSessionReady(true);
-          trackAnalyticsEvent(AnalyticsEvents.login, { method: "google" });
+        if (result.ok && result.status === "AUTHENTICATED") {
+          const destination = await finishGoogleLogin(queryClient);
+          router.replace(destination ?? "/login?error=OAuthCallback");
+          return;
+        }
 
-          if (pendingInviteCode) {
-            router.replace(`/join/${pendingInviteCode}`);
-          } else {
-            router.replace("/home");
-          }
+        if (result.ok && result.status === "SIGNUP_REQUIRED") {
+          saveGoogleAgreementFlowSession({
+            kind: "signup",
+            signupToken: result.signupToken,
+            expiresAt: Date.now() + result.expiresInSeconds * 1000,
+          });
+          router.replace("/login/agreements");
+          return;
+        }
+
+        if (
+          result.errorCode ===
+          AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE
+        ) {
+          saveGoogleAgreementFlowSession({ kind: "reaccept" });
+          router.replace("/login/agreements");
           return;
         }
 
@@ -80,7 +75,7 @@ function AuthCallbackContent() {
       .catch(() => {
         router.replace("/login?error=OAuthCallback");
       });
-  }, [searchParams, router, queryClient, setSessionReady]);
+  }, [searchParams, router, queryClient]);
 
   return <AuthFlowSpinner />;
 }

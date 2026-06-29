@@ -12,11 +12,22 @@ import {
 export const GOOGLE_AUTH_CALLBACK_PATH = "/auth/callback";
 
 export const OAUTH_PENDING_SESSION_KEY = "oauth_pending";
+export const GOOGLE_AGREEMENT_FLOW_SESSION_KEY = "google_agreement_flow";
 
 export type OAuthPendingSession = {
   state: string;
-  agreementsAccepted: boolean;
+  agreementsAccepted?: true;
 };
+
+export type GoogleAgreementFlowSession =
+  | {
+      kind: "signup";
+      signupToken: string;
+      expiresAt: number;
+    }
+  | {
+      kind: "reaccept";
+    };
 
 export function saveOAuthPendingSession(pending: OAuthPendingSession): void {
   sessionStorage.setItem(OAUTH_PENDING_SESSION_KEY, JSON.stringify(pending));
@@ -33,7 +44,8 @@ export function consumeOAuthPendingSession(): OAuthPendingSession | null {
       parsed !== null &&
       typeof parsed === "object" &&
       typeof (parsed as OAuthPendingSession).state === "string" &&
-      typeof (parsed as OAuthPendingSession).agreementsAccepted === "boolean"
+      ((parsed as OAuthPendingSession).agreementsAccepted === undefined ||
+        (parsed as OAuthPendingSession).agreementsAccepted === true)
     ) {
       return parsed as OAuthPendingSession;
     }
@@ -42,6 +54,49 @@ export function consumeOAuthPendingSession(): OAuthPendingSession | null {
   }
 
   return null;
+}
+
+export function saveGoogleAgreementFlowSession(
+  flow: GoogleAgreementFlowSession,
+): void {
+  sessionStorage.setItem(
+    GOOGLE_AGREEMENT_FLOW_SESSION_KEY,
+    JSON.stringify(flow),
+  );
+}
+
+export function readGoogleAgreementFlowSession(): GoogleAgreementFlowSession | null {
+  const raw = sessionStorage.getItem(GOOGLE_AGREEMENT_FLOW_SESSION_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed === null || typeof parsed !== "object") return null;
+
+    const flow = parsed as Partial<GoogleAgreementFlowSession>;
+    if (flow.kind === "reaccept") return { kind: "reaccept" };
+    if (
+      flow.kind === "signup" &&
+      typeof flow.signupToken === "string" &&
+      flow.signupToken.length > 0 &&
+      typeof flow.expiresAt === "number" &&
+      Number.isFinite(flow.expiresAt)
+    ) {
+      return {
+        kind: "signup",
+        signupToken: flow.signupToken,
+        expiresAt: flow.expiresAt,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+export function clearGoogleAgreementFlowSession(): void {
+  sessionStorage.removeItem(GOOGLE_AGREEMENT_FLOW_SESSION_KEY);
 }
 
 export function loginErrorQueryForExchangeFailure(errorCode?: string): string {

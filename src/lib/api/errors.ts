@@ -3,14 +3,24 @@ import { MAX_SCHEDULES_PER_ROOM } from "@/lib/plan/schedulePolicy";
 export const AGREEMENTS_NOT_ACCEPTED_ERROR_CODE = "AGREEMENTS_NOT_ACCEPTED";
 export const AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE =
   "AGREEMENTS_REACCEPTANCE_REQUIRED";
+export const GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE =
+  "GOOGLE_SIGNUP_TOKEN_NOT_FOUND";
+export const AGREEMENT_CONFIGURATION_INVALID_ERROR_CODE =
+  "AGREEMENT_CONFIGURATION_INVALID";
 export const WITHDRAWAL_REQUIRES_HOST_DELEGATION_ERROR_CODE =
   "WITHDRAWAL_REQUIRES_HOST_DELEGATION";
 
 const AGREEMENTS_NOT_ACCEPTED_DEFAULT_MESSAGE =
-  "변경된 약관에 동의해야 서비스를 이용할 수 있습니다.";
+  "필수 약관에 동의해야 서비스를 이용할 수 있습니다.";
 
 const AGREEMENTS_REACCEPTANCE_REQUIRED_DEFAULT_MESSAGE =
   "변경된 약관에 다시 동의해 주세요.";
+
+const GOOGLE_SIGNUP_TOKEN_NOT_FOUND_DEFAULT_MESSAGE =
+  "가입 요청이 만료되었거나 다른 로그인 시도로 무효화되었습니다. 다시 로그인해 주세요.";
+
+const AGREEMENT_CONFIGURATION_INVALID_DEFAULT_MESSAGE =
+  "약관 설정에 문제가 있어 가입을 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.";
 
 /** 북마크 장소 중복 시 백엔드 JSON에 실을 수 있는 `code` / `errorCode` 값 (HTTP status와 별개) */
 const ROOM_BOOKMARK_DUPLICATE_ERROR_CODES = new Set<string>([
@@ -128,6 +138,19 @@ export function messageForGoogleLoginError(
     return (
       readUserFacingMessageFromApiBody(body) ??
       AGREEMENTS_REACCEPTANCE_REQUIRED_DEFAULT_MESSAGE
+    );
+  }
+  const code = readNormalizedApiErrorCode(body);
+  if (code === GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      GOOGLE_SIGNUP_TOKEN_NOT_FOUND_DEFAULT_MESSAGE
+    );
+  }
+  if (code === AGREEMENT_CONFIGURATION_INVALID_ERROR_CODE) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      AGREEMENT_CONFIGURATION_INVALID_DEFAULT_MESSAGE
     );
   }
   return readUserFacingMessageFromApiBody(body) ?? fallback;
