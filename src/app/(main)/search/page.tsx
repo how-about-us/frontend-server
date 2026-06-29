@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 import { SearchResultCard } from "@/components/place";
 import { SetSectionMaxWidth } from "@/contexts/SectionWidthContext";
+import { MainPageHeader } from "@/components/layout/MainPageHeader";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { buildSearchMapSnapshotFromMapCenterStore } from "@/lib/map-viewport-commit";
 import {
@@ -254,6 +255,8 @@ export default function SearchPage() {
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col border-b border-gray-border">
       <SetSectionMaxWidth value="s1" />
+
+      <MainPageHeader className="shrink-0 px-6 pb-4" title="장소 검색" />
 
       {/* 검색 입력 — focus ring이 잘리지 않도록 상·좌우 여백 */}
       <div className="shrink-0 overflow-visible pl-6 pr-3 pb-2.5 border-b border-gray-border">

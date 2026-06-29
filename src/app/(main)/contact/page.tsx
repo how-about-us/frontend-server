@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
 import { CopyableSupportEmail } from "@/components/contact/CopyableSupportEmail";
+import { MainPageHeader } from "@/components/layout/MainPageHeader";
 import { MainSettingsPageLayout } from "@/components/layout/MainSettingsPageLayout";
 
 const CONTACT_FEEDBACK_FORM_URL = "https://forms.gle/LJMrWfYEgWCE3eCGA";
@@ -10,12 +11,10 @@ export default function ContactPage() {
   return (
     <MainSettingsPageLayout>
       <div className="flex min-w-0 w-full flex-col gap-4">
-        <div>
-          <h1 className="text-lg font-bold text-black">문의하기</h1>
-          <p className="mt-1 text-xs leading-relaxed text-dark-gray">
-            버그 신고, 기능 제안, 계정 관련 문의 등 편하게 연락해 주세요.
-          </p>
-        </div>
+        <MainPageHeader
+          title="문의하기"
+          description="버그 신고, 기능 제안, 계정 관련 문의 등 편하게 연락해 주세요."
+        />
 
         <CopyableSupportEmail variant="card" />
 

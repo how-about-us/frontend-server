@@ -26,6 +26,7 @@ import {
 } from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
+import { MainPageHeader } from "@/components/layout/MainPageHeader";
 
 import { usePlanScheduleDayReorder } from "@/hooks/usePlanScheduleDayReorder";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
@@ -144,6 +145,8 @@ export function PlanPageView() {
   const pageContentClassName =
     "@container/plan space-y-2.5 overflow-x-auto pb-8";
 
+  const pageHeader = <MainPageHeader title="일정" />;
+
   const scheduleToolbar = (
     <div className="flex justify-end">
       <button
@@ -174,6 +177,7 @@ export function PlanPageView() {
           ref={planContainerRef}
           className={pageContentClassName}
         >
+          {pageHeader}
           {!isReadOnly ? scheduleToolbar : null}
           <p className="py-8 text-center text-sm text-dark-gray">
             일정을 불러오는 중…
@@ -189,66 +193,67 @@ export function PlanPageView() {
         ref={planContainerRef}
         className={pageContentClassName}
       >
-      {!isReadOnly ? scheduleToolbar : null}
+        {pageHeader}
+        {!isReadOnly ? scheduleToolbar : null}
 
-      {isError ? (
-        <p
-          className={cn(
-            "rounded-xl border border-gray-border bg-white py-3 text-sm text-brand-red",
-            MAIN_CARD_INNER_PADDING_X_CLASS,
-          )}
-        >
-          일정 목록을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.
-        </p>
-      ) : null}
+        {isError ? (
+          <p
+            className={cn(
+              "rounded-xl border border-gray-border bg-white py-3 text-sm text-brand-red",
+              MAIN_CARD_INNER_PADDING_X_CLASS,
+            )}
+          >
+            일정 목록을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.
+          </p>
+        ) : null}
 
-      {!isError && planDays.length === 0 ? (
-        <p
-          className={cn(
-            "rounded-xl border border-gray-border bg-white py-3 text-sm text-dark-gray",
-            MAIN_CARD_INNER_PADDING_X_CLASS,
-          )}
-        >
-          {copy.scheduleEmpty}
-        </p>
-      ) : null}
+        {!isError && planDays.length === 0 ? (
+          <p
+            className={cn(
+              "rounded-xl border border-gray-border bg-white py-3 text-sm text-dark-gray",
+              MAIN_CARD_INNER_PADDING_X_CLASS,
+            )}
+          >
+            {copy.scheduleEmpty}
+          </p>
+        ) : null}
 
-      {planDays.length > 0 ? (
-        <div className="space-y-2.5" {...listContainerProps}>
-          {planDays.map((day, dayIndex) => {
-            const sectionProps = !isReadOnly
-              ? getSectionProps(dayIndex)
-              : {};
+        {planDays.length > 0 ? (
+          <div className="space-y-2.5" {...listContainerProps}>
+            {planDays.map((day, dayIndex) => {
+              const sectionProps = !isReadOnly
+                ? getSectionProps(dayIndex)
+                : {};
 
-            return (
-              <PlanScheduleDayBlock
-                key={day.id}
-                roomId={roomId}
-                scheduleId={sortedSchedules[dayIndex]!.scheduleId}
-                title={day.dayLabel}
-                subtitle={day.dateLabel}
-                onRequestDeleteSchedule={
-                  !isReadOnly && sortedSchedules[dayIndex]
-                    ? () => handleDeleteScheduleDay(dayIndex)
-                    : undefined
-                }
-                onRequestInsertScheduleAfter={
-                  !isReadOnly && sortedSchedules[dayIndex]
-                    ? () => handleInsertScheduleAfter(dayIndex)
-                    : undefined
-                }
-                isScheduleMenuDisabled={
-                  isCreatingSchedule || isDeletingSchedule || isMovePending
-                }
-                interactionLocked={
-                  isReadOnly || isCreatingSchedule || isDeletingSchedule
-                }
-                {...sectionProps}
-              />
-            );
-          })}
-        </div>
-      ) : null}
+              return (
+                <PlanScheduleDayBlock
+                  key={day.id}
+                  roomId={roomId}
+                  scheduleId={sortedSchedules[dayIndex]!.scheduleId}
+                  title={day.dayLabel}
+                  subtitle={day.dateLabel}
+                  onRequestDeleteSchedule={
+                    !isReadOnly && sortedSchedules[dayIndex]
+                      ? () => handleDeleteScheduleDay(dayIndex)
+                      : undefined
+                  }
+                  onRequestInsertScheduleAfter={
+                    !isReadOnly && sortedSchedules[dayIndex]
+                      ? () => handleInsertScheduleAfter(dayIndex)
+                      : undefined
+                  }
+                  isScheduleMenuDisabled={
+                    isCreatingSchedule || isDeletingSchedule || isMovePending
+                  }
+                  interactionLocked={
+                    isReadOnly || isCreatingSchedule || isDeletingSchedule
+                  }
+                  {...sectionProps}
+                />
+              );
+            })}
+          </div>
+        ) : null}
       </div>
     </PlanContainerRefProvider>
   );

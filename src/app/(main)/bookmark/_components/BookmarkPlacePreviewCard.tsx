@@ -13,6 +13,7 @@ export type BookmarkPlacePreviewCardProps = {
   primaryTypeDisplayName?: string;
   onClick?: () => void;
   className?: string;
+  contentClassName?: string;
 };
 
 export function BookmarkPlacePreviewCard({
@@ -22,6 +23,7 @@ export function BookmarkPlacePreviewCard({
   primaryTypeDisplayName,
   onClick,
   className,
+  contentClassName,
 }: BookmarkPlacePreviewCardProps) {
   const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
 
@@ -37,7 +39,7 @@ export function BookmarkPlacePreviewCard({
       role={onClick ? "button" : undefined}
       style={onClick ? { cursor: "pointer" } : undefined}
     >
-      <div className="min-w-0 flex-1">
+      <div className={cn("min-w-0 flex-1", contentClassName)}>
         <div className="flex items-baseline gap-1.5">
           <h3 className="truncate text-sm font-semibold leading-5 tracking-tight text-brand-green">
             {name}

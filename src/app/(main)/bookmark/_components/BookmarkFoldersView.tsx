@@ -210,7 +210,7 @@ export function BookmarkFoldersView() {
           onClick={openCreate}
           disabled={isCreating || isUpdating}
           className={cn(
-            "flex cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+            "flex w-fit cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
             pageToolbarButtonCompactGapClass,
             pageToolbarButtonCompactTextClass,
             pageToolbarButtonCompactPaddingClass,
