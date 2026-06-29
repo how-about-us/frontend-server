@@ -109,7 +109,7 @@ export function PlanItemMemoReadOnly({ memo }: { memo: string }) {
   if (!text.length) return null;
 
   return (
-    <p className="line-clamp-2 whitespace-pre-wrap break-words text-[10px] leading-snug text-dark-gray/75">
+    <p className="line-clamp-2 whitespace-pre-wrap break-words text-xs leading-snug text-dark-gray/75">
       {text}
     </p>
   );
@@ -215,7 +215,7 @@ export function PlanItemMemoForm({
           className={cn(PLAN_PLACE_CARD_TW.memoTextarea, "select-text cursor-text")}
         />
         <div className="flex items-center justify-end gap-2">
-          <span className="text-[10px] tabular-nums text-dark-gray/55">
+          <span className="text-[11px] tabular-nums text-dark-gray/55">
             {draft.length}/{SCHEDULE_ITEM_MEMO_MAX_LENGTH}
           </span>
           <button

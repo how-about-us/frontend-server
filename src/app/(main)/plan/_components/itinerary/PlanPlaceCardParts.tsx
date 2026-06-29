@@ -134,15 +134,15 @@ export function PlanCollapsibleField({
           disabled && "pointer-events-none opacity-70",
         )}
       >
-        {expanded ?
-          <ChevronUp className="h-3 w-3 shrink-0" aria-hidden />
-        : <ChevronDown className="h-3 w-3 shrink-0" aria-hidden />}
         <span className="shrink-0">{label}</span>
         {!expanded && collapsedHint ?
           <span className={PLAN_PLACE_CARD_TW.sectionToggleHint}>
             {collapsedHint}
           </span>
         : null}
+        {expanded ?
+          <ChevronUp className="ml-auto h-3 w-3 shrink-0" aria-hidden />
+        : <ChevronDown className="ml-auto h-3 w-3 shrink-0" aria-hidden />}
       </button>
       {expanded ?
         <div id={panelId} className="flex min-w-0 w-full flex-col gap-1">

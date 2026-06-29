@@ -30,35 +30,34 @@ export const PLAN_PLACE_CARD_MIN_SIZE_REM = "7rem" as const;
  */
 export const PLAN_PLACE_CARD_TW = {
   article:
-    "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
+    "relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
   thumbnail:
     "relative h-[7rem] w-[7rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
-  contentColumn:
-    "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
-  titleRow: "mb-1.5 flex min-w-0 items-start gap-2",
-  subtitle: "text-[10px] leading-snug text-dark-gray/85",
+  contentColumn: "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
+  titleRow: "flex min-w-0 items-start gap-2",
+  subtitle: "text-xs leading-snug text-dark-gray/85",
   controlsStack: "flex min-w-0 flex-col gap-0.5",
   orderBadgeCompact:
-    "h-6 w-6 text-[11px] @min-[370px]/plan:h-7 @min-[370px]/plan:w-7 @min-[370px]/plan:text-xs",
+    "absolute -left-2 -top-2 z-10 h-7 w-7 rounded-lg border-2 border-white text-xs shadow-md",
   titleCompact: "text-[13px] font-semibold leading-snug text-gray-900",
   titleClamp: "line-clamp-2",
   subtitleClamp: "line-clamp-2",
   deleteButtonCompact: "p-0.5 @min-[370px]/plan:p-1",
   deleteIconCompact: "h-3.5 w-3.5",
-  timeFieldLabel: "text-[10px] font-medium leading-none text-dark-gray/90",
+  timeFieldLabel: "text-xs font-medium leading-none text-dark-gray/90",
   timeFieldsRow:
     "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-1 @min-[370px]/plan:gap-1.5",
   timeField: "flex min-w-0 w-full flex-col gap-0.5",
   timeInputCompact:
-    "h-6 min-w-0 w-full text-[11px] px-1.5 @min-[370px]/plan:h-7 @min-[370px]/plan:px-2",
+    "h-6 min-w-0 w-full px-1.5 text-xs @min-[370px]/plan:h-7 @min-[370px]/plan:px-2",
   timeSaveButtonCompact:
-    "h-6 shrink-0 px-2 text-[10px] @min-[370px]/plan:h-7 @min-[370px]/plan:px-2.5 @min-[370px]/plan:text-[11px]",
+    "h-6 shrink-0 px-2 text-xs @min-[370px]/plan:h-7 @min-[370px]/plan:px-2.5",
   sectionToggle:
-    "flex w-full min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-left text-[10px] font-medium text-dark-gray/80 transition hover:bg-gray-50 hover:text-dark-gray",
+    "flex w-full min-w-0 items-center gap-1 rounded-md py-0.5 text-left text-xs font-medium text-dark-gray/80 transition hover:bg-gray-50 hover:text-dark-gray",
   sectionToggleHint: "min-w-0 flex-1 truncate font-normal text-dark-gray/60",
   memoTextarea:
-    "min-h-[1.75rem] max-h-20 w-full resize-y rounded-md border border-gray-border bg-gray-50/60 px-2 py-1 text-[11px] leading-snug text-gray-900 shadow-none transition placeholder:text-dark-gray/45 focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30",
-  overlapWarningCompact: "text-[10px] leading-tight",
+    "min-h-[1.75rem] max-h-20 w-full resize-y rounded-md border border-gray-border bg-gray-50/60 px-2 py-1 text-xs leading-snug text-gray-900 shadow-none transition placeholder:text-dark-gray/45 focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30",
+  overlapWarningCompact: "text-xs leading-tight",
 } as const;
 
 /** 플랜 구간(경로) 카드 가로 고정폭(px). 좌측 패널 max(s2) 기준 본문 영역 근사 */

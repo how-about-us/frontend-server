@@ -210,6 +210,11 @@ export function PlanPlaceCard({
       )}
       aria-grabbed={isDragging}
     >
+      <PlanOrderIndexBadge
+        orderIndex={displayOrderIndex}
+        backgroundColorHex={orderBadgeColor}
+      />
+
       <div className={PLAN_PLACE_CARD_TW.thumbnail}>
         {photoLoading ? (
           <Loader2
@@ -230,43 +235,41 @@ export function PlanPlaceCard({
 
       <div className={PLAN_PLACE_CARD_TW.contentColumn}>
         <div className={PLAN_PLACE_CARD_TW.titleRow}>
-          <PlanOrderIndexBadge
-            orderIndex={displayOrderIndex}
-            backgroundColorHex={orderBadgeColor}
-          />
-          <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
-            <h3
-              className={cn(
-                "min-w-0 flex-1",
-                PLAN_PLACE_CARD_TW.titleCompact,
-                PLAN_PLACE_CARD_TW.titleClamp,
-              )}
-              title={place.title}
-            >
-              {place.title}
-            </h3>
-            {place.primaryTypeDisplayName ? (
-              <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
-                {place.primaryTypeDisplayName}
-              </span>
-            ) : null}
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex min-w-0 items-baseline gap-1.5">
+              <h3
+                className={cn(
+                  "min-w-0 flex-1",
+                  PLAN_PLACE_CARD_TW.titleCompact,
+                  PLAN_PLACE_CARD_TW.titleClamp,
+                )}
+                title={place.title}
+              >
+                {place.title}
+              </h3>
+              {place.primaryTypeDisplayName ? (
+                <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
+                  {place.primaryTypeDisplayName}
+                </span>
+              ) : null}
+            </div>
+
+            {place.subtitle ?
+              <p
+                className={cn(
+                  PLAN_PLACE_CARD_TW.subtitle,
+                  PLAN_PLACE_CARD_TW.subtitleClamp,
+                )}
+                title={place.subtitle}
+              >
+                {place.subtitle}
+              </p>
+            : null}
           </div>
           {deleteButton ?
-            <span className="flex shrink-0">{deleteButton}</span>
+            <span className="flex shrink-0 self-start">{deleteButton}</span>
           : null}
         </div>
-
-        {place.subtitle ?
-          <p
-            className={cn(
-              PLAN_PLACE_CARD_TW.subtitle,
-              PLAN_PLACE_CARD_TW.subtitleClamp,
-            )}
-            title={place.subtitle}
-          >
-            {place.subtitle}
-          </p>
-        : null}
 
         {scheduleControls}
       </div>

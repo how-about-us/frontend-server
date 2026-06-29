@@ -70,7 +70,7 @@ function PlanStartTimeInput({
         )}
       >
         <span
-          className="pointer-events-none text-[11px] tabular-nums text-dark-gray/70"
+          className="pointer-events-none text-xs tabular-nums text-dark-gray/70"
           aria-hidden
         >
           --:--
@@ -117,7 +117,7 @@ export function PlanItemTimeReadOnly({
   if (!summary) return null;
 
   return (
-    <p className="truncate text-[10px] tabular-nums text-dark-gray/75">
+    <p className="truncate text-xs tabular-nums text-dark-gray/75">
       {summary}
     </p>
   );

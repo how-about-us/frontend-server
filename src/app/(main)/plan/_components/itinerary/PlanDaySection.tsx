@@ -150,7 +150,7 @@ export function PlanDaySection({
       )}
       aria-label={subtitle ? `${title} ${subtitle}` : title}
     >
-      <div className="overflow-hidden rounded-2xl">
+      <div className="overflow-visible rounded-2xl">
         <div
           className={cn(
             "relative flex w-full items-stretch gap-0.5 py-3.5",
