@@ -145,29 +145,32 @@ export function PlanPageView() {
   const pageContentClassName =
     "@container/plan space-y-2.5 overflow-x-auto pb-8";
 
-  const pageHeader = <MainPageHeader title="일정" />;
+  const scheduleAction = (
+    <button
+      type="button"
+      onClick={handleAddSchedule}
+      disabled={!canAddSchedule}
+      className={cn(
+        "flex shrink-0 cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+        pageToolbarButtonCompactGapClass,
+        pageToolbarButtonCompactTextClass,
+        pageToolbarButtonCompactPaddingClass,
+      )}
+    >
+      <Plus
+        className={pageToolbarButtonCompactIconClass}
+        strokeWidth={pageToolbarButtonCompactIconStroke}
+        aria-hidden
+      />
+      새 일차 추가
+    </button>
+  );
 
-  const scheduleToolbar = (
-    <div className="flex justify-end">
-      <button
-        type="button"
-        onClick={handleAddSchedule}
-        disabled={!canAddSchedule}
-        className={cn(
-          "flex cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
-          pageToolbarButtonCompactGapClass,
-          pageToolbarButtonCompactTextClass,
-          pageToolbarButtonCompactPaddingClass,
-        )}
-      >
-        <Plus
-          className={pageToolbarButtonCompactIconClass}
-          strokeWidth={pageToolbarButtonCompactIconStroke}
-          aria-hidden
-        />
-        새 일차 추가
-      </button>
-    </div>
+  const pageHeader = (
+    <MainPageHeader
+      title="일정"
+      action={!isReadOnly ? scheduleAction : undefined}
+    />
   );
 
   if (showInitialLoading) {
@@ -178,7 +181,6 @@ export function PlanPageView() {
           className={pageContentClassName}
         >
           {pageHeader}
-          {!isReadOnly ? scheduleToolbar : null}
           <p className="py-8 text-center text-sm text-dark-gray">
             일정을 불러오는 중…
           </p>
@@ -194,7 +196,6 @@ export function PlanPageView() {
         className={pageContentClassName}
       >
         {pageHeader}
-        {!isReadOnly ? scheduleToolbar : null}
 
         {isError ? (
           <p

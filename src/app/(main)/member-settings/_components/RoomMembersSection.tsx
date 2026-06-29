@@ -17,6 +17,7 @@ import {
   pageToolbarButtonCompactPaddingClass,
   pageToolbarButtonCompactTextClass,
 } from "@/components/layout/page-toolbar-button";
+import { MainPageHeader } from "@/components/layout/MainPageHeader";
 import { useCurrentRoomMembership } from "@/hooks/useCurrentRoomMembership";
 import { useKickMember, useLeaveRoom, useTransferHost } from "@/hooks/useRooms";
 import type { RoomMember } from "@/lib/api/rooms";
@@ -25,6 +26,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { cn } from "@/lib/utils";
 import { AddMemberPanel } from "./AddMemberPanel";
 import { MemberCard, type MemberCardData } from "./MemberCard";
+import { MemberSettingsHostGuard } from "./MemberSettingsHostGuard";
 
 function toMemberCardData(
   member: RoomMember,
@@ -116,35 +118,40 @@ export function RoomMembersSection() {
 
   return (
     <div className="relative flex flex-col gap-6">
-      {isHost && (
-        <div className="flex items-center justify-end">
-          <button
-            type="button"
-            onClick={() => {
-              setShowInvitePanel((open) => {
-                if (!open) setInvitePanelKey((k) => k + 1);
-                return !open;
-              });
-            }}
-            className={cn(
-              "flex cursor-pointer items-center rounded-full shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
-              pageToolbarButtonCompactGapClass,
-              pageToolbarButtonCompactTextClass,
-              pageToolbarButtonCompactPaddingClass,
-              showInvitePanel
-                ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50"
-                : "bg-brand-red text-white",
-            )}
-          >
-            <Plus
-              className={pageToolbarButtonCompactIconClass}
-              strokeWidth={pageToolbarButtonCompactIconStroke}
-              aria-hidden
-            />
-            멤버 초대
-          </button>
-        </div>
-      )}
+      <MainPageHeader
+        title="멤버 관리"
+        action={
+          isHost ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowInvitePanel((open) => {
+                  if (!open) setInvitePanelKey((k) => k + 1);
+                  return !open;
+                });
+              }}
+              className={cn(
+                "flex shrink-0 cursor-pointer items-center rounded-full shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+                pageToolbarButtonCompactGapClass,
+                pageToolbarButtonCompactTextClass,
+                pageToolbarButtonCompactPaddingClass,
+                showInvitePanel
+                  ? "bg-white text-brand-red ring-2 ring-brand-red ring-offset-1 hover:bg-gray-50"
+                  : "bg-brand-red text-white",
+              )}
+            >
+              <Plus
+                className={pageToolbarButtonCompactIconClass}
+                strokeWidth={pageToolbarButtonCompactIconStroke}
+                aria-hidden
+              />
+              멤버 초대
+            </button>
+          ) : undefined
+        }
+      />
+
+      <MemberSettingsHostGuard />
 
       {/* 멤버 초대 패널 */}
       {showInvitePanel && currentRoomId && (
