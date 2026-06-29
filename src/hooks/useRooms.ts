@@ -755,7 +755,8 @@ export function useAllRoomBookmarks(
     queryFn: () => fetchAndSeedAllRoomBookmarks(queryClient, roomId!),
     enabled: !!roomId && queryEnabled,
     staleTime: Infinity,
-    refetchOnMount: false,
+    // STOMP가 비활성 캐시를 stale로 표시했다면 queryFn이 등록된 뒤 갱신한다.
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 }
@@ -771,7 +772,8 @@ export function useRoomBookmarks(
     queryFn: () => getRoomBookmarks(roomId!, categoryId!),
     enabled: !!roomId && idOk,
     staleTime: Infinity,
-    refetchOnMount: false,
+    // setQueryData로 시딩된 비활성 캐시는 마운트 시점에만 안전하게 재조회한다.
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 }

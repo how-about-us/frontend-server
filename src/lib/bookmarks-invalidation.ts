@@ -14,11 +14,11 @@ async function invalidateAllRoomBookmarkQueries(
 ): Promise<void> {
   await queryClient.invalidateQueries({
     queryKey: roomAllBookmarksQueryKey(roomId),
-    refetchType: "all",
+    refetchType: "active",
   });
   await queryClient.invalidateQueries({
     queryKey: roomBookmarksByRoomRootQueryKey(roomId),
-    refetchType: "all",
+    refetchType: "active",
   });
 }
 
@@ -36,36 +36,36 @@ export async function invalidateRoomBookmarkQueries(
     case "BOOKMARK_CREATED":
       await queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
-        refetchType: "all",
+        refetchType: "active",
       });
       await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
-        refetchType: "all",
+        refetchType: "active",
       });
       break;
 
     case "BOOKMARK_UPDATED":
       await queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
-        refetchType: "all",
+        refetchType: "active",
       });
       await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
-        refetchType: "all",
+        refetchType: "active",
       });
       break;
 
     case "BOOKMARK_DELETED":
       await queryClient.invalidateQueries({
         queryKey: roomBookmarksQueryKey(rid, categoryId),
-        refetchType: "all",
+        refetchType: "active",
       });
       await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
-        refetchType: "all",
+        refetchType: "active",
       });
       break;
 
@@ -73,7 +73,7 @@ export async function invalidateRoomBookmarkQueries(
     case "CATEGORY_UPDATED":
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
-        refetchType: "all",
+        refetchType: "active",
       });
       break;
 
@@ -84,7 +84,7 @@ export async function invalidateRoomBookmarkQueries(
       await invalidateAllRoomBookmarkQueries(queryClient, rid);
       await queryClient.invalidateQueries({
         queryKey: bookmarkCategoriesQueryKey(rid),
-        refetchType: "all",
+        refetchType: "active",
       });
       break;
 
