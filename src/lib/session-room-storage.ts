@@ -22,7 +22,7 @@ export function writeCurrentRoomIdToSessionStorage(roomId: string): void {
   try {
     sessionStorage.setItem(SESSION_CURRENT_ROOM_ID_KEY, id);
   } catch {
-    /* quota / private mode */
+    /* 저장 공간 제한 또는 비공개 모드에서는 무시 */
   }
 }
 
