@@ -71,6 +71,9 @@ export function PlanPageView() {
     () => sortedSchedules.map((s) => s.scheduleId).join(","),
     [sortedSchedules],
   );
+  const expansionRoomResetRevision = usePlanItineraryExpandedStore(
+    (s) => s.roomResetRevision,
+  );
 
   useLayoutEffect(() => {
     const ids =
@@ -81,7 +84,7 @@ export function PlanPageView() {
             .filter(Number.isFinite)
         : [];
     usePlanItineraryExpandedStore.getState().syncScheduleExpansionState(ids);
-  }, [scheduleExpansionSyncKey]);
+  }, [scheduleExpansionSyncKey, expansionRoomResetRevision]);
 
   const planDays = useMemo(
     () =>
