@@ -79,7 +79,12 @@ export function ChatMessageList({
   /** 스크롤이 하단 근처일 때 읽음 처리 */
   onAtBottom?: () => void;
 }) {
-  const groups = groupConsecutiveMessages(messages);
+  // 읽음 구분선이 같은 발신자의 후속 메시지와 한 그룹으로 합쳐지면 그룹 끝을
+  // 따라 내려간다. 세션 시작 때 정한 메시지 바로 뒤에서 그룹을 끊어 DOM 위치를 고정한다.
+  const groups = groupConsecutiveMessages(
+    messages,
+    readDividerPlacement?.afterMessageId,
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const scrollRootRef = useRef<HTMLDivElement>(null);
@@ -94,6 +99,8 @@ export function ChatMessageList({
   const followTailRef = useRef(true);
   /** 패널 리사이즈·최소화 전환 시 하단에서 떨어진 거리(px) 복원용 */
   const distFromBottomRef = useRef(0);
+  /** 절취선으로 이동하며 발생한 scroll 이벤트가 최신 메시지 추적을 켜지 않도록 보호 */
+  const restoringReadBoundaryRef = useRef(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   /** 하단으로 부드럽게 이동 중 상태 정리용 */
   const [smoothJumpToBottom, setSmoothJumpToBottom] = useState(false);
@@ -103,6 +110,7 @@ export function ChatMessageList({
   }, []);
 
   const handleJumpClick = useCallback(() => {
+    restoringReadBoundaryRef.current = false;
     followTailRef.current = true;
     if (hasMoreNewer && onJumpToLatest) {
       onJumpToLatest();
@@ -132,6 +140,11 @@ export function ChatMessageList({
     };
     const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
     distFromBottomRef.current = dist;
+    if (restoringReadBoundaryRef.current) {
+      followTailRef.current = false;
+      setIsAtBottomIfChanged(setIsAtBottom, false);
+      return;
+    }
     const near = dist < CHAT_NEAR_BOTTOM_PX;
     followTailRef.current = near;
     setIsAtBottomIfChanged(setIsAtBottom, near);
@@ -214,10 +227,12 @@ export function ChatMessageList({
       lastScrollAnchorKeyRef.current = scrollToAnchor.key;
       const targetId = scrollToAnchor.anchorId;
       if (!targetId) {
+        restoringReadBoundaryRef.current = false;
         scrollRootToBottomInstant(root);
         followTailRef.current = true;
         setIsAtBottomIfChanged(setIsAtBottom, true);
       } else {
+        restoringReadBoundaryRef.current = true;
         followTailRef.current = false;
         scrollReadBoundaryToBottom(
           root,
@@ -226,6 +241,12 @@ export function ChatMessageList({
           followTailRef,
           setIsAtBottom,
         );
+        distFromBottomRef.current =
+          root.scrollHeight - root.scrollTop - root.clientHeight;
+        scrollPreserveRef.current = {
+          sh: root.scrollHeight,
+          st: root.scrollTop,
+        };
         requestAnimationFrame(() => {
           const r = scrollRootRef.current;
           if (!r || lastScrollAnchorKeyRef.current !== scrollToAnchor.key) return;
@@ -236,6 +257,14 @@ export function ChatMessageList({
             followTailRef,
             setIsAtBottom,
           );
+          distFromBottomRef.current =
+            r.scrollHeight - r.scrollTop - r.clientHeight;
+          scrollPreserveRef.current = { sh: r.scrollHeight, st: r.scrollTop };
+          requestAnimationFrame(() => {
+            if (lastScrollAnchorKeyRef.current !== scrollToAnchor.key) return;
+            followTailRef.current = false;
+            restoringReadBoundaryRef.current = false;
+          });
         });
       }
     }

@@ -14,15 +14,13 @@ export function setIsAtBottomIfChanged(
   setIsAtBottom((prev) => (prev === near ? prev : near));
 }
 
-function syncScrollViewportState(
-  root: HTMLDivElement,
+function freezeViewportAtReadBoundary(
   followTailRef: MutableRefObject<boolean>,
   setIsAtBottom: Dispatch<SetStateAction<boolean>>,
 ) {
-  const dist = root.scrollHeight - root.scrollTop - root.clientHeight;
-  const near = dist < CHAT_NEAR_BOTTOM_PX;
-  followTailRef.current = near;
-  setIsAtBottomIfChanged(setIsAtBottom, near);
+  // 절취선 아래 콘텐츠가 80px 이내여도 최신 메시지 추적 상태로 전환하지 않는다.
+  followTailRef.current = false;
+  setIsAtBottomIfChanged(setIsAtBottom, false);
 }
 
 /** 읽음 구분선을 뷰포트 하단에 맞춤 (미렌더 시 메시지·최하단 fallback) */
@@ -36,7 +34,7 @@ export function scrollReadBoundaryToBottom(
   const divider = root.querySelector("[data-chat-read-divider]");
   if (divider instanceof HTMLElement) {
     divider.scrollIntoView({ behavior: "auto", block: "end" });
-    syncScrollViewportState(root, followTailRef, setIsAtBottom);
+    freezeViewportAtReadBoundary(followTailRef, setIsAtBottom);
     return;
   }
 
@@ -53,7 +51,7 @@ export function scrollReadBoundaryToBottom(
   const el = root.querySelector(`[data-chat-anchor="${CSS.escape(headId)}"]`);
   if (el instanceof HTMLElement) {
     el.scrollIntoView({ behavior: "auto", block: "end" });
-    syncScrollViewportState(root, followTailRef, setIsAtBottom);
+    freezeViewportAtReadBoundary(followTailRef, setIsAtBottom);
     return;
   }
 

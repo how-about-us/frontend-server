@@ -32,6 +32,7 @@ export function isChatHistoryAppendSnapshot(
 
 export function groupConsecutiveMessages(
   messages: ChatMessage[],
+  splitAfterMessageId?: string | null,
 ): ChatMessage[][] {
   const groups: ChatMessage[][] = [];
   let current: ChatMessage[] = [];
@@ -78,5 +79,14 @@ export function groupConsecutiveMessages(
     }
   }
   if (current.length) groups.push(current);
-  return groups;
+
+  if (!splitAfterMessageId) return groups;
+
+  return groups.flatMap((group) => {
+    const boundaryIndex = group.findIndex(
+      (msg) => msg.id === splitAfterMessageId,
+    );
+    if (boundaryIndex < 0 || boundaryIndex === group.length - 1) return [group];
+    return [group.slice(0, boundaryIndex + 1), group.slice(boundaryIndex + 1)];
+  });
 }
