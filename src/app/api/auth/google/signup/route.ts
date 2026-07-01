@@ -7,21 +7,17 @@ const API_BASE = requiredEnv("API_BASE_URL");
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as {
-    code?: unknown;
+    signupToken?: unknown;
     agreementsAccepted?: unknown;
   };
 
-  const backendBody: { code?: unknown; agreementsAccepted?: true } = {
-    code: body.code,
-  };
-  if (body.agreementsAccepted === true) {
-    backendBody.agreementsAccepted = true;
-  }
-
-  const backendRes = await fetch(`${API_BASE}/auth/google/login`, {
+  const backendRes = await fetch(`${API_BASE}/auth/google/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(backendBody),
+    body: JSON.stringify({
+      signupToken: body.signupToken,
+      agreementsAccepted: body.agreementsAccepted,
+    }),
   });
 
   const res = new NextResponse(backendRes.body, {

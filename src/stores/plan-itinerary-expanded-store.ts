@@ -9,6 +9,8 @@ type ExpandedState = {
   expandedByScheduleId: Record<number, boolean>;
   /** `setScheduleExpanded(..., true)` 호출 순서 (접힌 일차는 제거) */
   expansionOrder: number[];
+  /** 같은 방 재입장을 포함한 초기화마다 증가 — 일정 목록 재동기화 트리거 */
+  roomResetRevision: number;
   setScheduleExpanded: (scheduleId: number, expanded: boolean) => void;
   syncScheduleExpansionState: (activeScheduleIds: readonly number[]) => void;
   /** 방 전환 시 이전 방 scheduleId로 맵·일정 쿼리가 먼저 도는 것을 방지 */
@@ -27,6 +29,7 @@ function removeExpansionOrder(order: number[], scheduleId: number): number[] {
 export const usePlanItineraryExpandedStore = create<ExpandedState>((set) => ({
   expandedByScheduleId: {},
   expansionOrder: [],
+  roomResetRevision: 0,
   setScheduleExpanded: (scheduleId, expanded) => {
     if (!Number.isFinite(scheduleId)) return;
     set((s) => {
@@ -64,6 +67,10 @@ export const usePlanItineraryExpandedStore = create<ExpandedState>((set) => ({
     });
   },
   resetForRoomChange: () => {
-    set({ expandedByScheduleId: {}, expansionOrder: [] });
+    set((s) => ({
+      expandedByScheduleId: {},
+      expansionOrder: [],
+      roomResetRevision: s.roomResetRevision + 1,
+    }));
   },
 }));

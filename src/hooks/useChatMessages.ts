@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ServerChatMessage } from "@/types/chat";
 import {
@@ -95,7 +102,7 @@ export function useChatMessages(
 ) {
   const { fetchHistory } = options;
   const queryClient = useQueryClient();
-  const { setRoomChatMessageHandler } = useStompContext();
+  const { setRoomChatMessageHandler, connected } = useStompContext();
   const { data: sessionUser } = useSessionUser();
   const userId = sessionUser?.id;
   const { data: membersData } = useRoomMembers(roomId);
@@ -117,6 +124,11 @@ export function useChatMessages(
   const prevRoomForHistoryGateRef = useRef<string | null>(null);
   const prevFetchHistoryRef = useRef(false);
   const reopenScrollKeyRef = useRef(0);
+  const readBoundaryRestoreVersionRef = useRef(0);
+  const activeRoomIdRef = useRef("");
+  const fetchHistoryRef = useRef(fetchHistory);
+  const hasObservedConnectedRef = useRef(false);
+  const disconnectedAfterConnectionRef = useRef(false);
   const historyFetchedRoomIdsRef = useRef<Set<string>>(new Set());
   const hasMoreByRoomRef = useRef<Map<string, boolean>>(new Map());
   const hasMoreNewerByRoomRef = useRef<Map<string, boolean>>(new Map());
@@ -129,7 +141,12 @@ export function useChatMessages(
   const isFetchingOlderRef = useRef(false);
   const isFetchingNewerRef = useRef(false);
   const rawMessagesRef = useRef<ServerChatMessage[]>([]);
-  rawMessagesRef.current = rawMessages;
+
+  useLayoutEffect(() => {
+    rawMessagesRef.current = rawMessages;
+    activeRoomIdRef.current = roomId?.trim() ?? "";
+    fetchHistoryRef.current = fetchHistory;
+  }, [rawMessages, roomId, fetchHistory]);
 
   const { markMessagesRead, resetReadDedup, onIncomingMessage } =
     useChatMessageRead({
@@ -224,8 +241,99 @@ export function useChatMessages(
     setReadDividerPlacement(EMPTY_READ_DIVIDER_PLACEMENT);
   }, []);
 
+  const canRenderReadDivider = useCallback(
+    (
+      slice: readonly ServerChatMessage[],
+      placement: ReadDividerPlacement,
+    ) =>
+      (placement.beforeFirst && slice.length > 0) ||
+      (placement.afterMessageId != null &&
+        slice.some((message) => message.id === placement.afterMessageId)),
+    [],
+  );
+
+  const restoreSessionReadBoundary = useCallback(
+    async (targetRoomId: string) => {
+      const rid = targetRoomId.trim();
+      if (!rid) return;
+
+      const version = ++readBoundaryRestoreVersionRef.current;
+      const isCurrentRequest = () =>
+        readBoundaryRestoreVersionRef.current === version &&
+        fetchHistoryRef.current &&
+        activeRoomIdRef.current === rid;
+
+      try {
+        const { lastReadMessageId } =
+          await getRoomMessageReadStatus(targetRoomId);
+        if (!isCurrentRequest()) return;
+
+        if (!lastReadMessageId) {
+          applySessionReadBoundary(
+            rid,
+            null,
+            EMPTY_READ_DIVIDER_PLACEMENT,
+          );
+          return;
+        }
+
+        const beforeSlice = [...rawMessagesRef.current];
+        const bridged = await mergeSliceWithReadBridge(
+          targetRoomId,
+          lastReadMessageId,
+          beforeSlice,
+          beforeSlice,
+        );
+        if (!isCurrentRequest()) return;
+
+        applyBridgedSlice(
+          targetRoomId,
+          bridged,
+          {
+            hasMoreNewerByRoom: hasMoreNewerByRoomRef.current,
+            lastSequenceByRoom: lastSequenceByRoomRef.current,
+          },
+          { setHasMoreNewer, setRawMessages },
+          queryClient,
+        );
+
+        const placement = resolveReadDividerPlacement(
+          bridged.slice,
+          lastReadMessageId,
+          bridged.placementBeforeSlice,
+        );
+        applySessionReadBoundary(rid, lastReadMessageId, placement);
+
+        if (canRenderReadDivider(bridged.slice, placement)) {
+          publishScrollToAnchor(lastReadMessageId);
+        }
+      } catch {
+        if (!isCurrentRequest()) return;
+        const fallbackLastRead = lastReadMarkerByRoomRef.current.get(rid);
+        const fallbackPlacement =
+          readDividerPlacementByRoomRef.current.get(rid);
+        if (
+          fallbackLastRead &&
+          fallbackPlacement &&
+          canRenderReadDivider(rawMessagesRef.current, fallbackPlacement)
+        ) {
+          setReadMarkerMessageId(fallbackLastRead);
+          setReadDividerPlacement(fallbackPlacement);
+          publishScrollToAnchor(fallbackLastRead);
+        }
+      }
+    },
+    [
+      applySessionReadBoundary,
+      canRenderReadDivider,
+      publishScrollToAnchor,
+      queryClient,
+    ],
+  );
+
   useEffect(() => {
     if (!roomId) {
+      readBoundaryRestoreVersionRef.current += 1;
       setRawMessages([]);
       setReadMarkerMessageId(null);
       setReadDividerPlacement(EMPTY_READ_DIVIDER_PLACEMENT);
@@ -249,6 +357,7 @@ export function useChatMessages(
     }
 
     if (!fetchHistory) {
+      readBoundaryRestoreVersionRef.current += 1;
       const prevR = prevRoomForHistoryGateRef.current;
       if (prevR !== null && prevR !== roomId) {
         setRawMessages([]);
@@ -286,67 +395,8 @@ export function useChatMessages(
       }
 
       if (!reopened) return;
-
-      let cancelledReopen = false;
-      void (async () => {
-        try {
-          const { lastReadMessageId } =
-            await getRoomMessageReadStatus(roomId);
-          if (cancelledReopen) return;
-
-          if (lastReadMessageId) {
-            const beforeSlice = [...rawMessagesRef.current];
-            const bridged = await mergeSliceWithReadBridge(
-              roomId,
-              lastReadMessageId,
-              beforeSlice,
-              beforeSlice,
-            );
-            if (cancelledReopen) return;
-
-            applyBridgedSlice(
-              roomId,
-              bridged,
-              {
-                hasMoreNewerByRoom: hasMoreNewerByRoomRef.current,
-                lastSequenceByRoom: lastSequenceByRoomRef.current,
-              },
-              { setHasMoreNewer, setRawMessages },
-              queryClient,
-            );
-
-            applySessionReadBoundary(
-              ridTrim,
-              lastReadMessageId,
-              resolveReadDividerPlacement(
-                bridged.slice,
-                lastReadMessageId,
-                bridged.placementBeforeSlice,
-              ),
-            );
-          } else {
-            applySessionReadBoundary(
-              ridTrim,
-              null,
-              EMPTY_READ_DIVIDER_PLACEMENT,
-            );
-          }
-
-          publishScrollToAnchor(lastReadMessageId);
-        } catch {
-          const fallbackLastRead = lastReadMarkerByRoomRef.current.get(ridTrim);
-          const fallbackPlacement =
-            readDividerPlacementByRoomRef.current.get(ridTrim);
-          if (fallbackLastRead && fallbackPlacement) {
-            setReadMarkerMessageId(fallbackLastRead);
-            setReadDividerPlacement(fallbackPlacement);
-            publishScrollToAnchor(fallbackLastRead);
-          }
-        }
-      })();
-      return () => {
-        cancelledReopen = true;
-      };
+      void restoreSessionReadBoundary(roomId);
+      return;
     }
 
     setRawMessages([]);
@@ -354,18 +404,24 @@ export function useChatMessages(
     setHasMoreNewer(false);
     setReadMarkerMessageId(null);
     let cancelled = false;
+    const restoreVersion = ++readBoundaryRestoreVersionRef.current;
+    const isCurrentRequest = () =>
+      !cancelled &&
+      readBoundaryRestoreVersionRef.current === restoreVersion &&
+      fetchHistoryRef.current &&
+      activeRoomIdRef.current === ridTrim;
 
     void (async () => {
       try {
         const { lastReadMessageId } = await getRoomMessageReadStatus(roomId);
-        if (cancelled) return;
+        if (!isCurrentRequest()) return;
 
         const out = await loadInitialRoomHistory(
           roomId,
           lastReadMessageId,
           CHAT_MESSAGE_PAGE_SIZE,
         );
-        if (cancelled) return;
+        if (!isCurrentRequest()) return;
 
         let slice = mergeServerMessageLists(
           out.serverSlice,
@@ -382,7 +438,7 @@ export function useChatMessages(
             slice,
             out.serverSlice,
           );
-          if (cancelled) return;
+          if (!isCurrentRequest()) return;
           slice = bridged.slice;
           placementBeforeSlice = bridged.placementBeforeSlice;
           if (bridged.bridgedHasMoreNewer != null) {
@@ -401,17 +457,14 @@ export function useChatMessages(
         setHasMore(out.hasMoreOlder);
         setHasMoreNewer(hasMoreNewer);
 
-        applySessionReadBoundary(
-          ridTrim,
-          out.lastReadMessageId,
-          out.lastReadMessageId
-            ? resolveReadDividerPlacement(
-                slice,
-                out.lastReadMessageId,
-                placementBeforeSlice,
-              )
-            : EMPTY_READ_DIVIDER_PLACEMENT,
-        );
+        const placement = out.lastReadMessageId
+          ? resolveReadDividerPlacement(
+              slice,
+              out.lastReadMessageId,
+              placementBeforeSlice,
+            )
+          : EMPTY_READ_DIVIDER_PLACEMENT;
+        applySessionReadBoundary(ridTrim, out.lastReadMessageId, placement);
 
         setRawMessages(slice);
         bumpRoomLastSequence(lastSequenceByRoomRef.current, roomId, slice);
@@ -424,7 +477,12 @@ export function useChatMessages(
           markMessagesRead(newest.id);
         }
 
-        publishScrollToAnchor(out.lastReadMessageId);
+        if (
+          out.lastReadMessageId &&
+          canRenderReadDivider(slice, placement)
+        ) {
+          publishScrollToAnchor(out.lastReadMessageId);
+        }
       } catch {
         /* 실패 시 Set에 넣지 않음 → 다음 패널 오픈 시 재시도 */
       }
@@ -442,7 +500,29 @@ export function useChatMessages(
     resetReadDedup,
     publishScrollToAnchor,
     applySessionReadBoundary,
+    canRenderReadDivider,
+    restoreSessionReadBoundary,
   ]);
+
+  useEffect(() => {
+    if (!connected) {
+      if (hasObservedConnectedRef.current) {
+        disconnectedAfterConnectionRef.current = true;
+      }
+      return;
+    }
+
+    if (!hasObservedConnectedRef.current) {
+      hasObservedConnectedRef.current = true;
+      return;
+    }
+
+    if (!disconnectedAfterConnectionRef.current) return;
+    disconnectedAfterConnectionRef.current = false;
+
+    if (!fetchHistory || !roomId) return;
+    queueMicrotask(() => void restoreSessionReadBoundary(roomId));
+  }, [connected, fetchHistory, roomId, restoreSessionReadBoundary]);
 
   const fetchOlderMessages = useCallback(() => {
     const rid = roomId;
@@ -628,18 +708,13 @@ export function useChatMessages(
 
   const rid = roomId?.trim() ?? "";
   const effectiveReadMarkerMessageId =
-    fetchHistory && rid
-      ? readMarkerMessageId ?? lastReadMarkerByRoomRef.current.get(rid) ?? null
-      : null;
-  const savedPlacement = rid
-    ? readDividerPlacementByRoomRef.current.get(rid)
-    : undefined;
+    fetchHistory && rid ? readMarkerMessageId : null;
   const effectiveReadDividerPlacement: ReadDividerPlacement | null =
     fetchHistory && rid
       ? readDividerPlacement.afterMessageId != null ||
         readDividerPlacement.beforeFirst
         ? readDividerPlacement
-        : (savedPlacement ?? null)
+        : null
       : null;
 
   return {

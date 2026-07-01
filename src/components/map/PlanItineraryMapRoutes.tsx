@@ -4,7 +4,7 @@
 
 import { AdvancedMarker, Polyline } from "@vis.gl/react-google-maps";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { useMemo, type JSX } from "react";
+import { useEffect, useMemo, type JSX } from "react";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomSchedules } from "@/hooks/useRooms";
@@ -77,6 +77,9 @@ export function PlanItineraryMapRoutes() {
   const epochBySegmentKey = usePlanMapDirectionsEpochStore(
     (s) => s.epochBySegmentKey,
   );
+  const syncRouteRenderStatuses = usePlanMapDirectionsEpochStore(
+    (s) => s.syncRouteRenderStatuses,
+  );
 
   const orderedScheduleIdsForQueries = useMemo(
     () => [...expandedScheduleIds].sort((a, b) => a - b),
@@ -144,6 +147,29 @@ export function PlanItineraryMapRoutes() {
       };
     }),
   });
+
+  const routeRenderStatusEntries = useMemo(
+    () =>
+      segments.map((seg, index) => {
+        const query = pathsPerSegmentQueries[index];
+        const status =
+          !query || query.isPending || query.isFetching
+            ? "loading"
+            : query.isError || !query.data?.length
+              ? "unavailable"
+              : "available";
+        return {
+          scheduleId: seg.scheduleId,
+          segmentSourceItemId: seg.segmentSourceItemId,
+          status,
+        } as const;
+      }),
+    [segments, pathsPerSegmentQueries],
+  );
+
+  useEffect(() => {
+    syncRouteRenderStatuses(rid, routeRenderStatusEntries);
+  }, [rid, routeRenderStatusEntries, syncRouteRenderStatuses]);
 
   const polylines: Array<JSX.Element> = [];
   segments.forEach((seg, segIdx) => {

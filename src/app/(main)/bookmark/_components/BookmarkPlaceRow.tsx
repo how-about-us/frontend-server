@@ -26,6 +26,9 @@ type MenuPosition = {
 };
 
 const MENU_GAP_PX = 4;
+const MENU_WIDTH_PX = 184;
+const MENU_MAX_HEIGHT_PX = 352;
+const MENU_VIEWPORT_PADDING_PX = 8;
 
 export function BookmarkPlaceRow({
   place,
@@ -44,7 +47,6 @@ export function BookmarkPlaceRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPhase, setMenuPhase] = useState<MenuPhase>("main");
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
-  const rowRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuPanelRef = useRef<HTMLDivElement>(null);
 
@@ -63,18 +65,40 @@ export function BookmarkPlaceRow({
   }, []);
 
   const updateMenuPosition = useCallback(() => {
-    const rowEl = rowRef.current;
-    if (!rowEl || !menuOpen) {
+    const triggerEl = triggerRef.current;
+    if (!triggerEl || !menuOpen) {
       setMenuPosition(null);
       return;
     }
-    const rect = rowEl.getBoundingClientRect();
+    const rect = triggerEl.getBoundingClientRect();
+    const estimatedHeight =
+      menuPhase === "main"
+        ? 96
+        : Math.min(
+            64 + Math.max(otherCategories.length, 1) * 40,
+            MENU_MAX_HEIGHT_PX,
+          );
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top =
+      spaceBelow >= estimatedHeight + MENU_GAP_PX
+        ? rect.bottom + MENU_GAP_PX
+        : Math.max(
+            MENU_VIEWPORT_PADDING_PX,
+            rect.top - MENU_GAP_PX - estimatedHeight,
+          );
+    const left = Math.min(
+      Math.max(
+        MENU_VIEWPORT_PADDING_PX,
+        rect.right - MENU_WIDTH_PX,
+      ),
+      window.innerWidth - MENU_WIDTH_PX - MENU_VIEWPORT_PADDING_PX,
+    );
     setMenuPosition({
-      top: rect.bottom + MENU_GAP_PX,
-      left: rect.left,
-      width: rect.width,
+      top,
+      left,
+      width: MENU_WIDTH_PX,
     });
-  }, [menuOpen]);
+  }, [menuOpen, menuPhase, otherCategories.length]);
 
   useLayoutEffect(() => {
     updateMenuPosition();
@@ -128,19 +152,20 @@ export function BookmarkPlaceRow({
   };
 
   return (
-    <div
-      ref={rowRef}
-      className="relative flex items-stretch border-b border-gray-border bg-white"
-    >
+    <div className="relative border-b border-gray-border bg-white">
       <BookmarkPlacePreviewCard
         name={name}
         address={address}
         photoName={photoName}
         primaryTypeDisplayName={primaryTypeDisplayName}
-        className="min-w-0 flex-1 border-0 hover:bg-gray-50 active:bg-gray-100"
+        className="min-w-0 w-full border-0 hover:bg-gray-50 active:bg-gray-100"
+        contentClassName="pr-7"
         onClick={onOpenDetail}
       />
-      <div className="relative flex shrink-0 items-center" ref={triggerRef}>
+      <div
+        className="absolute right-[6.25rem] top-3 z-10 flex"
+        ref={triggerRef}
+      >
         <button
           type="button"
           onClick={(e) => {
@@ -154,7 +179,9 @@ export function BookmarkPlaceRow({
             });
           }}
           disabled={busy}
-          className="rounded-lg p-2 text-dark-gray cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          className={`cursor-pointer rounded-lg p-1 text-dark-gray transition-colors hover:bg-bubble-gray hover:text-neutral-900 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+            menuOpen ? "bg-brand-red/10 text-brand-red" : ""
+          }`}
           aria-label="장소 메뉴"
           aria-expanded={menuOpen}
         >
@@ -174,7 +201,7 @@ export function BookmarkPlaceRow({
                 width: menuPosition.width,
                 zIndex: 200,
               }}
-              className="overflow-hidden rounded-xl border border-gray-border bg-white py-1 shadow-lg"
+              className="animate-in fade-in-0 zoom-in-95 max-h-[22rem] overflow-y-auto rounded-xl border border-gray-border/80 bg-white p-1.5 shadow-[0_12px_32px_rgba(15,23,42,0.18)] duration-150"
               role="menu"
             >
               {menuPhase === "main" ? (
@@ -182,7 +209,7 @@ export function BookmarkPlaceRow({
                   <button
                     type="button"
                     role="menuitem"
-                    className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
+                    className="block w-full cursor-pointer rounded-lg px-3 py-2.5 text-left text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={busy}
                     onClick={() => setMenuPhase("pickCategory")}
                   >
@@ -191,7 +218,7 @@ export function BookmarkPlaceRow({
                   <button
                     type="button"
                     role="menuitem"
-                    className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-0.5 block w-full cursor-pointer rounded-lg border-t border-gray-border/70 px-3 py-2.5 text-left text-sm font-medium text-brand-red transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={busy}
                     onClick={handleDelete}
                   >
@@ -202,15 +229,15 @@ export function BookmarkPlaceRow({
                 <>
                   <button
                     type="button"
-                    className="flex w-full cursor-pointer items-center gap-1 px-3 py-2 text-left text-sm font-medium text-neutral-800 hover:bg-bubble-gray"
+                    className="flex w-full cursor-pointer items-center gap-1 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray"
                     onClick={() => setMenuPhase("main")}
                   >
                     <ChevronLeft className="size-4 shrink-0" />
                     뒤로
                   </button>
-                  <div className="my-1 border-t border-gray-border" />
+                  <div className="mx-1 my-1 border-t border-gray-border" />
                   {otherCategories.length === 0 ? (
-                    <p className="px-4 py-3 text-center text-xs text-dark-gray">
+                    <p className="rounded-lg bg-gray-50 px-3 py-3 text-center text-xs leading-relaxed text-dark-gray">
                       이동할 다른 카테고리가 없습니다.
                     </p>
                   ) : (
@@ -219,7 +246,7 @@ export function BookmarkPlaceRow({
                         key={c.categoryId}
                         type="button"
                         role="menuitem"
-                        className="flex w-full cursor-pointer items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-neutral-900 transition-colors hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={busy}
                         onClick={() => handleMoveTo(c.categoryId)}
                       >

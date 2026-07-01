@@ -13,6 +13,7 @@ import {
   pageToolbarButtonCompactPaddingClass,
   pageToolbarButtonCompactTextClass,
 } from "@/components/layout/page-toolbar-button";
+import { MainPageHeader } from "@/components/layout/MainPageHeader";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { pickUniqueUntitledBookmarkCategoryName } from "@/lib/bookmark-untitled-category-name";
 import {
@@ -171,58 +172,66 @@ export function BookmarkFoldersView() {
   const rowMenuBusy = (folderId: string) =>
     isRowDeleting(folderId) || isRowUpdating(folderId);
 
+  const createAction = (
+    <button
+      type="button"
+      onClick={openCreate}
+      disabled={isCreating || isUpdating}
+      className={cn(
+        "flex w-fit shrink-0 cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
+        pageToolbarButtonCompactGapClass,
+        pageToolbarButtonCompactTextClass,
+        pageToolbarButtonCompactPaddingClass,
+      )}
+    >
+      <BookmarkPlus
+        className={pageToolbarButtonCompactIconClass}
+        strokeWidth={pageToolbarButtonCompactIconStroke}
+      />
+      새 북마크 추가
+    </button>
+  );
+
   if (!roomId) {
-    return null;
+    return <MainPageHeader title="북마크" />;
   }
 
   if (isPending) {
     return (
-      <div className="py-10 text-center text-sm text-dark-gray">
-        불러오는 중…
+      <div className="space-y-2.5">
+        <MainPageHeader title="북마크" />
+        <div className="py-10 text-center text-sm text-dark-gray">
+          불러오는 중…
+        </div>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="space-y-3 py-10 text-center">
-        <p className="text-sm text-brand-red">
-          {error instanceof Error
-            ? error.message
-            : "목록을 불러오지 못했습니다."}
-        </p>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="cursor-pointer text-sm font-medium text-neutral-900 underline"
-        >
-          다시 시도
-        </button>
+      <div className="space-y-2.5">
+        <MainPageHeader title="북마크" />
+        <div className="space-y-3 py-10 text-center">
+          <p className="text-sm text-brand-red">
+            {error instanceof Error
+              ? error.message
+              : "목록을 불러오지 못했습니다."}
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="cursor-pointer text-sm font-medium text-neutral-900 underline"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2.5 pb-8">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={openCreate}
-          disabled={isCreating || isUpdating}
-          className={cn(
-            "flex cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
-            pageToolbarButtonCompactGapClass,
-            pageToolbarButtonCompactTextClass,
-            pageToolbarButtonCompactPaddingClass,
-          )}
-        >
-          <BookmarkPlus
-            className={pageToolbarButtonCompactIconClass}
-            strokeWidth={pageToolbarButtonCompactIconStroke}
-          />
-          새 북마크 추가
-        </button>
-      </div>
+      <MainPageHeader title="북마크" action={createAction} />
 
       <div className="rounded-2xl border border-gray-border bg-white">
         {folders.length === 0 ? (

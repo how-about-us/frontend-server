@@ -31,6 +31,7 @@ type LifecycleOpts = {
     message?: string,
   ) => void;
   subscribeToRoomTopics: (client: Client, roomId: string) => void;
+  invalidateRoomTopics: () => void;
   teardownConnectedClient: () => void;
   clientRef: MutableRefObject<Client | null>;
   userRoomsQueueUnsubRef: MutableRefObject<(() => void) | null>;
@@ -49,6 +50,7 @@ export function useStompClientLifecycleEffect({
   suppressCloseRecoveryRef,
   notifyForcedRoomExit,
   subscribeToRoomTopics,
+  invalidateRoomTopics,
   teardownConnectedClient,
   clientRef,
   userRoomsQueueUnsubRef,
@@ -89,6 +91,7 @@ export function useStompClientLifecycleEffect({
 
       stopAppPing();
       setConnectionState((prev) => ({ ...prev, connected: false }));
+      invalidateRoomTopics();
 
       void handleStompReconnect({
         client,
@@ -149,6 +152,7 @@ export function useStompClientLifecycleEffect({
     };
   }, [
     getResolvedRoomId,
+    invalidateRoomTopics,
     notifyForcedRoomExit,
     stompEligible,
     subscribeToRoomTopics,

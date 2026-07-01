@@ -20,6 +20,10 @@ import {
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PLAN_ROUTE_CARD_WIDTH_PX } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
+import {
+  planMapSegmentEpochStoreKey,
+  usePlanMapDirectionsEpochStore,
+} from "@/stores/plan-map-directions-epoch-store";
 
 import { PlanTravelTimeCollapsed } from "./PlanTravelTimeCollapsed";
 import { TravelDirectionsCard } from "./TravelDirectionsCard";
@@ -79,6 +83,17 @@ export function PlanTravelTime({
 
   const fpTrim = scheduleFingerprint.trim();
   const rid = roomId.trim();
+  const mapRouteRenderStatus = usePlanMapDirectionsEpochStore((s) =>
+    rid.length > 0
+      ? s.routeRenderStatusBySegmentKey[
+          planMapSegmentEpochStoreKey(
+            rid,
+            scheduleId,
+            segmentSourceItemId,
+          )
+        ]
+      : undefined,
+  );
 
   const [selectedMode, setSelectedMode] = useState<ScheduleTravelModeValue>(
     () =>
@@ -364,6 +379,11 @@ export function PlanTravelTime({
           effectiveMode={selectedMode}
           showUnknownOption={false}
           modeRaw=""
+          renderWarning={
+            mapRouteRenderStatus === "unavailable"
+              ? "해당 경로는 렌더링할 수 없어요."
+              : undefined
+          }
           onSelectTravelMode={handleSelectTravelMode}
           onHideDirections={() => {
             setDirectionsHidden(true);

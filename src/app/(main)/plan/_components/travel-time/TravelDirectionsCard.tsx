@@ -40,6 +40,8 @@ export type TravelDirectionsCardProps = {
   effectiveMode: ScheduleTravelModeValue;
   showUnknownOption: boolean;
   modeRaw: string;
+  /** 지도 polyline을 만들 수 없을 때 요약 우측에 표시 */
+  renderWarning?: string;
   /** true면 목록은 참고용(클릭 선택 불가), `onSelectTravelMode` 미사용 */
   readOnly?: boolean;
   onSelectTravelMode?: (next: ScheduleTravelModeValue) => void;
@@ -58,6 +60,7 @@ export function TravelDirectionsCard({
   effectiveMode,
   showUnknownOption,
   modeRaw,
+  renderWarning,
   readOnly = false,
   onSelectTravelMode,
   onHideDirections,
@@ -78,24 +81,39 @@ export function TravelDirectionsCard({
 
   return (
     <div className="relative">
-      <button
-        type="button"
-        className="inline-flex max-w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-left"
-        aria-expanded={menuOpen}
-        onClick={onToggleMenu}
-      >
-        <TravelModeGlyph mode={headerTravelMode} />
-        <span className="inline-flex min-w-0 items-center gap-0.5 text-xs font-medium text-gray-900">
-          {summaryLine}
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 shrink-0 text-dark-gray transition-transform",
-              menuOpen && "rotate-180",
-            )}
-            aria-hidden
-          />
-        </span>
-      </button>
+      <div className="flex min-w-0 items-center">
+        <button
+          type="button"
+          className={cn(
+            "inline-flex h-10 min-w-0 cursor-pointer items-center gap-2 px-2.5 text-left",
+            renderWarning ? "max-w-[55%] shrink-0" : "max-w-full",
+          )}
+          aria-expanded={menuOpen}
+          onClick={onToggleMenu}
+        >
+          <TravelModeGlyph mode={headerTravelMode} />
+          <span className="inline-flex min-w-0 items-center gap-0.5 overflow-hidden whitespace-nowrap text-xs font-medium text-gray-900">
+            <span className="min-w-0 truncate">{summaryLine}</span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-dark-gray transition-transform",
+                menuOpen && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </span>
+        </button>
+
+        {renderWarning ? (
+          <span
+            role="status"
+            title={renderWarning}
+            className="flex h-10 min-w-0 flex-1 items-center overflow-hidden px-2 text-[11px] font-medium text-brand-red"
+          >
+            <span className="truncate">{renderWarning}</span>
+          </span>
+        ) : null}
+      </div>
 
       {menuOpen ? (
         <div className="w-fit max-w-full border-t border-gray-border px-2.5 py-2">
