@@ -13,6 +13,7 @@ import HeaderBar from "./HeaderBar";
 import LeftSection from "./LeftSection";
 import { MainContentScrollArea } from "./MainContentScrollArea";
 import SideBar from "./SideBar";
+import { SidebarTutorial } from "./SidebarTutorial";
 
 export function MainLayoutChrome({ children }: { children: ReactNode }) {
   const { isMobileDevice } = useMobileView();
@@ -32,6 +33,7 @@ export function MainLayoutChrome({ children }: { children: ReactNode }) {
 
         {!isMobileDevice ? <MapWithDetailPanel /> : null}
         {!isMobileDevice ? <ChatPanel /> : null}
+        {!isMobileDevice ? <SidebarTutorial /> : null}
       </div>
     </main>
   );

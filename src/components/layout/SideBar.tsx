@@ -54,6 +54,7 @@ function SideBar() {
           isChatActive ? "bg-brand-red/80" : "bg-brand-red"
         }`}
         aria-label="sidebar-chat"
+        data-tutorial-target="chat"
       >
         <img src={sidebarIcons.chat} alt="" className="h-9 w-9 brightness-0 invert" />
         <SidebarChatUnreadBadge />
@@ -66,6 +67,7 @@ function SideBar() {
           href={item.href}
           icon={item.icon}
           label={`sidebar-${item.href.slice(1)}`}
+          tutorialTarget={item.key}
           isActive={isSidebarItemActive(pathname, item.key, item.href)}
           showPingBadge={
             item.key === "member-settings" && showSettingsNotification

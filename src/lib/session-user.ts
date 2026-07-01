@@ -7,6 +7,7 @@ export interface SessionUser {
   nickname: string;
   profileImageUrl: string | null;
   provider: string;
+  tutorialCompleted: boolean;
 }
 
 export type FetchSessionUserResult =

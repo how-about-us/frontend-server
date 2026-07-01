@@ -5,9 +5,18 @@ import {
   readUserFacingMessageFromApiBody,
   type RoomRequiringDelegation,
 } from "@/lib/api/errors";
-import { apiUrl, tryParseJson } from "@/lib/api/http";
+import { apiUrl, requestVoid, tryParseJson } from "@/lib/api/http";
 
 export type { RoomRequiringDelegation };
+
+/** POST /users/me/tutorial/complete — 현재 사용자의 튜토리얼 완료 상태를 저장합니다. */
+export async function completeTutorial(): Promise<void> {
+  await requestVoid(
+    apiUrl("/users/me/tutorial/complete"),
+    { method: "POST" },
+    { errorMessage: "튜토리얼 완료 상태를 저장하지 못했습니다" },
+  );
+}
 
 export type WithdrawAccountResult =
   | { ok: true }
