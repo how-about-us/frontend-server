@@ -95,18 +95,25 @@ export function StompProvider({ children }: { children: ReactNode }) {
     connected: false,
   });
 
+  const invalidateRoomTopics = useCallback(() => {
+    roomTopicsUnsubRef.current = null;
+    lastSubscribedRoomIdRef.current = null;
+  }, []);
+
   const retryStompConnection = useCallback(() => {
     const client = clientRef.current;
     if (!client) return;
 
     useStompConnectionStore.getState().resumeAutoRecovery();
+    setConnectionState((prev) => ({ ...prev, connected: false }));
+    invalidateRoomTopics();
     void handleStompReconnect({
       client,
       queryClient: queryClientRef.current,
       isSuppressed: () => suppressCloseRecoveryRef.current,
       isActive: () => clientRef.current === client,
     });
-  }, []);
+  }, [invalidateRoomTopics]);
 
   const detachRoomTopicsOnly = useCallback(() => {
     roomTopicsUnsubRef.current?.();
@@ -206,6 +213,7 @@ export function StompProvider({ children }: { children: ReactNode }) {
     suppressCloseRecoveryRef,
     notifyForcedRoomExit,
     subscribeToRoomTopics,
+    invalidateRoomTopics,
     teardownConnectedClient,
     clientRef,
     userRoomsQueueUnsubRef,
