@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,25 +9,49 @@ import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 
 type Props = {
   roomId: string;
+  inviteCode: string | null | undefined;
+  isRoomDetailLoading: boolean;
+  isRoomDetailError: boolean;
   onClose: () => void;
 };
 
-/**
- * 패널은 열 때마다 remount되며, 마운트 시 항상 새 초대 코드를 발급합니다.
- * (닫았다 다시 열거나 로컬에 남은 만료·구 코드를 그대로 보여 주지 않기 위함)
- */
-export function AddMemberPanel({ roomId, onClose }: Props) {
+function normalizeInviteCode(inviteCode: string | null | undefined): string {
+  return typeof inviteCode === "string" ? inviteCode.trim() : "";
+}
+
+export function AddMemberPanel({
+  roomId,
+  inviteCode,
+  isRoomDetailLoading,
+  isRoomDetailError,
+  onClose,
+}: Props) {
   const roomIdTrim = roomId.trim();
+  const detailInviteCode = normalizeInviteCode(inviteCode);
   const [copied, setCopied] = useState(false);
-  const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [issuedCode, setIssuedCode] = useState<
+    string | null | undefined
+  >(undefined);
+  // 개발 Strict Mode에서 effect가 재실행되어도 자동 발급은 방마다 한 번만 시도한다.
+  const autoIssueAttemptedRoomRef = useRef<string | null>(null);
 
   const { mutate: regenerate, isPending: isRegenerating } =
     useRegenerateInviteCode();
 
   useEffect(() => {
-    if (!roomIdTrim.length) return;
+    if (!roomIdTrim.length || isRoomDetailLoading) return;
 
-    setIssuedCode(null);
+    if (detailInviteCode) return;
+
+    if (
+      isRoomDetailError ||
+      inviteCode === undefined ||
+      autoIssueAttemptedRoomRef.current === roomIdTrim
+    ) {
+      return;
+    }
+
+    autoIssueAttemptedRoomRef.current = roomIdTrim;
 
     regenerate(roomIdTrim, {
       onSuccess: ({ inviteCode: newCode }) => {
@@ -37,10 +61,19 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
         toast.error("초대 링크를 발급하지 못했어요.");
       },
     });
-  }, [roomIdTrim, regenerate]);
+  }, [
+    detailInviteCode,
+    inviteCode,
+    isRoomDetailError,
+    isRoomDetailLoading,
+    regenerate,
+    roomIdTrim,
+  ]);
 
-  const inviteUrl = issuedCode
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${issuedCode}`
+  const displayedCode =
+    issuedCode === undefined ? detailInviteCode || null : issuedCode;
+  const inviteUrl = displayedCode
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/join/${displayedCode}`
     : null;
 
   function handleCopy() {
@@ -101,9 +134,13 @@ export function AddMemberPanel({ roomId, onClose }: Props) {
               </span>
             ) : (
               <span className="truncate text-xs text-light-gray">
-                {isRegenerating
-                  ? "초대 링크를 발급하는 중…"
-                  : "발급에 실패했어요. 아래에서 재발급을 눌러 주세요."}
+                {isRoomDetailLoading
+                  ? "방 정보를 불러오는 중…"
+                  : isRegenerating
+                    ? "초대 링크를 발급하는 중…"
+                    : isRoomDetailError || inviteCode === undefined
+                      ? "방 정보를 불러오지 못했어요. 아래에서 재발급을 눌러 주세요."
+                      : "발급에 실패했어요. 아래에서 재발급을 눌러 주세요."}
               </span>
             )}
           </div>

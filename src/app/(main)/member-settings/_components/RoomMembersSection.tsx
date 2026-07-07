@@ -55,7 +55,6 @@ export function RoomMembersSection() {
   const [showDelegateFirstModal, setShowDelegateFirstModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
-  const [invitePanelKey, setInvitePanelKey] = useState(0);
   const [kickTargetId, setKickTargetId] = useState<number | null>(null);
   const [transferTargetId, setTransferTargetId] = useState<number | null>(null);
 
@@ -67,6 +66,9 @@ export function RoomMembersSection() {
     others,
     leftOthers,
     isHost,
+    roomDetail,
+    isDetailLoading,
+    isDetailError,
     isMembersLoading,
   } = useCurrentRoomMembership();
   const clearCurrentRoomId = useSessionStore((s) => s.clearCurrentRoomId);
@@ -124,12 +126,7 @@ export function RoomMembersSection() {
           isHost ? (
             <button
               type="button"
-              onClick={() => {
-                setShowInvitePanel((open) => {
-                  if (!open) setInvitePanelKey((k) => k + 1);
-                  return !open;
-                });
-              }}
+              onClick={() => setShowInvitePanel((open) => !open)}
               className={cn(
                 "flex shrink-0 cursor-pointer items-center rounded-full shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
                 pageToolbarButtonCompactGapClass,
@@ -156,8 +153,11 @@ export function RoomMembersSection() {
       {/* 멤버 초대 패널 */}
       {showInvitePanel && currentRoomId && (
         <AddMemberPanel
-          key={`${currentRoomId}-${invitePanelKey}`}
+          key={currentRoomId}
           roomId={currentRoomId}
+          inviteCode={roomDetail?.inviteCode}
+          isRoomDetailLoading={isDetailLoading}
+          isRoomDetailError={isDetailError}
           onClose={() => setShowInvitePanel(false)}
         />
       )}

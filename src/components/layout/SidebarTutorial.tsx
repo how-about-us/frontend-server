@@ -255,14 +255,16 @@ export function SidebarTutorial() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-brand-red">
               <Icon size={24} />
             </div>
-            <button
-              type="button"
-              onClick={() => void finishTutorial()}
-              disabled={isCompleting}
-              className="rounded-lg px-2 py-1 text-xs font-medium text-dark-gray transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              건너뛰기
-            </button>
+            {!isLastStep ? (
+              <button
+                type="button"
+                onClick={() => void finishTutorial()}
+                disabled={isCompleting}
+                className="rounded-lg px-2 py-1 text-xs font-medium text-dark-gray transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                건너뛰기
+              </button>
+            ) : null}
           </div>
 
           <p className="text-xs font-semibold tracking-wide text-brand-red">
