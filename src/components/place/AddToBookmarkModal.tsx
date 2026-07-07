@@ -269,7 +269,7 @@ export function AddToBookmarkModal({
           )}
 
           {categories && categories.length > 0 && (
-            <div className="mx-5 overflow-hidden rounded-2xl border border-gray-border bg-white">
+            <div className="w-full bg-white">
               <ul role="list" className="divide-y divide-gray-border">
                 {categories.map((c) => {
                   const sel = selectedIds.has(c.categoryId);
