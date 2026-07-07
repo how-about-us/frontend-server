@@ -50,7 +50,7 @@ export type RoomDetail = {
   destination: string;
   startDate: string | null;
   endDate: string | null;
-  inviteCode: string;
+  inviteCode: string | null;
   memberCount: number;
   role: string;
   createdAt: string;

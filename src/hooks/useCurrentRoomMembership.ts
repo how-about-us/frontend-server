@@ -14,8 +14,12 @@ export function useCurrentRoomMembership() {
   const { data: user } = useSessionUser();
   const { roomId: currentRoomId } = useCurrentRoomId();
   const { data: roomsData, isPending: isRoomsLoading } = useRoomsList();
-  const { data: roomDetail, isPending: isDetailLoading } =
-    useRoomDetail(currentRoomId);
+  const {
+    data: roomDetail,
+    isPending: isDetailPending,
+    isFetching: isDetailFetching,
+    isError: isDetailError,
+  } = useRoomDetail(currentRoomId);
   const { data: membersData, isLoading: isMembersLoading } =
     useRoomMembers(currentRoomId);
 
@@ -47,7 +51,9 @@ export function useCurrentRoomMembership() {
     others: activeMembers.filter((m) => m.userId !== user?.id),
     leftOthers: leftMembers.filter((m) => m.userId !== user?.id),
     isHost,
-    isLoading: isRoomsLoading || isDetailLoading || isMembersLoading,
+    isLoading: isRoomsLoading || isDetailPending || isMembersLoading,
+    isDetailLoading: isDetailPending || isDetailFetching,
+    isDetailError,
     isMembersLoading,
   };
 }
