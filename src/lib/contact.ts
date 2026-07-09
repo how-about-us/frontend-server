@@ -1,1 +1,1 @@
-export const SUPPORT_EMAIL = "team.uttae@gmail.com";
+export const SUPPORT_EMAIL = "contact@uttae.app";
