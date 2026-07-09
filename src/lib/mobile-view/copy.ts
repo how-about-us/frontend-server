@@ -6,8 +6,7 @@ export const mobileReadOnlyNoticeMessage =
 export const planCopy = {
   scheduleEmpty: {
     mobile: "아직 생성된 일정이 없어요.",
-    desktop:
-      "아직 생성된 일정이 없어요. 우측 상단의 「새 일차 추가」 버튼으로 일차를 추가해 보세요.",
+    desktop: "아직 생성된 일정이 없어요.",
   },
   placesEmpty: {
     mobile: "아직 등록된 장소가 없습니다.",

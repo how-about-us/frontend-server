@@ -2,7 +2,6 @@
 
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
 
 import {
   useCreateRoomSchedule,
@@ -17,13 +16,6 @@ import {
   mergeSchedulesWithPlaces,
   sortRoomSchedules,
 } from "@/lib/plan/scheduleMerge";
-import {
-  pageToolbarButtonCompactGapClass,
-  pageToolbarButtonCompactIconClass,
-  pageToolbarButtonCompactIconStroke,
-  pageToolbarButtonCompactPaddingClass,
-  pageToolbarButtonCompactTextClass,
-} from "@/components/layout/page-toolbar-button";
 import { cn } from "@/lib/utils";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { MainPageHeader } from "@/components/layout/MainPageHeader";
@@ -110,18 +102,6 @@ export function PlanPageView() {
     [deleteSchedule, isDeletingSchedule, roomId, sortedSchedules],
   );
 
-  const handleAddSchedule = useCallback(() => {
-    if (!roomId.length) return;
-    if (isCreatingSchedule) return;
-    void createScheduleAsync({ roomId, body: {} }).catch((e) => {
-      toast.error(
-        e instanceof Error && e.message.trim()
-          ? e.message
-          : "일차를 추가하지 못했어요.",
-      );
-    });
-  }, [createScheduleAsync, isCreatingSchedule, roomId]);
-
   const handleInsertScheduleAfter = useCallback(
     (dayIndex: number) => {
       if (!roomId.length) return;
@@ -142,39 +122,10 @@ export function PlanPageView() {
     roomId.length > 0 && isPending && schedules === undefined,
   );
 
-  const canAddSchedule =
-    roomId.length > 0 && !isCreatingSchedule && !isMovePending;
-
   const pageContentClassName =
     "@container/plan space-y-2.5 overflow-x-auto pb-8";
 
-  const scheduleAction = (
-    <button
-      type="button"
-      onClick={handleAddSchedule}
-      disabled={!canAddSchedule}
-      className={cn(
-        "flex shrink-0 cursor-pointer items-center rounded-full bg-brand-red text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-60",
-        pageToolbarButtonCompactGapClass,
-        pageToolbarButtonCompactTextClass,
-        pageToolbarButtonCompactPaddingClass,
-      )}
-    >
-      <Plus
-        className={pageToolbarButtonCompactIconClass}
-        strokeWidth={pageToolbarButtonCompactIconStroke}
-        aria-hidden
-      />
-      새 일차 추가
-    </button>
-  );
-
-  const pageHeader = (
-    <MainPageHeader
-      title="일정"
-      action={!isReadOnly ? scheduleAction : undefined}
-    />
-  );
+  const pageHeader = <MainPageHeader title="일정" />;
 
   if (showInitialLoading) {
     return (
