@@ -1,9 +1,9 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Loader2 } from "lucide-react";
+import { Clock, Loader2, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
@@ -12,15 +12,15 @@ import { useDeleteScheduleItem } from "@/hooks/useRooms";
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
+import { formatScheduleStaySummary } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
-import { PlanItemMemoForm, PlanItemMemoReadOnly } from "./PlanItemMemoForm";
-import { PlanItemTimeForm, PlanItemTimeReadOnly } from "./PlanItemTimeForm";
+import { PlanItemMemoEditor, PlanItemMemoReadOnly } from "./PlanItemMemoForm";
+import { PlanItemTimeEditor } from "./PlanItemTimeForm";
 import {
   isPlanPlaceCardInteractiveTarget,
   PlanOrderIndexBadge,
-  PlanPlaceCardControlsStack,
   PlanScheduleItemDeleteButton,
 } from "./PlanPlaceCardParts";
 
@@ -39,6 +39,10 @@ export type PlanPlaceCardProps = {
   onDragEnd: (e: DragEvent<Element>) => void;
 };
 
+function stopCardActivation(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
 export function PlanPlaceCard({
   place,
   displayOrderIndex,
@@ -55,6 +59,13 @@ export function PlanPlaceCard({
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const blockCardDragRef = useRef(false);
   const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place);
+
+  const [memoOpen, setMemoOpen] = useState(false);
+  const [timeOpen, setTimeOpen] = useState(false);
+
+  useEffect(() => {
+    if (scheduleOverlapWarning) setTimeOpen(true);
+  }, [scheduleOverlapWarning]);
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();
@@ -77,11 +88,14 @@ export function PlanPlaceCard({
     }
   }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
 
-  const handlePointerDownCapture = useCallback((e: React.PointerEvent) => {
-    blockCardDragRef.current = isPlanPlaceCardInteractiveTarget(e.target);
-    if (isReadOnly || blockCardDragRef.current) return;
-    pointerDownRef.current = { x: e.clientX, y: e.clientY };
-  }, [isReadOnly]);
+  const handlePointerDownCapture = useCallback(
+    (e: React.PointerEvent) => {
+      blockCardDragRef.current = isPlanPlaceCardInteractiveTarget(e.target);
+      if (isReadOnly || blockCardDragRef.current) return;
+      pointerDownRef.current = { x: e.clientX, y: e.clientY };
+    },
+    [isReadOnly],
+  );
 
   const handleDragStart = useCallback(
     (e: DragEvent<Element>) => {
@@ -154,125 +168,198 @@ export function PlanPlaceCard({
   const scheduleItemId =
     scheduleTimeEdit && typeof place.itemId === "number" ? place.itemId : null;
 
-  const scheduleControls =
-    scheduleTimeEdit && scheduleItemId !== null ?
-      !isReadOnly ?
-        <PlanPlaceCardControlsStack>
-          <PlanItemTimeForm
-            key={`time-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
-            roomId={scheduleTimeEdit.roomId}
-            scheduleId={scheduleTimeEdit.scheduleId}
-            itemId={scheduleItemId}
-            startTime={place.startTime ?? ""}
-            durationMinutes={place.durationMinutes ?? 0}
-            scheduleOverlapWarning={scheduleOverlapWarning}
-          />
-          <PlanItemMemoForm
-            key={`memo-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
-            roomId={scheduleTimeEdit.roomId}
-            scheduleId={scheduleTimeEdit.scheduleId}
-            itemId={scheduleItemId}
-            memo={place.memo}
-          />
-        </PlanPlaceCardControlsStack>
-      : <PlanPlaceCardControlsStack>
-          <PlanItemTimeReadOnly
-            startTime={place.startTime ?? ""}
-            durationMinutes={place.durationMinutes ?? 0}
-          />
-          {place.memo ?
-            <PlanItemMemoReadOnly memo={place.memo} />
-          : null}
-        </PlanPlaceCardControlsStack>
-    : null;
+  const canEditScheduleItem =
+    !isReadOnly && scheduleTimeEdit != null && scheduleItemId !== null;
 
-  const deleteButton =
-    canManageServerItem ? (
-      <PlanScheduleItemDeleteButton
-        disabled={isDeletingItem}
-        onDelete={() => void handleDeleteScheduleItem()}
+  const memoText = typeof place.memo === "string" ? place.memo.trim() : "";
+  const hasMemo = memoText.length > 0;
+  const staySummary = formatScheduleStaySummary(
+    place.startTime ?? "",
+    place.durationMinutes ?? 0,
+  );
+  const hasTime = Boolean(staySummary);
+
+  const deleteButton = canManageServerItem ? (
+    <PlanScheduleItemDeleteButton
+      disabled={isDeletingItem}
+      onDelete={() => void handleDeleteScheduleItem()}
+    />
+  ) : null;
+
+  const memoTrigger =
+    canEditScheduleItem && !memoOpen ? (
+      <button
+        type="button"
+        data-plan-card-no-drag
+        onMouseDown={stopCardActivation}
+        onClick={(e) => {
+          stopCardActivation(e);
+          setMemoOpen(true);
+        }}
+        aria-expanded={memoOpen}
+        className={cn(
+          PLAN_PLACE_CARD_TW.triggerButton,
+          hasMemo && PLAN_PLACE_CARD_TW.triggerButtonActive,
+        )}
+      >
+        <StickyNote
+          className={PLAN_PLACE_CARD_TW.triggerIcon}
+          strokeWidth={2}
+          aria-hidden
+        />
+        {hasMemo ? "메모 수정" : "메모 추가"}
+      </button>
+    ) : null;
+
+  const timeTrigger = canEditScheduleItem ? (
+    <button
+      type="button"
+      data-plan-card-no-drag
+      onMouseDown={stopCardActivation}
+      onClick={(e) => {
+        stopCardActivation(e);
+        setTimeOpen((v) => !v);
+      }}
+      aria-expanded={timeOpen}
+      className={cn(
+        PLAN_PLACE_CARD_TW.triggerButton,
+        (timeOpen || hasTime) && PLAN_PLACE_CARD_TW.triggerButtonActive,
+      )}
+    >
+      <Clock
+        className={PLAN_PLACE_CARD_TW.triggerIcon}
+        strokeWidth={2}
+        aria-hidden
       />
+      {hasTime ? staySummary : "출발-도착시간 추가"}
+    </button>
+  ) : null;
+
+  const readOnlySummary =
+    isReadOnly && (hasTime || hasMemo) ? (
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {hasTime ? (
+          <p className="truncate text-xs tabular-nums text-dark-gray/80">
+            {staySummary}
+          </p>
+        ) : null}
+      </div>
     ) : null;
 
   return (
-    <article
-      draggable={!dragDisabled && !isReadOnly}
-      onPointerDownCapture={isReadOnly ? undefined : handlePointerDownCapture}
-      onDragStart={dragDisabled || isReadOnly ? undefined : handleDragStart}
-      onDragEnd={dragDisabled || isReadOnly ? undefined : handleDragEnd}
-      onClick={isReadOnly ? undefined : handleCardClick}
-      className={cn(
-        "w-full select-none",
-        PLAN_PLACE_CARD_TW.article,
-        dragDisabled || isReadOnly
-          ? "cursor-default"
-          : "cursor-grab active:cursor-grabbing",
-      )}
-      aria-grabbed={isDragging}
-    >
-      <PlanOrderIndexBadge
-        orderIndex={displayOrderIndex}
-        backgroundColorHex={orderBadgeColor}
-      />
+    <div className="flex w-full flex-col gap-2">
+      <article
+        draggable={!dragDisabled && !isReadOnly}
+        onPointerDownCapture={isReadOnly ? undefined : handlePointerDownCapture}
+        onDragStart={dragDisabled || isReadOnly ? undefined : handleDragStart}
+        onDragEnd={dragDisabled || isReadOnly ? undefined : handleDragEnd}
+        onClick={isReadOnly ? undefined : handleCardClick}
+        className={cn(
+          "w-full select-none",
+          PLAN_PLACE_CARD_TW.article,
+          dragDisabled || isReadOnly
+            ? "cursor-default"
+            : "cursor-grab active:cursor-grabbing",
+        )}
+        aria-grabbed={isDragging}
+      >
+        <PlanOrderIndexBadge
+          orderIndex={displayOrderIndex}
+          backgroundColorHex={orderBadgeColor}
+        />
 
-      <div className={PLAN_PLACE_CARD_TW.thumbnail}>
-        {photoLoading ? (
-          <Loader2
-            className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green"
-            aria-hidden
-          />
-        ) : resolvedPhotoUrl ? (
-          <Image
-            src={resolvedPhotoUrl}
-            alt={place.title}
-            fill
-            className="object-cover"
-            sizes="112px"
-            draggable={false}
-          />
-        ) : null}
-      </div>
-
-      <div className={PLAN_PLACE_CARD_TW.contentColumn}>
-        <div className={PLAN_PLACE_CARD_TW.titleRow}>
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex min-w-0 items-baseline gap-1.5">
-              <h3
-                className={cn(
-                  "min-w-0 flex-1",
-                  PLAN_PLACE_CARD_TW.titleCompact,
-                  PLAN_PLACE_CARD_TW.titleClamp,
-                )}
-                title={place.title}
-              >
-                {place.title}
-              </h3>
-              {place.primaryTypeDisplayName ? (
-                <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
-                  {place.primaryTypeDisplayName}
-                </span>
-              ) : null}
-            </div>
-
-            {place.subtitle ?
-              <p
-                className={cn(
-                  PLAN_PLACE_CARD_TW.subtitle,
-                  PLAN_PLACE_CARD_TW.subtitleClamp,
-                )}
-                title={place.subtitle}
-              >
-                {place.subtitle}
-              </p>
-            : null}
-          </div>
-          {deleteButton ?
-            <span className="flex shrink-0 self-start">{deleteButton}</span>
-          : null}
+        <div className={PLAN_PLACE_CARD_TW.thumbnail}>
+          {photoLoading ? (
+            <Loader2
+              className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green"
+              aria-hidden
+            />
+          ) : resolvedPhotoUrl ? (
+            <Image
+              src={resolvedPhotoUrl}
+              alt={place.title}
+              fill
+              className="object-cover"
+              sizes="112px"
+              draggable={false}
+            />
+          ) : null}
         </div>
 
-        {scheduleControls}
-      </div>
-    </article>
+        <div className={PLAN_PLACE_CARD_TW.contentColumn}>
+          <div className={PLAN_PLACE_CARD_TW.titleRow}>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <h3
+                  className={cn(
+                    "min-w-0 flex-1",
+                    PLAN_PLACE_CARD_TW.titleCompact,
+                    PLAN_PLACE_CARD_TW.titleClamp,
+                  )}
+                  title={place.title}
+                >
+                  {place.title}
+                </h3>
+                {place.primaryTypeDisplayName ? (
+                  <span className={PLAN_PLACE_CARD_TW.primaryTypeBadge}>
+                    {place.primaryTypeDisplayName}
+                  </span>
+                ) : null}
+              </div>
+
+              {place.subtitle ? (
+                <p
+                  className={cn(
+                    PLAN_PLACE_CARD_TW.subtitle,
+                    PLAN_PLACE_CARD_TW.subtitleClamp,
+                  )}
+                  title={place.subtitle}
+                >
+                  {place.subtitle}
+                </p>
+              ) : null}
+            </div>
+            {deleteButton ? (
+              <span className="flex shrink-0 self-start">{deleteButton}</span>
+            ) : null}
+          </div>
+
+          {canEditScheduleItem ? (
+            <div className={PLAN_PLACE_CARD_TW.triggerRow}>
+              {memoTrigger}
+              {timeTrigger}
+            </div>
+          ) : null}
+
+          {readOnlySummary}
+        </div>
+      </article>
+
+      {canEditScheduleItem && timeOpen && scheduleTimeEdit && scheduleItemId !== null ? (
+        <PlanItemTimeEditor
+          key={`time-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
+          roomId={scheduleTimeEdit.roomId}
+          scheduleId={scheduleTimeEdit.scheduleId}
+          itemId={scheduleItemId}
+          startTime={place.startTime ?? ""}
+          durationMinutes={place.durationMinutes ?? 0}
+          scheduleOverlapWarning={scheduleOverlapWarning}
+          onClose={() => setTimeOpen(false)}
+        />
+      ) : null}
+
+      {canEditScheduleItem && memoOpen && scheduleTimeEdit && scheduleItemId !== null ? (
+        <PlanItemMemoEditor
+          key={`memo-${scheduleTimeEdit.scheduleId}-${scheduleItemId}`}
+          roomId={scheduleTimeEdit.roomId}
+          scheduleId={scheduleTimeEdit.scheduleId}
+          itemId={scheduleItemId}
+          memo={place.memo}
+          onClose={() => setMemoOpen(false)}
+        />
+      ) : null}
+
+      {hasMemo && !memoOpen ? <PlanItemMemoReadOnly memo={memoText} /> : null}
+    </div>
   );
 }
