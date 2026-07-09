@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useRooms";
 import { useSessionStore } from "@/stores/session-store";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 
 import {
   dayNumberForInsertAfterDayIndex,
@@ -76,6 +77,7 @@ export function PlanPageView() {
             .filter(Number.isFinite)
         : [];
     usePlanItineraryExpandedStore.getState().syncScheduleExpansionState(ids);
+    usePlanScheduleRouteVisibilityStore.getState().syncRouteVisibility(ids);
   }, [scheduleExpansionSyncKey, expansionRoomResetRevision]);
 
   const planDays = useMemo(

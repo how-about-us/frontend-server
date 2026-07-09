@@ -23,8 +23,8 @@ import {
   scheduleIdsToRouteColors,
   sortedScheduleIdsForRouteColors,
 } from "@/lib/plan/planRouteDayColors";
-import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { cn } from "@/lib/utils";
 
 import type { PlanPlace } from "@/lib/plan/types";
@@ -47,16 +47,16 @@ export type PlanItineraryProps = {
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const { isReadOnly, copy } = usePlanMobileReadOnly();
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
-  const expandedByScheduleId = usePlanItineraryExpandedStore(
-    (s) => s.expandedByScheduleId,
+  const visibleByScheduleId = usePlanScheduleRouteVisibilityStore(
+    (s) => s.visibleByScheduleId,
   );
   const routeColorByScheduleId = useMemo(
     () =>
       scheduleIdsToRouteColors(
-        sortedScheduleIdsForRouteColors(expandedByScheduleId),
+        sortedScheduleIdsForRouteColors(visibleByScheduleId),
         roomId.trim() || undefined,
       ),
-    [expandedByScheduleId, roomId],
+    [visibleByScheduleId, roomId],
   );
   const orderBadgeColor =
     routeColorByScheduleId.get(scheduleId) ?? "#f12d33";

@@ -3,6 +3,7 @@
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
 import { cn } from "@/lib/utils";
 import {
@@ -11,6 +12,7 @@ import {
   GripVertical,
   MoreHorizontal,
   Plus,
+  Route,
   Trash2,
 } from "lucide-react";
 import { useCallback, useId, useRef, useState } from "react";
@@ -104,6 +106,17 @@ export function PlanDaySection({
   const setScheduleExpanded = usePlanItineraryExpandedStore(
     (s) => s.setScheduleExpanded,
   );
+
+  const routeVisible = usePlanScheduleRouteVisibilityStore((s) =>
+    trackedSid !== undefined ? (s.visibleByScheduleId[trackedSid] ?? true) : false,
+  );
+  const setRouteVisible = usePlanScheduleRouteVisibilityStore(
+    (s) => s.setRouteVisible,
+  );
+  const toggleRouteVisible = useCallback(() => {
+    if (trackedSid === undefined) return;
+    setRouteVisible(trackedSid, !routeVisible);
+  }, [trackedSid, routeVisible, setRouteVisible]);
 
   const toggle = useCallback(() => {
     if (trackedSid !== undefined) {
@@ -207,6 +220,28 @@ export function PlanDaySection({
               <ChevronDown className="h-5 w-5" />
             )}
           </span>
+          {trackedSid !== undefined ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleRouteVisible();
+              }}
+              aria-pressed={routeVisible}
+              aria-label={
+                routeVisible ? "지도에서 경로 숨기기" : "지도에 경로 표시"
+              }
+              title={routeVisible ? "지도에서 경로 숨기기" : "지도에 경로 표시"}
+              className={cn(
+                "shrink-0 cursor-pointer self-center rounded-lg p-2 transition-colors",
+                routeVisible
+                  ? "text-brand-red hover:bg-red-50"
+                  : "text-dark-gray hover:bg-bubble-gray/60",
+              )}
+            >
+              <Route className="h-5 w-5" aria-hidden />
+            </button>
+          ) : null}
           {showScheduleMenu ? (
             <div ref={menuRef} className="relative shrink-0 self-center">
               <button
