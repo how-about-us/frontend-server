@@ -256,7 +256,7 @@ export function AddFromBookmarkModal({
           </div>
         ) : (
           <>
-            <div className="shrink-0 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="shrink-0 overflow-x-auto overscroll-x-contain px-5 pb-3 [scrollbar-color:rgba(0,0,0,0.15)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-black/15">
               <div className="flex w-max gap-2">
                 {categories.map((c) => {
                   const selected = selectedCategoryId === c.categoryId;
