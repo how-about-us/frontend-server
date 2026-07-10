@@ -16,7 +16,7 @@ export function ReviewsTab({ rating, userRatingCount, reviews }: Props) {
 
   if (reviews.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 px-4 py-16 text-center">
+      <div className="flex flex-col items-center justify-center gap-2 px-5 py-16 text-center">
         <p className="text-[17px] font-medium text-[#364153]">등록된 리뷰가 없어요</p>
         <p className="text-[13px] text-dark-gray">
           아직 리뷰가 수집되지 않았습니다.
@@ -26,7 +26,7 @@ export function ReviewsTab({ rating, userRatingCount, reviews }: Props) {
   }
 
   return (
-    <div className="px-4 py-3">
+    <div className="px-5 py-4">
       {rating != null && (
         <div className="mb-4 flex items-center gap-3">
           <div className="text-center">

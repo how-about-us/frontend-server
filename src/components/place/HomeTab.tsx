@@ -11,7 +11,7 @@ type Props = {
 
 export function HomeTab({ isOpen, address, phone, hours, website, reviewSummary }: Props) {
   return (
-    <div className="border-b border-gray-border px-4 py-3">
+    <div className="border-b border-gray-border px-5 py-4">
       <h3 className="mb-2.5 text-[13px] font-semibold text-[#364153]">
         기본 정보
       </h3>

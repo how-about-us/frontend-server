@@ -28,7 +28,7 @@ export function PlaceSummaryHeader({
   addBookmarkDisabled = false,
 }: Props) {
   return (
-    <div className="border-b border-gray-border px-4 pb-4 pt-3">
+    <div className="border-b border-gray-border px-5 pb-5 pt-4">
       <div className="flex items-start gap-3">
         <h2 className="min-w-0 flex-1 leading-snug">
           <span className="block text-[22px] font-bold tracking-tight text-[#111827]">
