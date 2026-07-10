@@ -11,6 +11,8 @@ type LandingMotionProps = {
   className?: string;
 };
 
+// motion-reduce:transition-none은 방어층: matchMedia 가드는 마운트 시 1회만 평가되므로
+// 이후 OS 설정이 reduce로 바뀐 경우에도 전환 애니메이션을 차단한다.
 const TRANSITION_CLASSES =
   "transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none";
 
@@ -33,22 +35,28 @@ export function LandingMotion({ children, className }: LandingMotionProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 뷰포트 하단 요소를 첫 페인트 이전에 hidden 상태로 동기화
     setState("hidden");
 
+    const reveal = () => {
+      setState("shown");
+      observer.disconnect();
+      element.removeEventListener("focusin", reveal);
+    };
+
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setState("shown");
-            observer.disconnect();
-          }
+        if (entries.some((entry) => entry.isIntersecting)) {
+          reveal();
         }
       },
       { threshold: 0.15 },
     );
 
     observer.observe(element);
+    // 키보드 포커스가 IntersectionObserver보다 먼저 숨겨진 섹션에 들어올 수 있으므로 즉시 공개한다.
+    element.addEventListener("focusin", reveal);
 
     return () => {
       observer.disconnect();
+      element.removeEventListener("focusin", reveal);
     };
   }, []);
 
@@ -56,7 +64,8 @@ export function LandingMotion({ children, className }: LandingMotionProps) {
     <div
       ref={ref}
       className={cn(
-        state === "hidden" && cn(TRANSITION_CLASSES, "translate-y-3 opacity-0"),
+        state === "hidden" &&
+          cn(TRANSITION_CLASSES, "pointer-events-none translate-y-3 opacity-0"),
         state === "shown" && cn(TRANSITION_CLASSES, "translate-y-0 opacity-100"),
         className,
       )}
