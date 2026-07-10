@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Clock, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,9 +8,12 @@ import { useUpdateScheduleItem } from "@/hooks/useRooms";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import {
   clampStayDurationMinutes,
+  canEditScheduleStayDuration,
   formatStayDurationMinutes,
+  hasScheduleTimeDraftValue,
   normalizeStartTimeToHm,
   SCHEDULE_STAY_DURATION_MAX_MINUTES,
+  validateScheduleTimeDraft,
 } from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +22,7 @@ type PlanItemTimeEditorProps = {
   scheduleId: number;
   itemId: number;
   startTime: string;
-  durationMinutes: number;
+  durationMinutes: number | null | undefined;
   onClose: () => void;
 };
 
@@ -107,6 +110,7 @@ export function PlanItemTimeEditor({
   const [durationStr, setDurationStr] = useState(() =>
     formatStayDurationMinutes(durationMinutes),
   );
+  const [resetPending, setResetPending] = useState(false);
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
   const serverHm = normalizeStartTimeToHm(startTime);
@@ -126,6 +130,15 @@ export function PlanItemTimeEditor({
     return () => document.removeEventListener("keydown", handler);
   }, [isPending, onClose]);
 
+  const hasDraftValue = hasScheduleTimeDraftValue(timeHm, durationStr);
+  const stayDurationEnabled = canEditScheduleStayDuration(timeHm);
+
+  function handleReset() {
+    setResetPending(true);
+    setTimeHm("");
+    setDurationStr("0");
+  }
+
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
     if (!Number.isFinite(dm) || dm < 0) {
@@ -138,16 +151,26 @@ export function PlanItemTimeEditor({
       );
       return;
     }
-    if (!/^\d{2}:\d{2}$/.test(timeHm)) {
+    const trimmedHm = timeHm.trim();
+    if (trimmedHm.length > 0 && !/^\d{2}:\d{2}$/.test(trimmedHm)) {
       toast.error("시작 시각을 올바르게 선택해 주세요.");
       return;
     }
+    const draftValidation = validateScheduleTimeDraft(trimmedHm, dm);
+    if (!draftValidation.valid) {
+      toast.error(draftValidation.message);
+      return;
+    }
     try {
+      const shouldClearDuration = resetPending || !stayDurationEnabled;
       await mutateAsync({
         roomId,
         scheduleId,
         itemId,
-        body: { startTime: timeHm, durationMinutes: dm },
+        body: {
+          startTime: trimmedHm.length > 0 ? trimmedHm : null,
+          durationMinutes: shouldClearDuration ? null : dm,
+        },
       });
       toast.success("체류 시간을 저장했어요.");
       onClose();
@@ -182,10 +205,21 @@ export function PlanItemTimeEditor({
           </span>
           <h2
             id="plan-item-time-dialog-title"
-            className="text-[19px] font-bold text-gray-900"
+            className="flex-1 text-[19px] font-bold text-gray-900"
           >
             시간 설정
           </h2>
+          {hasDraftValue ? (
+            <button
+              type="button"
+              aria-label="시간 초기화"
+              onClick={handleReset}
+              disabled={isPending}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 px-6 pb-6">
@@ -195,7 +229,13 @@ export function PlanItemTimeEditor({
               <PlanStartTimeInput
                 value={timeHm}
                 disabled={isPending}
-                onChange={setTimeHm}
+                onChange={(next) => {
+                  setResetPending(false);
+                  setTimeHm(next);
+                  if (!canEditScheduleStayDuration(next)) {
+                    setDurationStr("0");
+                  }
+                }}
               />
             </label>
             <label className={PLAN_PLACE_CARD_TW.timeField}>
@@ -209,6 +249,7 @@ export function PlanItemTimeEditor({
                 aria-label="체류(분)"
                 value={durationStr}
                 onChange={(e) => {
+                  setResetPending(false);
                   const raw = e.target.value;
                   if (raw === "") {
                     setDurationStr("");
@@ -225,7 +266,7 @@ export function PlanItemTimeEditor({
                   PLAN_PLACE_CARD_TW.timeInputCompact,
                   "tabular-nums",
                 )}
-                disabled={isPending}
+                disabled={isPending || !stayDurationEnabled}
               />
             </label>
           </div>

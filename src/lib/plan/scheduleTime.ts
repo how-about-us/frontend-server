@@ -12,6 +12,40 @@ export function formatStayDurationMinutes(value: unknown): string {
   return String(clampStayDurationMinutes(value));
 }
 
+export function canEditScheduleStayDuration(startTime: string): boolean {
+  return normalizeStartTimeToHm(startTime).length > 0;
+}
+
+export function hasScheduleTimeDraftValue(
+  startTime: string,
+  durationMinutes: string,
+): boolean {
+  if (canEditScheduleStayDuration(startTime)) return true;
+  const duration = parseInt(durationMinutes, 10);
+  return Number.isFinite(duration) && duration > 0;
+}
+
+export type ScheduleTimeDraftValidation =
+  | { valid: true }
+  | { valid: false; message: string };
+
+export function validateScheduleTimeDraft(
+  startTime: string,
+  durationMinutes: number,
+): ScheduleTimeDraftValidation {
+  if (
+    !canEditScheduleStayDuration(startTime) &&
+    Number.isFinite(durationMinutes) &&
+    durationMinutes > 0
+  ) {
+    return {
+      valid: false,
+      message: "시작 시각 없이 체류 시간을 설정할 수 없어요.",
+    };
+  }
+  return { valid: true };
+}
+
 /** 접힌 체류 시간 토글에 표시할 한 줄 요약. `null`/`undefined` 는 미설정, `0` 은 명시적 0분 체류. */
 export function formatScheduleStaySummary(
   startTime: string,
@@ -20,8 +54,7 @@ export function formatScheduleStaySummary(
   const hm = normalizeStartTimeToHm(startTime);
   const hasDur = typeof durationMinutes === "number" && Number.isFinite(durationMinutes);
   const dur = hasDur ? clampStayDurationMinutes(durationMinutes) : null;
-  if (!hm && dur === null) return "";
-  if (!hm) return `${dur}분`;
+  if (!hm) return "";
   if (dur === null) return hm;
   return `${hm} · ${dur}분`;
 }

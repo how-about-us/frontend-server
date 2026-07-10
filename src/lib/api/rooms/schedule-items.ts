@@ -27,8 +27,10 @@ export type RoomScheduleItemCreateRequest = {
 };
 
 export type RoomScheduleItemUpdateRequest = {
-  startTime?: string;
-  durationMinutes?: number;
+  /** `null` 이면 미설정으로 초기화, `undefined` 는 변경 없음 */
+  startTime?: string | null;
+  /** `null` 이면 미설정으로 초기화, `undefined` 는 변경 없음 */
+  durationMinutes?: number | null;
   /** 키를 내면 서버가 갱신. 빈 문자열이면 삭제 */
   memo?: string | null;
 };

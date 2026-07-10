@@ -13,7 +13,6 @@ import {
 import { fetchPlacePreview } from "@/lib/places/place-queries";
 import {
   buildPlanPlacesFromItemsWithPreviewEnrichment,
-  planPlaceFromItemAndPreview,
   planPlacesNeedPreviewEnrich,
   resolveScheduleItemsFromCacheOrHydrate,
 } from "@/lib/plan/schedule-bulk-hydration";
@@ -29,7 +28,6 @@ import {
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import { addMinutesToHm, hmToMinutesSinceMidnight, minutesSinceMidnightToHm, normalizeStartTimeToHm } from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
-import type { PlacePreview } from "@/lib/api/places";
 import { usePlanMapDirectionsEpochStore } from "@/stores/plan-map-directions-epoch-store";
 
 /** `orderIndex` 기준 정렬(비변형) */
@@ -75,20 +73,23 @@ function patchPlanPlaceFromScheduleItem(
   const serverDurationOk =
     typeof item.durationMinutes === "number" &&
     Number.isFinite(item.durationMinutes);
-  return {
+  const next: PlanPlace = {
     ...existing,
     googlePlaceId: item.googlePlaceId,
-    startTime:
-      hasServerStart && item.startTime != null
-        ? item.startTime
-        : existing.startTime,
-    durationMinutes:
-      serverDurationOk && item.durationMinutes != null
-        ? item.durationMinutes
-        : existing.durationMinutes,
     travelMode: item.travelMode,
     memo: memoFromScheduleItem(item),
   };
+  if (item.startTime === null) {
+    delete next.startTime;
+  } else if (hasServerStart) {
+    next.startTime = item.startTime;
+  }
+  if (item.durationMinutes === null) {
+    delete next.durationMinutes;
+  } else if (serverDurationOk) {
+    next.durationMinutes = item.durationMinutes;
+  }
+  return next;
 }
 
 /**
@@ -559,20 +560,23 @@ export function applyRoomScheduleItemToPlanPlaces(
     const serverDurationOk =
       typeof updated.durationMinutes === "number" &&
       Number.isFinite(updated.durationMinutes);
-    return {
+    const next: PlanPlace = {
       ...p,
       googlePlaceId: updated.googlePlaceId,
-      startTime:
-        hasServerStart && updated.startTime != null
-          ? updated.startTime
-          : p.startTime,
-      durationMinutes:
-        serverDurationOk && updated.durationMinutes != null
-          ? updated.durationMinutes
-          : p.durationMinutes,
       travelMode: updated.travelMode,
       memo: memoFromScheduleItemPatch(p, updated, options),
     };
+    if (updated.startTime === null) {
+      delete next.startTime;
+    } else if (hasServerStart) {
+      next.startTime = updated.startTime;
+    }
+    if (updated.durationMinutes === null) {
+      delete next.durationMinutes;
+    } else if (serverDurationOk) {
+      next.durationMinutes = updated.durationMinutes;
+    }
+    return next;
   });
   return found ? out : null;
 }
