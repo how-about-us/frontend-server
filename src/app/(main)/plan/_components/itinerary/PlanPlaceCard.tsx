@@ -8,7 +8,10 @@ import { toast } from "sonner";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { useDeleteScheduleItem } from "@/hooks/useRooms";
+import {
+  useDeleteScheduleItem,
+  useUpdateScheduleItem,
+} from "@/hooks/useRooms";
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
@@ -69,6 +72,8 @@ export function PlanPlaceCard({
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();
+  const { mutateAsync: updateScheduleItemMutate, isPending: isUpdatingItem } =
+    useUpdateScheduleItem();
 
   const canManageServerItem =
     Boolean(scheduleTimeEdit) && typeof place.itemId === "number";
@@ -87,6 +92,22 @@ export function PlanPlaceCard({
       toast.error("삭제하지 못했어요.");
     }
   }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
+
+  const handleDeleteMemo = useCallback(async () => {
+    if (!scheduleTimeEdit || typeof place.itemId !== "number") return;
+    if (!confirm("메모를 삭제하시겠습니까?")) return;
+    try {
+      await updateScheduleItemMutate({
+        roomId: scheduleTimeEdit.roomId,
+        scheduleId: scheduleTimeEdit.scheduleId,
+        itemId: place.itemId,
+        body: { memo: "" },
+      });
+      toast.success("메모를 삭제했어요.");
+    } catch {
+      toast.error("메모를 삭제하지 못했어요.");
+    }
+  }, [scheduleTimeEdit, place.itemId, updateScheduleItemMutate]);
 
   const handlePointerDownCapture = useCallback(
     (e: React.PointerEvent) => {
@@ -186,30 +207,29 @@ export function PlanPlaceCard({
     />
   ) : null;
 
-  const memoTrigger =
-    canEditScheduleItem && !memoOpen ? (
-      <button
-        type="button"
-        data-plan-card-no-drag
-        onMouseDown={stopCardActivation}
-        onClick={(e) => {
-          stopCardActivation(e);
-          setMemoOpen(true);
-        }}
-        aria-expanded={memoOpen}
-        className={cn(
-          PLAN_PLACE_CARD_TW.triggerButton,
-          hasMemo && PLAN_PLACE_CARD_TW.triggerButtonActive,
-        )}
-      >
-        <StickyNote
-          className={PLAN_PLACE_CARD_TW.triggerIcon}
-          strokeWidth={2}
-          aria-hidden
-        />
-        {hasMemo ? "메모 수정" : "메모 추가"}
-      </button>
-    ) : null;
+  const memoTrigger = canEditScheduleItem ? (
+    <button
+      type="button"
+      data-plan-card-no-drag
+      onMouseDown={stopCardActivation}
+      onClick={(e) => {
+        stopCardActivation(e);
+        setMemoOpen((v) => !v);
+      }}
+      aria-expanded={memoOpen}
+      className={cn(
+        PLAN_PLACE_CARD_TW.triggerButton,
+        (memoOpen || hasMemo) && PLAN_PLACE_CARD_TW.triggerButtonActive,
+      )}
+    >
+      <StickyNote
+        className={PLAN_PLACE_CARD_TW.triggerIcon}
+        strokeWidth={2}
+        aria-hidden
+      />
+      {hasMemo ? "메모 수정" : "메모 추가"}
+    </button>
+  ) : null;
 
   const timeTrigger = canEditScheduleItem ? (
     <button
@@ -359,7 +379,15 @@ export function PlanPlaceCard({
         />
       ) : null}
 
-      {hasMemo && !memoOpen ? <PlanItemMemoReadOnly memo={memoText} /> : null}
+      {hasMemo && !memoOpen ? (
+        <PlanItemMemoReadOnly
+          memo={memoText}
+          onDelete={
+            canEditScheduleItem ? () => void handleDeleteMemo() : undefined
+          }
+          isDeleting={isUpdatingItem}
+        />
+      ) : null}
     </div>
   );
 }

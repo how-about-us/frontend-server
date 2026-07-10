@@ -1,6 +1,6 @@
 "use client";
 
-import { StickyNote } from "lucide-react";
+import { StickyNote, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -104,7 +104,15 @@ function MemoOverwriteConfirmDialog({
   );
 }
 
-export function PlanItemMemoReadOnly({ memo }: { memo: string }) {
+export function PlanItemMemoReadOnly({
+  memo,
+  onDelete,
+  isDeleting = false,
+}: {
+  memo: string;
+  onDelete?: () => void;
+  isDeleting?: boolean;
+}) {
   const text = memo.trim();
   if (!text.length) return null;
 
@@ -116,6 +124,21 @@ export function PlanItemMemoReadOnly({ memo }: { memo: string }) {
       <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900">
         {text}
       </p>
+      {onDelete ? (
+        <button
+          type="button"
+          aria-label="메모 삭제"
+          disabled={isDeleting}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="shrink-0 cursor-pointer self-start rounded-md p-1 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }
