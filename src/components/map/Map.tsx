@@ -285,9 +285,12 @@ export default function Map() {
   const { data: roomDetail, isFetched: roomDetailFetched } =
     useRoomDetail(currentRoomId);
   const listDestination =
-    roomsData?.rooms.find((r) => r.id === currentRoomId)?.destination ?? null;
+    roomsData?.rooms.find((r) => r.id === currentRoomId)?.destinations?.[0] ??
+    null;
   const detailDestination =
-    roomDetail?.id === currentRoomId ? (roomDetail.destination ?? null) : null;
+    roomDetail?.id === currentRoomId
+      ? (roomDetail.destinations?.[0] ?? null)
+      : null;
   const destination = listDestination ?? detailDestination;
   const mapMetaReady =
     roomsFetched || (roomDetailFetched && Boolean(destination?.trim()));

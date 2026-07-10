@@ -34,7 +34,7 @@ export function isTripStartBeforeMin(
 export type RoomTripFormSource = {
   id: string;
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string | null;
   endDate: string | null;
 };
@@ -49,7 +49,7 @@ export type TripFormValues = {
 export function toTripFormValues(source: RoomTripFormSource): TripFormValues {
   return {
     title: source.title,
-    destination: source.destination,
+    destination: source.destinations[0] ?? "",
     startDate: source.startDate ?? "",
     endDate: source.endDate ?? "",
   };

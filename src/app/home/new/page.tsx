@@ -57,7 +57,7 @@ export default function NewTripPage() {
     createRoom(
       {
         title: title.trim().slice(0, ROOM_TRIP_TITLE_MAX_LENGTH),
-        destination: destination.trim(),
+        destinations: [destination.trim()],
         startDate,
         endDate,
       },

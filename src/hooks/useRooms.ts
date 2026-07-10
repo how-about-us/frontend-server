@@ -114,7 +114,7 @@ export function useCreateRoom() {
         queryClient.setQueryData<RoomDetail>(roomDetailQueryKey(rid), {
           id: room.id,
           title: room.title,
-          destination: room.destination,
+          destinations: room.destinations,
           startDate: room.startDate,
           endDate: room.endDate,
           inviteCode: room.inviteCode,
@@ -125,7 +125,7 @@ export function useCreateRoom() {
         const listItem: RoomListItem = {
           id: room.id,
           title: room.title,
-          destination: room.destination,
+          destinations: room.destinations,
           startDate: room.startDate,
           endDate: room.endDate,
           role: room.role,
@@ -489,7 +489,7 @@ export function useUpdateRoom() {
               {
                 ...r,
                 title: updated.title,
-                destination: updated.destination,
+                destinations: updated.destinations,
                 startDate: updated.startDate ?? null,
                 endDate: updated.endDate ?? null,
               }
@@ -504,7 +504,7 @@ export function useUpdateRoom() {
             {
               ...prev,
               title: updated.title,
-              destination: updated.destination,
+              destinations: updated.destinations,
               startDate: updated.startDate ?? null,
               endDate: updated.endDate ?? null,
             }
