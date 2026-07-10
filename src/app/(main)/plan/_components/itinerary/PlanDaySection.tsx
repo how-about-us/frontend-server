@@ -166,7 +166,7 @@ export function PlanDaySection({
       <div className="overflow-visible rounded-2xl">
         <div
           className={cn(
-            "relative flex w-full items-stretch gap-0.5 bg-[#FFFFF0] py-3.5",
+            "relative flex w-full items-stretch gap-0.5 py-3.5",
             MAIN_CARD_INNER_PADDING_X_CLASS,
             expanded ? "rounded-t-2xl" : "rounded-2xl",
           )}
