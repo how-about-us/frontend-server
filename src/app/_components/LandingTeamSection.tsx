@@ -1,4 +1,4 @@
-import { GithubIcon } from "@/components/icons/GithubIcon";
+import { GithubIcon } from "@/components/icons";
 import {
   LANDING_CONTAINER_CLASS,
   LANDING_SECTION_PY,
