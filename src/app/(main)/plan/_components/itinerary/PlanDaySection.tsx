@@ -166,8 +166,9 @@ export function PlanDaySection({
       <div className="overflow-visible rounded-2xl">
         <div
           className={cn(
-            "relative flex w-full items-stretch gap-0.5 py-3.5",
+            "relative flex w-full items-stretch gap-0.5 bg-[#FFFFF0] py-3.5",
             MAIN_CARD_INNER_PADDING_X_CLASS,
+            expanded ? "rounded-t-2xl" : "rounded-2xl",
           )}
         >
           {dragHandleProps ? (
@@ -204,10 +205,16 @@ export function PlanDaySection({
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
           >
             <div className="min-w-0">
-              <h2 className="text-[19px] font-semibold text-gray-900">{title}</h2>
-              {subtitle ? (
-                <p className="mt-0.5 text-[14px] text-dark-gray">{subtitle}</p>
-              ) : null}
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="min-w-0 truncate text-[19px] font-semibold text-gray-900">
+                  {subtitle || title}
+                </h2>
+                {subtitle ? (
+                  <span className="inline-flex shrink-0 items-center rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                    {title}
+                  </span>
+                ) : null}
+              </div>
             </div>
           </button>
           <span

@@ -49,8 +49,8 @@ export const PLAN_PLACE_CARD_TW = {
   triggerRow:
     "flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1",
   triggerButton:
-    "flex shrink-0 cursor-pointer items-center gap-1 rounded-md py-1 text-sm font-medium text-dark-gray/85 transition hover:text-gray-900",
-  triggerButtonActive: "text-brand-green",
+    "flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-dark-gray/85 transition hover:bg-sky-50 hover:text-sky-600",
+  triggerButtonActive: "text-sky-600 font-semibold",
   triggerIcon: "h-4 w-4 shrink-0",
   editorModule:
     "relative flex w-full items-start gap-3 rounded-2xl bg-gray-100/70 px-4 py-3 text-sm text-gray-900",
