@@ -103,8 +103,8 @@ function planPlaceFromItemAndPreview(
       subtitle: preview.formattedAddress,
       photoName: preview.photoName,
       primaryTypeDisplayName: preview.primaryTypeDisplayName,
-      startTime: item.startTime,
-      durationMinutes: item.durationMinutes,
+      startTime: item.startTime ?? undefined,
+      durationMinutes: item.durationMinutes ?? undefined,
       travelMode: item.travelMode,
       memo: memoFromScheduleItem(item),
     };
@@ -115,8 +115,8 @@ function planPlaceFromItemAndPreview(
     googlePlaceId: item.googlePlaceId,
     title: PLAN_PLACE_PREVIEW_ERROR_TITLE,
     subtitle: item.googlePlaceId,
-    startTime: item.startTime,
-    durationMinutes: item.durationMinutes,
+    startTime: item.startTime ?? undefined,
+    durationMinutes: item.durationMinutes ?? undefined,
     travelMode: item.travelMode,
     memo: memoFromScheduleItem(item),
   };

@@ -58,8 +58,6 @@ import {
   applyRoomScheduleItemToPlanPlaces,
   applyScheduleItemDeletedOnClient,
   createScheduleItemAtPlanIndex,
-  defaultNewItemStartTimeHmAtInsertIndex,
-  defaultNewItemStartTimeHmFromPlanPlaces,
   ensureSchedulePlanPlacesEnriched,
   syncAfterCrossScheduleItemMove,
   syncPlanPlacesAfterReorderSuccess,
@@ -340,17 +338,11 @@ export function useCreateScheduleItem() {
       roomId: string;
       scheduleId: number;
       googlePlaceId: string;
-      startTimeHm?: string;
       insertIndex?: number;
       placesSnapshot?: PlanPlace[];
     }) => {
       const places = vars.placesSnapshot ?? [];
       const insertIndex = vars.insertIndex ?? places.length;
-      const startTimeHm =
-        vars.startTimeHm ??
-        (insertIndex >= places.length
-          ? defaultNewItemStartTimeHmFromPlanPlaces(places)
-          : defaultNewItemStartTimeHmAtInsertIndex(places, insertIndex));
 
       return createScheduleItemAtPlanIndex(queryClient, {
         roomId: vars.roomId,
@@ -358,7 +350,6 @@ export function useCreateScheduleItem() {
         places,
         insertIndex,
         googlePlaceId: vars.googlePlaceId,
-        startTimeHm,
       });
     },
   });

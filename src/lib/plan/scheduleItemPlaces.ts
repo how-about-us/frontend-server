@@ -78,10 +78,14 @@ function patchPlanPlaceFromScheduleItem(
   return {
     ...existing,
     googlePlaceId: item.googlePlaceId,
-    startTime: hasServerStart ? item.startTime : existing.startTime,
-    durationMinutes: serverDurationOk
-      ? item.durationMinutes
-      : existing.durationMinutes,
+    startTime:
+      hasServerStart && item.startTime != null
+        ? item.startTime
+        : existing.startTime,
+    durationMinutes:
+      serverDurationOk && item.durationMinutes != null
+        ? item.durationMinutes
+        : existing.durationMinutes,
     travelMode: item.travelMode,
     memo: memoFromScheduleItem(item),
   };
@@ -439,7 +443,7 @@ export function buildChainedStartPatchesForReorder(
     const targetHm =
       i === 0 ? anchorHm : addMinutesToHm(prevStartHm, prevDur);
 
-    const currentHm = normalizeStartTimeToHm(item.startTime);
+    const currentHm = normalizeStartTimeToHm(item.startTime ?? "");
     if (currentHm !== targetHm) {
       patches.push({
         itemId: item.itemId,
@@ -538,51 +542,6 @@ export async function syncPlanPlacesAfterReorderSuccess(
   );
 }
 
-/** 삽입 위치 기준 시작 시각 — 앞 장소 체류 종료 시각, 맨 뒤·빈 목록은 기존 폴백. */
-export function defaultNewItemStartTimeHmAtInsertIndex(
-  places: PlanPlace[],
-  insertIndex: number,
-): string {
-  if (places.length === 0 || insertIndex <= 0) {
-    return slotStartTimeHm(0);
-  }
-  if (insertIndex >= places.length) {
-    return defaultNewItemStartTimeHmFromPlanPlaces(places);
-  }
-  const prev = places[insertIndex - 1];
-  const hm = normalizeStartTimeToHm(prev?.startTime ?? "");
-  const dur =
-    typeof prev?.durationMinutes === "number" &&
-    Number.isFinite(prev.durationMinutes)
-      ? prev.durationMinutes
-      : 60;
-  if (!hm) return slotStartTimeHm(insertIndex);
-  return addMinutesToHm(hm, dur);
-}
-
-/** 화면 순서 유지 `PlanPlace[]` 기준: 마지막 카드 시작 + 1시간, 없으면 슬롯 폴백. */
-export function defaultNewItemStartTimeHmFromPlanPlaces(
-  places: PlanPlace[],
-): string {
-  if (places.length === 0) return slotStartTimeHm(0);
-  const last = places[places.length - 1];
-  const hm = normalizeStartTimeToHm(last.startTime ?? "");
-  if (!hm) return slotStartTimeHm(places.length);
-  return addMinutesToHm(hm, 60);
-}
-
-/** `orderIndex` 정렬된 항목 목록 기준: 마지막 카드 시작 + 1시간. */
-export function defaultNewItemStartTimeHmFromScheduleItems(
-  items: RoomScheduleItem[],
-): string {
-  const sorted = sortRoomScheduleItemsByOrder(items);
-  if (sorted.length === 0) return slotStartTimeHm(0);
-  const last = sorted[sorted.length - 1];
-  const hm = normalizeStartTimeToHm(last.startTime);
-  if (!hm) return slotStartTimeHm(sorted.length);
-  return addMinutesToHm(hm, 60);
-}
-
 /** PATCH 응답 한 건으로 로컬 PlanPlace 캐시만 갱신(같은 목록에 itemId가 있을 때). */
 export function applyRoomScheduleItemToPlanPlaces(
   prev: PlanPlace[] | undefined,
@@ -603,10 +562,14 @@ export function applyRoomScheduleItemToPlanPlaces(
     return {
       ...p,
       googlePlaceId: updated.googlePlaceId,
-      startTime: hasServerStart ? updated.startTime : p.startTime,
-      durationMinutes: serverDurationOk
-        ? updated.durationMinutes
-        : p.durationMinutes,
+      startTime:
+        hasServerStart && updated.startTime != null
+          ? updated.startTime
+          : p.startTime,
+      durationMinutes:
+        serverDurationOk && updated.durationMinutes != null
+          ? updated.durationMinutes
+          : p.durationMinutes,
       travelMode: updated.travelMode,
       memo: memoFromScheduleItemPatch(p, updated, options),
     };
@@ -628,8 +591,8 @@ async function planPlaceFromScheduleItem(
       subtitle: preview.formattedAddress,
       photoName: preview.photoName,
       primaryTypeDisplayName: preview.primaryTypeDisplayName,
-      startTime: item.startTime,
-      durationMinutes: item.durationMinutes,
+      startTime: item.startTime ?? undefined,
+      durationMinutes: item.durationMinutes ?? undefined,
       travelMode: item.travelMode,
       memo: memoFromScheduleItem(item),
     };
@@ -640,8 +603,8 @@ async function planPlaceFromScheduleItem(
       googlePlaceId: item.googlePlaceId,
       title: "장소 정보를 불러올 수 없음",
       subtitle: item.googlePlaceId,
-      startTime: item.startTime,
-      durationMinutes: item.durationMinutes,
+      startTime: item.startTime ?? undefined,
+      durationMinutes: item.durationMinutes ?? undefined,
       travelMode: item.travelMode,
       memo: memoFromScheduleItem(item),
     };
@@ -666,7 +629,6 @@ export async function createScheduleItemAtPlanIndex(
     places: PlanPlace[];
     insertIndex: number;
     googlePlaceId: string;
-    startTimeHm: string;
   },
 ): Promise<RoomScheduleItem> {
   const rid = args.roomId.trim();
@@ -676,8 +638,6 @@ export async function createScheduleItemAtPlanIndex(
 
   const created = await createScheduleItem(rid, args.scheduleId, {
     googlePlaceId: args.googlePlaceId,
-    startTime: args.startTimeHm,
-    durationMinutes: 60,
   });
 
   const listLengthAfterCreate = args.places.length + 1;

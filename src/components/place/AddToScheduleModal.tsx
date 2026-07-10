@@ -10,7 +10,6 @@ import {
   trackAnalyticsEvent,
   type ItinerarySource,
 } from "@/lib/analytics/track";
-import { defaultNewItemStartTimeHmFromPlanPlaces } from "@/lib/plan/scheduleItemPlaces";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -71,7 +70,6 @@ export function AddToScheduleModal({
         googlePlaceId,
         insertIndex: cached.length,
         placesSnapshot: cached,
-        startTimeHm: defaultNewItemStartTimeHmFromPlanPlaces(cached),
       });
       trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
         place_id: googlePlaceId,

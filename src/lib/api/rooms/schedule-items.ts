@@ -9,8 +9,10 @@ export type RoomScheduleItem = {
   itemId: number;
   scheduleId: number;
   googlePlaceId: string;
-  startTime: string;
-  durationMinutes: number;
+  /** 서버가 미설정 상태를 `null` 로 응답 가능 */
+  startTime: string | null;
+  /** 서버가 미설정 상태를 `null` 로 응답 가능 */
+  durationMinutes: number | null;
   memo?: string;
   orderIndex: number;
   travelMode: string;
@@ -19,9 +21,9 @@ export type RoomScheduleItem = {
 
 export type RoomScheduleItemCreateRequest = {
   googlePlaceId: string;
-  /** 로컬 시:분, 예: `"09:45"` */
-  startTime: string;
-  durationMinutes: number;
+  /** 로컬 시:분, 예: `"09:45"`. 미지정 시 서버는 저장하지 않음(미설정 상태) */
+  startTime?: string;
+  durationMinutes?: number;
 };
 
 export type RoomScheduleItemUpdateRequest = {

@@ -12,10 +12,6 @@ import {
   useCreateScheduleItem,
   useRoomBookmarks,
 } from "@/hooks/useRooms";
-import {
-  defaultNewItemStartTimeHmAtInsertIndex,
-  defaultNewItemStartTimeHmFromPlanPlaces,
-} from "@/lib/plan/scheduleItemPlaces";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
@@ -154,10 +150,6 @@ export function AddFromBookmarkModal({
 
       setAddingGooglePlaceId(gid);
       const index = insertIndex ?? places.length;
-      const startTimeHm =
-        insertIndex != null && insertIndex < places.length
-          ? defaultNewItemStartTimeHmAtInsertIndex(places, insertIndex)
-          : defaultNewItemStartTimeHmFromPlanPlaces(places);
       try {
         await createItem({
           roomId,
@@ -165,7 +157,6 @@ export function AddFromBookmarkModal({
           googlePlaceId: gid,
           insertIndex: index,
           placesSnapshot: places,
-          startTimeHm,
         });
         trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
           place_id: gid,
