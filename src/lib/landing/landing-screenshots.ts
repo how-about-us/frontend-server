@@ -44,7 +44,7 @@ export const LANDING_HERO_SCREENSHOT: LandingScreenshotSpec = {
   ...LANDING_SCREENSHOT_PIXEL_SIZE,
 };
 
-/** 기능 섹션(480px)보다 크게 — 히어로 2열 그리드 이미지 열 기준 */
+/** 히어로 전폭 스크린샷 — 데스크톱 최대 1080px 기준 */
 export const LANDING_HERO_SCREENSHOT_SIZES =
   "(max-width: 1180px) calc(100vw - 40px), 1080px";
 

@@ -37,6 +37,7 @@ function assertOutsidePatchIsIdentical(original, edited, info) {
   }
 }
 
+// SVG 텍스트는 시스템 폰트 대체에 의존하므로, 커밋된 PNG를 만든 환경에서만 재실행해야 결과가 동일하다.
 function createOverlay(background) {
   const fill = `rgb(${background[0]},${background[1]},${background[2]})`;
   return Buffer.from(`
