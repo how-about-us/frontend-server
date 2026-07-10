@@ -33,10 +33,6 @@ const startTimeInputClassName = cn(
   "tabular-nums",
 );
 
-function stopCardActivation(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
 function PlanStartTimeInput({
   value,
   disabled,
@@ -47,7 +43,6 @@ function PlanStartTimeInput({
   onChange: (next: string) => void;
 }) {
   const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
-    stopCardActivation(e);
     if (disabled) return;
     const input = e.currentTarget;
     try {
@@ -77,7 +72,6 @@ function PlanStartTimeInput({
           aria-label="시작 시각"
           value=""
           disabled={disabled}
-          onMouseDown={stopCardActivation}
           onClick={openPicker}
           onChange={(e) => {
             const v = e.target.value;
@@ -95,7 +89,6 @@ function PlanStartTimeInput({
       aria-label="시작 시각"
       value={value}
       disabled={disabled}
-      onMouseDown={stopCardActivation}
       onClick={openPicker}
       onChange={(e) => onChange(e.target.value)}
       className={startTimeInputClassName}
@@ -126,6 +119,14 @@ export function PlanItemTimeEditor({
   useEffect(() => {
     setDurationStr(formatStayDurationMinutes(durationMinutes));
   }, [durationMinutes]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isPending) onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isPending, onClose]);
 
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
@@ -163,94 +164,101 @@ export function PlanItemTimeEditor({
 
   return (
     <div
-      className={PLAN_PLACE_CARD_TW.editorModule}
-      onMouseDown={stopCardActivation}
-      onClick={stopCardActivation}
+      role="presentation"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !isPending) onClose();
+      }}
     >
-      <div className={PLAN_PLACE_CARD_TW.editorSideLabelWrapper}>
-        <Clock className="h-6 w-6" aria-hidden />
-        <span className={PLAN_PLACE_CARD_TW.editorSideLabelText}>시간</span>
-      </div>
-
-      <div className={PLAN_PLACE_CARD_TW.editorBody}>
-        {scheduleOverlapWarning ? (
-          <p
-            role="status"
-            className={cn(
-              "font-medium text-brand-red break-keep",
-              PLAN_PLACE_CARD_TW.overlapWarningCompact,
-            )}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plan-item-time-dialog-title"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+      >
+        <div className="flex items-center gap-2 px-6 pb-3 pt-6">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
+            <Clock className="h-5 w-5" aria-hidden />
+          </span>
+          <h2
+            id="plan-item-time-dialog-title"
+            className="text-[19px] font-bold text-gray-900"
           >
-            {scheduleOverlapWarning}
-          </p>
-        ) : null}
-
-        <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
-          <label className={PLAN_PLACE_CARD_TW.timeField}>
-            <span className={fieldLabelClass}>시작</span>
-            <PlanStartTimeInput
-              value={timeHm}
-              disabled={isPending}
-              onChange={setTimeHm}
-            />
-          </label>
-          <label className={PLAN_PLACE_CARD_TW.timeField}>
-            <span className={fieldLabelClass}>체류(분)</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
-              step={1}
-              aria-label="체류(분)"
-              value={durationStr}
-              onMouseDown={stopCardActivation}
-              onClick={stopCardActivation}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw === "") {
-                  setDurationStr("");
-                  return;
-                }
-                const v = parseInt(raw, 10);
-                if (!Number.isFinite(v)) {
-                  setDurationStr(raw);
-                  return;
-                }
-                setDurationStr(String(clampStayDurationMinutes(v)));
-              }}
-              className={cn(
-                PLAN_PLACE_CARD_TW.timeInputCompact,
-                "tabular-nums",
-              )}
-              disabled={isPending}
-            />
-          </label>
+            시간 설정
+          </h2>
         </div>
 
-        <div className={PLAN_PLACE_CARD_TW.editorFooterRow}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isPending}
-            className={cn(
-              "cursor-pointer border border-gray-border bg-white text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40",
-              PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
-            )}
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={isPending || !dirty}
-            className={cn(
-              "cursor-pointer bg-brand-green text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40",
-              PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
-            )}
-          >
-            {isPending ? "저장 중…" : "저장"}
-          </button>
+        <div className="flex flex-col gap-3 px-6 pb-6">
+          {scheduleOverlapWarning ? (
+            <p
+              role="status"
+              className="rounded-lg bg-brand-red/5 px-3 py-2 text-sm font-medium leading-relaxed text-brand-red break-keep"
+            >
+              {scheduleOverlapWarning}
+            </p>
+          ) : null}
+
+          <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
+            <label className={PLAN_PLACE_CARD_TW.timeField}>
+              <span className={fieldLabelClass}>시작</span>
+              <PlanStartTimeInput
+                value={timeHm}
+                disabled={isPending}
+                onChange={setTimeHm}
+              />
+            </label>
+            <label className={PLAN_PLACE_CARD_TW.timeField}>
+              <span className={fieldLabelClass}>체류(분)</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
+                step={1}
+                aria-label="체류(분)"
+                value={durationStr}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setDurationStr("");
+                    return;
+                  }
+                  const v = parseInt(raw, 10);
+                  if (!Number.isFinite(v)) {
+                    setDurationStr(raw);
+                    return;
+                  }
+                  setDurationStr(String(clampStayDurationMinutes(v)));
+                }}
+                className={cn(
+                  PLAN_PLACE_CARD_TW.timeInputCompact,
+                  "tabular-nums",
+                )}
+                disabled={isPending}
+              />
+            </label>
+          </div>
+
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="h-10 shrink-0 cursor-pointer rounded-lg border border-gray-border bg-white px-4 text-sm font-medium text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isPending || !dirty}
+              className="h-10 shrink-0 cursor-pointer rounded-lg bg-brand-green px-4 text-sm font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isPending ? "저장 중…" : "저장"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
