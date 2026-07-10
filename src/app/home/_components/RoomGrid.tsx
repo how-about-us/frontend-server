@@ -31,13 +31,13 @@ export function RoomGrid({
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-border py-20 text-center">
-        <p className="text-sm font-medium text-dark-gray">
+        <p className="text-[17px] font-medium text-dark-gray">
           여행 목록을 불러오지 못했어요
         </p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-3 rounded-full bg-brand-red px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          className="mt-3 rounded-full bg-brand-red px-4 py-2 text-[17px] font-semibold text-white transition hover:opacity-90"
         >
           다시 시도
         </button>
@@ -48,8 +48,8 @@ export function RoomGrid({
   if (rooms.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-border py-20 text-center">
-        <p className="text-sm font-medium text-dark-gray">아직 여행이 없어요</p>
-        <p className="mt-1 text-xs text-light-gray">
+        <p className="text-[17px] font-medium text-dark-gray">아직 여행이 없어요</p>
+        <p className="mt-1 text-[14px] text-light-gray">
           새 여행 계획을 만들어 시작해보세요
         </p>
       </div>

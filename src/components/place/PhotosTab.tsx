@@ -20,7 +20,7 @@ export function PhotosTab({ photoNames, isLoading, fallbackImage }: Props) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16">
         <Loader2 className="h-5 w-5 animate-spin text-brand-green" />
-        <span className="text-[11px] text-dark-gray">사진 불러오는 중...</span>
+        <span className="text-[13px] text-dark-gray">사진 불러오는 중...</span>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export function PhotosTab({ photoNames, isLoading, fallbackImage }: Props) {
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-1 py-16 text-dark-gray">
-        <span className="text-sm">등록된 사진이 없습니다.</span>
+        <span className="text-[17px]">등록된 사진이 없습니다.</span>
       </div>
     );
   }

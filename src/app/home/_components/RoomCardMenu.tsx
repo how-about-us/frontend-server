@@ -53,7 +53,7 @@ export function RoomCardMenu({ room, onDelete, onLeave }: Props) {
                 setOpen(false);
                 onDelete(room);
               }}
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-brand-red transition hover:bg-bubble-gray"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-[17px] text-brand-red transition hover:bg-bubble-gray"
             >
               <Trash2 size={13} />
               삭제하기
@@ -66,7 +66,7 @@ export function RoomCardMenu({ room, onDelete, onLeave }: Props) {
                 setOpen(false);
                 onLeave(room);
               }}
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left text-[17px] text-dark-gray transition hover:bg-bubble-gray"
             >
               <LogOut size={13} />
               방 나가기

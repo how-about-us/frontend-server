@@ -214,7 +214,7 @@ export function DestinationSearchInput({
                 } as const)
               : {})}
             className={cn(
-              "min-w-0 flex-1 text-sm text-dark-gray outline-none placeholder:text-light-gray",
+              "min-w-0 flex-1 text-[17px] text-dark-gray outline-none placeholder:text-light-gray",
               selectionOnly && "bg-transparent",
             )}
           />
@@ -253,8 +253,8 @@ export function DestinationSearchInput({
                   <PlacePredictionInlineDescription
                     prediction={p}
                     matchClassName="font-semibold text-brand-red"
-                    primaryTextClassName="text-[13px] text-black"
-                    secondaryTextClassName="ml-1.5 truncate text-[11px] text-light-gray"
+                    primaryTextClassName="text-base text-black"
+                    secondaryTextClassName="ml-1.5 truncate text-[13px] text-light-gray"
                   />
                 </span>
               </li>
@@ -266,7 +266,7 @@ export function DestinationSearchInput({
       {selectionOnly ? (
         <p
           id={selectionOnlyFooterId}
-          className="mt-2 text-xs leading-relaxed text-light-gray"
+          className="mt-2 text-[14px] leading-relaxed text-light-gray"
         >
           {DESTINATION_SELECTION_HINT}
         </p>

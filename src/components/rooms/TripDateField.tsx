@@ -32,7 +32,7 @@ export function TripDateField({
 
   if (readOnly) {
     return (
-      <span className="min-w-0 flex-1 text-sm text-dark-gray">{value || "—"}</span>
+      <span className="min-w-0 flex-1 text-[17px] text-dark-gray">{value || "—"}</span>
     );
   }
 

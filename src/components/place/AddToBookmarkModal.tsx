@@ -214,11 +214,11 @@ export function AddToBookmarkModal({
         <div className="shrink-0 px-5 pb-2 pt-3">
           <h2
             id="add-bookmark-modal-title"
-            className="text-lg font-semibold text-neutral-900"
+            className="text-[22px] font-semibold text-neutral-900"
           >
             북마크에 추가
           </h2>
-          <p className="mt-1 text-xs leading-relaxed text-dark-gray break-keep text-pretty">
+          <p className="mt-1 text-[14px] leading-relaxed text-dark-gray break-keep text-pretty">
             북마크를 선택한 뒤 추가해 주세요.
           </p>
         </div>
@@ -229,7 +229,7 @@ export function AddToBookmarkModal({
             disabled={isCreatingCategory || isAddingBookmarks}
             onClick={openCreateFolderModal}
             className={cn(
-              "flex w-full items-center gap-2.5 border-b border-gray-border px-5 py-3.5 text-left text-sm font-medium text-neutral-900 transition-colors hover:bg-bubble-gray",
+              "flex w-full items-center gap-2.5 border-b border-gray-border px-5 py-3.5 text-left text-[17px] font-medium text-neutral-900 transition-colors hover:bg-bubble-gray",
               "disabled:opacity-55",
             )}
           >
@@ -238,14 +238,14 @@ export function AddToBookmarkModal({
           </button>
 
           {categoriesLoading && (
-            <p className="px-5 py-6 text-center text-sm text-dark-gray">
+            <p className="px-5 py-6 text-center text-[17px] text-dark-gray">
               불러오는 중…
             </p>
           )}
 
           {categoriesError && (
             <div className="space-y-2 px-5 py-6 text-center">
-              <p className="text-sm text-brand-red">
+              <p className="text-[17px] text-brand-red">
                 {categoriesErr instanceof Error
                   ? categoriesErr.message
                   : "카테고리를 불러오지 못했습니다."}
@@ -253,7 +253,7 @@ export function AddToBookmarkModal({
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="text-sm font-medium text-neutral-900 underline"
+                className="text-[17px] font-medium text-neutral-900 underline"
               >
                 다시 시도
               </button>
@@ -262,7 +262,7 @@ export function AddToBookmarkModal({
 
           {categories && categories.length === 0 && !categoriesLoading && (
             <div className="px-5 py-8 text-center">
-              <p className="text-xs leading-relaxed text-dark-gray break-keep text-pretty">
+              <p className="text-[14px] leading-relaxed text-dark-gray break-keep text-pretty">
                 아직 북마크가 없어요.
               </p>
             </div>
@@ -288,10 +288,10 @@ export function AddToBookmarkModal({
                       >
                         <FolderRibbonIcon color={c.colorCode} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[15px] font-medium text-neutral-900">
+                          <p className="truncate text-lg font-medium text-neutral-900">
                             {c.name}
                           </p>
-                          <p className="mt-0.5 text-sm text-dark-gray">
+                          <p className="mt-0.5 text-[17px] text-dark-gray">
                             {c.placeCount ?? 0}개 장소
                           </p>
                         </div>
@@ -316,7 +316,7 @@ export function AddToBookmarkModal({
           {submitFeedback && (
             <p
               className={cn(
-                "border-t border-gray-border px-5 py-3 text-center text-sm",
+                "border-t border-gray-border px-5 py-3 text-center text-[17px]",
                 submitFeedback.variant === "error"
                   ? "text-brand-red"
                   : "text-dark-gray",
@@ -332,7 +332,7 @@ export function AddToBookmarkModal({
             type="button"
             onClick={onClose}
             disabled={isAddingBookmarks}
-            className="flex-1 rounded-xl border border-gray-border py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-bubble-gray disabled:opacity-60"
+            className="flex-1 rounded-xl border border-gray-border py-2.5 text-[17px] font-medium text-neutral-800 transition-colors hover:bg-bubble-gray disabled:opacity-60"
           >
             닫기
           </button>
@@ -344,7 +344,7 @@ export function AddToBookmarkModal({
               selectedIds.size === 0 ||
               (categories?.length === 0 && !categoriesLoading)
             }
-            className="flex-1 rounded-xl bg-brand-red py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 disabled:opacity-55"
+            className="flex-1 rounded-xl bg-brand-red py-2.5 text-[17px] font-semibold text-white shadow-sm transition-opacity hover:opacity-95 disabled:opacity-55"
           >
             {isAddingBookmarks ? "추가 중…" : "추가"}
           </button>

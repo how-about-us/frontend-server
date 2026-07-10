@@ -12,7 +12,7 @@ export function SidebarChatUnreadBadge() {
     !roomId || unreadCount === 0 ? "-" : formatUnreadCountBadge(unreadCount);
 
   return (
-    <span className="pointer-events-none absolute text-xs font-bold text-white">
+    <span className="pointer-events-none absolute text-[14px] font-bold text-white">
       {label}
     </span>
   );

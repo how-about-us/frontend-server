@@ -41,12 +41,12 @@ export function RoomCard({ room, onDelete, onLeave }: Props) {
           </div>
 
           <div className="min-w-0 flex-1 pr-7">
-            <p className="truncate text-sm font-semibold">{room.title}</p>
-            <p className="mt-0.5 truncate text-xs text-dark-gray">
+            <p className="truncate text-[17px] font-semibold">{room.title}</p>
+            <p className="mt-0.5 truncate text-[14px] text-dark-gray">
               {room.destination}
             </p>
             {dateStr ? (
-              <p className="mt-1 text-xs text-light-gray">{dateStr}</p>
+              <p className="mt-1 text-[14px] text-light-gray">{dateStr}</p>
             ) : null}
           </div>
         </div>

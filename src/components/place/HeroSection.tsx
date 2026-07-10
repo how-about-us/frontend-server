@@ -58,7 +58,7 @@ export function HeroGrid({
           <img src={grid[2]} alt={name} className="h-full w-full object-cover" />
           {photos.length > 3 && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-              <span className="text-xs font-semibold text-white">
+              <span className="text-[14px] font-semibold text-white">
                 +{photos.length - 3}
               </span>
             </div>

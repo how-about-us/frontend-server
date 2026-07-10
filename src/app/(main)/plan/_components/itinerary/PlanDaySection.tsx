@@ -204,9 +204,9 @@ export function PlanDaySection({
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
           >
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-[19px] font-semibold text-gray-900">{title}</h2>
               {subtitle ? (
-                <p className="mt-0.5 text-xs text-dark-gray">{subtitle}</p>
+                <p className="mt-0.5 text-[14px] text-dark-gray">{subtitle}</p>
               ) : null}
             </div>
           </button>
@@ -273,7 +273,7 @@ export function PlanDaySection({
                     <button
                       type="button"
                       role="menuitem"
-                      className="flex cursor-pointer items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray"
+                      className="flex cursor-pointer items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-neutral-900 hover:bg-bubble-gray"
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(false);
@@ -290,7 +290,7 @@ export function PlanDaySection({
                       role="menuitem"
                       disabled={isDeleteScheduleDisabled}
                       className={cn(
-                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-brand-red hover:bg-red-50",
+                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-brand-red hover:bg-red-50",
                         isDeleteScheduleDisabled
                           ? "cursor-not-allowed opacity-40"
                           : "cursor-pointer",

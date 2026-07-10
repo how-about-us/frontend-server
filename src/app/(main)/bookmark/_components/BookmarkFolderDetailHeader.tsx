@@ -33,7 +33,7 @@ export function BookmarkFolderDetailHeader({
               className="size-7"
             />
             <span className="min-w-0 truncate">{folder.title}</span>
-            <span className="shrink-0 text-xs font-normal text-dark-gray">
+            <span className="shrink-0 text-[14px] font-normal text-dark-gray">
               {folder.placeCount ?? 0}개 장소
             </span>
           </span>

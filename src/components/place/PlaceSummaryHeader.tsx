@@ -31,16 +31,16 @@ export function PlaceSummaryHeader({
     <div className="border-b border-gray-border px-4 pb-4 pt-3">
       <div className="flex items-start gap-3">
         <h2 className="min-w-0 flex-1 leading-snug">
-          <span className="block text-lg font-bold tracking-tight text-[#111827]">
+          <span className="block text-[22px] font-bold tracking-tight text-[#111827]">
             {name}
           </span>
-          <span className="block text-sm font-normal text-[#6b7280]">
+          <span className="block text-[17px] font-normal text-[#6b7280]">
             {category}
           </span>
         </h2>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px]">
+      <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-base">
         <Star className="h-4 w-4 shrink-0 fill-[#FDC700] text-[#FDC700]" />
         <span className="font-semibold text-[#364153]">
           {rating != null ? rating.toFixed(1) : "-"}
@@ -53,7 +53,7 @@ export function PlaceSummaryHeader({
       </div>
 
       {reviewSummary && (
-        <p className="mt-2.5 text-[11px] leading-relaxed text-[#6b7280]">
+        <p className="mt-2.5 text-[13px] leading-relaxed text-[#6b7280]">
           {reviewSummary}
         </p>
       )}
@@ -63,7 +63,7 @@ export function PlaceSummaryHeader({
           type="button"
           onClick={onSendToChat}
           disabled={sendToChatDisabled}
-          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-red/35 bg-brand-red/5 py-3 text-xs font-semibold text-brand-red shadow-sm transition hover:bg-brand-red/10 active:bg-brand-red/15 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-red/35 bg-brand-red/5 py-3 text-[14px] font-semibold text-brand-red shadow-sm transition hover:bg-brand-red/10 active:bg-brand-red/15 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="채팅으로 보내기"
         >
           <Send className="h-4 w-4 shrink-0" strokeWidth={2} />
@@ -76,7 +76,7 @@ export function PlaceSummaryHeader({
           type="button"
           onClick={onAddToSchedule}
           disabled={addToScheduleDisabled || !onAddToSchedule}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Calendar className="h-4 w-4" strokeWidth={2} />
           일정에 추가
@@ -85,7 +85,7 @@ export function PlaceSummaryHeader({
           type="button"
           onClick={onAddBookmark}
           disabled={addBookmarkDisabled || !onAddBookmark}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-red py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Bookmark className="h-4 w-4" strokeWidth={2} />
           북마크에 추가

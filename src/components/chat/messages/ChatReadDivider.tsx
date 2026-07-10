@@ -22,8 +22,8 @@ export function ChatReadDivider({ isMinimized = false }: { isMinimized?: boolean
       />
       <span
         className={cn(
-          "shrink-0 text-center text-xs text-black/45",
-          isMinimized && "text-[10px]",
+          "shrink-0 text-center text-[14px] text-black/45",
+          isMinimized && "text-xs",
         )}
       >
         여기까지 읽었어요

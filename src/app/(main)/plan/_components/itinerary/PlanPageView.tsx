@@ -137,7 +137,7 @@ export function PlanPageView() {
           className={pageContentClassName}
         >
           {pageHeader}
-          <p className="py-8 text-center text-sm text-dark-gray">
+          <p className="py-8 text-center text-[17px] text-dark-gray">
             일정을 불러오는 중…
           </p>
         </div>
@@ -156,7 +156,7 @@ export function PlanPageView() {
         {isError ? (
           <p
             className={cn(
-              "rounded-xl border border-gray-border bg-white py-3 text-sm text-brand-red",
+              "rounded-xl border border-gray-border bg-white py-3 text-[17px] text-brand-red",
               MAIN_CARD_INNER_PADDING_X_CLASS,
             )}
           >
@@ -167,7 +167,7 @@ export function PlanPageView() {
         {!isError && planDays.length === 0 ? (
           <p
             className={cn(
-              "rounded-xl border border-gray-border bg-white py-3 text-sm text-dark-gray",
+              "rounded-xl border border-gray-border bg-white py-3 text-[17px] text-dark-gray",
               MAIN_CARD_INNER_PADDING_X_CLASS,
             )}
           >

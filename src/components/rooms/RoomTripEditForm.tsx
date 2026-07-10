@@ -168,7 +168,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
       />
 
       {error && !readOnly && (
-        <p className="text-center text-sm text-brand-red">
+        <p className="text-center text-[17px] text-brand-red">
           {error instanceof Error
             ? error.message
             : "수정에 실패했어요. 다시 시도해주세요."}

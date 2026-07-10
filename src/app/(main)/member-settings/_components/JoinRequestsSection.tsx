@@ -53,17 +53,17 @@ function JoinRequestCard({
             className="h-9 w-9 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-red/10 text-[17px] font-semibold text-brand-red">
             {request.nickname.charAt(0)}
           </div>
         )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-800">
+        <p className="truncate text-[17px] font-medium text-gray-800">
           {request.nickname}
         </p>
-        <p className="text-xs text-dark-gray">
+        <p className="text-[14px] text-dark-gray">
           {formatRelativeTime(request.requestedAt)}
         </p>
       </div>
@@ -97,7 +97,7 @@ export function JoinRequestsSection({ roomId }: Props) {
   if (isLoading) {
     return (
       <section className="flex flex-col gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-dark-gray">
+        <p className="text-[14px] font-semibold uppercase tracking-wide text-dark-gray">
           입장 요청
         </p>
         <div className="flex items-center justify-center rounded-xl border border-gray-border bg-white py-6">
@@ -114,10 +114,10 @@ export function JoinRequestsSection({ roomId }: Props) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-dark-gray">
+        <p className="text-[14px] font-semibold uppercase tracking-wide text-dark-gray">
           입장 요청
         </p>
-        <span className="rounded-full bg-brand-red px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+        <span className="rounded-full bg-brand-red px-1.5 py-0.5 text-xs font-bold leading-none text-white">
           {requests.length}
         </span>
       </div>

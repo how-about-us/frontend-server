@@ -39,7 +39,7 @@ function UserAvatar({
     );
   }
 
-  return <span className="text-xs font-semibold text-white">{initial}</span>;
+  return <span className="text-[14px] font-semibold text-white">{initial}</span>;
 }
 
 export function HomeHeader() {
@@ -101,7 +101,7 @@ export function HomeHeader() {
               {user ? (
                 <UserAvatar user={user} />
               ) : (
-                <span className="text-xs font-semibold text-white">?</span>
+                <span className="text-[14px] font-semibold text-white">?</span>
               )}
             </button>
 
@@ -109,10 +109,10 @@ export function HomeHeader() {
               <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
                 {user && (
                   <div className="border-b border-gray-border px-4 py-2.5">
-                    <p className="truncate text-xs font-semibold text-black">
+                    <p className="truncate text-[14px] font-semibold text-black">
                       {user.nickname}
                     </p>
-                    <p className="truncate text-[11px] text-dark-gray">
+                    <p className="truncate text-[13px] text-dark-gray">
                       {user.email}
                     </p>
                   </div>
@@ -120,7 +120,7 @@ export function HomeHeader() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full px-4 py-2.5 text-left text-sm text-dark-gray transition hover:bg-bubble-gray"
+                  className="w-full px-4 py-2.5 text-left text-[17px] text-dark-gray transition hover:bg-bubble-gray"
                 >
                   로그아웃
                 </button>
@@ -130,7 +130,7 @@ export function HomeHeader() {
                     setOpen(false);
                     setShowWithdrawConfirm(true);
                   }}
-                  className="w-full border-t border-gray-border px-4 py-2.5 text-left text-sm text-brand-red transition hover:bg-brand-red/5"
+                  className="w-full border-t border-gray-border px-4 py-2.5 text-left text-[17px] text-brand-red transition hover:bg-brand-red/5"
                 >
                   회원 탈퇴
                 </button>

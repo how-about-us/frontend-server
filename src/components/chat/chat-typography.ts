@@ -5,30 +5,30 @@ const AI_LABEL_WIDTH_CH = 1.5;
 
 /** 말풍선·카드·입력 등 본문 (패널 일반 크기) */
 const chatTypographyMessage = {
-  bubble: "text-xs leading-relaxed",
-  systemBody: "text-xs leading-relaxed",
-  metaMuted: "text-[9px] leading-relaxed text-dark-gray",
-  wooriSenderLabel: "text-[9px] font-medium leading-relaxed text-brand-red",
-  aiRequestBubblePrefix: "text-xs font-semibold leading-relaxed text-brand-green",
-  placeTitle: "text-xs font-semibold leading-snug text-brand-green",
-  placeRating: "text-[10px] font-medium leading-relaxed text-[#364153]",
-  placeAddress: "text-[10px] leading-relaxed text-[#99A1AF]",
-  input: "text-xs leading-relaxed",
-  inputAiLabel: "text-xs leading-relaxed text-brand-green font-semibold",
+  bubble: "text-[14px] leading-relaxed",
+  systemBody: "text-[14px] leading-relaxed",
+  metaMuted: "text-[11px] leading-relaxed text-dark-gray",
+  wooriSenderLabel: "text-[11px] font-medium leading-relaxed text-brand-red",
+  aiRequestBubblePrefix: "text-[14px] font-semibold leading-relaxed text-brand-green",
+  placeTitle: "text-[14px] font-semibold leading-snug text-brand-green",
+  placeRating: "text-xs font-medium leading-relaxed text-[#364153]",
+  placeAddress: "text-xs leading-relaxed text-[#99A1AF]",
+  input: "text-[14px] leading-relaxed",
+  inputAiLabel: "text-[14px] leading-relaxed text-brand-green font-semibold",
 } as const;
 
 /** 패널 최소화(좁은 폭) */
 const chatTypographyMinimized = {
-  bubble: "text-[11px] leading-relaxed",
-  systemBody: "text-[11px] leading-relaxed",
-  metaMuted: "text-[8px] leading-relaxed text-dark-gray",
-  wooriSenderLabel: "text-[8px] font-medium leading-relaxed text-brand-red",
-  aiRequestBubblePrefix: "text-[11px] font-semibold leading-relaxed text-brand-green",
-  placeTitle: "text-[11px] font-semibold leading-snug text-brand-green",
-  placeRating: "text-[9px] font-medium leading-relaxed text-[#364153]",
-  placeAddress: "text-[9px] leading-relaxed text-[#99A1AF]",
-  input: "text-[11px] leading-relaxed",
-  inputAiLabel: "text-[11px] leading-relaxed text-brand-green font-semibold",
+  bubble: "text-[13px] leading-relaxed",
+  systemBody: "text-[13px] leading-relaxed",
+  metaMuted: "text-[10px] leading-relaxed text-dark-gray",
+  wooriSenderLabel: "text-[10px] font-medium leading-relaxed text-brand-red",
+  aiRequestBubblePrefix: "text-[13px] font-semibold leading-relaxed text-brand-green",
+  placeTitle: "text-[13px] font-semibold leading-snug text-brand-green",
+  placeRating: "text-[11px] font-medium leading-relaxed text-[#364153]",
+  placeAddress: "text-[11px] leading-relaxed text-[#99A1AF]",
+  input: "text-[13px] leading-relaxed",
+  inputAiLabel: "text-[13px] leading-relaxed text-brand-green font-semibold",
 } as const;
 
 export type ChatMessageTextTypography =
@@ -60,28 +60,28 @@ export const chatAiBubbleEmphasisClass = "font-semibold text-brand-green";
 export function chatAiBubbleBlockTitleClass(isMinimized: boolean): string {
   return cn(
     "font-semibold text-gray-900",
-    isMinimized ? "text-[11px] leading-snug" : "text-xs leading-snug",
+    isMinimized ? "text-[13px] leading-snug" : "text-[14px] leading-snug",
   );
 }
 
 export function chatAiBubbleSectionLabelClass(isMinimized: boolean): string {
   return cn(
     "font-semibold text-gray-900",
-    isMinimized ? "text-[10px]" : "text-[11px]",
+    isMinimized ? "text-xs" : "text-[13px]",
   );
 }
 
 export function chatAiBubbleOverviewBodyClass(isMinimized: boolean): string {
   return cn(
     "leading-relaxed text-gray-700",
-    isMinimized ? "text-[10px]" : "text-[11px]",
+    isMinimized ? "text-xs" : "text-[13px]",
   );
 }
 
 export function chatAiBubbleListTextClass(isMinimized: boolean): string {
   return cn(
     "text-gray-800",
-    isMinimized ? "text-[10px] leading-snug" : "text-[11px] leading-snug",
+    isMinimized ? "text-xs leading-snug" : "text-[13px] leading-snug",
   );
 }
 
@@ -95,7 +95,7 @@ export function chatAiBubblePlaceRecommendationHeadingTitleClass(
 ): string {
   return cn(
     "font-semibold leading-snug text-[#0f172a]",
-    isMinimized ? "text-[11px]" : "text-xs",
+    isMinimized ? "text-[13px]" : "text-[14px]",
   );
 }
 
@@ -105,7 +105,7 @@ export function chatAiBubblePlaceRecommendationHeadingSubtitleClass(
 ): string {
   return cn(
     "font-normal leading-relaxed text-[#1e293b]",
-    isMinimized ? "text-[11px]" : "text-xs",
+    isMinimized ? "text-[13px]" : "text-[14px]",
   );
 }
 
@@ -115,6 +115,6 @@ export function chatAiBubblePlaceRecommendationReasonClass(
 ): string {
   return cn(
     "font-normal leading-relaxed text-[#1e293b]",
-    isMinimized ? "text-[10px]" : "text-[11px]",
+    isMinimized ? "text-xs" : "text-[13px]",
   );
 }

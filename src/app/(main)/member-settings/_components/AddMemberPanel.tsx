@@ -101,7 +101,7 @@ export function AddMemberPanel({
   return (
     <div className="overflow-hidden rounded-xl border border-gray-border bg-gray-50">
       <div className="flex items-center justify-between border-b border-gray-border bg-white px-4 py-3">
-        <span className="text-sm font-semibold text-gray-800">멤버 초대</span>
+        <span className="text-[17px] font-semibold text-gray-800">멤버 초대</span>
         <button
           onClick={onClose}
           className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-dark-gray transition-colors hover:bg-gray-100"
@@ -122,18 +122,18 @@ export function AddMemberPanel({
       </div>
 
       <div className="flex flex-col gap-3 p-4">
-        <p className="text-xs text-dark-gray">
+        <p className="text-[14px] text-dark-gray">
           아래 초대 링크를 복사해 멤버를 초대하세요.
         </p>
 
         <div className="flex gap-2">
           <div className="flex min-w-0 flex-1 items-center rounded-lg border border-gray-border bg-white px-3 py-2">
             {inviteUrl ? (
-              <span className="truncate text-xs text-dark-gray">
+              <span className="truncate text-[14px] text-dark-gray">
                 {inviteUrl}
               </span>
             ) : (
-              <span className="truncate text-xs text-light-gray">
+              <span className="truncate text-[14px] text-light-gray">
                 {isRoomDetailLoading
                   ? "방 정보를 불러오는 중…"
                   : isRegenerating
@@ -148,7 +148,7 @@ export function AddMemberPanel({
             type="button"
             onClick={handleCopy}
             disabled={!inviteUrl}
-            className={`flex-shrink-0 cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`flex-shrink-0 cursor-pointer rounded-lg border px-3 py-2 text-[14px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               copied
                 ? "border-brand-green bg-brand-green/10 text-brand-green"
                 : "border-gray-border bg-white text-dark-gray hover:border-gray-400"
@@ -162,7 +162,7 @@ export function AddMemberPanel({
           type="button"
           onClick={handleRegenerate}
           disabled={isRegenerating}
-          className="flex cursor-pointer items-center gap-1.5 self-start text-xs text-dark-gray transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex cursor-pointer items-center gap-1.5 self-start text-[14px] text-dark-gray transition-colors hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
           <RefreshCw
             size={12}

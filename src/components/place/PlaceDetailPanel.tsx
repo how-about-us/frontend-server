@@ -182,7 +182,7 @@ export function PlaceDetailPanel({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-[11px] font-medium transition-colors ${
+              className={`flex-1 py-2.5 text-[13px] font-medium transition-colors ${
                 activeTab === tab
                   ? "border-b-2 border-brand-red text-brand-red"
                   : "text-dark-gray hover:text-[#364153]"

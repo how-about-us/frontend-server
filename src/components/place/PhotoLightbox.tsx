@@ -61,7 +61,7 @@ export function PhotoLightbox({
       </button>
 
       {/* Counter */}
-      <span className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+      <span className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[14px] font-medium text-white backdrop-blur-sm">
         {currentIndex + 1} / {photos.length}
       </span>
 

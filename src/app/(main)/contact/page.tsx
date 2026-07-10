@@ -18,7 +18,7 @@ export default function ContactPage() {
 
         <CopyableSupportEmail variant="card" />
 
-        <p className="text-xs leading-relaxed text-dark-gray">
+        <p className="text-[14px] leading-relaxed text-dark-gray">
           이메일을 클릭하면 주소가 복사됩니다.
         </p>
 
@@ -26,7 +26,7 @@ export default function ContactPage() {
           href={CONTACT_FEEDBACK_FORM_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-brand-red transition hover:opacity-80"
+          className="inline-flex w-fit items-center gap-1.5 text-[17px] font-medium text-brand-red transition hover:opacity-80"
         >
           피드백 설문 보내기
           <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
