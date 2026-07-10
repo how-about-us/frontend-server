@@ -1,6 +1,7 @@
 "use client";
 
 import { StickyNote, Trash2 } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +10,53 @@ import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import { cn } from "@/lib/utils";
 
 const SCHEDULE_ITEM_MEMO_MAX_LENGTH = 2000;
+
+/** http(s):// 또는 www. 로 시작하는 URL 매칭. 공백·꺾쇠·괄호 제외 */
+const MEMO_URL_RE = /(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+)/g;
+const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]]+$/;
+
+/** 메모 텍스트 내 URL 을 자동으로 `<a>` 로 변환. 나머지는 그대로 텍스트 노드로 유지. */
+function renderMemoWithLinks(text: string): ReactNode {
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let key = 0;
+  const re = new RegExp(MEMO_URL_RE);
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(text)) !== null) {
+    const start = match.index;
+    let raw = match[0];
+
+    // 후행 문장부호는 URL 에서 떼어냄 (예: "https://a.com." → URL 은 "https://a.com", "." 는 텍스트)
+    const trailingMatch = raw.match(TRAILING_PUNCTUATION_RE);
+    const trailing = trailingMatch ? trailingMatch[0] : "";
+    if (trailing) raw = raw.slice(0, -trailing.length);
+
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+
+    const href = raw.startsWith("www.") ? `https://${raw}` : raw;
+    nodes.push(
+      <a
+        key={`memo-url-${key}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="break-all text-brand-green underline underline-offset-2 hover:opacity-80"
+      >
+        {raw}
+      </a>,
+    );
+    key += 1;
+
+    if (trailing) nodes.push(trailing);
+    cursor = start + raw.length + trailing.length;
+  }
+
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+
+  return nodes.map((n, i) => <Fragment key={i}>{n}</Fragment>);
+}
 
 type PlanItemMemoEditorProps = {
   roomId: string;
@@ -122,7 +170,7 @@ export function PlanItemMemoReadOnly({
         <StickyNote className="h-6 w-6" aria-hidden />
       </div>
       <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900">
-        {text}
+        {renderMemoWithLinks(text)}
       </p>
       {onDelete ? (
         <button
