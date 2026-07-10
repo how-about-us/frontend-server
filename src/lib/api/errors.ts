@@ -9,6 +9,14 @@ export const AGREEMENT_CONFIGURATION_INVALID_ERROR_CODE =
   "AGREEMENT_CONFIGURATION_INVALID";
 export const WITHDRAWAL_REQUIRES_HOST_DELEGATION_ERROR_CODE =
   "WITHDRAWAL_REQUIRES_HOST_DELEGATION";
+export const INVALID_DESTINATIONS_SIZE_ERROR_CODE =
+  "INVALID_DESTINATIONS_SIZE";
+export const DUPLICATE_DESTINATION_ERROR_CODE = "DUPLICATE_DESTINATION";
+
+const INVALID_DESTINATIONS_SIZE_DEFAULT_MESSAGE =
+  "여행지는 1~5개까지 입력할 수 있어요.";
+const DUPLICATE_DESTINATION_DEFAULT_MESSAGE =
+  "같은 여행지는 중복해서 넣을 수 없어요.";
 
 const AGREEMENTS_NOT_ACCEPTED_DEFAULT_MESSAGE =
   "필수 약관에 동의해야 서비스를 이용할 수 있습니다.";
@@ -213,6 +221,27 @@ export class HttpError extends Error {
   ) {
     super(message);
   }
+}
+
+/** 방 생성·수정 API의 여행지 관련 서버 에러(HTTP 4xx) → 한국어 사용자 메시지 */
+export function messageForRoomDestinationError(
+  body: unknown,
+  fallback: string,
+): string {
+  const code = readNormalizedApiErrorCode(body);
+  if (code === INVALID_DESTINATIONS_SIZE_ERROR_CODE) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      INVALID_DESTINATIONS_SIZE_DEFAULT_MESSAGE
+    );
+  }
+  if (code === DUPLICATE_DESTINATION_ERROR_CODE) {
+    return (
+      readUserFacingMessageFromApiBody(body) ??
+      DUPLICATE_DESTINATION_DEFAULT_MESSAGE
+    );
+  }
+  return readUserFacingMessageFromApiBody(body) ?? fallback;
 }
 
 /** 북마크 카테고리명 중복(HTTP 409) 시 토스트용 문구 */
