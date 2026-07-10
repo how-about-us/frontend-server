@@ -6,6 +6,7 @@ import sharp from "sharp";
 const ROOT = process.cwd();
 const TARGETS = [
   "public/landing/01-hero-app.png",
+  "public/landing/02-feature-map.png",
   "public/landing/03-feature-place-share.png",
   "public/landing/04-feature-plan.png",
 ];
