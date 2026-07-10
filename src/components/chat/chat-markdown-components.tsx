@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 export type ChatMarkdownVariant = "ai" | "mine" | "other";
 
-function linkClassName(variant: ChatMarkdownVariant): string {
+export function getChatLinkClassName(variant: ChatMarkdownVariant): string {
   if (variant === "mine") {
     return "text-white underline underline-offset-2 hover:opacity-90";
   }
@@ -20,7 +20,7 @@ function strongClassName(variant: ChatMarkdownVariant): string {
 export function createChatMarkdownComponents(
   variant: ChatMarkdownVariant,
 ): Components {
-  const linkCls = linkClassName(variant);
+  const linkCls = getChatLinkClassName(variant);
   const strongCls = strongClassName(variant);
 
   return {

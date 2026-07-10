@@ -6,9 +6,11 @@ import remarkGfm from "remark-gfm";
 
 import {
   createChatMarkdownComponents,
+  getChatLinkClassName,
   type ChatMarkdownVariant,
 } from "@/components/chat/chat-markdown-components";
 import { prepareUserChatMarkdown } from "@/lib/chat/prepareUserChatMarkdown";
+import { renderTextWithLinks } from "@/lib/text/renderTextWithLinks";
 import { cn } from "@/lib/utils";
 
 export function ChatMarkdownContent({
@@ -28,7 +30,9 @@ export function ChatMarkdownContent({
     const plain = prepareUserChatMarkdown(text);
     return (
       <div className={cn("whitespace-pre-wrap break-words", className)}>
-        {plain}
+        {renderTextWithLinks(plain, {
+          linkClassName: getChatLinkClassName(variant),
+        })}
       </div>
     );
   }
