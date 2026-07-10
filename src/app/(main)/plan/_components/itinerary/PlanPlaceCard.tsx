@@ -17,7 +17,10 @@ import {
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
-import { formatScheduleStaySummary } from "@/lib/plan/scheduleTime";
+import {
+  formatScheduleStaySummary,
+  formatScheduleTimeRange,
+} from "@/lib/plan/scheduleTime";
 import type { PlanPlace } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
@@ -200,6 +203,10 @@ export function PlanPlaceCard({
     place.startTime ?? "",
     place.durationMinutes ?? 0,
   );
+  const timeRange = formatScheduleTimeRange(
+    place.startTime ?? "",
+    place.durationMinutes ?? 0,
+  );
   const hasTime = Boolean(staySummary);
 
   const deleteButton = canManageServerItem ? (
@@ -252,20 +259,9 @@ export function PlanPlaceCard({
         strokeWidth={2}
         aria-hidden
       />
-      {hasTime ? staySummary : "출발-도착시간 추가"}
+      시간 설정
     </button>
   ) : null;
-
-  const readOnlySummary =
-    isReadOnly && (hasTime || hasMemo) ? (
-      <div className="flex min-w-0 flex-col gap-0.5">
-        {hasTime ? (
-          <p className="truncate text-xs tabular-nums text-dark-gray/80">
-            {staySummary}
-          </p>
-        ) : null}
-      </div>
-    ) : null;
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -345,15 +341,25 @@ export function PlanPlaceCard({
             ) : null}
           </div>
 
-          {canEditScheduleItem ? (
-            <div className={PLAN_PLACE_CARD_TW.triggerRow}>
-              {memoTrigger}
-              {timeTrigger}
-            </div>
+          {timeRange ? (
+            <span
+              className={cn(
+                "mt-auto inline-flex w-fit items-center rounded-md bg-brand-green/10 px-2 py-0.5",
+                PLAN_PLACE_CARD_TW.titleCompact,
+                "text-[14px] tabular-nums text-brand-green",
+              )}
+            >
+              {timeRange}
+            </span>
           ) : null}
-
-          {readOnlySummary}
         </div>
+
+        {canEditScheduleItem ? (
+          <div className={PLAN_PLACE_CARD_TW.triggerRow}>
+            {memoTrigger}
+            {timeTrigger}
+          </div>
+        ) : null}
       </article>
 
       {canEditScheduleItem && timeOpen && scheduleTimeEdit && scheduleItemId !== null ? (

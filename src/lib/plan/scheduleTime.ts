@@ -25,6 +25,30 @@ export function formatScheduleStaySummary(
   return `${hm} · ${dur}분`;
 }
 
+/** `HH:mm` (24시제) 을 `h:mm AM/PM` 으로 변환. */
+function hmToTwelveHourWithPeriod(hm: string): string {
+  const [hStr, mStr = "00"] = hm.split(":");
+  const h24 = parseInt(hStr ?? "0", 10);
+  if (!Number.isFinite(h24)) return hm;
+  const period = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 || 12;
+  return `${h12}:${mStr} ${period}`;
+}
+
+/** 시작 ~ 종료 시간 range 표시용 (AM/PM). 시작·체류가 모두 없으면 빈 문자열. */
+export function formatScheduleTimeRange(
+  startTime: string,
+  durationMinutes: number,
+): string {
+  const hm = normalizeStartTimeToHm(startTime);
+  if (!hm) return "";
+  const dur = clampStayDurationMinutes(durationMinutes);
+  const startFmt = hmToTwelveHourWithPeriod(hm);
+  if (dur <= 0) return startFmt;
+  const endFmt = hmToTwelveHourWithPeriod(addMinutesToHm(hm, dur));
+  return `${startFmt} – ${endFmt}`;
+}
+
 /** API `startTime`을 `<input type="time">`용 `HH:mm`으로 바꿈. 미설정·공백·파싱 불가면 `""`. */
 export function normalizeStartTimeToHm(value: string): string {
   const v = value.trim();
