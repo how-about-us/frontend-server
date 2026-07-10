@@ -16,6 +16,7 @@ import { formatDateYmd } from "@/lib/plan/tripRange";
 import { isTripScheduleDayLimitExceeded } from "@/lib/plan/schedulePolicy";
 import {
   isTripDateRangeInvalid,
+  isTripDestinationsValid,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   tripEndDateMinYmd,
 } from "@/lib/rooms/trip-form";
@@ -27,10 +28,7 @@ export default function NewTripPage() {
   const queryClient = useQueryClient();
   useRedirectOnMobileDevice("/home");
   const [title, setTitle] = useState("");
-  const [destination, setDestination] = useState("");
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(
-    null,
-  );
+  const [destinations, setDestinations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -43,8 +41,7 @@ export default function NewTripPage() {
 
   const canSubmit =
     title.trim() &&
-    destination.trim() &&
-    destinationPlaceId &&
+    isTripDestinationsValid(destinations) &&
     startDate &&
     endDate &&
     !isPending &&
@@ -57,7 +54,7 @@ export default function NewTripPage() {
     createRoom(
       {
         title: title.trim().slice(0, ROOM_TRIP_TITLE_MAX_LENGTH),
-        destinations: [destination.trim()],
+        destinations: destinations.map((d) => d.trim()),
         startDate,
         endDate,
       },
@@ -93,13 +90,12 @@ export default function NewTripPage() {
 
         <TripFormFields
           idPrefix="new-trip"
-          values={{ title, destination, startDate, endDate }}
+          values={{ title, destinations, startDate, endDate }}
           autoFocusTitle
           startDateMin={todayYmd}
           endDateMin={endDateMin}
           onTitleChange={setTitle}
-          onDestinationChange={setDestination}
-          onDestinationResolved={setDestinationPlaceId}
+          onDestinationsChange={setDestinations}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
         />

@@ -1,4 +1,6 @@
 export const ROOM_TRIP_TITLE_MAX_LENGTH = 20;
+export const TRIP_DESTINATIONS_MAX_COUNT = 5;
+export const TRIP_DESTINATION_MAX_LENGTH = 100;
 
 export const TRIP_DATE_INPUT_CLASS =
   "relative w-full cursor-pointer border-0 bg-transparent p-0 pl-7 text-[17px] outline-none [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-datetime-edit]:text-inherit";
@@ -41,7 +43,7 @@ export type RoomTripFormSource = {
 
 export type TripFormValues = {
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string;
   endDate: string;
 };
@@ -49,28 +51,34 @@ export type TripFormValues = {
 export function toTripFormValues(source: RoomTripFormSource): TripFormValues {
   return {
     title: source.title,
-    destination: source.destinations[0] ?? "",
+    destinations: [...source.destinations],
     startDate: source.startDate ?? "",
     endDate: source.endDate ?? "",
   };
 }
 
-export function initialDestinationPlaceId(
-  destination: string,
-): string | null {
-  return destination.trim() ? "saved" : null;
+/** 서버 계약: 1~5개, 각 항목 trim 후 1~100자, 중복 불가 */
+export function isTripDestinationsValid(destinations: string[]): boolean {
+  if (destinations.length < 1) return false;
+  if (destinations.length > TRIP_DESTINATIONS_MAX_COUNT) return false;
+  const seen = new Set<string>();
+  for (const raw of destinations) {
+    const trimmed = raw.trim();
+    if (!trimmed) return false;
+    if (trimmed.length > TRIP_DESTINATION_MAX_LENGTH) return false;
+    if (seen.has(trimmed)) return false;
+    seen.add(trimmed);
+  }
+  return true;
 }
 
-/** 목록 선택 전에는 제출·적용 불가 — 기존 저장값과 같으면 placeId 없이도 허용 */
-export function isTripDestinationValid(
-  destination: string,
-  savedDestination: string,
-  destinationPlaceId: string | null,
-): boolean {
-  const trimmed = destination.trim();
-  if (!trimmed) return false;
-  if (trimmed === savedDestination.trim()) return true;
-  return destinationPlaceId !== null;
+/** 순서·값이 모두 같아야 true (dirty 판정용) */
+export function areDestinationsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 export function isTripDateRangeInvalid(startDate: string, endDate: string) {

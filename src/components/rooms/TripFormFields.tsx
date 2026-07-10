@@ -1,6 +1,6 @@
 "use client";
 
-import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
+import { DestinationChipsField } from "@/components/rooms/DestinationChipsField";
 import {
   isTripScheduleDayLimitExceeded,
   TRIP_SCHEDULE_DAY_LIMIT_MESSAGE,
@@ -10,6 +10,8 @@ import {
   isTripStartBeforeMin,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   TRIP_DATE_RANGE_INVALID_MESSAGE,
+  TRIP_DESTINATION_MAX_LENGTH,
+  TRIP_DESTINATIONS_MAX_COUNT,
   TRIP_FORM_FIELD_CLASS,
   TRIP_FORM_FIELD_READ_ONLY_CLASS,
   TRIP_START_BEFORE_MIN_MESSAGE,
@@ -26,8 +28,7 @@ type Props = {
   startDateMin?: string;
   endDateMin?: string;
   onTitleChange: (value: string) => void;
-  onDestinationChange: (value: string) => void;
-  onDestinationResolved?: (placeId: string | null) => void;
+  onDestinationsChange: (next: string[]) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
 };
@@ -40,12 +41,11 @@ export function TripFormFields({
   startDateMin,
   endDateMin,
   onTitleChange,
-  onDestinationChange,
-  onDestinationResolved,
+  onDestinationsChange,
   onStartDateChange,
   onEndDateChange,
 }: Props) {
-  const { title, destination, startDate, endDate } = values;
+  const { title, destinations, startDate, endDate } = values;
   const dateRangeInvalid = isTripDateRangeInvalid(startDate, endDate);
   const startBeforeMin =
     startDateMin != null && isTripStartBeforeMin(startDate, startDateMin);
@@ -86,20 +86,21 @@ export function TripFormFields({
       </div>
 
       <div className={fieldClassName}>
-        <p className="mb-1.5 text-[17px] font-bold text-black">목적지</p>
-        {readOnly ? (
-          <p className="text-[17px] text-dark-gray">{destination.trim() || "—"}</p>
-        ) : (
-          <DestinationSearchInput
-            value={destination}
-            onChange={onDestinationChange}
-            onResolvedPlace={(place) =>
-              onDestinationResolved?.(place?.placeId ?? null)
-            }
-            selectionOnly
-            leadingIconType="search"
-          />
-        )}
+        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <p className="text-[17px] font-bold text-black">목적지</p>
+          {!readOnly && (
+            <p className="shrink-0 text-[14px] tabular-nums text-light-gray">
+              {destinations.length}/{TRIP_DESTINATIONS_MAX_COUNT}
+            </p>
+          )}
+        </div>
+        <DestinationChipsField
+          values={destinations}
+          onChange={onDestinationsChange}
+          readOnly={readOnly}
+          maxCount={TRIP_DESTINATIONS_MAX_COUNT}
+          maxLength={TRIP_DESTINATION_MAX_LENGTH}
+        />
       </div>
 
       <div className={fieldClassName}>
