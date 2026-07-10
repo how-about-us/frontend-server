@@ -22,7 +22,7 @@ export const PLAN_CONTAINER_NARROW_MAX_INLINE_PX = 400 as const;
 export const PLAN_PLACE_CARD_LAYOUT_WIDE_MIN_PX = 370 as const;
 
 /** `PlanPlaceCard` 접힌 상태 기준 최소 높이·썸네일 한 변(px) — 사진·본문 열 동기화 */
-export const PLAN_PLACE_CARD_MIN_SIZE_REM = "7rem" as const;
+export const PLAN_PLACE_CARD_MIN_SIZE_REM = "6rem" as const;
 
 /**
  * `PlanPlaceCard` 컨테이너 쿼리 유틸 — 문자열은 **템플릿으로 만들지 말 것**
@@ -30,11 +30,11 @@ export const PLAN_PLACE_CARD_MIN_SIZE_REM = "7rem" as const;
  */
 export const PLAN_PLACE_CARD_TW = {
   article:
-    "relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 rounded-xl border border-gray-border bg-white p-3 shadow-sm",
+    "relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 rounded-xl border border-gray-border bg-white p-3.5 shadow-sm",
   thumbnail:
-    "relative h-[7rem] w-[7rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
-  contentColumn: "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
-  titleRow: "flex min-w-0 items-start gap-2",
+    "relative h-[6rem] w-[6rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
+  contentColumn: "flex min-h-[6rem] min-w-0 flex-col justify-start gap-2",
+  titleRow: "flex min-w-0 items-start gap-2.5",
   subtitle: "text-xs leading-snug text-dark-gray/85",
   controlsStack: "flex min-w-0 flex-col gap-0.5",
   orderBadgeCompact:
@@ -43,7 +43,7 @@ export const PLAN_PLACE_CARD_TW = {
   titleClamp: "line-clamp-2",
   subtitleClamp: "line-clamp-2",
   primaryTypeBadge:
-    "shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-base font-medium leading-none text-dark-gray",
+    "shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-none text-dark-gray",
   deleteButtonCompact: "p-1 @min-[370px]/plan:p-1.5",
   deleteIconCompact: "h-5 w-5",
   triggerRow:

@@ -297,7 +297,7 @@ export function PlanPlaceCard({
               alt={place.title}
               fill
               className="object-cover"
-              sizes="112px"
+              sizes="96px"
               draggable={false}
             />
           ) : null}
@@ -355,7 +355,12 @@ export function PlanPlaceCard({
         </div>
 
         {canEditScheduleItem ? (
-          <div className={PLAN_PLACE_CARD_TW.triggerRow}>
+          <div
+            className={cn(
+              PLAN_PLACE_CARD_TW.triggerRow,
+              "col-span-2 mt-2 border-t border-gray-100 pt-2",
+            )}
+          >
             {memoTrigger}
             {timeTrigger}
           </div>
