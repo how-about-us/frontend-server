@@ -1,7 +1,7 @@
 "use client";
 
 import type { DragEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { Clock, Loader2 } from "lucide-react";
 
@@ -42,7 +42,6 @@ export type PlanPlaceCardProps = {
     roomId: string;
     scheduleId: number;
   };
-  scheduleOverlapWarning?: string;
   onDragStart: (e: DragEvent<Element>) => void;
   onDragEnd: (e: DragEvent<Element>) => void;
 };
@@ -58,7 +57,6 @@ export function PlanPlaceCard({
   isDragging,
   dragDisabled = false,
   scheduleTimeEdit,
-  scheduleOverlapWarning,
   onDragStart,
   onDragEnd,
 }: PlanPlaceCardProps) {
@@ -70,10 +68,6 @@ export function PlanPlaceCard({
 
   const [memoOpen, setMemoOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
-
-  useEffect(() => {
-    if (scheduleOverlapWarning) setTimeOpen(true);
-  }, [scheduleOverlapWarning]);
 
   const { mutateAsync: removeScheduleItemMutate, isPending: isDeletingItem } =
     useDeleteScheduleItem();
@@ -375,7 +369,6 @@ export function PlanPlaceCard({
           itemId={scheduleItemId}
           startTime={place.startTime ?? ""}
           durationMinutes={place.durationMinutes ?? 0}
-          scheduleOverlapWarning={scheduleOverlapWarning}
           onClose={() => setTimeOpen(false)}
         />
       ) : null}

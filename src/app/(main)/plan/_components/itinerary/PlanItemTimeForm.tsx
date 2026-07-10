@@ -20,7 +20,6 @@ type PlanItemTimeEditorProps = {
   itemId: number;
   startTime: string;
   durationMinutes: number;
-  scheduleOverlapWarning?: string;
   onClose: () => void;
 };
 
@@ -102,7 +101,6 @@ export function PlanItemTimeEditor({
   itemId,
   startTime,
   durationMinutes,
-  scheduleOverlapWarning,
   onClose,
 }: PlanItemTimeEditorProps) {
   const [timeHm, setTimeHm] = useState(() => normalizeStartTimeToHm(startTime));
@@ -191,15 +189,6 @@ export function PlanItemTimeEditor({
         </div>
 
         <div className="flex flex-col gap-3 px-6 pb-6">
-          {scheduleOverlapWarning ? (
-            <p
-              role="status"
-              className="rounded-lg bg-brand-red/5 px-3 py-2 text-sm font-medium leading-relaxed text-brand-red break-keep"
-            >
-              {scheduleOverlapWarning}
-            </p>
-          ) : null}
-
           <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
             <label className={PLAN_PLACE_CARD_TW.timeField}>
               <span className={fieldLabelClass}>시작</span>

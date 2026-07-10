@@ -71,7 +71,6 @@ export const PLAN_PLACE_CARD_TW = {
     "h-8 shrink-0 rounded-md px-3 text-xs font-medium",
   memoTextarea:
     "min-h-[6rem] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-relaxed text-gray-900 shadow-none transition placeholder:text-dark-gray/50 focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green/30",
-  overlapWarningCompact: "text-xs leading-tight",
 } as const;
 
 /** 플랜 구간(경로) 카드 가로 고정폭(px). 좌측 패널 max(s2) 기준 본문 영역 근사 */

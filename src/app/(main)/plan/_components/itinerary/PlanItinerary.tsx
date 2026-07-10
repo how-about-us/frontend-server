@@ -14,10 +14,6 @@ import { usePrefetchScheduleDrivingRoutes } from "@/hooks/usePrefetchScheduleDri
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import {
-  formatAdjacentScheduleConflictMessage,
-  getAdjacentScheduleConflictFlags,
-} from "@/lib/plan/scheduleAdjacentConflicts";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import {
   scheduleIdsToRouteColors,
@@ -114,7 +110,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     getRowProps,
     listContainerProps,
     isDraggingActive,
-    isReorderSettling,
     listReservePaddingBottom,
   } = usePlanItineraryReorder({
     roomId,
@@ -170,11 +165,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       }
     },
     [createItem, places, roomId, scheduleId],
-  );
-
-  const scheduleConflictFlags = useMemo(
-    () => getAdjacentScheduleConflictFlags(places),
-    [places],
   );
 
   const addControlsDisabled = isAdding || isReadOnly;
@@ -241,13 +231,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 orderBadgeColor={orderBadgeColor}
                 scheduleTimeEdit={
                   isReadOnly ? undefined : { roomId, scheduleId }
-                }
-                scheduleOverlapWarning={
-                  isReorderSettling ?
-                    undefined
-                  : formatAdjacentScheduleConflictMessage(
-                      scheduleConflictFlags[index]!,
-                    )
                 }
                 {...placeCardDragProps}
               />
