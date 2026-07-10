@@ -36,7 +36,7 @@ function hmToTwelveHourWithPeriod(hm: string): string {
   return `${h12}:${mStr} ${period}`;
 }
 
-/** 시작 ~ 종료 시간 range 표시용 (AM/PM). 체류가 명시적 0 이면 시작=종료 range 로 렌더. */
+/** 시작 ~ 종료 시간 range 표시용 (AM/PM). 체류가 명시적 0 이면 `"9:00 AM~"` 형식으로 표시. */
 export function formatScheduleTimeRange(
   startTime: string,
   durationMinutes: number | null | undefined,
@@ -47,6 +47,7 @@ export function formatScheduleTimeRange(
   const startFmt = hmToTwelveHourWithPeriod(hm);
   if (!hasDur) return startFmt;
   const dur = clampStayDurationMinutes(durationMinutes);
+  if (dur === 0) return `${startFmt}~`;
   const endFmt = hmToTwelveHourWithPeriod(addMinutesToHm(hm, dur));
   return `${startFmt} – ${endFmt}`;
 }
