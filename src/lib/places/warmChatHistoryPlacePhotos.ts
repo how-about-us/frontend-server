@@ -34,6 +34,6 @@ export async function warmPlacePhotoQueriesFromChatHistory(
   }
 
   if (names.size) {
-    await fetchAndSeedPlacePhotoUrls([...names], queryClient, "CARD");
+    await fetchAndSeedPlacePhotoUrls([...names], queryClient);
   }
 }

@@ -1,10 +1,8 @@
 import {
-  DEFAULT_PHOTO_SIZE,
   requestPlaceDetail,
   requestPlacePhotoNames,
   requestPlacePhotoUrl,
   requestPlacePreview,
-  type PhotoSize,
   type PlaceDetail,
   type PlacePreview,
   type PlacePreviewResponse,
@@ -252,10 +250,7 @@ export async function fetchPlacePreview(googlePlaceId: string): Promise<PlacePre
 }
 
 /** imperative·다른 queryKey의 queryFn에서만 사용 — `usePlacePhotoUrlQuery` queryFn에는 `requestPlacePhotoUrl` */
-export async function fetchPlacePhotoUrl(
-  photoName: string,
-  size: PhotoSize = DEFAULT_PHOTO_SIZE,
-): Promise<string> {
+export async function fetchPlacePhotoUrl(photoName: string): Promise<string> {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   if (!name.length) {
     throw new Error("fetchPlacePhotoUrl: empty photoName");
@@ -263,12 +258,12 @@ export async function fetchPlacePhotoUrl(
 
   const queryClient = getQueryClient();
   if (!queryClient) {
-    return requestPlacePhotoUrl(name, size);
+    return requestPlacePhotoUrl(name);
   }
 
   return queryClient.fetchQuery({
-    queryKey: placePhotoUrlQueryKey(name, size),
-    queryFn: () => requestPlacePhotoUrl(name, size),
+    queryKey: placePhotoUrlQueryKey(name),
+    queryFn: () => requestPlacePhotoUrl(name),
     ...placePhotoUrlQueryDefaults,
   });
 }

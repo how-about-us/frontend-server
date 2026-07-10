@@ -227,7 +227,7 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
   }
 
   if (photoNames.length) {
-    await fetchAndSeedPlacePhotoUrls(photoNames, queryClient, "CARD");
+    await fetchAndSeedPlacePhotoUrls(photoNames, queryClient);
   }
 }
 

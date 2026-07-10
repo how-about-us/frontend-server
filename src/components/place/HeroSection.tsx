@@ -16,7 +16,7 @@ export function HeroImage({
   name: string;
 }) {
   const firstPhotoName = photoNames[0] ? [photoNames[0]] : [];
-  const { photoUrls } = usePlacePhotoUrlsQuery(firstPhotoName, "HERO");
+  const { photoUrls } = usePlacePhotoUrlsQuery(firstPhotoName);
   const photoUrl = photoUrls[0] ?? fallbackImage ?? null;
 
   if (!photoUrl) {

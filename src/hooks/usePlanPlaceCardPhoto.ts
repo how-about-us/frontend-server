@@ -12,7 +12,7 @@ export function usePlanPlaceCardPhoto(place: PlanPlace) {
       ? place.photoName.trim()
       : null;
 
-  const photoQuery = usePlacePhotoUrlQuery(photoName, "CARD");
+  const photoQuery = usePlacePhotoUrlQuery(photoName);
 
   const resolvedPhotoUrl = photoName
     ? photoQuery.data?.trim() || fallbackPhotoUrl
