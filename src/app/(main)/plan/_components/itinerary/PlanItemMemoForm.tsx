@@ -206,7 +206,7 @@ export function PlanItemMemoEditor({
             value={draft}
             maxLength={SCHEDULE_ITEM_MEMO_MAX_LENGTH}
             rows={4}
-            placeholder="메모를 입력하세요"
+            placeholder="여기에 메모를 작성하세요"
             disabled={isPending}
             onMouseDown={stopCardActivation}
             onClick={stopCardActivation}
@@ -234,7 +234,7 @@ export function PlanItemMemoEditor({
                 PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
               )}
             >
-              되돌리기
+              취소
             </button>
             <button
               type="button"
