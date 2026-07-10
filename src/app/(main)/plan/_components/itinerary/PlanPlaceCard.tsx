@@ -195,11 +195,11 @@ export function PlanPlaceCard({
   const hasMemo = memoText.length > 0;
   const staySummary = formatScheduleStaySummary(
     place.startTime ?? "",
-    place.durationMinutes ?? 0,
+    place.durationMinutes,
   );
   const timeRange = formatScheduleTimeRange(
     place.startTime ?? "",
-    place.durationMinutes ?? 0,
+    place.durationMinutes,
   );
   const hasTime = Boolean(staySummary);
 

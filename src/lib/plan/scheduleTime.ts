@@ -12,16 +12,17 @@ export function formatStayDurationMinutes(value: unknown): string {
   return String(clampStayDurationMinutes(value));
 }
 
-/** 접힌 체류 시간 토글에 표시할 한 줄 요약 */
+/** 접힌 체류 시간 토글에 표시할 한 줄 요약. `null`/`undefined` 는 미설정, `0` 은 명시적 0분 체류. */
 export function formatScheduleStaySummary(
   startTime: string,
-  durationMinutes: number,
+  durationMinutes: number | null | undefined,
 ): string {
   const hm = normalizeStartTimeToHm(startTime);
-  const dur = clampStayDurationMinutes(durationMinutes);
-  if (!hm && dur <= 0) return "";
+  const hasDur = typeof durationMinutes === "number" && Number.isFinite(durationMinutes);
+  const dur = hasDur ? clampStayDurationMinutes(durationMinutes) : null;
+  if (!hm && dur === null) return "";
   if (!hm) return `${dur}분`;
-  if (dur <= 0) return hm;
+  if (dur === null) return hm;
   return `${hm} · ${dur}분`;
 }
 
@@ -35,16 +36,17 @@ function hmToTwelveHourWithPeriod(hm: string): string {
   return `${h12}:${mStr} ${period}`;
 }
 
-/** 시작 ~ 종료 시간 range 표시용 (AM/PM). 시작·체류가 모두 없으면 빈 문자열. */
+/** 시작 ~ 종료 시간 range 표시용 (AM/PM). 체류가 명시적 0 이면 시작=종료 range 로 렌더. */
 export function formatScheduleTimeRange(
   startTime: string,
-  durationMinutes: number,
+  durationMinutes: number | null | undefined,
 ): string {
   const hm = normalizeStartTimeToHm(startTime);
   if (!hm) return "";
-  const dur = clampStayDurationMinutes(durationMinutes);
+  const hasDur = typeof durationMinutes === "number" && Number.isFinite(durationMinutes);
   const startFmt = hmToTwelveHourWithPeriod(hm);
-  if (dur <= 0) return startFmt;
+  if (!hasDur) return startFmt;
+  const dur = clampStayDurationMinutes(durationMinutes);
   const endFmt = hmToTwelveHourWithPeriod(addMinutesToHm(hm, dur));
   return `${startFmt} – ${endFmt}`;
 }
