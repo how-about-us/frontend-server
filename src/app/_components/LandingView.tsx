@@ -4,6 +4,7 @@ import { LandingFinalCta } from "@/app/_components/LandingFinalCta";
 import { LandingHeader } from "@/app/_components/LandingHeader";
 import { LandingHero } from "@/app/_components/LandingHero";
 import { LandingHowItWorks } from "@/app/_components/LandingHowItWorks";
+import { LandingMotion } from "@/app/_components/LandingMotion";
 import { LandingTeamSection } from "@/app/_components/LandingTeamSection";
 import { LandingValueStrip } from "@/app/_components/LandingValueStrip";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -18,17 +19,26 @@ export function LandingView() {
         <LandingValueStrip />
         <div id="features" className="scroll-mt-24">
           {LANDING_FEATURE_STORIES.map((story, index) => (
-            <LandingFeatureStory
-              key={story.id}
-              story={story}
-              tone={index % 2 === 0 ? "white" : "tint"}
-            />
+            <LandingMotion key={story.id}>
+              <LandingFeatureStory
+                story={story}
+                tone={index % 2 === 0 ? "white" : "tint"}
+              />
+            </LandingMotion>
           ))}
         </div>
-        <LandingCollaborationSection />
-        <LandingHowItWorks />
-        <LandingTeamSection />
-        <LandingFinalCta />
+        <LandingMotion>
+          <LandingCollaborationSection />
+        </LandingMotion>
+        <LandingMotion>
+          <LandingHowItWorks />
+        </LandingMotion>
+        <LandingMotion>
+          <LandingTeamSection />
+        </LandingMotion>
+        <LandingMotion>
+          <LandingFinalCta />
+        </LandingMotion>
       </main>
       <SiteFooter className="font-sans" />
     </div>
