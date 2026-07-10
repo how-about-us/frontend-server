@@ -35,21 +35,21 @@ export const PLAN_PLACE_CARD_TW = {
     "relative h-[7rem] w-[7rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
   contentColumn: "flex min-h-[7rem] min-w-0 flex-col justify-start gap-2",
   titleRow: "flex min-w-0 items-start gap-2",
-  subtitle: "text-sm leading-snug text-dark-gray/85",
+  subtitle: "text-xs leading-snug text-dark-gray/85",
   controlsStack: "flex min-w-0 flex-col gap-0.5",
   orderBadgeCompact:
     "absolute -left-2 -top-2 z-10 h-8 w-8 rounded-lg border-2 border-white text-sm shadow-md",
-  titleCompact: "text-[15px] font-semibold leading-snug text-gray-900",
+  titleCompact: "text-lg font-semibold leading-snug text-gray-900",
   titleClamp: "line-clamp-2",
   subtitleClamp: "line-clamp-2",
   primaryTypeBadge:
-    "shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium leading-none text-dark-gray",
+    "shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-base font-medium leading-none text-dark-gray",
   deleteButtonCompact: "p-1 @min-[370px]/plan:p-1.5",
-  deleteIconCompact: "h-4 w-4",
+  deleteIconCompact: "h-5 w-5",
   triggerRow:
     "flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1",
   triggerButton:
-    "flex shrink-0 cursor-pointer items-center gap-1 rounded-md py-1 text-xs font-medium text-dark-gray/85 transition hover:text-gray-900",
+    "flex shrink-0 cursor-pointer items-center gap-1 rounded-md py-1 text-sm font-medium text-dark-gray/85 transition hover:text-gray-900",
   triggerButtonActive: "text-brand-green",
   triggerIcon: "h-4 w-4 shrink-0",
   editorModule:
