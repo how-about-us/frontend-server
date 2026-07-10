@@ -28,7 +28,7 @@ export function PlaceShareCard({
   const senderUserId = message.senderUserId;
   const isMine = myId != null && senderUserId != null && senderUserId === myId;
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.photoName, "CARD");
 
   if (!place) return null;
   const p = place;

@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 
-import { requestPlacePhotoUrl } from "@/lib/api/places";
+import {
+  DEFAULT_PHOTO_SIZE,
+  requestPlacePhotoUrl,
+  type PhotoSize,
+} from "@/lib/api/places";
 import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
 import {
   placePhotoUrlQueryDefaults,
@@ -10,17 +14,22 @@ import {
 } from "@/lib/place-photo-query";
 import { getQueryClient } from "@/lib/query-client";
 
-export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
+export function usePlacePhotoUrlQuery(
+  photoName: string | null | undefined,
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
+) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   return useQuery({
-    queryKey: placePhotoUrlQueryKey(name),
+    queryKey: placePhotoUrlQueryKey(name, size),
     // queryFn 안에서 fetchPlacePhotoUrl(동일 queryKey fetchQuery)을 쓰면 대기 데드락
     queryFn: async () => {
-      const cached = getQueryClient()?.getQueryData<string>(placePhotoUrlQueryKey(name));
+      const cached = getQueryClient()?.getQueryData<string>(
+        placePhotoUrlQueryKey(name, size),
+      );
       if (typeof cached === "string" && cached.trim().length > 0) {
         return cached.trim();
       }
-      return requestPlacePhotoUrl(name);
+      return requestPlacePhotoUrl(name, size);
     },
     enabled: name.length > 0,
     ...placePhotoUrlQueryDefaults,
@@ -29,22 +38,24 @@ export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
 
 export function useSeededPlacePhotoUrlQuery(
   photoName: string | null | undefined,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; size?: PhotoSize },
 ) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   return useQuery(
     seededPlacePhotoUrlQueryOptions(name, {
       enabled: (options?.enabled ?? true) && name.length > 0,
+      size: options?.size,
     }),
   );
 }
 
 /**
- * 여러 photoName을 단일 카드와 동일한 `["places","photoUrl",name]` 캐시 키로 해석.
+ * 여러 photoName을 단일 카드와 동일한 `["places","photoUrl",name,size]` 캐시 키로 해석.
  * 미캐시 name은 batch API 1회로 시딩 후 개별 query subscribe.
  */
 export function usePlacePhotoUrlsQuery(
   photoNames: readonly (string | null | undefined)[] | null | undefined,
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
 ) {
   const names = useMemo(
     () =>
@@ -65,18 +76,18 @@ export function usePlacePhotoUrlsQuery(
 
     let cancelled = false;
     setPhotosSeeded(false);
-    void fetchAndSeedPlacePhotoUrls(names, getQueryClient()).then(() => {
+    void fetchAndSeedPlacePhotoUrls(names, getQueryClient(), size).then(() => {
       if (!cancelled) setPhotosSeeded(true);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [namesKey, names]);
+  }, [namesKey, names, size]);
 
   const results = useQueries({
     queries: names.map((name) =>
-      seededPlacePhotoUrlQueryOptions(name, { enabled: photosSeeded }),
+      seededPlacePhotoUrlQueryOptions(name, { enabled: photosSeeded, size }),
     ),
   });
 

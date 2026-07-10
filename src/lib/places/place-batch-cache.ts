@@ -1,12 +1,14 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import type {
+  PhotoSize,
   PlacePhotoNamesBatchItem,
   PlacePhotoUrlBatchItem,
   PlacePreview,
   PlacePreviewBatchItem,
 } from "@/lib/api/places";
 import {
+  DEFAULT_PHOTO_SIZE,
   requestPlacePhotoNamesBatch,
   requestPlacePhotoUrlsBatch,
   requestPlacePreviewsBatch,
@@ -182,6 +184,7 @@ export function seedPlacePhotoNamesCaches(
 export function seedPlacePhotoUrlCaches(
   queryClient: QueryClient,
   items: readonly PlacePhotoUrlBatchItem[],
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
 ): void {
   for (const item of items) {
     if (!isBatchItemOk(item)) continue;
@@ -189,7 +192,7 @@ export function seedPlacePhotoUrlCaches(
       typeof item.photoName === "string" ? item.photoName.trim() : "";
     const url = typeof item.photoUrl === "string" ? item.photoUrl.trim() : "";
     if (!name.length || !url.length) continue;
-    queryClient.setQueryData(placePhotoUrlQueryKey(name), url, {
+    queryClient.setQueryData(placePhotoUrlQueryKey(name, size), url, {
       updatedAt: Date.now(),
     });
   }
@@ -228,12 +231,13 @@ function uncachedPhotoNameIds(
 function uncachedPhotoNames(
   queryClient: QueryClient,
   photoNames: readonly string[],
+  size: PhotoSize,
 ): string[] {
   const out: string[] = [];
   for (const raw of photoNames) {
     const name = typeof raw === "string" ? raw.trim() : "";
     if (!name.length) continue;
-    const cached = queryClient.getQueryData(placePhotoUrlQueryKey(name));
+    const cached = queryClient.getQueryData(placePhotoUrlQueryKey(name, size));
     if (cached != null) continue;
     out.push(name);
   }
@@ -333,33 +337,35 @@ export async function fetchAndSeedPlacePhotoNames(
 export async function fetchAndSeedPlacePhotoUrls(
   photoNames: readonly string[],
   queryClient?: QueryClient | null,
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
 ): Promise<void> {
   const qc = queryClient ?? getQueryClient();
   if (!qc) return;
 
-  const missing = uncachedPhotoNames(qc, photoNames);
+  const missing = uncachedPhotoNames(qc, photoNames, size);
   if (!missing.length) return;
 
-  const results = await requestPlacePhotoUrlsBatch(missing);
-  seedPlacePhotoUrlCaches(qc, results);
+  const results = await requestPlacePhotoUrlsBatch(missing, size);
+  seedPlacePhotoUrlCaches(qc, results, size);
 }
 
 /** batch 시딩 후 개별 query key에 데이터가 있도록 defaults와 함께 prefetch */
 export async function ensurePlacePhotoUrlsCached(
   photoNames: readonly string[],
   queryClient?: QueryClient | null,
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
 ): Promise<void> {
   const qc = queryClient ?? getQueryClient();
   if (!qc) return;
 
-  await fetchAndSeedPlacePhotoUrls(photoNames, qc);
+  await fetchAndSeedPlacePhotoUrls(photoNames, qc, size);
 
   for (const raw of photoNames) {
     const name = typeof raw === "string" ? raw.trim() : "";
     if (!name.length) continue;
-    const cached = qc.getQueryData<string>(placePhotoUrlQueryKey(name));
+    const cached = qc.getQueryData<string>(placePhotoUrlQueryKey(name, size));
     if (cached == null) continue;
-    qc.setQueryData(placePhotoUrlQueryKey(name), cached, {
+    qc.setQueryData(placePhotoUrlQueryKey(name, size), cached, {
       updatedAt: Date.now(),
     });
   }

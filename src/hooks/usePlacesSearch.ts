@@ -63,7 +63,7 @@ export async function fetchPlacesPageWithPhotos(args: {
     .filter((name) => name.length > 0);
 
   if (photoNames.length) {
-    await fetchAndSeedPlacePhotoUrls(photoNames, getQueryClient());
+    await fetchAndSeedPlacePhotoUrls(photoNames, getQueryClient(), "CARD");
   }
 
   const items = itemsBase.map((base, index) => {
@@ -71,7 +71,7 @@ export async function fetchPlacesPageWithPhotos(args: {
     let imageUrl: string | undefined;
     if (photoName) {
       const cached = getQueryClient()?.getQueryData<string>(
-        placePhotoUrlQueryKey(photoName),
+        placePhotoUrlQueryKey(photoName, "CARD"),
       );
       if (typeof cached === "string" && cached.trim().length > 0) {
         imageUrl = cached.trim();

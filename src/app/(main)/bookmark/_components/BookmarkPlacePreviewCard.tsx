@@ -25,7 +25,7 @@ export function BookmarkPlacePreviewCard({
   className,
   contentClassName,
 }: BookmarkPlacePreviewCardProps) {
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName, "CARD");
 
   return (
     <article

@@ -59,6 +59,10 @@ export type PlacePhotoResponse = {
   photoUrl: string;
 };
 
+/** 사진 해상도 프리셋. 백엔드 `size` 파라미터와 1:1 매핑. 미지정/알 수 없음 → 서버가 `CARD`로 폴백. */
+export type PhotoSize = "THUMB" | "CARD" | "HERO" | "GALLERY";
+export const DEFAULT_PHOTO_SIZE: PhotoSize = "CARD";
+
 /** Raw JSON from `GET /places/{googlePlaceId}/photo-names` */
 export type PlacePhotoNamesResponse = {
   photoNames: string[];
@@ -215,9 +219,13 @@ export async function requestPlacePhotoNames(
   return Array.isArray(data.photoNames) ? data.photoNames : [];
 }
 
-export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
+export async function requestPlacePhotoUrl(
+  photoName: string,
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
+): Promise<string> {
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("photoName", photoName);
+  url.searchParams.set("size", size);
 
   const res = await apiFetch(url.toString());
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
@@ -289,10 +297,11 @@ export async function requestPlacePhotoNamesBatch(
 
 async function requestPlacePhotoUrlsBatchChunk(
   photoNames: string[],
+  size: PhotoSize,
 ): Promise<PlacePhotoUrlBatchItem[]> {
   const res = await apiFetch(apiUrl("/places/photos/batch"), {
     method: "POST",
-    ...jsonBody({ photoNames }),
+    ...jsonBody({ photoNames, size }),
   });
   if (res.status === 204) return [];
   if (!res.ok) {
@@ -306,6 +315,7 @@ async function requestPlacePhotoUrlsBatchChunk(
 
 export async function requestPlacePhotoUrlsBatch(
   photoNames: readonly string[],
+  size: PhotoSize = DEFAULT_PHOTO_SIZE,
 ): Promise<PlacePhotoUrlBatchItem[]> {
   const names = [
     ...new Set(
@@ -319,7 +329,7 @@ export async function requestPlacePhotoUrlsBatch(
   const chunks = chunkArray(names, PLACE_BATCH_MAX_SIZE);
   const out: PlacePhotoUrlBatchItem[] = [];
   for (const chunk of chunks) {
-    out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk)));
+    out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk, size)));
   }
   return out;
 }

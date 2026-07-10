@@ -30,7 +30,7 @@ export function OgPlacePreviewCard({
 }: OgPlacePreviewCardProps) {
   const typo = resolveChatMessageTypography(isMinimized);
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName, "CARD");
 
   return (
     <button
