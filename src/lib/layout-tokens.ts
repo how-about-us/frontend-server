@@ -39,7 +39,7 @@ export const PLAN_PLACE_CARD_TW = {
   controlsStack: "flex min-w-0 flex-col gap-0.5",
   orderBadgeCompact:
     "absolute -left-2 -top-2 z-10 h-8 w-8 rounded-lg border-2 border-white text-sm shadow-md",
-  titleCompact: "text-lg font-semibold leading-snug text-gray-900",
+  titleCompact: "text-base font-semibold leading-snug text-gray-900",
   titleClamp: "line-clamp-2",
   subtitleClamp: "line-clamp-2",
   primaryTypeBadge:
