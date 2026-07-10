@@ -14,11 +14,10 @@ import { AddToBookmarkModal } from "./AddToBookmarkModal";
 import { AddToScheduleModal } from "./AddToScheduleModal";
 import { TABS, type Tab } from "./types";
 import { usePlaceDetailData } from "./usePlaceDetailData";
-import { HeroSkeleton, HeroGrid } from "./HeroSection";
+import { HeroSkeleton, HeroImage } from "./HeroSection";
 import { PlaceSummaryHeader } from "./PlaceSummaryHeader";
 import { HomeTab } from "./HomeTab";
 import { ReviewsTab } from "./ReviewsTab";
-import { PhotosTab } from "./PhotosTab";
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;
@@ -113,15 +112,12 @@ export function PlaceDetailPanel({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-white">
-      {/* Hero – click to jump to 사진 tab */}
-      <div
-        className="relative h-[185px] shrink-0 cursor-pointer"
-        onClick={() => setActiveTab("사진")}
-      >
+      {/* Hero */}
+      <div className="relative h-[185px] shrink-0">
         {isDetailLoading && googlePlaceId ? (
           <HeroSkeleton />
         ) : (
-          <HeroGrid
+          <HeroImage
             photoNames={photoNames}
             fallbackImage={image}
             name={displayName}
@@ -209,13 +205,6 @@ export function PlaceDetailPanel({
             rating={displayRating}
             userRatingCount={userRatingCount}
             reviews={reviews}
-          />
-        )}
-        {activeTab === "사진" && (
-          <PhotosTab
-            photoNames={photoNames}
-            isLoading={isDetailLoading && !!googlePlaceId}
-            fallbackImage={image}
           />
         )}
       </div>

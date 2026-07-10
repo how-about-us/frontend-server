@@ -3,18 +3,10 @@
 import { usePlacePhotoUrlsQuery } from "@/hooks/usePlacePhotoUrl";
 
 export function HeroSkeleton() {
-  return (
-    <div className="flex h-full gap-0.5 overflow-hidden">
-      <div className="w-[62%] animate-pulse bg-gray-200" />
-      <div className="flex flex-1 flex-col gap-0.5">
-        <div className="flex-1 animate-pulse bg-gray-200" />
-        <div className="flex-1 animate-pulse bg-gray-200" />
-      </div>
-    </div>
-  );
+  return <div className="h-full animate-pulse bg-gray-200" />;
 }
 
-export function HeroGrid({
+export function HeroImage({
   photoNames,
   fallbackImage,
   name,
@@ -23,48 +15,21 @@ export function HeroGrid({
   fallbackImage?: string;
   name: string;
 }) {
-  const { photoUrls } = usePlacePhotoUrlsQuery(photoNames);
-  const photos =
-    photoUrls.length > 0 ? photoUrls : fallbackImage ? [fallbackImage] : [];
+  const firstPhotoName = photoNames[0] ? [photoNames[0]] : [];
+  const { photoUrls } = usePlacePhotoUrlsQuery(firstPhotoName);
+  const photoUrl = photoUrls[0] ?? fallbackImage ?? null;
 
-  if (photos.length === 0) {
+  if (!photoUrl) {
     return <div className="h-full bg-light-gray" />;
   }
 
-  if (photos.length === 1) {
-    return (
-      <div className="h-full overflow-hidden">
-        <img
-          src={photos[0]}
-          alt={name}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
-
-  const grid = photos.length >= 3 ? photos : [...photos, ...photos].slice(0, 3);
-
   return (
-    <div className="flex h-full gap-0.5 overflow-hidden">
-      <div className="w-[62%] overflow-hidden">
-        <img src={grid[0]} alt={name} className="h-full w-full object-cover" />
-      </div>
-      <div className="flex flex-1 flex-col gap-0.5">
-        <div className="flex-1 overflow-hidden">
-          <img src={grid[1]} alt={name} className="h-full w-full object-cover" />
-        </div>
-        <div className="relative flex-1 overflow-hidden">
-          <img src={grid[2]} alt={name} className="h-full w-full object-cover" />
-          {photos.length > 3 && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-              <span className="text-[14px] font-semibold text-white">
-                +{photos.length - 3}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="h-full overflow-hidden">
+      <img
+        src={photoUrl}
+        alt={name}
+        className="h-full w-full object-cover"
+      />
     </div>
   );
 }
