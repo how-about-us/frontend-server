@@ -1,9 +1,7 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { SettingsActionButton } from "@/components/settings/SettingsActionButton";
+import { cn } from "@/lib/utils";
 
 export function LandingActionLink({
   href,
@@ -14,16 +12,15 @@ export function LandingActionLink({
   children: ReactNode;
   className?: string;
 }) {
-  const router = useRouter();
-
   return (
-    <SettingsActionButton
-      variant="primary"
-      flex={false}
-      className={className}
-      onClick={() => router.push(href)}
+    <Link
+      href={href}
+      className={cn(
+        "inline-flex cursor-pointer items-center justify-center rounded-full border border-transparent bg-brand-red px-5 py-2.5 font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2",
+        className,
+      )}
     >
       {children}
-    </SettingsActionButton>
+    </Link>
   );
 }

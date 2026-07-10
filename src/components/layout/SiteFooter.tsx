@@ -32,7 +32,7 @@ export function SiteFooter({ className }: { className?: string }) {
         <div className="flex flex-col items-center">
           <nav
             aria-label="정책 문서"
-            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-[11px] sm:text-xs"
+            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm"
           >
             {POLICY_LINKS.map((item, index) => (
               <span
@@ -51,7 +51,7 @@ export function SiteFooter({ className }: { className?: string }) {
             aria-label="운영자 정보"
             className="mt-2.5 w-full border-t border-white/25 pt-2.5"
           >
-            <dl className="mx-auto grid w-fit grid-cols-1 gap-y-1 text-[11px] sm:grid-cols-2 sm:gap-x-10 sm:gap-y-1 sm:text-xs">
+            <dl className="mx-auto grid w-fit grid-cols-1 gap-y-1 text-sm sm:grid-cols-2 sm:gap-x-10 sm:gap-y-1">
               <div className="flex min-w-0 gap-2">
                 <dt className="w-[3.25rem] shrink-0 text-white/50">서비스명</dt>
                 <dd className="min-w-0 text-white/85">우때</dd>
@@ -77,7 +77,7 @@ export function SiteFooter({ className }: { className?: string }) {
             </dl>
           </section>
 
-          <p className="mt-2.5 text-center text-[11px] text-white/45 sm:text-xs">
+          <p className="mt-2.5 text-center text-sm text-white/45">
             © {year} 우때. All rights reserved.
           </p>
         </div>

@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    <html lang="ko" className={`${inter.variable} h-full`}>
       <body className="min-h-full w-full flex flex-col">
         <AppRootProviders>{children}</AppRootProviders>
       </body>

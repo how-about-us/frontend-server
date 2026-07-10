@@ -23,6 +23,13 @@
 - Replace `howaboutus.app` with `uttae.app` only in `01-hero-app.png`, `03-feature-place-share.png`, and `04-feature-plan.png`; all pixels outside the URL patch rectangle must remain identical.
 - Do not change authenticated application screens, travel-planning behavior, policies, or unconfirmed business/funding information.
 
+## Execution Baseline
+
+- The isolated worktree uses a local symlink to the repository root `.env.local`; the environment file remains ignored and must never be committed.
+- Before implementation, `npm run build` passed in the worktree.
+- Before implementation, the repository-wide `npm run lint` reported 38 errors and 29 warnings in existing non-landing files. This user-approved execution does not expand scope to those unrelated findings.
+- Each task must run ESLint on every changed JavaScript/TypeScript file and must confirm that a repository-wide lint run introduces no new landing-page findings or increases the 38-error/29-warning baseline. A clean scoped lint plus a non-regressing full lint replaces the plan steps that otherwise expect repository-wide ESLint to exit with code 0.
+
 ---
 
 ## File Structure

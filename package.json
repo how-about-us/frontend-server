@@ -6,7 +6,9 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "assets:landing-domain": "node scripts/update-landing-screenshot-domain.mjs"
   },
   "dependencies": {
     "@next/third-parties": "^16.2.1",
@@ -37,7 +39,9 @@
     "@types/sockjs-client": "^1.5.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
