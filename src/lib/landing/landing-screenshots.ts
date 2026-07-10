@@ -46,7 +46,10 @@ export const LANDING_HERO_SCREENSHOT: LandingScreenshotSpec = {
 
 /** 기능 섹션(480px)보다 크게 — 히어로 2열 그리드 이미지 열 기준 */
 export const LANDING_HERO_SCREENSHOT_SIZES =
-  "(max-width: 720px) 100vw, min(640px, 58vw)";
+  "(max-width: 1180px) calc(100vw - 40px), 1080px";
+
+export const LANDING_FEATURE_SCREENSHOT_SIZES =
+  "(max-width: 1180px) calc(100vw - 40px), 1080px";
 
 export const LANDING_FEATURE_SCREENSHOTS = {
   map: {
@@ -70,7 +73,7 @@ export const LANDING_FEATURE_SCREENSHOTS = {
     width: 902,
     height: 1596,
     framed: true,
-    frameMaxWidthClass: "max-w-[220px] landing-sm:max-w-[240px]",
+    frameMaxWidthClass: "max-w-[320px] landing-lg:max-w-[360px]",
   },
   ai: {
     src: landingScreenshotPath("06-feature-ai.png"),
@@ -78,11 +81,11 @@ export const LANDING_FEATURE_SCREENSHOTS = {
     width: 902,
     height: 1604,
     framed: true,
-    frameMaxWidthClass: "max-w-[220px] landing-sm:max-w-[240px]",
+    frameMaxWidthClass: "max-w-[320px] landing-lg:max-w-[360px]",
   },
 } as const satisfies Record<string, LandingScreenshotSpec>;
 
 export type LandingFeatureScreenshotKey = keyof typeof LANDING_FEATURE_SCREENSHOTS;
 
 export const LANDING_FRAMED_SCREENSHOT_SIZES =
-  "(max-width: 720px) 40vw, 240px";
+  "(max-width: 720px) 82vw, 360px";
