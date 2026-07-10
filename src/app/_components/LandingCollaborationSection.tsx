@@ -25,7 +25,7 @@ export function LandingCollaborationSection() {
         </div>
         <div className="mx-auto mt-10 grid max-w-5xl gap-6 landing-lg:grid-cols-2">
           {LANDING_COLLABORATION_FEATURES.map(({ icon: Icon, ...feature }) => (
-            <article key={feature.title} className="grid min-h-[30rem] items-center gap-6 overflow-hidden rounded-3xl border border-gray-border bg-gradient-to-br from-white to-brand-red/[0.045] px-6 pt-8 landing-sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.95fr)] landing-sm:pr-4 landing-sm:pb-0">
+            <article key={feature.title} className="overflow-hidden rounded-3xl border border-gray-border bg-gradient-to-br from-white to-brand-red/[0.045] px-6 pt-8">
               <div>
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
                   <Icon className="h-5 w-5" aria-hidden />
@@ -34,7 +34,7 @@ export function LandingCollaborationSection() {
                 <h3 className={`${landingTypography.cardTitle} mt-2`}>{feature.title}</h3>
                 <p className={`${landingTypography.cardBody} mt-3`}>{feature.description}</p>
               </div>
-              <div className="self-end">
+              <div className="mx-auto mt-8 w-full max-w-[320px] landing-lg:max-w-[360px]">
                 <LandingScreenshot
                   screenshot={LANDING_FEATURE_SCREENSHOTS[feature.screenshotKey]}
                   sizes={LANDING_FRAMED_SCREENSHOT_SIZES}
