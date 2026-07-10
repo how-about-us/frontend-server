@@ -53,7 +53,7 @@ export const PLAN_PLACE_CARD_TW = {
   triggerButtonActive: "text-brand-green",
   triggerIcon: "h-4 w-4 shrink-0",
   editorModule:
-    "relative flex w-full items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-gray-900 shadow-sm",
+    "relative flex w-full items-start gap-3 rounded-2xl bg-gray-100/70 px-4 py-3 text-sm text-gray-900",
   editorSideLabelWrapper:
     "flex shrink-0 flex-col items-center justify-center gap-1 pt-0.5 text-dark-gray",
   editorSideLabelText:
@@ -66,11 +66,11 @@ export const PLAN_PLACE_CARD_TW = {
     "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-end gap-2",
   timeField: "flex min-w-0 w-full flex-col gap-1",
   timeInputCompact:
-    "h-9 min-w-0 w-full rounded-md border border-amber-200/70 bg-white px-2 text-sm shadow-none transition focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green/30",
+    "h-9 min-w-0 w-full rounded-md border border-gray-200 bg-white px-2 text-sm shadow-none transition focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green/30",
   timeSaveButtonCompact:
     "h-8 shrink-0 rounded-md px-3 text-xs font-medium",
   memoTextarea:
-    "min-h-[6rem] w-full resize-y rounded-md border border-amber-200/70 bg-white px-3 py-2 text-sm leading-relaxed text-gray-900 shadow-none transition placeholder:text-dark-gray/45 focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green/30",
+    "min-h-[6rem] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-relaxed text-gray-900 shadow-none transition placeholder:text-dark-gray/50 focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green/30",
   overlapWarningCompact: "text-xs leading-tight",
 } as const;
 

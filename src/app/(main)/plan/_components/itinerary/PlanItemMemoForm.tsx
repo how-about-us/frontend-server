@@ -1,6 +1,8 @@
 "use client";
 
-import { StickyNote, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+
+import { MemoIcon } from "@/components/icons";
 import { Fragment, type ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -167,7 +169,7 @@ export function PlanItemMemoReadOnly({
   return (
     <div className={PLAN_PLACE_CARD_TW.editorModule}>
       <div className={PLAN_PLACE_CARD_TW.editorSideLabelWrapper}>
-        <StickyNote className="h-6 w-6" aria-hidden />
+        <MemoIcon className="h-6 w-6" />
       </div>
       <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900">
         {renderMemoWithLinks(text)}
@@ -268,7 +270,7 @@ export function PlanItemMemoEditor({
         onClick={stopCardActivation}
       >
         <div className={PLAN_PLACE_CARD_TW.editorSideLabelWrapper}>
-          <StickyNote className="h-6 w-6" aria-hidden />
+          <MemoIcon className="h-6 w-6" />
         </div>
 
         <div className={PLAN_PLACE_CARD_TW.editorBody}>

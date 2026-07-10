@@ -3,7 +3,9 @@
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Clock, Loader2, StickyNote } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
+
+import { MemoIcon } from "@/components/icons";
 import { toast } from "sonner";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
@@ -222,10 +224,9 @@ export function PlanPlaceCard({
         (memoOpen || hasMemo) && PLAN_PLACE_CARD_TW.triggerButtonActive,
       )}
     >
-      <StickyNote
+      <MemoIcon
         className={PLAN_PLACE_CARD_TW.triggerIcon}
         strokeWidth={2}
-        aria-hidden
       />
       {hasMemo ? "메모 수정" : "메모 추가"}
     </button>
