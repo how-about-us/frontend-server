@@ -18,8 +18,9 @@ import {
   placePreviewQueryKey,
   resolvePreviewGooglePlaceId,
 } from "@/lib/places/place-queries";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
-import { SCHEDULE_ROUTE_PRIMARY_FETCH_MODE } from "@/lib/plan/scheduleTravelMode";
+import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
 import type { PlanPlace } from "@/lib/plan/types";
 import {
   roomSchedulesQueryKey,
@@ -27,7 +28,6 @@ import {
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
 import { awaitRoomSchedulesHydrated } from "@/lib/rooms";
-import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
 export const PLAN_PLACE_PREVIEW_ERROR_TITLE = "장소 정보를 불러올 수 없음";
 
@@ -242,23 +242,22 @@ function batchRouteItemToResponse(
   };
 }
 
-const inFlightDrivingRoutesBatch = new Map<string, Promise<void>>();
+const inFlightScheduleRoutesBatch = new Map<string, Promise<void>>();
 
-function drivingRoutesBatchKey(
+/**
+ * in-flight dedup 키 — 일정 지문(`itemId` 순서·장소 정체성)을 포함해
+ * 목적지만 바뀐 일정(`[A,B]`→`[A,C]`)이 이전 batch Promise를 공유하지 않게 합니다.
+ */
+function scheduleRoutesBatchKey(
   roomId: string,
   scheduleId: number,
-  places: readonly PlanPlace[],
+  placesFingerprint: string,
 ): string {
-  const itemIds = places
-    .slice(0, -1)
-    .map((place) => place.itemId)
-    .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
-    .join(",");
-  return `${roomId.trim()}:${scheduleId}:${itemIds}`;
+  return `${roomId.trim()}:${scheduleId}:${placesFingerprint}`;
 }
 
-/** 일차 DRIVING 구간 경로를 batch로 시딩합니다 (in-flight dedup). */
-export async function fetchAndSeedScheduleDrivingRoutes(
+/** 일차 구간 경로를 저장된 공유 이동수단 기준 batch로 시딩합니다 (in-flight dedup). */
+export async function fetchAndSeedScheduleRoutesBatch(
   queryClient: QueryClient,
   roomId: string,
   scheduleId: number,
@@ -267,25 +266,28 @@ export async function fetchAndSeedScheduleDrivingRoutes(
   const rid = roomId.trim();
   if (!rid.length || places.length < 2) return;
 
-  const key = drivingRoutesBatchKey(rid, scheduleId, places);
-  const inFlight = inFlightDrivingRoutesBatch.get(key);
+  const fingerprint = schedulePlacesFingerprint([...places]);
+  if (!fingerprint.length) return;
+
+  const key = scheduleRoutesBatchKey(rid, scheduleId, fingerprint);
+  const inFlight = inFlightScheduleRoutesBatch.get(key);
   if (inFlight) return inFlight;
 
-  const promise = hydrateScheduleDrivingRoutes(
+  const promise = hydrateScheduleRoutesBatch(
     queryClient,
     rid,
     scheduleId,
     places,
   ).finally(() => {
-    inFlightDrivingRoutesBatch.delete(key);
+    inFlightScheduleRoutesBatch.delete(key);
   });
 
-  inFlightDrivingRoutesBatch.set(key, promise);
+  inFlightScheduleRoutesBatch.set(key, promise);
   return promise;
 }
 
-/** prefetch 중인 DRIVING batch가 끝날 때까지 대기합니다. */
-export async function awaitScheduleDrivingRoutesBatch(
+/** prefetch 중인 구간 경로 batch가 끝날 때까지 대기합니다. */
+export async function awaitScheduleRoutesBatch(
   roomId: string,
   scheduleId: number,
 ): Promise<void> {
@@ -293,7 +295,7 @@ export async function awaitScheduleDrivingRoutesBatch(
   if (!rid.length) return;
 
   const prefix = `${rid}:${scheduleId}:`;
-  const pending = [...inFlightDrivingRoutesBatch.entries()]
+  const pending = [...inFlightScheduleRoutesBatch.entries()]
     .filter(([key]) => key.startsWith(prefix))
     .map(([, promise]) => promise);
 
@@ -302,12 +304,12 @@ export async function awaitScheduleDrivingRoutesBatch(
   }
 }
 
-export async function hydrateScheduleDrivingRoutes(
+/** `travelMode` 생략 batch — 서버가 항목별 저장 이동수단으로 경로를 계산해 실제 사용 수단을 응답 */
+export async function hydrateScheduleRoutesBatch(
   queryClient: QueryClient,
   roomId: string,
   scheduleId: number,
   places: readonly PlanPlace[],
-  travelMode: ScheduleTravelModeValue = SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
 ): Promise<void> {
   const rid = roomId.trim();
   if (!rid.length || places.length < 2) return;
@@ -316,19 +318,28 @@ export async function hydrateScheduleDrivingRoutes(
   const requestItems = segments
     .map((place) => place.itemId)
     .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
-    .map((itemId) => ({ itemId, travelMode }));
+    .map((itemId) => ({ itemId }));
 
   if (!requestItems.length) return;
 
   const results = await getScheduleItemRoutesBatch(rid, scheduleId, requestItems);
 
+  /**
+   * 응답 대기 중 일정이 바뀌었으면(지문 불일치) 늦게 도착한 결과를 버립니다 —
+   * 구간 캐시 키는 출발 항목만 담고 있어 옛 목적지의 경로가 새 구간에 시딩될 수 있음.
+   */
+  const snapshotFp = schedulePlacesFingerprint([...places]);
+  const currentPlaces = queryClient.getQueryData<PlanPlace[]>(
+    scheduleItemsQueryKey(rid, scheduleId),
+  );
+  const currentFp = schedulePlacesFingerprint([...(currentPlaces ?? [])]);
+  if (!snapshotFp.length || snapshotFp !== currentFp) return;
+
   for (const result of results) {
     const route = batchRouteItemToResponse(result);
     const itemId = result.itemId;
-    const mode =
-      typeof result.travelMode === "string"
-        ? (result.travelMode as ScheduleTravelModeValue)
-        : travelMode;
+    const mode = canonicalScheduleTravelMode(result.travelMode);
+    if (!mode) continue;
     if (typeof itemId !== "number" || !Number.isFinite(itemId)) continue;
 
     queryClient.setQueryData(

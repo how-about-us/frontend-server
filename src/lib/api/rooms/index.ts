@@ -68,6 +68,7 @@ export type {
   ScheduleItemRouteBatchRequestItem,
   ScheduleItemRouteLeg,
   ScheduleItemRouteResponse,
+  UpdateTravelModeRequest,
 } from "./schedule-items";
 
 export {
@@ -86,6 +87,7 @@ export {
   moveScheduleItemToSchedule,
   reorderScheduleItem,
   updateScheduleItem,
+  updateScheduleItemTravelMode,
 } from "./schedule-items";
 
 export {

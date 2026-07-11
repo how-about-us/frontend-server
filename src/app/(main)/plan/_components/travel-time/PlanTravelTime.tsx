@@ -1,19 +1,19 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
-import { useScheduleItemRoute } from "@/hooks/useRooms";
+import {
+  useScheduleItemRoute,
+  useUpdateScheduleItemTravelMode,
+} from "@/hooks/useRooms";
 import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
 import { buildScheduleItemRouteSummariesByMode } from "@/lib/plan/scheduleItemRouteModes";
 import {
-  readTravelModeFromSessionStorage,
-  writeTravelModeToSessionStorage,
-} from "@/lib/plan/planTravelLocalStorage";
-import {
-  SCHEDULE_ROUTE_DEFERRED_FETCH_MODES,
-  SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
+  SCHEDULE_TRAVEL_MODES,
+  SCHEDULE_TRAVEL_MODE_DEFAULT,
   canonicalScheduleTravelMode,
   type ScheduleTravelModeValue,
 } from "@/lib/plan/scheduleTravelMode";
@@ -41,28 +41,13 @@ function routePayloadOk(
   );
 }
 
-function readStoredSegmentMode(
-  roomId: string,
-  scheduleId: number,
-  segmentSourceItemId: number,
-  fingerprint: string,
-): ScheduleTravelModeValue {
-  if (!fingerprint.length) return SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
-  return (
-    readTravelModeFromSessionStorage(
-      roomId,
-      scheduleId,
-      segmentSourceItemId,
-      fingerprint,
-    ) ?? SCHEDULE_ROUTE_PRIMARY_FETCH_MODE
-  );
-}
-
 export type PlanTravelTimeProps = {
   roomId: string;
   scheduleId: number;
   segmentSourceItemId: number;
   scheduleFingerprint: string;
+  /** 서버 저장 공유 이동수단 (`schedule_items.travel_mode`) — 없으면 기본 `DRIVING` */
+  travelMode?: string;
   routeQueryEnabled?: boolean;
   originGooglePlaceId?: string;
   originPlaceName?: string;
@@ -78,6 +63,7 @@ export function PlanTravelTime({
   scheduleId,
   segmentSourceItemId,
   scheduleFingerprint,
+  travelMode,
   routeQueryEnabled = true,
   originGooglePlaceId,
   originPlaceName,
@@ -104,10 +90,22 @@ export function PlanTravelTime({
       : undefined,
   );
 
-  const [selectedMode, setSelectedMode] = useState<ScheduleTravelModeValue>(
-    () =>
-      readStoredSegmentMode(rid, scheduleId, segmentSourceItemId, fpTrim),
-  );
+  /** 서버 저장값 기준 표준 이동수단 — 이 값이 곧 방 전체 공유 상태 */
+  const serverMode =
+    canonicalScheduleTravelMode(travelMode) ?? SCHEDULE_TRAVEL_MODE_DEFAULT;
+
+  const [selectedMode, setSelectedMode] =
+    useState<ScheduleTravelModeValue>(serverMode);
+
+  /** 원격 변경(STOMP → schedule-items 갱신)·본인 PATCH 성공·구간 변경을 선택 상태에 반영 */
+  const modeSyncKey = `${rid}:${scheduleId}:${segmentSourceItemId}:${serverMode}`;
+  const [prevModeSyncKey, setPrevModeSyncKey] = useState(modeSyncKey);
+  if (prevModeSyncKey !== modeSyncKey) {
+    setPrevModeSyncKey(modeSyncKey);
+    setSelectedMode(serverMode);
+  }
+
+  const { mutate: mutateTravelMode } = useUpdateScheduleItemTravelMode();
 
   const googleMapsDirectionsUrl = buildGoogleMapsDirectionsUrl({
     originPlaceId: originGooglePlaceId ?? "",
@@ -116,30 +114,6 @@ export function PlanTravelTime({
     destinationQuery: destinationPlaceName ?? "",
     travelMode: selectedMode,
   });
-
-  useEffect(() => {
-    setSelectedMode(
-      readStoredSegmentMode(rid, scheduleId, segmentSourceItemId, fpTrim),
-    );
-  }, [rid, scheduleId, segmentSourceItemId, fpTrim]);
-
-  const {
-    data: drivingRoute,
-    isPending: drivingPending,
-    isError: drivingError,
-    isFetching: drivingFetching,
-  } = useScheduleItemRoute(
-    roomId,
-    scheduleId,
-    segmentSourceItemId,
-    SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
-    routeQueryEnabled,
-    fpTrim,
-  );
-
-  const selectedNonDrivingEnabled =
-    routeQueryEnabled &&
-    selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
 
   const {
     data: selectedRoute,
@@ -151,7 +125,7 @@ export function PlanTravelTime({
     scheduleId,
     segmentSourceItemId,
     selectedMode,
-    selectedNonDrivingEnabled,
+    routeQueryEnabled,
     fpTrim,
   );
 
@@ -164,7 +138,9 @@ export function PlanTravelTime({
 
   const menuDeferredModes = useMemo(
     () =>
-      SCHEDULE_ROUTE_DEFERRED_FETCH_MODES.filter((m) => m !== selectedMode),
+      SCHEDULE_TRAVEL_MODES.map((m) => m.value).filter(
+        (m) => m !== selectedMode,
+      ),
     [selectedMode],
   );
 
@@ -186,7 +162,7 @@ export function PlanTravelTime({
 
   const modeRouteSummaries = useMemo(() => {
     const merged =
-      buildScheduleItemRouteSummariesByMode(drivingRoute ?? undefined);
+      buildScheduleItemRouteSummariesByMode(selectedRoute ?? undefined);
 
     const apply = (
       payload: ScheduleItemRouteResponse | null | undefined,
@@ -204,22 +180,13 @@ export function PlanTravelTime({
       };
     };
 
-    apply(drivingRoute);
-    if (selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
-      apply(selectedRoute);
-    }
+    apply(selectedRoute);
     menuDeferredModes.forEach((_mode, i) => {
       apply(deferredRouteQueries[i]?.data);
     });
 
     return merged;
-  }, [
-    drivingRoute,
-    selectedMode,
-    selectedRoute,
-    menuDeferredModes,
-    deferredRouteQueries,
-  ]);
+  }, [selectedRoute, menuDeferredModes, deferredRouteQueries]);
 
   const displayRoute = useMemo(() => {
     const sel = modeRouteSummaries[selectedMode];
@@ -234,16 +201,7 @@ export function PlanTravelTime({
         distanceMeters: sel.distanceMeters,
       } satisfies ScheduleItemRouteResponse;
     }
-    if (selectedMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
-      if (routePayloadOk(drivingRoute)) {
-        const rc = canonicalScheduleTravelMode(
-          typeof drivingRoute.travelMode === "string"
-            ? drivingRoute.travelMode.trim()
-            : "",
-        );
-        if (rc === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) return drivingRoute;
-      }
-    } else if (routePayloadOk(selectedRoute)) {
+    if (routePayloadOk(selectedRoute)) {
       const rc = canonicalScheduleTravelMode(
         typeof selectedRoute.travelMode === "string"
           ? selectedRoute.travelMode.trim()
@@ -252,7 +210,7 @@ export function PlanTravelTime({
       if (rc === selectedMode) return selectedRoute;
     }
     return undefined;
-  }, [modeRouteSummaries, selectedMode, drivingRoute, selectedRoute]);
+  }, [modeRouteSummaries, selectedMode, selectedRoute]);
 
   const modeRouteRowLoading = useMemo(() => {
     const out: Partial<Record<ScheduleTravelModeValue, boolean>> = {};
@@ -265,14 +223,8 @@ export function PlanTravelTime({
       );
     };
     if (routeQueryEnabled) {
-      out[SCHEDULE_ROUTE_PRIMARY_FETCH_MODE] =
-        !hasSummary(SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) &&
-        (drivingPending || drivingFetching);
-      if (selectedMode !== SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
-        out[selectedMode] =
-          !hasSummary(selectedMode) &&
-          (selectedPending || selectedFetching);
-      }
+      out[selectedMode] =
+        !hasSummary(selectedMode) && (selectedPending || selectedFetching);
       menuDeferredModes.forEach((mode, i) => {
         const q = deferredRouteQueries[i];
         out[mode] =
@@ -287,51 +239,21 @@ export function PlanTravelTime({
     routeQueryEnabled,
     selectedMode,
     deferredLazyEnabled,
-    drivingPending,
-    drivingFetching,
     selectedPending,
     selectedFetching,
     menuDeferredModes,
     deferredRouteQueries,
   ]);
 
-  const activeBackingQueryStatus = useMemo(() => {
-    if (selectedMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE) {
-      return {
-        isPending: drivingPending,
-        isFetching: drivingFetching,
-        isError: drivingError,
-      } as const;
-    }
-    return {
-      isPending: selectedPending,
-      isFetching: selectedFetching,
-      isError: selectedError,
-    } as const;
-  }, [
-    selectedMode,
-    drivingPending,
-    drivingFetching,
-    drivingError,
-    selectedPending,
-    selectedFetching,
-    selectedError,
-  ]);
+  const primarySettled = !selectedPending && !selectedFetching;
 
-  const primarySettled =
-    !activeBackingQueryStatus.isPending &&
-    !activeBackingQueryStatus.isFetching;
-
-  const summaryFetching =
-    !displayRoute && activeBackingQueryStatus.isFetching;
+  const summaryFetching = !displayRoute && selectedFetching;
 
   const summaryPending =
-    !displayRoute &&
-    !activeBackingQueryStatus.isFetching &&
-    activeBackingQueryStatus.isPending;
+    !displayRoute && !selectedFetching && selectedPending;
 
   const summaryIsError =
-    !displayRoute && primarySettled && activeBackingQueryStatus.isError;
+    !displayRoute && primarySettled && selectedError;
 
   const summaryUnavailable =
     !displayRoute &&
@@ -340,19 +262,34 @@ export function PlanTravelTime({
 
   const handleSelectTravelMode = useCallback(
     (mode: ScheduleTravelModeValue) => {
-      if (fpTrim.length) {
-        writeTravelModeToSessionStorage(
-          rid,
-          scheduleId,
-          segmentSourceItemId,
-          fpTrim,
-          mode,
-        );
-      }
-      setSelectedMode(mode);
       setMenuOpen(false);
+      if (mode === selectedMode) return;
+      /** 낙관적 반영 — 실패 시 선택 시점의 서버 저장값으로 복귀 */
+      const revertTo = serverMode;
+      setSelectedMode(mode);
+      mutateTravelMode(
+        {
+          roomId: rid,
+          scheduleId,
+          itemId: segmentSourceItemId,
+          travelMode: mode,
+        },
+        {
+          onError: () => {
+            setSelectedMode(revertTo);
+            toast.error("이동 수단을 변경하지 못했어요.");
+          },
+        },
+      );
     },
-    [rid, scheduleId, segmentSourceItemId, fpTrim],
+    [
+      rid,
+      scheduleId,
+      segmentSourceItemId,
+      selectedMode,
+      serverMode,
+      mutateTravelMode,
+    ],
   );
 
   if (directionsHidden) {

@@ -10,7 +10,7 @@ import {
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
-import { usePrefetchScheduleDrivingRoutes } from "@/hooks/usePrefetchScheduleDrivingRoutes";
+import { usePrefetchScheduleRoutes } from "@/hooks/usePrefetchScheduleRoutes";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
@@ -78,7 +78,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     places.length >= 2 &&
     scheduleFingerprint.length > 0;
 
-  const routesBatchSettled = usePrefetchScheduleDrivingRoutes(
+  const routesBatchSettled = usePrefetchScheduleRoutes(
     roomId,
     scheduleId,
     places,
@@ -261,6 +261,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                     scheduleId={scheduleId}
                     segmentSourceItemId={place.itemId}
                     scheduleFingerprint={scheduleFingerprint}
+                    travelMode={place.travelMode}
                     originGooglePlaceId={place.googlePlaceId}
                     originPlaceName={place.title}
                     destinationGooglePlaceId={places[index + 1].googlePlaceId}

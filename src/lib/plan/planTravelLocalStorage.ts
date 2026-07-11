@@ -1,9 +1,5 @@
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
-import {
-  canonicalScheduleTravelMode,
-  type ScheduleTravelModeValue,
-} from "@/lib/plan/scheduleTravelMode";
 
 function roundCoord(n: number): string {
   if (!Number.isFinite(n)) return "";
@@ -11,7 +7,6 @@ function roundCoord(n: number): string {
 }
 
 const NS_ROUTE = "hau:plan:route:v1";
-const NS_MODE = "hau:plan:travelMode:v1";
 
 function routeStorageKey(
   roomId: string,
@@ -22,23 +17,10 @@ function routeStorageKey(
   return `${NS_ROUTE}:${roomId.trim()}:${scheduleId}:${segmentSourceItemId}:${travelMode.trim()}`;
 }
 
-function modeStorageKey(
-  roomId: string,
-  scheduleId: number,
-  segmentSourceItemId: number,
-): string {
-  return `${NS_MODE}:${roomId.trim()}:${scheduleId}:${segmentSourceItemId}`;
-}
-
 type PersistedRouteV1 = {
   fp: string;
   kind: "empty" | "data";
   body?: ScheduleItemRouteResponse;
-};
-
-type PersistedModeV1 = {
-  fp: string;
-  mode: string;
 };
 
 function routeBodyOk(b: unknown): b is ScheduleItemRouteResponse {
@@ -93,7 +75,7 @@ function removeSessionStorageKeysMatchingPrefixes(prefixes: string[]): void {
   }
 }
 
-/** 지정 구간(`segmentSourceItemId`)의 경로·이동수단 sessionStorage만 제거 */
+/** 지정 구간(`segmentSourceItemId`)의 경로 sessionStorage만 제거 */
 export function clearPersistedScheduleRoutesForSegmentSources(
   roomId: string,
   scheduleId: number,
@@ -101,35 +83,14 @@ export function clearPersistedScheduleRoutesForSegmentSources(
 ): void {
   const rid = roomId.trim();
   if (!rid.length || segmentSourceItemIds.length === 0) return;
-  const routePrefixes = segmentSourceItemIds.map(
-    (id) => `${NS_ROUTE}:${rid}:${scheduleId}:${id}:`,
+  removeSessionStorageKeysMatchingPrefixes(
+    segmentSourceItemIds.map(
+      (id) => `${NS_ROUTE}:${rid}:${scheduleId}:${id}:`,
+    ),
   );
-  const exactModeKeys = new Set(
-    segmentSourceItemIds.map((id) => modeStorageKey(rid, scheduleId, id)),
-  );
-  if (typeof window === "undefined") return;
-  const toRemove: string[] = [];
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const k = sessionStorage.key(i);
-    if (!k) continue;
-    if (exactModeKeys.has(k)) {
-      toRemove.push(k);
-      continue;
-    }
-    if (routePrefixes.some((p) => k.startsWith(p))) {
-      toRemove.push(k);
-    }
-  }
-  for (const k of toRemove) {
-    try {
-      sessionStorage.removeItem(k);
-    } catch {
-      /* quota */
-    }
-  }
 }
 
-/** 해당 일차 경로·이동수단 sessionStorage 항목 일괄 제거 */
+/** 해당 일차 경로 sessionStorage 항목 일괄 제거 */
 export function clearPersistedScheduleRoutesForSchedule(
   roomId: string,
   scheduleId: number,
@@ -138,7 +99,6 @@ export function clearPersistedScheduleRoutesForSchedule(
   if (!rid.length) return;
   removeSessionStorageKeysMatchingPrefixes([
     `${NS_ROUTE}:${rid}:${scheduleId}:`,
-    `${NS_MODE}:${rid}:${scheduleId}:`,
   ]);
 }
 
@@ -205,46 +165,4 @@ export function writeScheduleRouteToSessionStorage(
   }
 }
 
-export function readTravelModeFromSessionStorage(
-  roomId: string,
-  scheduleId: number,
-  segmentSourceItemId: number,
-  expectedFp: string,
-): ScheduleTravelModeValue | undefined {
-  if (typeof window === "undefined" || !expectedFp) return undefined;
-  try {
-    const raw = sessionStorage.getItem(
-      modeStorageKey(roomId, scheduleId, segmentSourceItemId),
-    );
-    if (!raw) return undefined;
-    const o = JSON.parse(raw) as PersistedModeV1;
-    if (o.fp !== expectedFp) return undefined;
-    const c = canonicalScheduleTravelMode(
-      typeof o.mode === "string" ? o.mode.trim() : undefined,
-    );
-    return c ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
 
-export function writeTravelModeToSessionStorage(
-  roomId: string,
-  scheduleId: number,
-  segmentSourceItemId: number,
-  fp: string,
-  mode: ScheduleTravelModeValue,
-): void {
-  if (typeof window === "undefined" || !fp) return;
-  try {
-    sessionStorage.setItem(
-      modeStorageKey(roomId, scheduleId, segmentSourceItemId),
-      JSON.stringify({
-        fp,
-        mode,
-      } satisfies PersistedModeV1),
-    );
-  } catch {
-    /* quota */
-  }
-}

@@ -22,6 +22,7 @@ import {
   reorderScheduleItem,
   moveScheduleItemToSchedule,
   updateScheduleItem,
+  updateScheduleItemTravelMode,
   deleteRoomBookmark,
   deleteBookmarkCategory,
   deleteRoom,
@@ -378,6 +379,44 @@ export function useUpdateScheduleItem() {
       const merged = applyRoomScheduleItemToPlanPlaces(prev, updated, {
         memoTouched: Object.prototype.hasOwnProperty.call(body, "memo"),
       });
+      if (merged) {
+        queryClient.setQueryData(key, merged);
+      } else {
+        void queryClient.invalidateQueries({
+          queryKey: key,
+          refetchType: "active",
+        });
+      }
+    },
+  });
+}
+
+/**
+ * 구간 공유 이동수단 변경 — 서버 DB 저장 후 `SCHEDULE_ITEM_TRAVEL_MODE_UPDATED`가
+ * 브로드캐스트되며, 액터는 응답으로 `schedule-items` 캐시만 갱신합니다.
+ * 수단별 경로 캐시는 모드 키로 분리돼 있어 무효화가 필요 없습니다.
+ */
+export function useUpdateScheduleItemTravelMode() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      roomId: string;
+      scheduleId: number;
+      itemId: number;
+      travelMode: ScheduleTravelModeValue;
+    }) =>
+      updateScheduleItemTravelMode(
+        vars.roomId,
+        vars.scheduleId,
+        vars.itemId,
+        { travelMode: vars.travelMode },
+      ),
+    onSuccess: (updated, { roomId, scheduleId }) => {
+      const rid = roomId.trim();
+      if (!rid.length) return;
+      const key = scheduleItemsQueryKey(rid, scheduleId);
+      const prev = queryClient.getQueryData<PlanPlace[]>(key);
+      const merged = applyRoomScheduleItemToPlanPlaces(prev, updated);
       if (merged) {
         queryClient.setQueryData(key, merged);
       } else {
