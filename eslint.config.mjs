@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // git worktree 사본 — 각자의 .next 빌드 산출물까지 lint되는 것을 방지.
+    ".worktrees/**",
   ]),
 ]);
 
