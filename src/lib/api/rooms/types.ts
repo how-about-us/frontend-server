@@ -2,9 +2,11 @@
 
 import type { ServerChatMessageType } from "@/types/chat";
 
+export type RoomRole = "HOST" | "MEMBER";
+
 export type RoomCreateRequest = {
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string;
   endDate: string;
 };
@@ -12,22 +14,22 @@ export type RoomCreateRequest = {
 export type RoomCreateResponse = {
   id: string;
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string | null;
   endDate: string | null;
   inviteCode: string;
   memberCount: number;
-  role: string;
+  role: RoomRole;
   createdAt: string;
 };
 
 export type RoomListItem = {
   id: string;
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string | null;
   endDate: string | null;
-  role: string;
+  role: RoomRole;
   joinedAt: string;
 };
 
@@ -39,7 +41,7 @@ export type RoomListResponse = {
 
 export type RoomUpdateRequest = {
   title?: string;
-  destination?: string;
+  destinations?: string[];
   startDate?: string;
   endDate?: string;
 };
@@ -47,12 +49,12 @@ export type RoomUpdateRequest = {
 export type RoomDetail = {
   id: string;
   title: string;
-  destination: string;
+  destinations: string[];
   startDate: string | null;
   endDate: string | null;
   inviteCode: string | null;
   memberCount: number;
-  role: string;
+  role: RoomRole;
   createdAt: string;
 };
 

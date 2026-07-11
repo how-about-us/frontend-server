@@ -36,10 +36,10 @@ export function MapWithDetailPanel() {
       {/* Detail panel – slides in from the left over the map */}
       <div
         style={{ top: panelTopPx }}
-        className={`absolute bottom-3 left-2 z-20 flex w-[300px] flex-col overflow-hidden rounded-xl shadow-[6px_0_24px_-4px_rgba(0,0,0,0.12),16px_0_32px_-6px_rgba(0,0,0,0.08)] transition-[transform,top] duration-300 ease-out ${
+        className={`absolute bottom-3 left-2 z-20 flex w-[360px] flex-col overflow-hidden rounded-xl shadow-[6px_0_24px_-4px_rgba(0,0,0,0.12),16px_0_32px_-6px_rgba(0,0,0,0.08)] transition-[transform,top] duration-300 ease-out ${
           selectedPlace
             ? "pointer-events-auto translate-x-0"
-            : "pointer-events-none -translate-x-[350px]"
+            : "pointer-events-none -translate-x-[400px]"
         }`}
       >
         {lastPlaceRef.current && (

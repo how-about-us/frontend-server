@@ -1,44 +1,39 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { Clock, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import {
   clampStayDurationMinutes,
-  formatScheduleStaySummary,
+  canEditScheduleStayDuration,
   formatStayDurationMinutes,
+  hasScheduleTimeDraftValue,
   normalizeStartTimeToHm,
   SCHEDULE_STAY_DURATION_MAX_MINUTES,
+  validateScheduleTimeDraft,
 } from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
 
-import { PlanCollapsibleField } from "./PlanPlaceCardParts";
-
-type PlanItemTimeFormProps = {
+type PlanItemTimeEditorProps = {
   roomId: string;
   scheduleId: number;
   itemId: number;
   startTime: string;
-  durationMinutes: number;
-  scheduleOverlapWarning?: string;
+  durationMinutes: number | null | undefined;
+  onClose: () => void;
 };
 
 const fieldLabelClass = PLAN_PLACE_CARD_TW.timeFieldLabel;
-const inlineInputClass =
-  "rounded-md border border-gray-border bg-gray-50/60 tabular-nums text-gray-900 shadow-none transition focus:border-brand-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-green/30";
 const timeStartInputClass =
   "cursor-pointer text-center [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center";
 const startTimeInputClassName = cn(
-  inlineInputClass,
-  timeStartInputClass,
   PLAN_PLACE_CARD_TW.timeInputCompact,
+  timeStartInputClass,
+  "tabular-nums",
 );
-
-function stopCardActivation(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
 
 function PlanStartTimeInput({
   value,
@@ -50,7 +45,6 @@ function PlanStartTimeInput({
   onChange: (next: string) => void;
 }) {
   const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
-    stopCardActivation(e);
     if (disabled) return;
     const input = e.currentTarget;
     try {
@@ -70,7 +64,7 @@ function PlanStartTimeInput({
         )}
       >
         <span
-          className="pointer-events-none text-xs tabular-nums text-dark-gray/70"
+          className="pointer-events-none text-sm tabular-nums text-dark-gray/70"
           aria-hidden
         >
           --:--
@@ -80,7 +74,6 @@ function PlanStartTimeInput({
           aria-label="시작 시각"
           value=""
           disabled={disabled}
-          onMouseDown={stopCardActivation}
           onClick={openPicker}
           onChange={(e) => {
             const v = e.target.value;
@@ -98,7 +91,6 @@ function PlanStartTimeInput({
       aria-label="시작 시각"
       value={value}
       disabled={disabled}
-      onMouseDown={stopCardActivation}
       onClick={openPicker}
       onChange={(e) => onChange(e.target.value)}
       className={startTimeInputClassName}
@@ -106,37 +98,19 @@ function PlanStartTimeInput({
   );
 }
 
-export function PlanItemTimeReadOnly({
-  startTime,
-  durationMinutes,
-}: {
-  startTime: string;
-  durationMinutes: number;
-}) {
-  const summary = formatScheduleStaySummary(startTime, durationMinutes);
-  if (!summary) return null;
-
-  return (
-    <p className="truncate text-xs tabular-nums text-dark-gray/75">
-      {summary}
-    </p>
-  );
-}
-
-export function PlanItemTimeForm({
+export function PlanItemTimeEditor({
   roomId,
   scheduleId,
   itemId,
   startTime,
   durationMinutes,
-  scheduleOverlapWarning,
-}: PlanItemTimeFormProps) {
-  const panelId = useId();
+  onClose,
+}: PlanItemTimeEditorProps) {
   const [timeHm, setTimeHm] = useState(() => normalizeStartTimeToHm(startTime));
   const [durationStr, setDurationStr] = useState(() =>
     formatStayDurationMinutes(durationMinutes),
   );
-  const [expanded, setExpanded] = useState(false);
+  const [resetPending, setResetPending] = useState(false);
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
   const serverHm = normalizeStartTimeToHm(startTime);
@@ -149,10 +123,21 @@ export function PlanItemTimeForm({
   }, [durationMinutes]);
 
   useEffect(() => {
-    if (scheduleOverlapWarning) {
-      setExpanded(true);
-    }
-  }, [scheduleOverlapWarning]);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isPending) onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isPending, onClose]);
+
+  const hasDraftValue = hasScheduleTimeDraftValue(timeHm, durationStr);
+  const stayDurationEnabled = canEditScheduleStayDuration(timeHm);
+
+  function handleReset() {
+    setResetPending(true);
+    setTimeHm("");
+    setDurationStr("0");
+  }
 
   async function handleSave() {
     const dm = parseInt(durationStr, 10);
@@ -166,19 +151,29 @@ export function PlanItemTimeForm({
       );
       return;
     }
-    if (!/^\d{2}:\d{2}$/.test(timeHm)) {
+    const trimmedHm = timeHm.trim();
+    if (trimmedHm.length > 0 && !/^\d{2}:\d{2}$/.test(trimmedHm)) {
       toast.error("시작 시각을 올바르게 선택해 주세요.");
       return;
     }
+    const draftValidation = validateScheduleTimeDraft(trimmedHm, dm);
+    if (!draftValidation.valid) {
+      toast.error(draftValidation.message);
+      return;
+    }
     try {
+      const shouldClearDuration = resetPending || !stayDurationEnabled;
       await mutateAsync({
         roomId,
         scheduleId,
         itemId,
-        body: { startTime: timeHm, durationMinutes: dm },
+        body: {
+          startTime: trimmedHm.length > 0 ? trimmedHm : null,
+          durationMinutes: shouldClearDuration ? null : dm,
+        },
       });
       toast.success("체류 시간을 저장했어요.");
-      setExpanded(false);
+      onClose();
     } catch {
       toast.error("체류 시간을 저장하지 못했어요.");
     }
@@ -187,82 +182,115 @@ export function PlanItemTimeForm({
   const baselineTime = normalizeStartTimeToHm(startTime);
   const baselineDur = formatStayDurationMinutes(durationMinutes);
   const dirty = baselineTime !== timeHm || baselineDur !== durationStr;
-  const collapsedHint =
-    formatScheduleStaySummary(startTime, durationMinutes) || undefined;
 
   return (
-    <PlanCollapsibleField
-      label="체류 시간"
-      collapsedHint={collapsedHint}
-      expanded={expanded}
-      onToggle={() => setExpanded((v) => !v)}
-      disabled={isPending}
-      panelId={panelId}
+    <div
+      role="presentation"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !isPending) onClose();
+      }}
     >
-      {scheduleOverlapWarning ? (
-        <p
-          role="status"
-          className={cn(
-            "line-clamp-2 font-medium text-brand-red break-keep",
-            PLAN_PLACE_CARD_TW.overlapWarningCompact,
-          )}
-        >
-          {scheduleOverlapWarning}
-        </p>
-      ) : null}
-      <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
-        <label className={PLAN_PLACE_CARD_TW.timeField}>
-          <span className={fieldLabelClass}>시작</span>
-          <PlanStartTimeInput
-            value={timeHm}
-            disabled={isPending}
-            onChange={setTimeHm}
-          />
-        </label>
-        <label className={PLAN_PLACE_CARD_TW.timeField}>
-          <span className={fieldLabelClass}>체류(분)</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
-            step={1}
-            aria-label="체류(분)"
-            value={durationStr}
-            onMouseDown={stopCardActivation}
-            onClick={stopCardActivation}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (raw === "") {
-                setDurationStr("");
-                return;
-              }
-              const v = parseInt(raw, 10);
-              if (!Number.isFinite(v)) {
-                setDurationStr(raw);
-                return;
-              }
-              setDurationStr(String(clampStayDurationMinutes(v)));
-            }}
-            className={cn(
-              inlineInputClass,
-              PLAN_PLACE_CARD_TW.timeInputCompact,
-            )}
-            disabled={isPending}
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={isPending || !dirty}
-          className={cn(
-            "shrink-0 cursor-pointer rounded-md bg-brand-green font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40",
-            PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
-          )}
-        >
-          {isPending ? "…" : "저장"}
-        </button>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plan-item-time-dialog-title"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+      >
+        <div className="flex items-center gap-2 px-6 pb-3 pt-6">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
+            <Clock className="h-5 w-5" aria-hidden />
+          </span>
+          <h2
+            id="plan-item-time-dialog-title"
+            className="flex-1 text-[19px] font-bold text-gray-900"
+          >
+            시간 설정
+          </h2>
+          {hasDraftValue ? (
+            <button
+              type="button"
+              aria-label="시간 초기화"
+              onClick={handleReset}
+              disabled={isPending}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-3 px-6 pb-6">
+          <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
+            <label className={PLAN_PLACE_CARD_TW.timeField}>
+              <span className={fieldLabelClass}>시작</span>
+              <PlanStartTimeInput
+                value={timeHm}
+                disabled={isPending}
+                onChange={(next) => {
+                  setResetPending(false);
+                  setTimeHm(next);
+                  if (!canEditScheduleStayDuration(next)) {
+                    setDurationStr("0");
+                  }
+                }}
+              />
+            </label>
+            <label className={PLAN_PLACE_CARD_TW.timeField}>
+              <span className={fieldLabelClass}>체류(분)</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
+                step={1}
+                aria-label="체류(분)"
+                value={durationStr}
+                onChange={(e) => {
+                  setResetPending(false);
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setDurationStr("");
+                    return;
+                  }
+                  const v = parseInt(raw, 10);
+                  if (!Number.isFinite(v)) {
+                    setDurationStr(raw);
+                    return;
+                  }
+                  setDurationStr(String(clampStayDurationMinutes(v)));
+                }}
+                className={cn(
+                  PLAN_PLACE_CARD_TW.timeInputCompact,
+                  "tabular-nums",
+                )}
+                disabled={isPending || !stayDurationEnabled}
+              />
+            </label>
+          </div>
+
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="h-10 shrink-0 cursor-pointer rounded-lg border border-gray-border bg-white px-4 text-sm font-medium text-gray-800 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isPending || !dirty}
+              className="h-10 shrink-0 cursor-pointer rounded-lg bg-brand-green px-4 text-sm font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isPending ? "저장 중…" : "저장"}
+            </button>
+          </div>
+        </div>
       </div>
-    </PlanCollapsibleField>
+    </div>
   );
 }

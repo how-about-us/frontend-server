@@ -16,6 +16,7 @@ import { formatDateYmd } from "@/lib/plan/tripRange";
 import { isTripScheduleDayLimitExceeded } from "@/lib/plan/schedulePolicy";
 import {
   isTripDateRangeInvalid,
+  isTripDestinationsValid,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   tripEndDateMinYmd,
 } from "@/lib/rooms/trip-form";
@@ -27,10 +28,7 @@ export default function NewTripPage() {
   const queryClient = useQueryClient();
   useRedirectOnMobileDevice("/home");
   const [title, setTitle] = useState("");
-  const [destination, setDestination] = useState("");
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(
-    null,
-  );
+  const [destinations, setDestinations] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -43,8 +41,7 @@ export default function NewTripPage() {
 
   const canSubmit =
     title.trim() &&
-    destination.trim() &&
-    destinationPlaceId &&
+    isTripDestinationsValid(destinations) &&
     startDate &&
     endDate &&
     !isPending &&
@@ -57,7 +54,7 @@ export default function NewTripPage() {
     createRoom(
       {
         title: title.trim().slice(0, ROOM_TRIP_TITLE_MAX_LENGTH),
-        destination: destination.trim(),
+        destinations: destinations.map((d) => d.trim()),
         startDate,
         endDate,
       },
@@ -87,25 +84,24 @@ export default function NewTripPage() {
           </Link>
         </div>
 
-        <h1 className="mb-8 text-center text-2xl font-bold tracking-tight text-black">
+        <h1 className="mb-8 text-center text-[29px] font-bold tracking-tight text-black">
           새로운 여행 계획하기
         </h1>
 
         <TripFormFields
           idPrefix="new-trip"
-          values={{ title, destination, startDate, endDate }}
+          values={{ title, destinations, startDate, endDate }}
           autoFocusTitle
           startDateMin={todayYmd}
           endDateMin={endDateMin}
           onTitleChange={setTitle}
-          onDestinationChange={setDestination}
-          onDestinationResolved={setDestinationPlaceId}
+          onDestinationsChange={setDestinations}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
         />
 
         {error && (
-          <p className="mt-3 text-center text-sm text-brand-red">
+          <p className="mt-3 text-center text-[17px] text-brand-red">
             {error instanceof Error
               ? error.message
               : "방 생성에 실패했어요. 다시 시도해주세요."}
@@ -116,14 +112,14 @@ export default function NewTripPage() {
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="mt-8 w-full rounded-full bg-brand-red py-4 text-base font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-8 w-full rounded-full bg-brand-red py-4 text-[19px] font-semibold text-white shadow transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? "생성 중…" : "계획을 시작하세요"}
         </button>
 
         <Link
           href="/home"
-          className="mt-4 block text-center text-sm font-medium text-dark-gray underline-offset-4 transition hover:text-neutral-900 hover:underline"
+          className="mt-4 block text-center text-[17px] font-medium text-dark-gray underline-offset-4 transition hover:text-neutral-900 hover:underline"
         >
           홈으로 돌아가기
         </Link>

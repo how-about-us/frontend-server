@@ -179,7 +179,7 @@ export async function syncRoomDetailFromServer(
           ? {
               ...r,
               title: detail.title,
-              destination: detail.destination,
+              destinations: detail.destinations,
               startDate: detail.startDate,
               endDate: detail.endDate,
             }

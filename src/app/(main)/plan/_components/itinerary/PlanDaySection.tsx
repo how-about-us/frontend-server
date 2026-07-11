@@ -3,6 +3,7 @@
 import { useOnClickOutside } from "@/hooks/useOnClickOutside";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
 import { cn } from "@/lib/utils";
 import {
@@ -11,6 +12,7 @@ import {
   GripVertical,
   MoreHorizontal,
   Plus,
+  Route,
   Trash2,
 } from "lucide-react";
 import { useCallback, useId, useRef, useState } from "react";
@@ -105,6 +107,17 @@ export function PlanDaySection({
     (s) => s.setScheduleExpanded,
   );
 
+  const routeVisible = usePlanScheduleRouteVisibilityStore((s) =>
+    trackedSid !== undefined ? (s.visibleByScheduleId[trackedSid] ?? true) : false,
+  );
+  const setRouteVisible = usePlanScheduleRouteVisibilityStore(
+    (s) => s.setRouteVisible,
+  );
+  const toggleRouteVisible = useCallback(() => {
+    if (trackedSid === undefined) return;
+    setRouteVisible(trackedSid, !routeVisible);
+  }, [trackedSid, routeVisible, setRouteVisible]);
+
   const toggle = useCallback(() => {
     if (trackedSid !== undefined) {
       setScheduleExpanded(trackedSid, !expanded);
@@ -155,6 +168,7 @@ export function PlanDaySection({
           className={cn(
             "relative flex w-full items-stretch gap-0.5 py-3.5",
             MAIN_CARD_INNER_PADDING_X_CLASS,
+            expanded ? "rounded-t-2xl" : "rounded-2xl",
           )}
         >
           {dragHandleProps ? (
@@ -191,10 +205,16 @@ export function PlanDaySection({
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
           >
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-              {subtitle ? (
-                <p className="mt-0.5 text-xs text-dark-gray">{subtitle}</p>
-              ) : null}
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 className="min-w-0 truncate text-[19px] font-semibold text-gray-900">
+                  {subtitle || title}
+                </h2>
+                {subtitle ? (
+                  <span className="inline-flex shrink-0 items-center rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                    {title}
+                  </span>
+                ) : null}
+              </div>
             </div>
           </button>
           <span
@@ -207,6 +227,28 @@ export function PlanDaySection({
               <ChevronDown className="h-5 w-5" />
             )}
           </span>
+          {trackedSid !== undefined ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleRouteVisible();
+              }}
+              aria-pressed={routeVisible}
+              aria-label={
+                routeVisible ? "지도에서 경로 숨기기" : "지도에 경로 표시"
+              }
+              title={routeVisible ? "지도에서 경로 숨기기" : "지도에 경로 표시"}
+              className={cn(
+                "shrink-0 cursor-pointer self-center rounded-lg p-2 transition-colors",
+                routeVisible
+                  ? "text-brand-red hover:bg-red-50"
+                  : "text-dark-gray hover:bg-bubble-gray/60",
+              )}
+            >
+              <Route className="h-5 w-5" aria-hidden />
+            </button>
+          ) : null}
           {showScheduleMenu ? (
             <div ref={menuRef} className="relative shrink-0 self-center">
               <button
@@ -238,7 +280,7 @@ export function PlanDaySection({
                     <button
                       type="button"
                       role="menuitem"
-                      className="flex cursor-pointer items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-neutral-900 hover:bg-bubble-gray"
+                      className="flex cursor-pointer items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-neutral-900 hover:bg-bubble-gray"
                       onClick={(e) => {
                         e.stopPropagation();
                         setMenuOpen(false);
@@ -255,7 +297,7 @@ export function PlanDaySection({
                       role="menuitem"
                       disabled={isDeleteScheduleDisabled}
                       className={cn(
-                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-sm text-brand-red hover:bg-red-50",
+                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-brand-red hover:bg-red-50",
                         isDeleteScheduleDisabled
                           ? "cursor-not-allowed opacity-40"
                           : "cursor-pointer",

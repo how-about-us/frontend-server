@@ -48,13 +48,13 @@ export function TripDateShrinkConfirmModal({
           </div>
           <h2
             id="trip-date-shrink-dialog-title"
-            className="text-base font-bold"
+            className="text-[19px] font-bold"
           >
             여행 기간을 줄일까요?
           </h2>
           <p
             id="trip-date-shrink-dialog-desc"
-            className="mt-1.5 text-sm leading-relaxed text-dark-gray"
+            className="mt-1.5 text-[17px] leading-relaxed text-dark-gray"
           >
             여행 기간을 줄이면 해당 일차에 포함된 장소도 함께 삭제돼요.
             계속할까요?

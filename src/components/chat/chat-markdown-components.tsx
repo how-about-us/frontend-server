@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 export type ChatMarkdownVariant = "ai" | "mine" | "other";
 
-function linkClassName(variant: ChatMarkdownVariant): string {
+export function getChatLinkClassName(variant: ChatMarkdownVariant): string {
   if (variant === "mine") {
     return "text-white underline underline-offset-2 hover:opacity-90";
   }
@@ -20,7 +20,7 @@ function strongClassName(variant: ChatMarkdownVariant): string {
 export function createChatMarkdownComponents(
   variant: ChatMarkdownVariant,
 ): Components {
-  const linkCls = linkClassName(variant);
+  const linkCls = getChatLinkClassName(variant);
   const strongCls = strongClassName(variant);
 
   return {
@@ -92,7 +92,7 @@ export function createChatMarkdownComponents(
     },
     pre({ children }) {
       return (
-        <pre className="my-1 overflow-x-auto rounded-md bg-black/10 p-2 font-mono text-[10px] leading-relaxed break-words last:mb-0">
+        <pre className="my-1 overflow-x-auto rounded-md bg-black/10 p-2 font-mono text-xs leading-relaxed break-words last:mb-0">
           {children}
         </pre>
       );
@@ -107,7 +107,7 @@ export function createChatMarkdownComponents(
     table({ children }) {
       return (
         <div className="my-1 overflow-x-auto last:mb-0">
-          <table className="w-full border-collapse text-[10px]">{children}</table>
+          <table className="w-full border-collapse text-xs">{children}</table>
         </div>
       );
     },

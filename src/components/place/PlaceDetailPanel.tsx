@@ -14,11 +14,10 @@ import { AddToBookmarkModal } from "./AddToBookmarkModal";
 import { AddToScheduleModal } from "./AddToScheduleModal";
 import { TABS, type Tab } from "./types";
 import { usePlaceDetailData } from "./usePlaceDetailData";
-import { HeroSkeleton, HeroGrid } from "./HeroSection";
+import { HeroSkeleton, HeroImage } from "./HeroSection";
 import { PlaceSummaryHeader } from "./PlaceSummaryHeader";
 import { HomeTab } from "./HomeTab";
 import { ReviewsTab } from "./ReviewsTab";
-import { PhotosTab } from "./PhotosTab";
 
 type PlaceDetailPanelProps = SearchResultCardProps & {
   onClose: () => void;
@@ -113,15 +112,12 @@ export function PlaceDetailPanel({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-white">
-      {/* Hero – click to jump to 사진 tab */}
-      <div
-        className="relative h-[185px] shrink-0 cursor-pointer"
-        onClick={() => setActiveTab("사진")}
-      >
+      {/* Hero */}
+      <div className="relative h-[185px] shrink-0">
         {isDetailLoading && googlePlaceId ? (
           <HeroSkeleton />
         ) : (
-          <HeroGrid
+          <HeroImage
             photoNames={photoNames}
             fallbackImage={image}
             name={displayName}
@@ -182,7 +178,7 @@ export function PlaceDetailPanel({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-[11px] font-medium transition-colors ${
+              className={`flex-1 py-2.5 text-[13px] font-medium transition-colors ${
                 activeTab === tab
                   ? "border-b-2 border-brand-red text-brand-red"
                   : "text-dark-gray hover:text-[#364153]"
@@ -201,6 +197,7 @@ export function PlaceDetailPanel({
             phone={phone}
             hours={hours}
             website={website}
+            googleMapsUrl={detailData?.placeUri ?? undefined}
             reviewSummary={reviewSummary}
           />
         )}
@@ -209,13 +206,7 @@ export function PlaceDetailPanel({
             rating={displayRating}
             userRatingCount={userRatingCount}
             reviews={reviews}
-          />
-        )}
-        {activeTab === "사진" && (
-          <PhotosTab
-            photoNames={photoNames}
-            isLoading={isDetailLoading && !!googlePlaceId}
-            fallbackImage={image}
+            reviewsUri={detailData?.reviewsUri}
           />
         )}
       </div>

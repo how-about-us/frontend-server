@@ -25,6 +25,11 @@
 
 # Agent-only local context (read from disk, not committed)
 SERVICE_CONTEXT.md
+.serena/
+.superpowers/
+
+# Local git worktrees used for isolated feature development
+.worktrees/
 
 # misc
 .DS_Store

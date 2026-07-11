@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
+import { ChevronDown, ExternalLink, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
@@ -23,7 +23,7 @@ import { TravelRouteSummaryLine } from "./TravelRouteSummaryLine";
 export type TravelDirectionsCardProps = {
   menuOpen: boolean;
   onToggleMenu: () => void;
-  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 구간별 sessionStorage 선택값 */
+  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 서버 저장 공유 이동수단(낙관적 선택 포함) */
   summaryMode: string;
   route: ScheduleItemRouteResponse | null | undefined;
   routeQuery: {
@@ -32,7 +32,7 @@ export type TravelDirectionsCardProps = {
     isFetching: boolean;
   };
   routeUnavailable: boolean;
-  /** 수단별 `GET …/route` 결과 합본(DRIVING=초기·나머지=메뉴 오픈 시 패치·캐시 재사용) */
+  /** 수단별 `GET …/route` 결과 합본(저장 수단=초기·나머지=메뉴 오픈 시 패치·캐시 재사용) */
   modeRouteSummaries?: Partial<
     Record<ScheduleTravelModeValue, ScheduleItemRouteSummary>
   >;
@@ -42,6 +42,7 @@ export type TravelDirectionsCardProps = {
   modeRaw: string;
   /** 지도 polyline을 만들 수 없을 때 요약 우측에 표시 */
   renderWarning?: string;
+  googleMapsDirectionsUrl?: string;
   /** true면 목록은 참고용(클릭 선택 불가), `onSelectTravelMode` 미사용 */
   readOnly?: boolean;
   onSelectTravelMode?: (next: ScheduleTravelModeValue) => void;
@@ -61,6 +62,7 @@ export function TravelDirectionsCard({
   showUnknownOption,
   modeRaw,
   renderWarning,
+  googleMapsDirectionsUrl,
   readOnly = false,
   onSelectTravelMode,
   onHideDirections,
@@ -92,7 +94,7 @@ export function TravelDirectionsCard({
           onClick={onToggleMenu}
         >
           <TravelModeGlyph mode={headerTravelMode} />
-          <span className="inline-flex min-w-0 items-center gap-0.5 overflow-hidden whitespace-nowrap text-xs font-medium text-gray-900">
+          <span className="inline-flex min-w-0 items-center gap-0.5 overflow-hidden whitespace-nowrap text-[14px] font-medium text-gray-900">
             <span className="min-w-0 truncate">{summaryLine}</span>
             <ChevronDown
               className={cn(
@@ -104,11 +106,24 @@ export function TravelDirectionsCard({
           </span>
         </button>
 
+        {googleMapsDirectionsUrl ? (
+          <a
+            href={googleMapsDirectionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Google Maps에서 길찾기"
+            className="inline-flex h-10 shrink-0 items-center gap-1 px-2 text-[12px] font-medium text-brand-green underline-offset-2 hover:underline"
+          >
+            Google 길찾기
+            <ExternalLink className="h-3 w-3" aria-hidden />
+          </a>
+        ) : null}
+
         {renderWarning ? (
           <span
             role="status"
             title={renderWarning}
-            className="flex h-10 min-w-0 flex-1 items-center overflow-hidden px-2 text-[11px] font-medium text-brand-red"
+            className="flex h-10 min-w-0 flex-1 items-center overflow-hidden px-2 text-[13px] font-medium text-brand-red"
           >
             <span className="truncate">{renderWarning}</span>
           </span>
@@ -117,7 +132,7 @@ export function TravelDirectionsCard({
 
       {menuOpen ? (
         <div className="w-fit max-w-full border-t border-gray-border px-2.5 py-2">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-dark-gray">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-dark-gray">
             이동 수단
           </p>
           <ul
@@ -144,7 +159,7 @@ export function TravelDirectionsCard({
                 );
               const selected = value === effectiveMode;
               const rowClass = cn(
-                "flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs",
+                "flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-[14px]",
                 !readOnly && "hover:bg-gray-border/30",
                 selected &&
                   (readOnly ?
@@ -161,7 +176,7 @@ export function TravelDirectionsCard({
                         {scheduleTravelModeLabel(value)}
                       </span>
                       {selected ?
-                        <span className="ml-auto shrink-0 text-[10px] font-semibold text-dark-gray">
+                        <span className="ml-auto shrink-0 text-xs font-semibold text-dark-gray">
                           적용 중
                         </span>
                       : <span className="ml-auto text-dark-gray">{row}</span>}
@@ -189,7 +204,7 @@ export function TravelDirectionsCard({
                       {scheduleTravelModeLabel(value)}
                     </span>
                     {selected ? (
-                      <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase text-brand-red">
+                      <span className="ml-auto shrink-0 text-xs font-semibold uppercase text-brand-red">
                         선택됨
                       </span>
                     ) : (
@@ -203,7 +218,7 @@ export function TravelDirectionsCard({
               <li>
                 <button
                   type="button"
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs hover:bg-gray-border/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-[14px] hover:bg-gray-border/30 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => {
                     const c = canonicalScheduleTravelMode(modeRaw);
                     if (!c) {
@@ -219,7 +234,7 @@ export function TravelDirectionsCard({
                   <span className="font-medium text-gray-900">
                     {scheduleTravelModeLabel(modeRaw)}
                   </span>
-                  <span className="ml-auto text-[10px] text-dark-gray">
+                  <span className="ml-auto text-xs text-dark-gray">
                     표준 값으로 변경
                   </span>
                 </button>
@@ -231,7 +246,7 @@ export function TravelDirectionsCard({
 
           <button
             type="button"
-            className="flex w-full cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-xs text-dark-gray hover:bg-gray-border/30"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-left text-[14px] text-dark-gray hover:bg-gray-border/30"
             onClick={onHideDirections}
           >
             <EyeOff className="h-4 w-4 shrink-0" aria-hidden />

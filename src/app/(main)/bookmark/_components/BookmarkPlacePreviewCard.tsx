@@ -41,11 +41,11 @@ export function BookmarkPlacePreviewCard({
     >
       <div className={cn("min-w-0 flex-1", contentClassName)}>
         <div className="flex items-baseline gap-1.5">
-          <h3 className="truncate text-sm font-semibold leading-5 tracking-tight text-brand-green">
+          <h3 className="truncate text-[17px] font-semibold leading-5 tracking-tight text-brand-green">
             {name}
           </h3>
           {primaryTypeDisplayName ? (
-            <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium leading-none text-dark-gray">
+            <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium leading-none text-dark-gray">
               {primaryTypeDisplayName}
             </span>
           ) : null}
@@ -53,7 +53,7 @@ export function BookmarkPlacePreviewCard({
         {address ? (
           <div className="mt-1 flex items-center gap-1">
             <MapPin className="h-3 w-3 shrink-0 text-[#99A1AF]" />
-            <span className="truncate text-[11px] leading-relaxed text-[#99A1AF]">
+            <span className="truncate text-[13px] leading-relaxed text-[#99A1AF]">
               {address}
             </span>
           </div>

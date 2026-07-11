@@ -23,7 +23,7 @@ export function RoomTripSettingsSection() {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
         </div>
       ) : !roomSource || !roomId ? (
-        <p className="py-10 text-center text-sm text-dark-gray">
+        <p className="py-10 text-center text-[17px] text-dark-gray">
           여행 정보를 불러오지 못했어요.
         </p>
       ) : (

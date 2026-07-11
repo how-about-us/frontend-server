@@ -408,8 +408,8 @@ export function ChatMessageList({
           {isLoadingOlder ? (
             <div
               className={cn(
-                "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
-                isMinimized && "mb-1.5 min-h-4 text-[10px]",
+                "mb-2 flex min-h-[1.25rem] items-center justify-center text-center text-[14px] text-black/45",
+                isMinimized && "mb-1.5 min-h-4 text-xs",
               )}
               aria-live="polite"
             >
@@ -477,8 +477,8 @@ export function ChatMessageList({
           {isLoadingNewer ? (
             <div
               className={cn(
-                "mt-2 flex min-h-[1.25rem] items-center justify-center text-center text-xs text-black/45",
-                isMinimized && "mt-1.5 min-h-4 text-[10px]",
+                "mt-2 flex min-h-[1.25rem] items-center justify-center text-center text-[14px] text-black/45",
+                isMinimized && "mt-1.5 min-h-4 text-xs",
               )}
               aria-live="polite"
             >

@@ -1,4 +1,4 @@
-export const TABS = ["홈", "리뷰", "사진"] as const;
+export const TABS = ["홈", "리뷰"] as const;
 export type Tab = (typeof TABS)[number];
 
 export type PlaceReview = {
@@ -21,7 +21,8 @@ export type PlaceDetailResult = {
   location: { lat: number; lng: number };
   phone: string;
   websiteUri: string;
-  googleMapsUri: string;
+  placeUri: string | null;
+  reviewsUri: string | null;
   openNow: boolean | null;
   weekdayDescriptions: string[];
   userRatingCount: number | null;

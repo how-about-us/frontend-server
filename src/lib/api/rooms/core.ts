@@ -1,6 +1,6 @@
 import {
   isScheduleLimitExceededFromBody,
-  readUserFacingMessageFromApiBody,
+  messageForRoomDestinationError,
   withScheduleLimitCountHint,
 } from "@/lib/api/errors";
 import { apiFetch } from "@/lib/api/client";
@@ -28,10 +28,13 @@ export async function createRoom(
   });
   const parsed = await tryParseJson(res);
   if (!res.ok) {
-    const fromBody = readUserFacingMessageFromApiBody(parsed);
+    const fallback = `방 생성 실패: ${res.status}`;
     const msg = isScheduleLimitExceededFromBody(parsed)
-      ? withScheduleLimitCountHint(fromBody, parsed)
-      : (fromBody ?? `방 생성 실패: ${res.status}`);
+      ? withScheduleLimitCountHint(
+          messageForRoomDestinationError(parsed, fallback),
+          parsed,
+        )
+      : messageForRoomDestinationError(parsed, fallback);
     throw new Error(msg);
   }
   return parsed as RoomCreateResponse;
@@ -61,11 +64,19 @@ export async function updateRoom(
   roomId: string,
   data: RoomUpdateRequest,
 ): Promise<RoomCreateResponse> {
-  return requestJson(
-    apiUrl(`/rooms/${roomId}`),
-    { method: "PATCH", ...jsonBody(data) },
-    { errorMessage: "방 수정 실패" },
-  );
+  const res = await apiFetch(apiUrl(`/rooms/${roomId}`), {
+    method: "PATCH",
+    ...jsonBody(data),
+  });
+  const parsed = await tryParseJson(res);
+  if (!res.ok) {
+    const msg = messageForRoomDestinationError(
+      parsed,
+      `방 수정 실패: ${res.status}`,
+    );
+    throw new Error(msg);
+  }
+  return parsed as RoomCreateResponse;
 }
 
 export async function deleteRoom(roomId: string): Promise<void> {

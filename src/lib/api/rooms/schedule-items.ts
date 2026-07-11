@@ -9,24 +9,34 @@ export type RoomScheduleItem = {
   itemId: number;
   scheduleId: number;
   googlePlaceId: string;
-  startTime: string;
-  durationMinutes: number;
+  /** 서버가 미설정 상태를 `null` 로 응답 가능 */
+  startTime: string | null;
+  /** 서버가 미설정 상태를 `null` 로 응답 가능 */
+  durationMinutes: number | null;
   memo?: string;
   orderIndex: number;
+  /** 현재 항목 → 다음 항목 공유 이동수단 — 서버 DB 저장, 기본 `DRIVING` */
   travelMode: string;
   createdAt: string;
 };
 
+export type UpdateTravelModeRequest = {
+  /** `DRIVING` | `WALKING` | `BICYCLING` | `TRANSIT` */
+  travelMode: string;
+};
+
 export type RoomScheduleItemCreateRequest = {
   googlePlaceId: string;
-  /** 로컬 시:분, 예: `"09:45"` */
-  startTime: string;
-  durationMinutes: number;
+  /** 로컬 시:분, 예: `"09:45"`. 미지정 시 서버는 저장하지 않음(미설정 상태) */
+  startTime?: string;
+  durationMinutes?: number;
 };
 
 export type RoomScheduleItemUpdateRequest = {
-  startTime?: string;
-  durationMinutes?: number;
+  /** `null` 이면 미설정으로 초기화, `undefined` 는 변경 없음 */
+  startTime?: string | null;
+  /** `null` 이면 미설정으로 초기화, `undefined` 는 변경 없음 */
+  durationMinutes?: number | null;
   /** 키를 내면 서버가 갱신. 빈 문자열이면 삭제 */
   memo?: string | null;
 };
@@ -57,7 +67,8 @@ export type ScheduleItemRouteResponse = ScheduleItemRouteLeg & {
 
 export type ScheduleItemRouteBatchRequestItem = {
   itemId: number;
-  travelMode: string;
+  /** 생략하면 서버가 해당 항목의 저장된 공유 이동수단을 사용 */
+  travelMode?: string;
 };
 
 export type ScheduleItemRouteBatchItem =
@@ -134,13 +145,17 @@ export async function getScheduleItemRoutesBatch(
   scheduleId: number,
   items: readonly ScheduleItemRouteBatchRequestItem[],
 ): Promise<ScheduleItemRouteBatchItem[]> {
-  const normalized = items.filter(
-    (it) =>
-      typeof it.itemId === "number" &&
-      Number.isFinite(it.itemId) &&
-      typeof it.travelMode === "string" &&
-      it.travelMode.trim().length > 0,
-  );
+  const normalized = items
+    .filter(
+      (it) => typeof it.itemId === "number" && Number.isFinite(it.itemId),
+    )
+    .map((it) => {
+      const tm =
+        typeof it.travelMode === "string" && it.travelMode.trim().length > 0
+          ? it.travelMode.trim()
+          : null;
+      return tm ? { itemId: it.itemId, travelMode: tm } : { itemId: it.itemId };
+    });
   if (!normalized.length) return [];
 
   const chunks = chunkArray(normalized, SCHEDULE_ROUTES_BATCH_MAX_SIZE);
@@ -184,6 +199,21 @@ export async function updateScheduleItem(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}`),
     { method: "PATCH", ...jsonBody(body) },
     { errorMessage: "일정 항목 수정 실패" },
+  );
+}
+
+export async function updateScheduleItemTravelMode(
+  roomId: string,
+  scheduleId: number,
+  itemId: number,
+  body: UpdateTravelModeRequest,
+): Promise<RoomScheduleItem> {
+  return requestJson(
+    apiUrl(
+      `/rooms/${roomId}/schedules/${scheduleId}/items/${itemId}/travel-mode`,
+    ),
+    { method: "PATCH", ...jsonBody(body) },
+    { errorMessage: "이동 수단 변경 실패" },
   );
 }
 

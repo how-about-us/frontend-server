@@ -1,6 +1,6 @@
 "use client";
 
-import { DestinationSearchInput } from "@/components/search/DestinationSearchInput";
+import { DestinationChipsField } from "@/components/rooms/DestinationChipsField";
 import {
   isTripScheduleDayLimitExceeded,
   TRIP_SCHEDULE_DAY_LIMIT_MESSAGE,
@@ -10,6 +10,8 @@ import {
   isTripStartBeforeMin,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   TRIP_DATE_RANGE_INVALID_MESSAGE,
+  TRIP_DESTINATION_MAX_LENGTH,
+  TRIP_DESTINATIONS_MAX_COUNT,
   TRIP_FORM_FIELD_CLASS,
   TRIP_FORM_FIELD_READ_ONLY_CLASS,
   TRIP_START_BEFORE_MIN_MESSAGE,
@@ -26,8 +28,7 @@ type Props = {
   startDateMin?: string;
   endDateMin?: string;
   onTitleChange: (value: string) => void;
-  onDestinationChange: (value: string) => void;
-  onDestinationResolved?: (placeId: string | null) => void;
+  onDestinationsChange: (next: string[]) => void;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
 };
@@ -40,12 +41,11 @@ export function TripFormFields({
   startDateMin,
   endDateMin,
   onTitleChange,
-  onDestinationChange,
-  onDestinationResolved,
+  onDestinationsChange,
   onStartDateChange,
   onEndDateChange,
 }: Props) {
-  const { title, destination, startDate, endDate } = values;
+  const { title, destinations, startDate, endDate } = values;
   const dateRangeInvalid = isTripDateRangeInvalid(startDate, endDate);
   const startBeforeMin =
     startDateMin != null && isTripStartBeforeMin(startDate, startDateMin);
@@ -61,15 +61,15 @@ export function TripFormFields({
     <div className="min-w-0 space-y-3">
       <div className={fieldClassName}>
         <div className="mb-1.5 flex items-baseline justify-between gap-2">
-          <p className="text-sm font-bold text-black">여행 제목</p>
+          <p className="text-[17px] font-bold text-black">여행 제목</p>
           {!readOnly && (
-            <p className="shrink-0 text-xs tabular-nums text-light-gray">
+            <p className="shrink-0 text-[14px] tabular-nums text-light-gray">
               {title.length}/{ROOM_TRIP_TITLE_MAX_LENGTH}
             </p>
           )}
         </div>
         {readOnly ? (
-          <p className="text-sm text-dark-gray">{title.trim() || "—"}</p>
+          <p className="text-[17px] text-dark-gray">{title.trim() || "—"}</p>
         ) : (
           <input
             type="text"
@@ -79,31 +79,32 @@ export function TripFormFields({
               onTitleChange(e.target.value.slice(0, ROOM_TRIP_TITLE_MAX_LENGTH))
             }
             placeholder="예: 봄 일본 여행, 하와이 신혼여행"
-            className="w-full text-sm text-dark-gray outline-none placeholder:text-light-gray"
+            className="w-full text-[17px] text-dark-gray outline-none placeholder:text-light-gray"
             autoFocus={autoFocusTitle}
           />
         )}
       </div>
 
       <div className={fieldClassName}>
-        <p className="mb-1.5 text-sm font-bold text-black">목적지</p>
-        {readOnly ? (
-          <p className="text-sm text-dark-gray">{destination.trim() || "—"}</p>
-        ) : (
-          <DestinationSearchInput
-            value={destination}
-            onChange={onDestinationChange}
-            onResolvedPlace={(place) =>
-              onDestinationResolved?.(place?.placeId ?? null)
-            }
-            selectionOnly
-            leadingIconType="search"
-          />
-        )}
+        <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <p className="text-[17px] font-bold text-black">목적지</p>
+          {!readOnly && (
+            <p className="shrink-0 text-[14px] tabular-nums text-light-gray">
+              {destinations.length}/{TRIP_DESTINATIONS_MAX_COUNT}
+            </p>
+          )}
+        </div>
+        <DestinationChipsField
+          values={destinations}
+          onChange={onDestinationsChange}
+          readOnly={readOnly}
+          maxCount={TRIP_DESTINATIONS_MAX_COUNT}
+          maxLength={TRIP_DESTINATION_MAX_LENGTH}
+        />
       </div>
 
       <div className={fieldClassName}>
-        <p className="mb-1.5 text-sm font-bold text-black">날짜</p>
+        <p className="mb-1.5 text-[17px] font-bold text-black">날짜</p>
         <div className="flex min-w-0 items-center gap-3">
           <TripDateField
             id={`${idPrefix}-start`}
@@ -122,12 +123,12 @@ export function TripFormFields({
           />
         </div>
         {!readOnly && startBeforeMin && (
-          <p className="mt-2 text-xs text-brand-red">
+          <p className="mt-2 text-[14px] text-brand-red">
             {TRIP_START_BEFORE_MIN_MESSAGE}
           </p>
         )}
         {!readOnly && !startBeforeMin && dateRangeInvalid && (
-          <p className="mt-2 text-xs text-brand-red">
+          <p className="mt-2 text-[14px] text-brand-red">
             {TRIP_DATE_RANGE_INVALID_MESSAGE}
           </p>
         )}
@@ -135,7 +136,7 @@ export function TripFormFields({
           !startBeforeMin &&
           !dateRangeInvalid &&
           scheduleDayLimitExceeded && (
-          <p className="mt-2 text-xs text-brand-red">
+          <p className="mt-2 text-[14px] text-brand-red">
             {TRIP_SCHEDULE_DAY_LIMIT_MESSAGE}
           </p>
         )}

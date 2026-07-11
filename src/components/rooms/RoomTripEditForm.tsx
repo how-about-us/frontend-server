@@ -15,9 +15,9 @@ import {
   isTripScheduleDayLimitExceeded,
 } from "@/lib/plan/schedulePolicy";
 import {
-  initialDestinationPlaceId,
+  areDestinationsEqual,
   isTripDateRangeInvalid,
-  isTripDestinationValid,
+  isTripDestinationsValid,
   isTripStartBeforeMin,
   ROOM_TRIP_TITLE_MAX_LENGTH,
   toTripFormValues,
@@ -34,10 +34,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   const saved = toTripFormValues(room);
 
   const [title, setTitle] = useState(saved.title);
-  const [destination, setDestination] = useState(saved.destination);
-  const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(
-    initialDestinationPlaceId(saved.destination),
-  );
+  const [destinations, setDestinations] = useState<string[]>(saved.destinations);
   const [startDate, setStartDate] = useState(saved.startDate);
   const [endDate, setEndDate] = useState(saved.endDate);
   const [shrinkConfirmOpen, setShrinkConfirmOpen] = useState(false);
@@ -53,17 +50,18 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   const { data: schedules } = useRoomSchedules(room.id);
   const { mutate: updateRoom, isPending, error } = useUpdateRoom();
 
+  const destinationsSignature = room.destinations.join(" ");
+
   useEffect(() => {
     const next = toTripFormValues(room);
     setTitle(next.title);
-    setDestination(next.destination);
-    setDestinationPlaceId(initialDestinationPlaceId(next.destination));
+    setDestinations(next.destinations);
     setStartDate(next.startDate);
     setEndDate(next.endDate);
   }, [
     room.id,
     room.title,
-    room.destination,
+    destinationsSignature,
     room.startDate,
     room.endDate,
   ]);
@@ -77,13 +75,13 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
 
   const isDirty =
     title !== saved.title ||
-    destination !== saved.destination ||
+    !areDestinationsEqual(destinations, saved.destinations) ||
     startDate !== saved.startDate ||
     endDate !== saved.endDate;
 
   const canApply =
     title.trim() &&
-    isTripDestinationValid(destination, saved.destination, destinationPlaceId) &&
+    isTripDestinationsValid(destinations) &&
     startDate &&
     endDate &&
     !dateRangeInvalid &&
@@ -98,7 +96,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
         roomId: room.id,
         data: {
           title: title.trim().slice(0, ROOM_TRIP_TITLE_MAX_LENGTH),
-          destination: destination.trim(),
+          destinations: destinations.map((d) => d.trim()),
           startDate,
           endDate,
         },
@@ -113,7 +111,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
       },
     );
   }, [
-    destination,
+    destinations,
     endDate,
     room.id,
     saved.endDate,
@@ -126,8 +124,7 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
   function handleCancel() {
     const next = toTripFormValues(room);
     setTitle(next.title);
-    setDestination(next.destination);
-    setDestinationPlaceId(initialDestinationPlaceId(next.destination));
+    setDestinations(next.destinations);
     setStartDate(next.startDate);
     setEndDate(next.endDate);
     setShrinkConfirmOpen(false);
@@ -156,19 +153,18 @@ export function RoomTripEditForm({ room, readOnly = false }: Props) {
     <div className="flex min-w-0 w-full flex-col gap-6">
       <TripFormFields
         idPrefix={`trip-${room.id}`}
-        values={{ title, destination, startDate, endDate }}
+        values={{ title, destinations, startDate, endDate }}
         readOnly={readOnly}
         startDateMin={baselineStartYmd || undefined}
         endDateMin={endDateMin || undefined}
         onTitleChange={setTitle}
-        onDestinationChange={setDestination}
-        onDestinationResolved={setDestinationPlaceId}
+        onDestinationsChange={setDestinations}
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
       />
 
       {error && !readOnly && (
-        <p className="text-center text-sm text-brand-red">
+        <p className="text-center text-[17px] text-brand-red">
           {error instanceof Error
             ? error.message
             : "수정에 실패했어요. 다시 시도해주세요."}

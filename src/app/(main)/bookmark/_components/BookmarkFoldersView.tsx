@@ -200,7 +200,7 @@ export function BookmarkFoldersView() {
     return (
       <div className="space-y-2.5">
         <MainPageHeader title="북마크" />
-        <div className="py-10 text-center text-sm text-dark-gray">
+        <div className="py-10 text-center text-[17px] text-dark-gray">
           불러오는 중…
         </div>
       </div>
@@ -212,7 +212,7 @@ export function BookmarkFoldersView() {
       <div className="space-y-2.5">
         <MainPageHeader title="북마크" />
         <div className="space-y-3 py-10 text-center">
-          <p className="text-sm text-brand-red">
+          <p className="text-[17px] text-brand-red">
             {error instanceof Error
               ? error.message
               : "목록을 불러오지 못했습니다."}
@@ -220,7 +220,7 @@ export function BookmarkFoldersView() {
           <button
             type="button"
             onClick={() => refetch()}
-            className="cursor-pointer text-sm font-medium text-neutral-900 underline"
+            className="cursor-pointer text-[17px] font-medium text-neutral-900 underline"
           >
             다시 시도
           </button>
@@ -237,7 +237,7 @@ export function BookmarkFoldersView() {
         {folders.length === 0 ? (
           <p
             className={cn(
-              "py-10 text-center text-sm text-dark-gray",
+              "py-10 text-center text-[17px] text-dark-gray",
               MAIN_CARD_INNER_PADDING_X_CLASS,
             )}
           >
@@ -259,10 +259,10 @@ export function BookmarkFoldersView() {
                   >
                     <FolderRibbonIcon color={folder.color} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium text-neutral-900">
+                      <p className="truncate text-lg font-medium text-neutral-900">
                         {folder.title}
                       </p>
-                      <p className="mt-0.5 text-sm text-dark-gray">
+                      <p className="mt-0.5 text-[17px] text-dark-gray">
                         {folder.placeCount ?? 0}개 장소
                       </p>
                     </div>
@@ -292,7 +292,7 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
-                          className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
+                          className="block w-full cursor-pointer px-4 py-2 text-left text-[17px] text-neutral-900 hover:bg-bubble-gray disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={
                             isRowDeleting(folder.id) || isRowUpdating(folder.id)
                           }
@@ -303,7 +303,7 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
-                          className="block w-full cursor-pointer px-4 py-2 text-left text-sm text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="block w-full cursor-pointer px-4 py-2 text-left text-[17px] text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={
                             isRowDeleting(folder.id) || isRowUpdating(folder.id)
                           }

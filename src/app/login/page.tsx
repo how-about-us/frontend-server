@@ -82,7 +82,7 @@ function LoginPageContent() {
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
             <BrandLogo alt="" style={{ width: 116, height: 66 }} />
-            <p className="text-sm leading-relaxed text-dark-gray">
+            <p className="text-[17px] leading-relaxed text-dark-gray">
               로그인하고 여행 계획을 이어가세요!
             </p>
           </div>
@@ -94,7 +94,7 @@ function LoginPageContent() {
           <button
             type="button"
             onClick={handleContinueWithGoogle}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-[15px] font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-lg font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleMark className="h-5 w-5 shrink-0" />
             <span>Google로 계속하기</span>

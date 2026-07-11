@@ -31,7 +31,7 @@ export function ChatPanelHeader({
         <h2
           className={cn(
             "truncate font-semibold leading-tight text-white transition-all duration-300",
-            isMinimized ? "text-xs" : "text-xl",
+            isMinimized ? "text-[14px]" : "text-2xl",
           )}
         >
           {roomTitle}
@@ -46,7 +46,7 @@ export function ChatPanelHeader({
           <span
             className={cn(
               "font-semibold text-white/85 transition-all duration-300",
-              isMinimized ? "text-[10px] leading-tight" : "text-xs",
+              isMinimized ? "text-xs leading-tight" : "text-[14px]",
             )}
           >
             {onlineCount}명 접속중

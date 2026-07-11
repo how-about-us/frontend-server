@@ -7,12 +7,12 @@ import { useRoomSchedules } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
-import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { useSessionStore } from "@/stores/session-store";
 
 const EMPTY = new Set<string>();
 
-/** 펼친 일차 일정 장소의 정규화된 `googlePlaceId` (북마크 핀 중복 숨김용). */
+/** 지도에 정류장 마커가 그려지는(=경로 표시 ON) 일차 장소의 정규화된 `googlePlaceId` — 북마크 핀 중복 숨김용. */
 export function usePlanItineraryStopNormalizedPlaceIds(
   enabled: boolean,
 ): ReadonlySet<string> {
@@ -21,22 +21,22 @@ export function usePlanItineraryStopNormalizedPlaceIds(
   const queryClient = useQueryClient();
   const { isSuccess: schedulesHydrated } = useRoomSchedules(rid || null);
 
-  const expandedByScheduleId = usePlanItineraryExpandedStore(
-    (s) => s.expandedByScheduleId,
+  const visibleByScheduleId = usePlanScheduleRouteVisibilityStore(
+    (s) => s.visibleByScheduleId,
   );
-  const expandedScheduleIds = useMemo(
+  const visibleScheduleIds = useMemo(
     () =>
-      Object.keys(expandedByScheduleId)
+      Object.keys(visibleByScheduleId)
         .map((k) => Number(k))
         .filter(
-          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
+          (id) => Number.isFinite(id) && visibleByScheduleId[id] === true,
         ),
-    [expandedByScheduleId],
+    [visibleByScheduleId],
   );
 
   const orderedScheduleIdsForQueries = useMemo(
-    () => [...expandedScheduleIds].sort((a, b) => a - b),
-    [expandedScheduleIds],
+    () => [...visibleScheduleIds].sort((a, b) => a - b),
+    [visibleScheduleIds],
   );
 
   const placesQueries = useQueries({

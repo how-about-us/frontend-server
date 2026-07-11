@@ -30,7 +30,7 @@ export function PolicyPageShell({ title, children, className }: Props) {
             <BrandLogo alt="" variant="favicon" aria-hidden />
             <BrandLogo alt="우때" variant="logo" />
           </Link>
-          <h1 className="text-sm font-semibold text-neutral-900 sm:text-base">
+          <h1 className="text-[17px] font-semibold text-neutral-900 sm:text-[19px]">
             {title}
           </h1>
         </div>

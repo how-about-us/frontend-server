@@ -40,7 +40,7 @@ export default function HomePage() {
             <Link
               href="/home/new"
               className={cn(
-                "flex items-center gap-1.5 rounded-full bg-brand-red text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+                "flex items-center gap-1.5 rounded-full bg-brand-red text-[17px] font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
                 pageToolbarButtonPaddingClass,
               )}
             >

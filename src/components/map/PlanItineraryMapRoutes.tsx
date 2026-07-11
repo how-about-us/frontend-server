@@ -29,18 +29,18 @@ import {
   planItinerarySegmentMapPathQueryKey,
   scheduleItemsQueryKey,
 } from "@/lib/query-keys";
-import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import {
   planMapSegmentEpochStoreKey,
   usePlanMapDirectionsEpochStore,
 } from "@/stores/plan-map-directions-epoch-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { useSessionStore } from "@/stores/session-store";
 
 import { PlanItineraryStopMapPin } from "./PlanItineraryStopMapPin";
 
 /**
- * 플랜 일차(`PlanDaySection` 펼침)·현재 방이 있을 때만,
- * 일정 순서 장소 간 경로(polyline)·정류장 마커를 표시합니다.
+ * 일차별 "지도에 경로 표시" 토글(`usePlanScheduleRouteVisibilityStore`) ON인
+ * 일차만 지도에 경로(polyline)와 정류장 마커를 그립니다.
  * 폴리라인 travelMode는 항상 DRIVING(`planItineraryMapSegments`).
  * STOMP 에폭은 {@link usePlanMapDirectionsEpochStore} 참고.
  */
@@ -57,18 +57,20 @@ export function PlanItineraryMapRoutes() {
       ? normalizeGooglePlaceResourceId(selectedPlace.googlePlaceId.trim())
       : null;
 
-  const expandedByScheduleId = usePlanItineraryExpandedStore(
-    (s) => s.expandedByScheduleId,
+  const visibleByScheduleId = usePlanScheduleRouteVisibilityStore(
+    (s) => s.visibleByScheduleId,
   );
-  const expansionOrder = usePlanItineraryExpandedStore((s) => s.expansionOrder);
-  const expandedScheduleIds = useMemo(
+  const visibilityOrder = usePlanScheduleRouteVisibilityStore(
+    (s) => s.visibilityOrder,
+  );
+  const visibleScheduleIds = useMemo(
     () =>
-      Object.keys(expandedByScheduleId)
+      Object.keys(visibleByScheduleId)
         .map((k) => Number(k))
         .filter(
-          (id) => Number.isFinite(id) && expandedByScheduleId[id] === true,
+          (id) => Number.isFinite(id) && visibleByScheduleId[id] === true,
         ),
-    [expandedByScheduleId],
+    [visibleByScheduleId],
   );
 
   const directionsEpoch = usePlanMapDirectionsEpochStore((s) =>
@@ -82,17 +84,17 @@ export function PlanItineraryMapRoutes() {
   );
 
   const orderedScheduleIdsForQueries = useMemo(
-    () => [...expandedScheduleIds].sort((a, b) => a - b),
-    [expandedScheduleIds],
+    () => [...visibleScheduleIds].sort((a, b) => a - b),
+    [visibleScheduleIds],
   );
 
   const routeColorByScheduleId = useMemo(
     () =>
       scheduleIdsToRouteColors(
-        sortedScheduleIdsForRouteColors(expandedByScheduleId),
+        sortedScheduleIdsForRouteColors(visibleByScheduleId),
         rid || undefined,
       ),
-    [expandedByScheduleId, rid],
+    [visibleByScheduleId, rid],
   );
   const fallbackRouteStroke = "#f12d33";
 
@@ -224,8 +226,8 @@ export function PlanItineraryMapRoutes() {
   }, [orderedScheduleIdsForQueries, buckets, selectedNorm]);
 
   const visibleStops = useMemo(
-    () => filterVisiblePlanMapStops(stopsForOffset, expansionOrder),
-    [stopsForOffset, expansionOrder],
+    () => filterVisiblePlanMapStops(stopsForOffset, visibilityOrder),
+    [stopsForOffset, visibilityOrder],
   );
 
   const placeByScheduleAndItemId = useMemo(() => {

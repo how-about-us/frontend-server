@@ -10,21 +10,17 @@ import {
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
-import { usePrefetchScheduleDrivingRoutes } from "@/hooks/usePrefetchScheduleDrivingRoutes";
+import { usePrefetchScheduleRoutes } from "@/hooks/usePrefetchScheduleRoutes";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
 import { useMapCenterStore } from "@/stores/map-center-store";
-import {
-  formatAdjacentScheduleConflictMessage,
-  getAdjacentScheduleConflictFlags,
-} from "@/lib/plan/scheduleAdjacentConflicts";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import {
   scheduleIdsToRouteColors,
   sortedScheduleIdsForRouteColors,
 } from "@/lib/plan/planRouteDayColors";
-import { usePlanItineraryExpandedStore } from "@/stores/plan-itinerary-expanded-store";
 import { usePlanItemCrossDayDragStore } from "@/stores/plan-item-cross-day-drag-store";
+import { usePlanScheduleRouteVisibilityStore } from "@/stores/plan-schedule-route-visibility-store";
 import { cn } from "@/lib/utils";
 
 import type { PlanPlace } from "@/lib/plan/types";
@@ -47,16 +43,16 @@ export type PlanItineraryProps = {
 export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
   const { isReadOnly, copy } = usePlanMobileReadOnly();
   const mapCenter = useMapCenterStore((s) => s.mapCenter);
-  const expandedByScheduleId = usePlanItineraryExpandedStore(
-    (s) => s.expandedByScheduleId,
+  const visibleByScheduleId = usePlanScheduleRouteVisibilityStore(
+    (s) => s.visibleByScheduleId,
   );
   const routeColorByScheduleId = useMemo(
     () =>
       scheduleIdsToRouteColors(
-        sortedScheduleIdsForRouteColors(expandedByScheduleId),
+        sortedScheduleIdsForRouteColors(visibleByScheduleId),
         roomId.trim() || undefined,
       ),
-    [expandedByScheduleId, roomId],
+    [visibleByScheduleId, roomId],
   );
   const orderBadgeColor =
     routeColorByScheduleId.get(scheduleId) ?? "#f12d33";
@@ -82,7 +78,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     places.length >= 2 &&
     scheduleFingerprint.length > 0;
 
-  const routesBatchSettled = usePrefetchScheduleDrivingRoutes(
+  const routesBatchSettled = usePrefetchScheduleRoutes(
     roomId,
     scheduleId,
     places,
@@ -114,7 +110,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     getRowProps,
     listContainerProps,
     isDraggingActive,
-    isReorderSettling,
     listReservePaddingBottom,
   } = usePlanItineraryReorder({
     roomId,
@@ -172,11 +167,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     [createItem, places, roomId, scheduleId],
   );
 
-  const scheduleConflictFlags = useMemo(
-    () => getAdjacentScheduleConflictFlags(places),
-    [places],
-  );
-
   const addControlsDisabled = isAdding || isReadOnly;
 
   const crossDayItemDragActive = usePlanItemCrossDayDragStore(
@@ -197,18 +187,18 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
       {isLoading ?
         <div className="flex items-center justify-center gap-2 py-8 text-dark-gray">
           <Loader2 className="h-5 w-5 animate-spin text-brand-green" />
-          <span className="text-sm">장소 목록을 불러오는 중…</span>
+          <span className="text-[17px]">장소 목록을 불러오는 중…</span>
         </div>
       : null}
 
       {isError ?
-        <p className="py-4 text-center text-sm text-brand-red">
+        <p className="py-4 text-center text-[17px] text-brand-red">
           장소 목록을 불러오지 못했어요.
         </p>
       : null}
 
       {!isLoading && places.length === 0 ?
-        <p className="py-4 text-center text-sm text-dark-gray">
+        <p className="py-4 text-center text-[17px] text-dark-gray">
           {copy.placesEmpty}
         </p>
       : null}
@@ -242,13 +232,6 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                 scheduleTimeEdit={
                   isReadOnly ? undefined : { roomId, scheduleId }
                 }
-                scheduleOverlapWarning={
-                  isReorderSettling ?
-                    undefined
-                  : formatAdjacentScheduleConflictMessage(
-                      scheduleConflictFlags[index]!,
-                    )
-                }
                 {...placeCardDragProps}
               />
               {index < places.length - 1 &&
@@ -278,6 +261,11 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                     scheduleId={scheduleId}
                     segmentSourceItemId={place.itemId}
                     scheduleFingerprint={scheduleFingerprint}
+                    travelMode={place.travelMode}
+                    originGooglePlaceId={place.googlePlaceId}
+                    originPlaceName={place.title}
+                    destinationGooglePlaceId={places[index + 1].googlePlaceId}
+                    destinationPlaceName={places[index + 1].title}
                     routeQueryEnabled={
                       placesData !== undefined &&
                       !isFetchingPlaces &&
@@ -302,7 +290,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             onOpenBookmark={() => setBookmarkModal({})}
           />
           {isAdding ?
-            <p className="text-xs text-dark-gray">추가하는 중…</p>
+            <p className="text-[14px] text-dark-gray">추가하는 중…</p>
           : null}
         </div>
       : null}

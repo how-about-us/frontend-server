@@ -63,22 +63,22 @@ const HeaderBar = () => {
           <div className="min-w-0 bg-white py-1.5">
             {currentRoom || displayTitle ? (
               <>
-                <span className="block truncate text-sm font-semibold leading-tight">
+                <span className="block truncate text-[17px] font-semibold leading-tight">
                   {displayTitle || currentRoom?.title}
                 </span>
-                <span className="block truncate text-xs leading-tight text-dark-gray">
+                <span className="block truncate text-[14px] leading-tight text-dark-gray">
                   {dateStr}
                 </span>
               </>
             ) : isPending ? (
               <span
-                className="block text-sm font-semibold leading-tight text-dark-gray"
+                className="block text-[17px] font-semibold leading-tight text-dark-gray"
                 aria-busy="true"
               >
                 …
               </span>
             ) : (
-              <span className="block truncate text-sm font-semibold leading-tight text-dark-gray">
+              <span className="block truncate text-[17px] font-semibold leading-tight text-dark-gray">
                 방 정보 없음
               </span>
             )}

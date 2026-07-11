@@ -1,9 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
+
+import type { PlaceDetail } from "@/lib/api/places";
 import {
   fetchPlaceDetail,
   placeDetailQueryDefaults,
 } from "@/lib/places/place-queries";
 import type { PlaceDetailResult } from "./types";
+
+export function toPlaceDetailResult(detail: PlaceDetail): PlaceDetailResult {
+  const photoNames = (detail.photoNames ?? [])
+    .map((name) => (typeof name === "string" ? name.trim() : ""))
+    .filter((name) => name.length > 0)
+    .slice(0, 9);
+
+  return {
+    name: detail.name,
+    primaryTypeDisplayName: detail.primaryTypeDisplayName,
+    rating: detail.rating,
+    photoNames,
+    photoName: photoNames[0] ?? "",
+    formattedAddress: detail.formattedAddress,
+    location: detail.location,
+    phone: detail.phoneNumber,
+    websiteUri: detail.websiteUri,
+    placeUri: detail.googleMapsLinks?.placeUri ?? null,
+    reviewsUri: detail.googleMapsLinks?.reviewsUri ?? null,
+    openNow: detail.regularOpeningHours?.openNow ?? null,
+    weekdayDescriptions: detail.regularOpeningHours?.weekdayDescriptions ?? [],
+    userRatingCount: detail.userRatingCount,
+    reviewSummary: detail.reviewSummary,
+    reviews: detail.reviews ?? [],
+  };
+}
 
 export function usePlaceDetailData(googlePlaceId?: string) {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
@@ -11,27 +39,7 @@ export function usePlaceDetailData(googlePlaceId?: string) {
     queryKey: ["places", "detail-panel", id],
     queryFn: async () => {
       const detail = await fetchPlaceDetail(id);
-      const photoNames = (detail.photoNames ?? [])
-        .map((n) => (typeof n === "string" ? n.trim() : ""))
-        .filter((n) => n.length > 0)
-        .slice(0, 9);
-      return {
-        name: detail.name,
-        primaryTypeDisplayName: detail.primaryTypeDisplayName,
-        rating: detail.rating,
-        photoNames,
-        photoName: photoNames[0] ?? "",
-        formattedAddress: detail.formattedAddress,
-        location: detail.location,
-        phone: detail.phoneNumber,
-        websiteUri: detail.websiteUri,
-        googleMapsUri: detail.googleMapsUri,
-        openNow: detail.regularOpeningHours?.openNow ?? null,
-        weekdayDescriptions: detail.regularOpeningHours?.weekdayDescriptions ?? [],
-        userRatingCount: detail.userRatingCount,
-        reviewSummary: detail.reviewSummary,
-        reviews: detail.reviews ?? [],
-      };
+      return toPlaceDetailResult(detail);
     },
     enabled: id.length > 0,
     ...placeDetailQueryDefaults,

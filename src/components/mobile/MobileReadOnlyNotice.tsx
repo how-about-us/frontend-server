@@ -19,7 +19,7 @@ export function MobileReadOnlyNotice() {
   return (
     <div
       role="status"
-      className="shrink-0 border-b border-brand-red/20 bg-brand-red/[0.06] px-3 py-2.5 text-center text-xs leading-relaxed text-muted-brown"
+      className="shrink-0 border-b border-brand-red/20 bg-brand-red/[0.06] px-3 py-2.5 text-center text-[14px] leading-relaxed text-muted-brown"
     >
       {mobileReadOnlyNoticeMessage}
     </div>
