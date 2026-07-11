@@ -18,7 +18,7 @@ export type PlanPlace = {
   /** 서버 일정 항목 — PATCH 시 사용 (`HH:mm` 등 API 그대로) */
   startTime?: string;
   durationMinutes?: number;
-  /** 서버가 주면 초기 길찾기 수단 추정값(클라이언트 선택은 저장 안 됨). 없으면 `WALKING` 등 폴백 */
+  /** 서버 저장 공유 이동수단(`schedule_items.travel_mode`) — PATCH `…/travel-mode`로 변경, 기본 `DRIVING` */
   travelMode?: string;
   /** 일정 항목 메모 — PATCH로만 설정 */
   memo?: string;

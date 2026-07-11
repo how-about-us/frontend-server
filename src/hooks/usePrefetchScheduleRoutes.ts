@@ -1,15 +1,15 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { fetchAndSeedScheduleDrivingRoutes } from "@/lib/plan/schedule-bulk-hydration";
+import { fetchAndSeedScheduleRoutesBatch } from "@/lib/plan/schedule-bulk-hydration";
 import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import type { PlanPlace } from "@/lib/plan/types";
 
 /**
- * 페이지 진입·새로고침 시 일차별 DRIVING 경로를 `routes/batch`로 1회 시딩합니다.
+ * 페이지 진입·새로고침 시 일차별 구간 경로를 저장된 공유 이동수단 기준 `routes/batch`로 1회 시딩합니다.
  * 리오더·추가·삭제 등으로 장소 목록이 바뀌면 batch는 재호출하지 않고, 무효화된 구간만 개별 GET합니다.
  */
-export function usePrefetchScheduleDrivingRoutes(
+export function usePrefetchScheduleRoutes(
   roomId: string,
   scheduleId: number,
   places: readonly PlanPlace[],
@@ -40,7 +40,7 @@ export function usePrefetchScheduleDrivingRoutes(
     let cancelled = false;
     setBatchDone(false);
 
-    void fetchAndSeedScheduleDrivingRoutes(
+    void fetchAndSeedScheduleRoutesBatch(
       queryClient,
       roomId,
       scheduleId,

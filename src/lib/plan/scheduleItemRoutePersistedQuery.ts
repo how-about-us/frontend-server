@@ -6,17 +6,14 @@ import type {
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
 import { getScheduleItemRoute } from "@/lib/api/rooms";
-import { awaitScheduleDrivingRoutesBatch } from "@/lib/plan/schedule-bulk-hydration";
+import { awaitScheduleRoutesBatch } from "@/lib/plan/schedule-bulk-hydration";
 import { scheduleItemRouteQueryKey } from "@/lib/query-keys";
 import { getQueryClient } from "@/lib/query-client";
 import {
   readScheduleRouteFromSessionStorage,
   writeScheduleRouteToSessionStorage,
 } from "@/lib/plan/planTravelLocalStorage";
-import {
-  SCHEDULE_ROUTE_PRIMARY_FETCH_MODE,
-  type ScheduleTravelModeValue,
-} from "@/lib/plan/scheduleTravelMode";
+import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
 type RouteCached = ScheduleItemRouteResponse | null;
 
@@ -103,10 +100,10 @@ export function persistedScheduleItemRouteQueryOptions(
         keyMode,
       );
       const qc = getQueryClient();
-      const isDriving = keyMode === SCHEDULE_ROUTE_PRIMARY_FETCH_MODE;
 
-      if (isDriving && rid.length > 0 && sidOk) {
-        await awaitScheduleDrivingRoutesBatch(rid, sid!);
+      /** 저장 이동수단 기준 batch가 이 구간·수단을 시딩했을 수 있어 완료를 기다림 */
+      if (rid.length > 0 && sidOk) {
+        await awaitScheduleRoutesBatch(rid, sid!);
       }
 
       if (qc) {

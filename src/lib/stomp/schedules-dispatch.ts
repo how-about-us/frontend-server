@@ -166,6 +166,7 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
  * — `schedule-items`: 일차별 장소 목록
  * — `schedule-item-route`: `itemId`·인접 구간의 `segmentSourceItemId`만 무효화(폴백 시 일정 전체)
  * — `SCHEDULE_ITEM_UPDATED`: 일정 목록만 동기화할 때 사용(원격 탭); 경로(`schedule-item-route`)는 무효화하지 않음
+ * — `SCHEDULE_ITEM_TRAVEL_MODE_UPDATED`: 공유 이동수단 변경 — 일정 목록만 동기화(경로 캐시는 수단별 키로 유지)
  * — 맵 polyline: 구간별 에폭(`bumpSegments`); 폴백 시 방 단위(`bumpForDirections`)
  */
 export async function dispatchRoomScheduleEvent(
@@ -363,6 +364,29 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
+      enqueueDebouncedHydratePlacesFromScheduleItemsApi(queryClient, rid, sid);
+      return;
+    }
+
+    case "SCHEDULE_ITEM_TRAVEL_MODE_UPDATED": {
+      const sid = event.scheduleId;
+      const itemId = event.itemId;
+      if (sid == null || itemId == null) return;
+
+      const me = readSessionUserId(queryClient);
+      const actorIsMe =
+        typeof me === "number" &&
+        Number.isFinite(me) &&
+        event.actorUserId === me;
+      /** 본인 PATCH는 mutation `onSuccess`에서 `schedule-items` 캐시 갱신 */
+      if (actorIsMe) {
+        return;
+      }
+
+      /**
+       * 항목 재조회로 `place.travelMode`가 갱신되면 구간 카드가 새 수단의 route
+       * 쿼리를 켠다 — 경로 캐시는 수단별 키로 분리돼 있어 무효화 불필요.
+       */
       enqueueDebouncedHydratePlacesFromScheduleItemsApi(queryClient, rid, sid);
       return;
     }

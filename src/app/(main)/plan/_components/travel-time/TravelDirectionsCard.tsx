@@ -23,7 +23,7 @@ import { TravelRouteSummaryLine } from "./TravelRouteSummaryLine";
 export type TravelDirectionsCardProps = {
   menuOpen: boolean;
   onToggleMenu: () => void;
-  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 구간별 sessionStorage 선택값 */
+  /** 헤더 글리프·요약 줄에 쓰이는 수단 — 서버 저장 공유 이동수단(낙관적 선택 포함) */
   summaryMode: string;
   route: ScheduleItemRouteResponse | null | undefined;
   routeQuery: {
@@ -32,7 +32,7 @@ export type TravelDirectionsCardProps = {
     isFetching: boolean;
   };
   routeUnavailable: boolean;
-  /** 수단별 `GET …/route` 결과 합본(DRIVING=초기·나머지=메뉴 오픈 시 패치·캐시 재사용) */
+  /** 수단별 `GET …/route` 결과 합본(저장 수단=초기·나머지=메뉴 오픈 시 패치·캐시 재사용) */
   modeRouteSummaries?: Partial<
     Record<ScheduleTravelModeValue, ScheduleItemRouteSummary>
   >;
