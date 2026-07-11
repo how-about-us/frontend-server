@@ -1,3 +1,5 @@
+import { ExternalLink } from "lucide-react";
+
 import { StarRow } from "./StarRow";
 import type { PlaceReview } from "./types";
 
@@ -5,9 +7,33 @@ type Props = {
   rating: number | null;
   userRatingCount?: number | null;
   reviews: PlaceReview[];
+  reviewsUri?: string | null;
 };
 
-export function ReviewsTab({ rating, userRatingCount, reviews }: Props) {
+function ReviewsLink({ reviewsUri }: { reviewsUri?: string | null }) {
+  if (!reviewsUri) {
+    return null;
+  }
+
+  return (
+    <a
+      href={reviewsUri}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-green underline-offset-2 hover:underline"
+    >
+      리뷰 전체보기
+      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+    </a>
+  );
+}
+
+export function ReviewsTab({
+  rating,
+  userRatingCount,
+  reviews,
+  reviewsUri,
+}: Props) {
   const starCounts = [5, 4, 3, 2, 1].map((star) => ({
     star,
     count: reviews.filter((r) => Math.round(r.rating) === star).length,
@@ -21,6 +47,7 @@ export function ReviewsTab({ rating, userRatingCount, reviews }: Props) {
         <p className="text-[13px] text-dark-gray">
           아직 리뷰가 수집되지 않았습니다.
         </p>
+        <ReviewsLink reviewsUri={reviewsUri} />
       </div>
     );
   }
@@ -81,6 +108,12 @@ export function ReviewsTab({ rating, userRatingCount, reviews }: Props) {
           </div>
         ))}
       </div>
+
+      {reviewsUri && (
+        <div className="mt-5 flex justify-center border-t border-gray-border pt-4">
+          <ReviewsLink reviewsUri={reviewsUri} />
+        </div>
+      )}
     </div>
   );
 }

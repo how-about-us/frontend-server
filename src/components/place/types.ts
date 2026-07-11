@@ -22,6 +22,7 @@ export type PlaceDetailResult = {
   phone: string;
   websiteUri: string;
   googleMapsUri: string;
+  reviewsUri: string | null;
   openNow: boolean | null;
   weekdayDescriptions: string[];
   userRatingCount: number | null;

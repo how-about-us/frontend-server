@@ -26,6 +26,7 @@ export function usePlaceDetailData(googlePlaceId?: string) {
         phone: detail.phoneNumber,
         websiteUri: detail.websiteUri,
         googleMapsUri: detail.googleMapsUri,
+        reviewsUri: detail.googleMapsLinks?.reviewsUri ?? null,
         openNow: detail.regularOpeningHours?.openNow ?? null,
         weekdayDescriptions: detail.regularOpeningHours?.weekdayDescriptions ?? [],
         userRatingCount: detail.userRatingCount,

@@ -205,6 +205,7 @@ export function PlaceDetailPanel({
             rating={displayRating}
             userRatingCount={userRatingCount}
             reviews={reviews}
+            reviewsUri={detailData?.reviewsUri}
           />
         )}
       </div>

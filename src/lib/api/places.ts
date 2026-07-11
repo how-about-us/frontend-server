@@ -44,6 +44,13 @@ export type PlaceDetail = {
   phoneNumber: string;
   websiteUri: string;
   googleMapsUri: string;
+  googleMapsLinks: {
+    placeUri: string | null;
+    directionsUri: string | null;
+    writeAReviewUri: string | null;
+    reviewsUri: string | null;
+    photosUri: string | null;
+  } | null;
   regularOpeningHours: {
     openNow: boolean;
     weekdayDescriptions: string[];
