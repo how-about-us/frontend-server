@@ -18,6 +18,7 @@ import {
   placePreviewQueryKey,
   resolvePreviewGooglePlaceId,
 } from "@/lib/places/place-queries";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { sortRoomSchedules } from "@/lib/plan/scheduleMerge";
 import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -243,17 +244,16 @@ function batchRouteItemToResponse(
 
 const inFlightScheduleRoutesBatch = new Map<string, Promise<void>>();
 
+/**
+ * in-flight dedup 키 — 일정 지문(`itemId` 순서·장소 정체성)을 포함해
+ * 목적지만 바뀐 일정(`[A,B]`→`[A,C]`)이 이전 batch Promise를 공유하지 않게 합니다.
+ */
 function scheduleRoutesBatchKey(
   roomId: string,
   scheduleId: number,
-  places: readonly PlanPlace[],
+  placesFingerprint: string,
 ): string {
-  const itemIds = places
-    .slice(0, -1)
-    .map((place) => place.itemId)
-    .filter((id): id is number => typeof id === "number" && Number.isFinite(id))
-    .join(",");
-  return `${roomId.trim()}:${scheduleId}:${itemIds}`;
+  return `${roomId.trim()}:${scheduleId}:${placesFingerprint}`;
 }
 
 /** 일차 구간 경로를 저장된 공유 이동수단 기준 batch로 시딩합니다 (in-flight dedup). */
@@ -266,7 +266,10 @@ export async function fetchAndSeedScheduleRoutesBatch(
   const rid = roomId.trim();
   if (!rid.length || places.length < 2) return;
 
-  const key = scheduleRoutesBatchKey(rid, scheduleId, places);
+  const fingerprint = schedulePlacesFingerprint([...places]);
+  if (!fingerprint.length) return;
+
+  const key = scheduleRoutesBatchKey(rid, scheduleId, fingerprint);
   const inFlight = inFlightScheduleRoutesBatch.get(key);
   if (inFlight) return inFlight;
 
@@ -320,6 +323,17 @@ export async function hydrateScheduleRoutesBatch(
   if (!requestItems.length) return;
 
   const results = await getScheduleItemRoutesBatch(rid, scheduleId, requestItems);
+
+  /**
+   * 응답 대기 중 일정이 바뀌었으면(지문 불일치) 늦게 도착한 결과를 버립니다 —
+   * 구간 캐시 키는 출발 항목만 담고 있어 옛 목적지의 경로가 새 구간에 시딩될 수 있음.
+   */
+  const snapshotFp = schedulePlacesFingerprint([...places]);
+  const currentPlaces = queryClient.getQueryData<PlanPlace[]>(
+    scheduleItemsQueryKey(rid, scheduleId),
+  );
+  const currentFp = schedulePlacesFingerprint([...(currentPlaces ?? [])]);
+  if (!snapshotFp.length || snapshotFp !== currentFp) return;
 
   for (const result of results) {
     const route = batchRouteItemToResponse(result);
