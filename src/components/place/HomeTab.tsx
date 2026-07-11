@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Globe } from "lucide-react";
+import { Clock, ExternalLink, Globe, MapPin, Phone } from "lucide-react";
 
 type Props = {
   isOpen?: boolean | null;
@@ -6,22 +6,46 @@ type Props = {
   phone?: string;
   hours?: string;
   website?: string;
+  googleMapsUrl?: string;
   reviewSummary?: string | null;
 };
 
-export function HomeTab({ isOpen, address, phone, hours, website, reviewSummary }: Props) {
+export function HomeTab({
+  isOpen,
+  address,
+  phone,
+  hours,
+  website,
+  googleMapsUrl,
+  reviewSummary,
+}: Props) {
   return (
     <div className="border-b border-gray-border px-5 py-4">
       <h3 className="mb-2.5 text-[13px] font-semibold text-[#364153]">
         기본 정보
       </h3>
       <ul className="space-y-3">
-        {address && (
+        {(address || googleMapsUrl) && (
           <li className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-dark-gray" />
-            <span className="text-[13px] leading-relaxed text-[#364153]">
-              {address}
-            </span>
+            <div className="min-w-0 flex-1">
+              {address && (
+                <span className="block text-[13px] leading-relaxed text-[#364153]">
+                  {address}
+                </span>
+              )}
+              {googleMapsUrl && (
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-brand-green underline-offset-2 hover:underline"
+                >
+                  Google Maps에서 보기
+                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+              )}
+            </div>
           </li>
         )}
         {hours && (

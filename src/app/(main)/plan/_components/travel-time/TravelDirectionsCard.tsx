@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
+import { ChevronDown, ExternalLink, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
@@ -42,6 +42,7 @@ export type TravelDirectionsCardProps = {
   modeRaw: string;
   /** 지도 polyline을 만들 수 없을 때 요약 우측에 표시 */
   renderWarning?: string;
+  googleMapsDirectionsUrl?: string;
   /** true면 목록은 참고용(클릭 선택 불가), `onSelectTravelMode` 미사용 */
   readOnly?: boolean;
   onSelectTravelMode?: (next: ScheduleTravelModeValue) => void;
@@ -61,6 +62,7 @@ export function TravelDirectionsCard({
   showUnknownOption,
   modeRaw,
   renderWarning,
+  googleMapsDirectionsUrl,
   readOnly = false,
   onSelectTravelMode,
   onHideDirections,
@@ -103,6 +105,19 @@ export function TravelDirectionsCard({
             />
           </span>
         </button>
+
+        {googleMapsDirectionsUrl ? (
+          <a
+            href={googleMapsDirectionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Google Maps에서 길찾기"
+            className="inline-flex h-10 shrink-0 items-center gap-1 px-2 text-[12px] font-medium text-brand-green underline-offset-2 hover:underline"
+          >
+            Google 길찾기
+            <ExternalLink className="h-3 w-3" aria-hidden />
+          </a>
+        ) : null}
 
         {renderWarning ? (
           <span

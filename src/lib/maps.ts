@@ -71,6 +71,49 @@ export const MAP_MIN_ZOOM = 3;
 /** `google.maps.Map` maxZoom — 로드맵에서 흔한 상한 */
 export const MAP_MAX_ZOOM = 21;
 
+type GoogleMapsDirectionsTravelMode =
+  | "WALKING"
+  | "TRANSIT"
+  | "DRIVING"
+  | "BICYCLING";
+
+const GOOGLE_MAPS_DIRECTIONS_TRAVEL_MODE = {
+  WALKING: "walking",
+  TRANSIT: "transit",
+  DRIVING: "driving",
+  BICYCLING: "bicycling",
+} as const satisfies Record<GoogleMapsDirectionsTravelMode, string>;
+
+/** 두 Place ID와 이동수단으로 Google Maps 길찾기 URL을 만든다. */
+export function buildGoogleMapsDirectionsUrl({
+  originPlaceId,
+  originQuery,
+  destinationPlaceId,
+  destinationQuery,
+  travelMode,
+}: {
+  originPlaceId: string;
+  originQuery: string;
+  destinationPlaceId: string;
+  destinationQuery: string;
+  travelMode: GoogleMapsDirectionsTravelMode;
+}): string | null {
+  const originId = originPlaceId.trim();
+  const destinationId = destinationPlaceId.trim();
+  if (!originId.length || !destinationId.length) return null;
+
+  const params = new URLSearchParams({
+    api: "1",
+    origin: originQuery.trim() || originId,
+    origin_place_id: originId,
+    destination: destinationQuery.trim() || destinationId,
+    destination_place_id: destinationId,
+    travelmode: GOOGLE_MAPS_DIRECTIONS_TRAVEL_MODE[travelMode],
+  });
+
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 /**
  * Web Mercator 타일이 있는 위·경도 범위 — 극지·회색 영역 패닝 방지.
  * 경도는 ±180이 아닌 안쪽 값 — ±180은 latitude-only restriction으로 가로 래핑될 수 있음.

@@ -21,7 +21,7 @@ export type PlaceDetailResult = {
   location: { lat: number; lng: number };
   phone: string;
   websiteUri: string;
-  googleMapsUri: string;
+  placeUri: string | null;
   reviewsUri: string | null;
   openNow: boolean | null;
   weekdayDescriptions: string[];

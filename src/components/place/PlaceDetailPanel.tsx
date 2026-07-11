@@ -197,6 +197,7 @@ export function PlaceDetailPanel({
             phone={phone}
             hours={hours}
             website={website}
+            googleMapsUrl={detailData?.placeUri ?? undefined}
             reviewSummary={reviewSummary}
           />
         )}

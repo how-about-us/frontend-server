@@ -261,6 +261,10 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
                     scheduleId={scheduleId}
                     segmentSourceItemId={place.itemId}
                     scheduleFingerprint={scheduleFingerprint}
+                    originGooglePlaceId={place.googlePlaceId}
+                    originPlaceName={place.title}
+                    destinationGooglePlaceId={places[index + 1].googlePlaceId}
+                    destinationPlaceName={places[index + 1].title}
                     routeQueryEnabled={
                       placesData !== undefined &&
                       !isFetchingPlaces &&

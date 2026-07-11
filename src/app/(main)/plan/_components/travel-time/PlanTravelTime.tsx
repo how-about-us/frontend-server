@@ -19,6 +19,7 @@ import {
 } from "@/lib/plan/scheduleTravelMode";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { PLAN_ROUTE_CARD_WIDTH_PX } from "@/lib/layout-tokens";
+import { buildGoogleMapsDirectionsUrl } from "@/lib/maps";
 import { cn } from "@/lib/utils";
 import {
   planMapSegmentEpochStoreKey,
@@ -63,6 +64,10 @@ export type PlanTravelTimeProps = {
   segmentSourceItemId: number;
   scheduleFingerprint: string;
   routeQueryEnabled?: boolean;
+  originGooglePlaceId?: string;
+  originPlaceName?: string;
+  destinationGooglePlaceId?: string;
+  destinationPlaceName?: string;
   className?: string;
   /** `PlanTravelSegment` 등 외부 레일 사용 시 카드 본문만 렌더 */
   contentOnly?: boolean;
@@ -74,6 +79,10 @@ export function PlanTravelTime({
   segmentSourceItemId,
   scheduleFingerprint,
   routeQueryEnabled = true,
+  originGooglePlaceId,
+  originPlaceName,
+  destinationGooglePlaceId,
+  destinationPlaceName,
   className,
   contentOnly = false,
 }: PlanTravelTimeProps) {
@@ -99,6 +108,14 @@ export function PlanTravelTime({
     () =>
       readStoredSegmentMode(rid, scheduleId, segmentSourceItemId, fpTrim),
   );
+
+  const googleMapsDirectionsUrl = buildGoogleMapsDirectionsUrl({
+    originPlaceId: originGooglePlaceId ?? "",
+    originQuery: originPlaceName ?? "",
+    destinationPlaceId: destinationGooglePlaceId ?? "",
+    destinationQuery: destinationPlaceName ?? "",
+    travelMode: selectedMode,
+  });
 
   useEffect(() => {
     setSelectedMode(
@@ -384,6 +401,7 @@ export function PlanTravelTime({
               ? "해당 경로는 렌더링할 수 없어요."
               : undefined
           }
+          googleMapsDirectionsUrl={googleMapsDirectionsUrl ?? undefined}
           onSelectTravelMode={handleSelectTravelMode}
           onHideDirections={() => {
             setDirectionsHidden(true);
