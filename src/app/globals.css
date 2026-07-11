@@ -6,6 +6,15 @@
   html {
     @apply font-sans;
   }
+
+  /**
+   * 세로 스크롤 컨테이너가 넘치기 전부터 scrollbar 공간을 확보해
+   * 스크롤 활성화 시 내부 버튼·카드 너비가 변하지 않게 한다.
+   * textarea는 입력 영역이 상시 좁아지는 것을 피하기 위해 제외한다.
+   */
+  :where(.overflow-y-auto:not(textarea)) {
+    scrollbar-gutter: stable;
+  }
 }
 
 /* 모바일 가로 — 세로 UI 90° 회전 셸 안에서 viewport 단위 보정 */
@@ -29,6 +38,7 @@
 .chat-message-list-scroll {
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   scrollbar-width: auto;
   scrollbar-color: #cbd5e1 #f3f4f6;
 }
