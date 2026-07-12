@@ -33,7 +33,7 @@ function normalizeMemoDraft(value: string): string {
 }
 
 function isLocallyDirty(draft: string, editStartMemo: string): boolean {
-  return normalizeMemoDraft(draft) !== normalizeMemoDraft(editStartMemo);
+  return draft !== editStartMemo;
 }
 
 function MemoOverwriteConfirmDialog({
@@ -160,23 +160,24 @@ export function PlanItemMemoEditor({
   onClose,
 }: PlanItemMemoEditorProps) {
   const incomingMemo = memo ?? "";
-  const editStartMemoRef = useRef(normalizeMemoDraft(incomingMemo));
+  const editStartMemoRef = useRef(incomingMemo);
   const [draft, setDraft] = useState(incomingMemo);
   const [hasRemoteConflict, setHasRemoteConflict] = useState(false);
   const [overwriteDialogOpen, setOverwriteDialogOpen] = useState(false);
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
   useEffect(() => {
-    const incoming = normalizeMemoDraft(incomingMemo);
-
     if (!isLocallyDirty(draft, editStartMemoRef.current)) {
       setDraft(incomingMemo);
-      editStartMemoRef.current = incoming;
+      editStartMemoRef.current = incomingMemo;
       setHasRemoteConflict(false);
       return;
     }
 
-    if (incoming !== editStartMemoRef.current) {
+    if (
+      normalizeMemoDraft(incomingMemo) !==
+      normalizeMemoDraft(editStartMemoRef.current)
+    ) {
       setHasRemoteConflict(true);
     }
   }, [incomingMemo, draft]);
