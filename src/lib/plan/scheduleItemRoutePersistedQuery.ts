@@ -107,9 +107,9 @@ export function persistedScheduleItemRouteQueryOptions(
       }
 
       if (qc) {
-        const cached = qc.getQueryData<RouteCached>(routeKey);
-        if (cached !== undefined) {
-          return cached;
+        const cached = qc.getQueryState<RouteCached>(routeKey);
+        if (cached?.data !== undefined && !cached.isInvalidated) {
+          return cached.data;
         }
       }
 
