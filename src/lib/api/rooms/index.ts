@@ -59,6 +59,7 @@ export type {
 } from "./schedules";
 
 export type {
+  CreateScheduleItemResponse,
   MoveScheduleItemToScheduleRequest,
   RoomScheduleItem,
   RoomScheduleItemCreateRequest,
