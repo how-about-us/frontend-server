@@ -65,6 +65,38 @@ describe("fetchPlanSegmentPathLatLng", () => {
     });
   });
 
+  it("이동수단이 누락되면 일정 기본값 DRIVING으로 경로를 계산한다", async () => {
+    class Place {}
+    const computeRoutes = vi.fn().mockResolvedValue({
+      routes: [{ path: [] }],
+      fallbackInfo: null,
+      geocodingResults: null,
+    });
+    const importLibrary = vi.fn(async (name: string) => {
+      if (name === "places") return { Place };
+      if (name === "routes") return { Route: { computeRoutes } };
+      throw new Error(`unexpected library: ${name}`);
+    });
+
+    vi.stubGlobal("google", {
+      maps: {
+        importLibrary,
+        TravelMode: {
+          WALKING: "WALKING",
+          DRIVING: "DRIVING",
+          BICYCLING: "BICYCLING",
+          TRANSIT: "TRANSIT",
+        },
+      },
+    });
+
+    await fetchPlanSegmentPathLatLng("origin", "destination", undefined);
+
+    expect(computeRoutes).toHaveBeenCalledWith(
+      expect.objectContaining({ travelMode: "DRIVING" }),
+    );
+  });
+
   it("경로 계산에 실패하면 빈 경로를 반환한다", async () => {
     const importLibrary = vi.fn(async (name: string) => {
       if (name === "places") {

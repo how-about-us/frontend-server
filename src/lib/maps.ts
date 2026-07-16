@@ -2,7 +2,10 @@
 
 import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import type { PlanItinerarySegmentDescriptor } from "@/lib/plan/planItineraryMapSegments";
-import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
+import {
+  SCHEDULE_TRAVEL_MODE_DEFAULT,
+  canonicalScheduleTravelMode,
+} from "@/lib/plan/scheduleTravelMode";
 
 const STORAGE_KEY = "hau:destination-center-v1";
 
@@ -217,7 +220,8 @@ export function shouldSuggestPlacesSearchRecenter(params: {
 function toGmTravelMode(
   modeRaw: string | undefined,
 ): google.maps.TravelMode {
-  const c = canonicalScheduleTravelMode(modeRaw) ?? "WALKING";
+  const c =
+    canonicalScheduleTravelMode(modeRaw) ?? SCHEDULE_TRAVEL_MODE_DEFAULT;
   const T = google.maps.TravelMode;
   switch (c) {
     case "WALKING":
@@ -229,7 +233,7 @@ function toGmTravelMode(
     case "TRANSIT":
       return T.TRANSIT;
     default:
-      return T.WALKING;
+      return T.DRIVING;
   }
 }
 

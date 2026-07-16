@@ -199,4 +199,43 @@ describe("dispatchRoomScheduleEvent", () => {
       [20],
     );
   });
+
+  it("preserves a newer route bucket when an earlier travel-mode refresh fails", async () => {
+    vi.useFakeTimers();
+    let rejectFirst!: (reason?: unknown) => void;
+    let resolveSecond!: (value: never[]) => void;
+    const first = new Promise<never[]>((_, reject) => {
+      rejectFirst = reject;
+    });
+    const second = new Promise<never[]>((resolve) => {
+      resolveSecond = resolve;
+    });
+    mocks.getScheduleItems
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second);
+
+    await dispatchRoomScheduleEvent(
+      queryClient,
+      itemEvent("SCHEDULE_ITEM_TRAVEL_MODE_UPDATED", [20]),
+    );
+    await vi.advanceTimersByTimeAsync(90);
+
+    await dispatchRoomScheduleEvent(
+      queryClient,
+      itemEvent("SCHEDULE_ITEM_TRAVEL_MODE_UPDATED", [30]),
+    );
+    await vi.advanceTimersByTimeAsync(90);
+
+    rejectFirst(new Error("first refresh failed"));
+    resolveSecond([]);
+    await vi.runAllTimersAsync();
+
+    expect(mocks.invalidateScheduleItemRouteForSources).toHaveBeenCalledTimes(1);
+    expect(mocks.invalidateScheduleItemRouteForSources).toHaveBeenCalledWith(
+      queryClient,
+      "room-1",
+      10,
+      [30],
+    );
+  });
 });

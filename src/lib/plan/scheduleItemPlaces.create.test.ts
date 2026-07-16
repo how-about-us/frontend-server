@@ -8,6 +8,7 @@ import type {
 import { scheduleItemsQueryKey } from "@/lib/query-keys";
 
 const mocks = vi.hoisted(() => ({
+  bumpForDirections: vi.fn(),
   bumpPlanMapRouteSegments: vi.fn(),
   createScheduleItem: vi.fn(),
   fetchPlacePreview: vi.fn(),
@@ -55,7 +56,7 @@ vi.mock("@/lib/query-client", () => ({
 
 vi.mock("@/stores/plan-map-directions-epoch-store", () => ({
   usePlanMapDirectionsEpochStore: {
-    getState: () => ({ bumpForDirections: vi.fn() }),
+    getState: () => ({ bumpForDirections: mocks.bumpForDirections }),
   },
 }));
 
@@ -132,6 +133,41 @@ describe("createScheduleItemAtPlanIndex", () => {
       10,
       [777],
     );
+  });
+
+  it("returns the created item when post-create route synchronization fails", async () => {
+    const queryClient = new QueryClient();
+    const response: CreateScheduleItemResponse = {
+      createdItem: scheduleItem(3, 1),
+      updatedItems: [scheduleItem(2, 2)],
+      affectedRouteItemIds: [777],
+    };
+    mocks.createScheduleItem.mockResolvedValue(response);
+    mocks.invalidateScheduleItemRouteForSources.mockRejectedValueOnce(
+      new Error("route sync failed"),
+    );
+    const places = [
+      { id: "item-1", itemId: 1, googlePlaceId: "place-1", title: "One" },
+      { id: "item-2", itemId: 2, googlePlaceId: "place-2", title: "Two" },
+    ];
+    const key = scheduleItemsQueryKey("room-1", 10);
+    queryClient.setQueryData(key, places);
+
+    await expect(
+      createScheduleItemAtPlanIndex(queryClient, {
+        roomId: "room-1",
+        scheduleId: 10,
+        places,
+        insertIndex: 1,
+        googlePlaceId: "place-3",
+      }),
+    ).resolves.toEqual(response.createdItem);
+
+    expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+    expect(
+      mocks.invalidateScheduleItemRouteForWholeSchedule,
+    ).toHaveBeenCalledWith(queryClient, "room-1", 10);
+    expect(mocks.bumpForDirections).toHaveBeenCalledWith("room-1");
   });
 
   it("maps server-provided move route IDs to the refreshed schedules", async () => {

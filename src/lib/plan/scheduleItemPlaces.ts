@@ -723,32 +723,48 @@ export async function createScheduleItemAtPlanIndex(
   });
 
   const key = scheduleItemsQueryKey(rid, args.scheduleId);
-  const prev = queryClient.getQueryData<PlanPlace[]>(key);
-  const createdPlace = await planPlaceFromScheduleItem(response.createdItem);
-  const merged = mergeCreatedScheduleItemDelta(prev, createdPlace, response);
-  if (merged) {
-    queryClient.setQueryData(key, merged);
-  } else {
-    const fresh = await getScheduleItems(rid, args.scheduleId);
-    await mergeOrRefetchSchedulePlanPlacesFromItems(
+  try {
+    const prev = queryClient.getQueryData<PlanPlace[]>(key);
+    const createdPlace = await planPlaceFromScheduleItem(response.createdItem);
+    const merged = mergeCreatedScheduleItemDelta(prev, createdPlace, response);
+    if (merged) {
+      queryClient.setQueryData(key, merged);
+    } else {
+      const fresh = await getScheduleItems(rid, args.scheduleId);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        rid,
+        args.scheduleId,
+        fresh,
+      );
+    }
+
+    await invalidateScheduleItemRouteForSources(
       queryClient,
       rid,
       args.scheduleId,
-      fresh,
+      response.affectedRouteItemIds,
     );
+    bumpPlanMapRouteSegments(
+      rid,
+      args.scheduleId,
+      response.affectedRouteItemIds,
+    );
+  } catch {
+    await Promise.allSettled([
+      queryClient.invalidateQueries({
+        queryKey: key,
+        exact: true,
+        refetchType: "active",
+      }),
+      invalidateScheduleItemRouteForWholeSchedule(
+        queryClient,
+        rid,
+        args.scheduleId,
+      ),
+    ]);
+    usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
   }
-
-  await invalidateScheduleItemRouteForSources(
-    queryClient,
-    rid,
-    args.scheduleId,
-    response.affectedRouteItemIds,
-  );
-  bumpPlanMapRouteSegments(
-    rid,
-    args.scheduleId,
-    response.affectedRouteItemIds,
-  );
 
   return response.createdItem;
 }

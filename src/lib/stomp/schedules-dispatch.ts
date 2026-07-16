@@ -154,6 +154,9 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
     mapKey,
     setTimeout(() => {
       syncSchedulePlacesFromItemsDebouncers.delete(mapKey);
+      const routeBucket =
+        syncSchedulePlacesRouteInvalidationPending.get(mapKey);
+      syncSchedulePlacesRouteInvalidationPending.delete(mapKey);
       void (async () => {
         try {
           const rows = await getScheduleItems(rid, sid);
@@ -163,9 +166,6 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
             sid,
             rows,
           );
-          const routeBucket =
-            syncSchedulePlacesRouteInvalidationPending.get(mapKey);
-          syncSchedulePlacesRouteInvalidationPending.delete(mapKey);
           if (routeBucket?.scope === "whole") {
             await invalidateScheduleItemRouteForWholeSchedule(
               queryClient,
@@ -186,7 +186,6 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
             bumpMapForRouteSources(rid, sid, sources);
           }
         } catch {
-          syncSchedulePlacesRouteInvalidationPending.delete(mapKey);
           //
         }
       })();
