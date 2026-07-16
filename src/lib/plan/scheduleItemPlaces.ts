@@ -18,6 +18,8 @@ import {
 } from "@/lib/plan/schedule-bulk-hydration";
 import { getQueryClient } from "@/lib/query-client";
 import {
+  bumpPlanMapRouteSegments,
+  invalidateScheduleItemRouteForSources,
   invalidateScheduleItemRouteForWholeSchedule,
   invalidateScheduleItemRoutesAfterDelete,
   invalidateScheduleItemRoutesAfterItemCreated,
@@ -271,6 +273,7 @@ export async function syncAfterCrossScheduleItemMove(
   sourceScheduleId: number,
   targetScheduleId: number,
   movedItemId?: number,
+  affectedRouteItemIds?: number[] | null,
 ): Promise<void> {
   const rid = roomId.trim();
   if (!rid.length) return;
@@ -297,6 +300,45 @@ export async function syncAfterCrossScheduleItemMove(
       sid,
       items,
     );
+  }
+
+  if (affectedRouteItemIds !== undefined) {
+    if (affectedRouteItemIds === null) {
+      for (const sid of scheduleIds) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+      }
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+      return;
+    }
+
+    const remaining = new Set(affectedRouteItemIds);
+    for (const sid of scheduleIds) {
+      const orderedIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const scheduleItemIds = new Set(orderedIds ?? []);
+      const sources = affectedRouteItemIds.filter(
+        (id) => remaining.has(id) && scheduleItemIds.has(id),
+      );
+      for (const id of sources) remaining.delete(id);
+      await invalidateScheduleItemRouteForSources(
+        queryClient,
+        rid,
+        sid,
+        sources,
+      );
+      bumpPlanMapRouteSegments(rid, sid, sources);
+    }
+
+    if (remaining.size > 0) {
+      for (const sid of scheduleIds) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+      }
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    }
+    return;
   }
 
   if (movedItemId != null) {
@@ -696,11 +738,16 @@ export async function createScheduleItemAtPlanIndex(
     );
   }
 
-  await invalidateScheduleItemRoutesAfterItemCreated(
+  await invalidateScheduleItemRouteForSources(
     queryClient,
     rid,
     args.scheduleId,
-    response.createdItem.itemId,
+    response.affectedRouteItemIds,
+  );
+  bumpPlanMapRouteSegments(
+    rid,
+    args.scheduleId,
+    response.affectedRouteItemIds,
   );
 
   return response.createdItem;
