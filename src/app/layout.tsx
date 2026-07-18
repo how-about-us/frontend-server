@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     icon: [
       {
         url: brandAssets.favicon,
-        type: "image/png",
+        type: "image/svg+xml",
         sizes: "1254x1254",
       },
     ],
