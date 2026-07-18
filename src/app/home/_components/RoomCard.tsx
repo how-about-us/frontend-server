@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 
 import { RoomListItem } from "@/lib/api/rooms";
 import { planPathForRoom } from "@/lib/join-room-workflow";
@@ -46,7 +46,14 @@ export function RoomCard({ room, onDelete, onLeave }: Props) {
               {room.destinations.join(", ")}
             </p>
             {dateStr ? (
-              <p className="mt-1 text-[14px] text-light-gray">{dateStr}</p>
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-0.5 text-[13px] font-medium text-neutral-800">
+                <Calendar
+                  className="h-3 w-3 shrink-0 text-dark-gray"
+                  strokeWidth={2.2}
+                  aria-hidden
+                />
+                <span className="tabular-nums">{dateStr}</span>
+              </p>
             ) : null}
           </div>
         </div>
