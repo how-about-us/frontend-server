@@ -123,7 +123,7 @@ function WheelColumn({
       onScroll={disabled ? undefined : handleScroll}
       onKeyDown={handleKeyDown}
       className={cn(
-        "w-16 snap-y snap-mandatory overflow-y-scroll outline-none",
+        "w-14 snap-y snap-mandatory overflow-y-scroll outline-none",
         "[&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]",
         "rounded-lg focus-visible:ring-2 focus-visible:ring-brand-red/40",
         disabled && "pointer-events-none opacity-60",
@@ -180,7 +180,7 @@ export function TimeWheelPicker({
   const minutes = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
 
   return (
-    <div className="relative isolate flex items-center justify-center gap-3">
+    <div className="relative isolate flex items-center justify-center gap-2">
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 z-0 rounded-xl bg-brand-red/[0.08] ring-1 ring-brand-red/25"
@@ -189,7 +189,7 @@ export function TimeWheelPicker({
           height: ITEM_HEIGHT,
         }}
       />
-      <div className="relative z-10 flex items-center gap-3">
+      <div className="relative z-10 flex items-center gap-2">
         <WheelColumn
           items={hours}
           value={value.hour}
@@ -199,7 +199,7 @@ export function TimeWheelPicker({
         />
         <span
           aria-hidden
-          className="pt-[2px] text-2xl font-semibold text-gray-400"
+          className="pt-[2px] text-xl font-semibold text-gray-400"
         >
           :
         </span>

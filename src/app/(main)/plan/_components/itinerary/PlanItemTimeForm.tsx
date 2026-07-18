@@ -194,49 +194,62 @@ export function PlanItemTimeEditor({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-5 px-6 pb-6">
-          <div className="flex flex-col items-center gap-2">
-            <span className={fieldLabelClass}>시작</span>
-            <TimeWheelPicker
-              value={parseHmToWheel(startHm, DEFAULT_START_WHEEL)}
-              disabled={isPending}
-              onChange={(next) => {
-                const hm = formatWheelToHm(next);
-                setStartHm(hm);
-              }}
-            />
-            {startHm.length === 0 ? (
-              <span className="text-xs text-dark-gray/70">
-                미설정 · 스크롤 또는 탭으로 지정
+        <div className="flex flex-col gap-4 px-4 pb-6 sm:px-6">
+          <div className="flex items-start justify-center gap-3">
+            <div className="flex flex-col items-center gap-1.5">
+              <span className={fieldLabelClass}>시작</span>
+              <TimeWheelPicker
+                value={parseHmToWheel(startHm, DEFAULT_START_WHEEL)}
+                disabled={isPending}
+                onChange={(next) => {
+                  const hm = formatWheelToHm(next);
+                  setStartHm(hm);
+                }}
+              />
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className={fieldLabelClass} aria-hidden>
+                {" "}
               </span>
-            ) : null}
+              <div
+                aria-hidden
+                className="flex items-center justify-center text-xl font-semibold text-gray-400"
+                style={{ height: 200 }}
+              >
+                ~
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className={fieldLabelClass}>종료</span>
+              <TimeWheelPicker
+                value={parseHmToWheel(
+                  endHm,
+                  startHm
+                    ? parseHmToWheel(startHm, DEFAULT_END_WHEEL)
+                    : DEFAULT_END_WHEEL,
+                )}
+                disabled={isPending || startHm.length === 0}
+                onChange={(next) => {
+                  const hm = formatWheelToHm(next);
+                  setEndHm(hm);
+                }}
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col items-center gap-2">
-            <span className={fieldLabelClass}>종료</span>
-            <TimeWheelPicker
-              value={parseHmToWheel(
-                endHm,
-                startHm ? parseHmToWheel(startHm, DEFAULT_END_WHEEL) : DEFAULT_END_WHEEL,
-              )}
-              disabled={isPending || startHm.length === 0}
-              onChange={(next) => {
-                const hm = formatWheelToHm(next);
-                setEndHm(hm);
-              }}
-            />
+          <div className="min-h-[16px] text-center text-xs">
             {startHm.length === 0 ? (
-              <span className="text-xs text-dark-gray/70">
-                시작 시각을 먼저 지정하세요
+              <span className="text-dark-gray/70">
+                미설정 · 스크롤 또는 탭으로 시각 지정
               </span>
             ) : endHm.length === 0 ? (
-              <span className="text-xs text-dark-gray/70">
-                미설정 · 종료 없이 저장 가능
+              <span className="text-dark-gray/70">
+                종료 없이도 저장할 수 있어요
               </span>
             ) : durationPreview != null ? (
               <span
                 className={cn(
-                  "text-xs tabular-nums",
+                  "tabular-nums",
                   durationOverLimit ? "text-brand-red" : "text-dark-gray/85",
                 )}
               >
