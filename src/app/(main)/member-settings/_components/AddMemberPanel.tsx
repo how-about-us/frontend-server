@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, RefreshCw } from "lucide-react";
+import { RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
@@ -183,10 +183,10 @@ export function AddMemberPanel({
           type="button"
           onClick={() => void handleShare()}
           disabled={!inviteUrl}
-          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#FEE500] px-3 py-2.5 text-[14px] font-semibold text-[#191919] transition hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-brand-red px-3 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <MessageCircle size={16} strokeWidth={2.2} aria-hidden />
-          카카오톡으로 공유
+          <Share2 size={16} strokeWidth={2.2} aria-hidden />
+          친구에게 공유
         </button>
 
         <button
