@@ -5,23 +5,30 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { completeGoogleSignup } from "@/lib/api/auth";
-import { GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE } from "@/lib/api/errors";
+import { completeGoogleReaccept, completeGoogleSignup } from "@/lib/api/auth";
+import {
+  GOOGLE_REACCEPTANCE_TOKEN_NOT_FOUND_ERROR_CODE,
+  GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE,
+} from "@/lib/api/errors";
 import { finishGoogleLogin } from "@/lib/google-login-client";
 import {
-  buildGoogleAuthorizationUrl,
   clearGoogleAgreementFlowSession,
   type GoogleAgreementFlowSession,
   readGoogleAgreementFlowSession,
-  saveOAuthPendingSession,
 } from "@/lib/google-oauth";
 import { AgreementConsentSection } from "@/components/agreements/AgreementConsentSection";
 import type { AgreementConsentState } from "@/components/agreements/AgreementConsentSection";
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const EXPIRED_MESSAGE =
+const SIGNUP_EXPIRED_MESSAGE =
   "가입 요청이 만료되었거나 다른 로그인 시도로 무효화되었습니다. 다시 로그인해 주세요.";
+const REACCEPT_EXPIRED_MESSAGE =
+  "재동의 요청이 만료되었거나 다른 로그인 시도로 무효화되었습니다. 다시 로그인해 주세요.";
+
+function expiredMessageForFlow(kind: "signup" | "reaccept"): string {
+  return kind === "signup" ? SIGNUP_EXPIRED_MESSAGE : REACCEPT_EXPIRED_MESSAGE;
+}
 
 const INITIAL_CONSENT_STATE: AgreementConsentState = {
   isLoading: true,
@@ -46,11 +53,11 @@ export default function LoginAgreementsPage() {
       return;
     }
 
-    if (storedFlow.kind === "signup" && Date.now() >= storedFlow.expiresAt) {
+    if (Date.now() >= storedFlow.expiresAt) {
       clearGoogleAgreementFlowSession();
       setFlow(storedFlow);
       setIsExpired(true);
-      setErrorMessage(EXPIRED_MESSAGE);
+      setErrorMessage(expiredMessageForFlow(storedFlow.kind));
       setIsFlowReady(true);
       return;
     }
@@ -69,41 +76,54 @@ export default function LoginAgreementsPage() {
 
     setErrorMessage(null);
 
-    if (flow.kind === "reaccept") {
-      clearGoogleAgreementFlowSession();
-      const state = crypto.randomUUID();
-      saveOAuthPendingSession({ state, agreementsAccepted: true });
-      window.location.href = `${buildGoogleAuthorizationUrl()}&state=${state}`;
-      return;
-    }
-
     if (Date.now() >= flow.expiresAt) {
       clearGoogleAgreementFlowSession();
       setIsExpired(true);
-      setErrorMessage(EXPIRED_MESSAGE);
+      setErrorMessage(expiredMessageForFlow(flow.kind));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await completeGoogleSignup(flow.signupToken);
-      if (!result.ok) {
-        if (
-          result.errorCode === GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE
-        ) {
-          clearGoogleAgreementFlowSession();
-          setIsExpired(true);
-          setErrorMessage(EXPIRED_MESSAGE);
-        } else {
-          setErrorMessage(result.message);
+      if (flow.kind === "reaccept") {
+        const result = await completeGoogleReaccept(flow.reacceptanceToken);
+        if (!result.ok) {
+          if (
+            result.errorCode ===
+            GOOGLE_REACCEPTANCE_TOKEN_NOT_FOUND_ERROR_CODE
+          ) {
+            clearGoogleAgreementFlowSession();
+            setIsExpired(true);
+            setErrorMessage(REACCEPT_EXPIRED_MESSAGE);
+          } else {
+            setErrorMessage(result.message);
+          }
+          return;
         }
-        return;
+      } else {
+        const result = await completeGoogleSignup(flow.signupToken);
+        if (!result.ok) {
+          if (
+            result.errorCode === GOOGLE_SIGNUP_TOKEN_NOT_FOUND_ERROR_CODE
+          ) {
+            clearGoogleAgreementFlowSession();
+            setIsExpired(true);
+            setErrorMessage(SIGNUP_EXPIRED_MESSAGE);
+          } else {
+            setErrorMessage(result.message);
+          }
+          return;
+        }
       }
 
       const destination = await finishGoogleLogin(queryClient);
       router.replace(destination ?? "/login?error=OAuthCallback");
     } catch {
-      setErrorMessage("가입 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setErrorMessage(
+        flow.kind === "reaccept"
+          ? "약관 재동의 처리에 실패했습니다. 잠시 후 다시 시도해 주세요."
+          : "가입 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +204,7 @@ export default function LoginAgreementsPage() {
               ? "처리 중…"
               : isSignup
                 ? "동의하고 가입하기"
-                : "동의하고 Google 로그인 계속하기"}
+                : "동의하고 계속하기"}
           </button>
         </div>
       </div>

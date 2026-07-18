@@ -1,5 +1,8 @@
 "use client";
 
+import { Monitor } from "lucide-react";
+
+import { useMobileView } from "@/contexts/MobileViewContext";
 import { RoomListItem } from "@/lib/api/rooms";
 import { RoomCard } from "./RoomCard";
 
@@ -20,6 +23,7 @@ export function RoomGrid({
   onDelete,
   onLeave,
 }: Props) {
+  const { isMobileDevice } = useMobileView();
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -46,6 +50,27 @@ export function RoomGrid({
   }
 
   if (rooms.length === 0) {
+    if (isMobileDevice) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-gray-border px-6 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
+            <Monitor className="h-6 w-6" aria-hidden />
+          </span>
+          <div className="space-y-1">
+            <p className="text-[17px] font-semibold text-dark-gray">
+              아직 참여 중인 여행이 없어요
+            </p>
+            <p className="text-[13px] leading-relaxed text-dark-gray/80">
+              모바일에서는 새 여행을 만들 수 없어요.
+              <br />
+              PC나 노트북으로 접속해 여행을 만들거나,
+              <br />
+              친구에게 초대 링크를 받아 참여해보세요.
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-border py-20 text-center">
         <p className="text-[17px] font-medium text-dark-gray">아직 여행이 없어요</p>

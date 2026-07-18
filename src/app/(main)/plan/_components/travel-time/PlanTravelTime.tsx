@@ -317,7 +317,6 @@ export function PlanTravelTime({
       }
     >
       <TravelDirectionsCard
-          readOnly={isReadOnly}
           menuOpen={menuOpen}
           onToggleMenu={() => setMenuOpen((o) => !o)}
           summaryMode={selectedMode}

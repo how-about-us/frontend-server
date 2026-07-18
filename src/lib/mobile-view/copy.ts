@@ -1,6 +1,8 @@
-/** 모바일 조회 전용 — 화면 상단 안내 */
-export const mobileReadOnlyNoticeMessage =
-  "모바일에서는 조회만 가능합니다. 수정하려면 PC나 노트북으로 접근해주세요." as const;
+/** 모바일 편집 제한 — 화면 상단 안내 */
+export const mobileReadOnlyNoticeCopy = {
+  title: "모바일에서는 편집이 제한돼요",
+  description: "자세한 편집은 PC나 노트북으로 접속해주세요",
+} as const;
 
 /** 플랜·홈 — 모바일(조회 전용) vs 데스크톱 안내 문구 */
 export const planCopy = {

@@ -27,6 +27,8 @@ export type GoogleAgreementFlowSession =
     }
   | {
       kind: "reaccept";
+      reacceptanceToken: string;
+      expiresAt: number;
     };
 
 export function saveOAuthPendingSession(pending: OAuthPendingSession): void {
@@ -73,8 +75,12 @@ export function readGoogleAgreementFlowSession(): GoogleAgreementFlowSession | n
     const parsed = JSON.parse(raw) as unknown;
     if (parsed === null || typeof parsed !== "object") return null;
 
-    const flow = parsed as Partial<GoogleAgreementFlowSession>;
-    if (flow.kind === "reaccept") return { kind: "reaccept" };
+    const flow = parsed as Partial<{
+      kind: string;
+      signupToken: string;
+      reacceptanceToken: string;
+      expiresAt: number;
+    }>;
     if (
       flow.kind === "signup" &&
       typeof flow.signupToken === "string" &&
@@ -85,6 +91,19 @@ export function readGoogleAgreementFlowSession(): GoogleAgreementFlowSession | n
       return {
         kind: "signup",
         signupToken: flow.signupToken,
+        expiresAt: flow.expiresAt,
+      };
+    }
+    if (
+      flow.kind === "reaccept" &&
+      typeof flow.reacceptanceToken === "string" &&
+      flow.reacceptanceToken.length > 0 &&
+      typeof flow.expiresAt === "number" &&
+      Number.isFinite(flow.expiresAt)
+    ) {
+      return {
+        kind: "reaccept",
+        reacceptanceToken: flow.reacceptanceToken,
         expiresAt: flow.expiresAt,
       };
     }

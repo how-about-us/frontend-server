@@ -7,15 +7,16 @@ import { toast } from "sonner";
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import {
+  addMinutesToHm,
   clampStayDurationMinutes,
-  canEditScheduleStayDuration,
+  computeDurationMinutesFromRange,
   formatStayDurationMinutes,
-  hasScheduleTimeDraftValue,
   normalizeStartTimeToHm,
   SCHEDULE_STAY_DURATION_MAX_MINUTES,
-  validateScheduleTimeDraft,
 } from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
+
+import { TimeWheelPicker, type TimeWheelValue } from "./TimeWheelPicker";
 
 type PlanItemTimeEditorProps = {
   roomId: string;
@@ -27,75 +28,31 @@ type PlanItemTimeEditorProps = {
 };
 
 const fieldLabelClass = PLAN_PLACE_CARD_TW.timeFieldLabel;
-const timeStartInputClass =
-  "cursor-pointer text-center [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center";
-const startTimeInputClassName = cn(
-  PLAN_PLACE_CARD_TW.timeInputCompact,
-  timeStartInputClass,
-  "tabular-nums",
-);
 
-function PlanStartTimeInput({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  disabled: boolean;
-  onChange: (next: string) => void;
-}) {
-  const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (disabled) return;
-    const input = e.currentTarget;
-    try {
-      input.showPicker?.();
-    } catch {
-      input.focus();
-    }
-  };
+const DEFAULT_START_WHEEL: TimeWheelValue = { hour: 9, minute: 0 };
+const DEFAULT_END_WHEEL: TimeWheelValue = { hour: 10, minute: 0 };
 
-  if (!value) {
-    return (
-      <div
-        className={cn(
-          "relative flex min-w-0 w-full items-center justify-center",
-          startTimeInputClassName,
-          disabled && "pointer-events-none opacity-70",
-        )}
-      >
-        <span
-          className="pointer-events-none text-sm tabular-nums text-dark-gray/70"
-          aria-hidden
-        >
-          --:--
-        </span>
-        <input
-          type="time"
-          aria-label="시작 시각"
-          value=""
-          disabled={disabled}
-          onClick={openPicker}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v) onChange(v);
-          }}
-          className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-        />
-      </div>
-    );
+function parseHmToWheel(hm: string, fallback: TimeWheelValue): TimeWheelValue {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return fallback;
+  const hour = Math.min(23, Math.max(0, parseInt(m[1]!, 10)));
+  const minute = Math.min(59, Math.max(0, parseInt(m[2]!, 10)));
+  return { hour, minute };
+}
+
+function formatWheelToHm({ hour, minute }: TimeWheelValue): string {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function initialEndHm(
+  startHm: string,
+  durationMinutes: number | null | undefined,
+): string {
+  if (!startHm) return "";
+  if (typeof durationMinutes !== "number" || !Number.isFinite(durationMinutes)) {
+    return "";
   }
-
-  return (
-    <input
-      type="time"
-      aria-label="시작 시각"
-      value={value}
-      disabled={disabled}
-      onClick={openPicker}
-      onChange={(e) => onChange(e.target.value)}
-      className={startTimeInputClassName}
-    />
-  );
+  return addMinutesToHm(startHm, clampStayDurationMinutes(durationMinutes));
 }
 
 export function PlanItemTimeEditor({
@@ -106,21 +63,19 @@ export function PlanItemTimeEditor({
   durationMinutes,
   onClose,
 }: PlanItemTimeEditorProps) {
-  const [timeHm, setTimeHm] = useState(() => normalizeStartTimeToHm(startTime));
-  const [durationStr, setDurationStr] = useState(() =>
-    formatStayDurationMinutes(durationMinutes),
+  const serverStartHm = normalizeStartTimeToHm(startTime);
+
+  const [startHm, setStartHm] = useState(() => serverStartHm);
+  const [endHm, setEndHm] = useState(() =>
+    initialEndHm(serverStartHm, durationMinutes),
   );
-  const [resetPending, setResetPending] = useState(false);
+
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
-  const serverHm = normalizeStartTimeToHm(startTime);
   useEffect(() => {
-    setTimeHm(serverHm);
-  }, [serverHm]);
-
-  useEffect(() => {
-    setDurationStr(formatStayDurationMinutes(durationMinutes));
-  }, [durationMinutes]);
+    setStartHm(serverStartHm);
+    setEndHm(initialEndHm(serverStartHm, durationMinutes));
+  }, [serverStartHm, durationMinutes]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -130,58 +85,75 @@ export function PlanItemTimeEditor({
     return () => document.removeEventListener("keydown", handler);
   }, [isPending, onClose]);
 
-  const hasDraftValue = hasScheduleTimeDraftValue(timeHm, durationStr);
-  const stayDurationEnabled = canEditScheduleStayDuration(timeHm);
+  const hasDraftValue = startHm.length > 0 || endHm.length > 0;
+
+  const durationPreview =
+    startHm && endHm
+      ? computeDurationMinutesFromRange(startHm, endHm)
+      : null;
+
+  const durationOverLimit =
+    durationPreview != null &&
+    durationPreview > SCHEDULE_STAY_DURATION_MAX_MINUTES;
 
   function handleReset() {
-    setResetPending(true);
-    setTimeHm("");
-    setDurationStr("0");
+    setStartHm("");
+    setEndHm("");
   }
 
   async function handleSave() {
-    const dm = parseInt(durationStr, 10);
-    if (!Number.isFinite(dm) || dm < 0) {
-      toast.error("체류 시간은 0 이상의 정수로 입력해 주세요.");
+    const trimmedStart = startHm.trim();
+    const trimmedEnd = endHm.trim();
+
+    if (trimmedEnd.length > 0 && trimmedStart.length === 0) {
+      toast.error("시작 시각 없이 종료 시각만 설정할 수 없어요.");
       return;
     }
-    if (dm > SCHEDULE_STAY_DURATION_MAX_MINUTES) {
-      toast.error(
-        `체류 시간은 ${SCHEDULE_STAY_DURATION_MAX_MINUTES}분 이하여야 해요.`,
-      );
-      return;
+
+    let durationToSend: number | null = null;
+    if (trimmedStart.length > 0 && trimmedEnd.length > 0) {
+      const dur = computeDurationMinutesFromRange(trimmedStart, trimmedEnd);
+      if (dur === null) {
+        toast.error("시간을 올바르게 선택해 주세요.");
+        return;
+      }
+      if (dur > SCHEDULE_STAY_DURATION_MAX_MINUTES) {
+        toast.error(
+          `체류 시간은 ${SCHEDULE_STAY_DURATION_MAX_MINUTES}분 이하여야 해요.`,
+        );
+        return;
+      }
+      durationToSend = dur;
     }
-    const trimmedHm = timeHm.trim();
-    if (trimmedHm.length > 0 && !/^\d{2}:\d{2}$/.test(trimmedHm)) {
-      toast.error("시작 시각을 올바르게 선택해 주세요.");
-      return;
-    }
-    const draftValidation = validateScheduleTimeDraft(trimmedHm, dm);
-    if (!draftValidation.valid) {
-      toast.error(draftValidation.message);
-      return;
-    }
+
     try {
-      const shouldClearDuration = resetPending || !stayDurationEnabled;
       await mutateAsync({
         roomId,
         scheduleId,
         itemId,
         body: {
-          startTime: trimmedHm.length > 0 ? trimmedHm : null,
-          durationMinutes: shouldClearDuration ? null : dm,
+          startTime: trimmedStart.length > 0 ? trimmedStart : null,
+          durationMinutes: durationToSend,
         },
       });
-      toast.success("체류 시간을 저장했어요.");
+      toast.success("시간을 저장했어요.");
       onClose();
     } catch {
-      toast.error("체류 시간을 저장하지 못했어요.");
+      toast.error("시간을 저장하지 못했어요.");
     }
   }
 
-  const baselineTime = normalizeStartTimeToHm(startTime);
+  const baselineStart = serverStartHm;
   const baselineDur = formatStayDurationMinutes(durationMinutes);
-  const dirty = baselineTime !== timeHm || baselineDur !== durationStr;
+  const currentDurStr =
+    durationPreview != null ? String(durationPreview) : "0";
+  const dirty =
+    baselineStart !== startHm ||
+    baselineDur !== currentDurStr ||
+    // baseline may have had duration=null (미설정) — 종료를 지웠으면 dirty
+    (typeof durationMinutes !== "number" && endHm.length > 0);
+
+  const canSave = !isPending && dirty && !durationOverLimit;
 
   return (
     <div
@@ -197,7 +169,7 @@ export function PlanItemTimeEditor({
         aria-labelledby="plan-item-time-dialog-title"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-xl"
+        className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white shadow-xl"
       >
         <div className="flex items-center gap-2 px-6 pb-3 pt-6">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green/10 text-brand-green">
@@ -222,56 +194,75 @@ export function PlanItemTimeEditor({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 px-6 pb-6">
-          <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
-            <label className={PLAN_PLACE_CARD_TW.timeField}>
+        <div className="flex flex-col gap-4 px-4 pb-6 sm:px-6">
+          <div className="flex items-start justify-center gap-3">
+            <div className="flex flex-col items-center gap-1.5">
               <span className={fieldLabelClass}>시작</span>
-              <PlanStartTimeInput
-                value={timeHm}
+              <TimeWheelPicker
+                value={parseHmToWheel(startHm, DEFAULT_START_WHEEL)}
                 disabled={isPending}
                 onChange={(next) => {
-                  setResetPending(false);
-                  setTimeHm(next);
-                  if (!canEditScheduleStayDuration(next)) {
-                    setDurationStr("0");
-                  }
+                  const hm = formatWheelToHm(next);
+                  setStartHm(hm);
                 }}
               />
-            </label>
-            <label className={PLAN_PLACE_CARD_TW.timeField}>
-              <span className={fieldLabelClass}>체류(분)</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
-                step={1}
-                aria-label="체류(분)"
-                value={durationStr}
-                onChange={(e) => {
-                  setResetPending(false);
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setDurationStr("");
-                    return;
-                  }
-                  const v = parseInt(raw, 10);
-                  if (!Number.isFinite(v)) {
-                    setDurationStr(raw);
-                    return;
-                  }
-                  setDurationStr(String(clampStayDurationMinutes(v)));
-                }}
-                className={cn(
-                  PLAN_PLACE_CARD_TW.timeInputCompact,
-                  "tabular-nums",
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className={fieldLabelClass} aria-hidden>
+                {" "}
+              </span>
+              <div
+                aria-hidden
+                className="flex items-center justify-center text-xl font-semibold text-gray-400"
+                style={{ height: 200 }}
+              >
+                ~
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span className={fieldLabelClass}>종료</span>
+              <TimeWheelPicker
+                value={parseHmToWheel(
+                  endHm,
+                  startHm
+                    ? parseHmToWheel(startHm, DEFAULT_END_WHEEL)
+                    : DEFAULT_END_WHEEL,
                 )}
-                disabled={isPending || !stayDurationEnabled}
+                disabled={isPending || startHm.length === 0}
+                onChange={(next) => {
+                  const hm = formatWheelToHm(next);
+                  setEndHm(hm);
+                }}
               />
-            </label>
+            </div>
           </div>
 
-          <div className="mt-2 flex items-center justify-end gap-2">
+          <div className="min-h-[16px] text-center text-xs">
+            {startHm.length === 0 ? (
+              <span className="text-dark-gray/70">
+                미설정 · 스크롤 또는 탭으로 시각 지정
+              </span>
+            ) : endHm.length === 0 ? (
+              <span className="text-dark-gray/70">
+                종료 없이도 저장할 수 있어요
+              </span>
+            ) : durationPreview != null ? (
+              <span
+                className={cn(
+                  "tabular-nums",
+                  durationOverLimit ? "text-brand-red" : "text-dark-gray/85",
+                )}
+              >
+                체류 시간 {Math.floor(durationPreview / 60)}시간{" "}
+                {durationPreview % 60}분
+                {durationOverLimit
+                  ? ` · 최대 ${SCHEDULE_STAY_DURATION_MAX_MINUTES}분 초과`
+                  : ""}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-1 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
@@ -283,7 +274,7 @@ export function PlanItemTimeEditor({
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={isPending || !dirty}
+              disabled={!canSave}
               className="h-10 shrink-0 cursor-pointer rounded-lg bg-brand-green px-4 text-sm font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isPending ? "저장 중…" : "저장"}

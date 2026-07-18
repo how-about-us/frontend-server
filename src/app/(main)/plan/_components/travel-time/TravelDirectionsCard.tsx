@@ -86,16 +86,13 @@ export function TravelDirectionsCard({
       <div className="flex min-w-0 items-center">
         <button
           type="button"
-          className={cn(
-            "inline-flex h-10 min-w-0 cursor-pointer items-center gap-2 px-2.5 text-left",
-            renderWarning ? "max-w-[55%] shrink-0" : "max-w-full",
-          )}
+          className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 pl-1 pr-1.5 text-left"
           aria-expanded={menuOpen}
           onClick={onToggleMenu}
         >
           <TravelModeGlyph mode={headerTravelMode} />
-          <span className="inline-flex min-w-0 items-center gap-0.5 overflow-hidden whitespace-nowrap text-[14px] font-medium text-gray-900">
-            <span className="min-w-0 truncate">{summaryLine}</span>
+          <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-[14px] font-medium text-gray-900">
+            <span>{summaryLine}</span>
             <ChevronDown
               className={cn(
                 "h-4 w-4 shrink-0 text-dark-gray transition-transform",

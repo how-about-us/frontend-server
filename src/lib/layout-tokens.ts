@@ -30,10 +30,11 @@ export const PLAN_PLACE_CARD_MIN_SIZE_REM = "6rem" as const;
  */
 export const PLAN_PLACE_CARD_TW = {
   article:
-    "relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 rounded-xl border border-gray-border bg-white p-3.5 shadow-sm",
+    "relative grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 rounded-xl border border-gray-border bg-white p-3.5 shadow-sm mobile:gap-x-2.5 mobile:p-2.5",
   thumbnail:
-    "relative h-[6rem] w-[6rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30",
-  contentColumn: "flex min-h-[6rem] min-w-0 flex-col justify-start gap-2",
+    "relative h-[6rem] w-[6rem] shrink-0 overflow-hidden rounded-lg bg-brand-green/30 mobile:h-[4.5rem] mobile:w-[4.5rem]",
+  contentColumn:
+    "flex min-h-[6rem] min-w-0 flex-col justify-start gap-2 mobile:min-h-[4.5rem]",
   titleRow: "flex min-w-0 items-start gap-2.5",
   subtitle: "text-xs leading-snug text-dark-gray/85",
   controlsStack: "flex min-w-0 flex-col gap-0.5",

@@ -3,7 +3,7 @@
 import type { DragEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
-import { Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2, MapPin } from "lucide-react";
 
 import { MemoIcon } from "@/components/icons";
 import { toast } from "sonner";
@@ -15,7 +15,10 @@ import {
   useUpdateScheduleItem,
 } from "@/hooks/useRooms";
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
-import { normalizeGooglePlaceResourceId } from "@/lib/maps";
+import {
+  buildGoogleMapsPlaceUrl,
+  normalizeGooglePlaceResourceId,
+} from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
 import {
   formatScheduleStaySummary,
@@ -188,8 +191,21 @@ export function PlanPlaceCard({
   const scheduleItemId =
     scheduleTimeEdit && typeof place.itemId === "number" ? place.itemId : null;
 
+  /**
+   * 시간·메모 편집은 모바일에서도 허용한다.
+   * `isReadOnly`(모바일)는 D&D 재정렬·카드 클릭 등 구조 편집만 잠근다.
+   */
   const canEditScheduleItem =
-    !isReadOnly && scheduleTimeEdit != null && scheduleItemId !== null;
+    scheduleTimeEdit != null && scheduleItemId !== null;
+
+  const rawGooglePlaceId =
+    typeof place.googlePlaceId === "string" ? place.googlePlaceId.trim() : "";
+  const googleMapsPlaceUrl = rawGooglePlaceId.length
+    ? buildGoogleMapsPlaceUrl({
+        placeId: normalizeGooglePlaceResourceId(rawGooglePlaceId),
+        query: place.title,
+      })
+    : null;
 
   const memoText = typeof place.memo === "string" ? place.memo.trim() : "";
   const hasMemo = memoText.length > 0;
@@ -279,8 +295,8 @@ export function PlanPlaceCard({
           backgroundColorHex={orderBadgeColor}
         />
 
-        <div className={PLAN_PLACE_CARD_TW.thumbnail}>
-          {photoLoading ? (
+        {(() => {
+          const media = photoLoading ? (
             <Loader2
               className="absolute inset-0 m-auto h-5 w-5 animate-spin text-brand-green"
               aria-hidden
@@ -294,8 +310,39 @@ export function PlanPlaceCard({
               sizes="96px"
               draggable={false}
             />
-          ) : null}
-        </div>
+          ) : null;
+
+          if (!googleMapsPlaceUrl) {
+            return (
+              <div className={PLAN_PLACE_CARD_TW.thumbnail}>{media}</div>
+            );
+          }
+
+          return (
+            <a
+              href={googleMapsPlaceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-plan-card-no-drag
+              draggable={false}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`${place.title} — Google Maps에서 열기`}
+              className={cn(
+                PLAN_PLACE_CARD_TW.thumbnail,
+                "block cursor-pointer transition hover:brightness-105",
+              )}
+            >
+              {media}
+              <span
+                className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-md bg-black/60 text-white shadow-sm ring-1 ring-white/25"
+                aria-hidden
+              >
+                <MapPin className="h-3 w-3" strokeWidth={2.4} />
+              </span>
+            </a>
+          );
+        })()}
 
         <div className={PLAN_PLACE_CARD_TW.contentColumn}>
           <div className={PLAN_PLACE_CARD_TW.titleRow}>
@@ -306,6 +353,7 @@ export function PlanPlaceCard({
                     "min-w-0 flex-1",
                     PLAN_PLACE_CARD_TW.titleCompact,
                     PLAN_PLACE_CARD_TW.titleClamp,
+                    "mobile:text-lg",
                   )}
                   title={place.title}
                 >
@@ -323,6 +371,7 @@ export function PlanPlaceCard({
                   className={cn(
                     PLAN_PLACE_CARD_TW.subtitle,
                     PLAN_PLACE_CARD_TW.subtitleClamp,
+                    "mobile:hidden",
                   )}
                   title={place.subtitle}
                 >

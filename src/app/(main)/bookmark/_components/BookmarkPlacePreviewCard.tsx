@@ -4,6 +4,10 @@ import { MapPin } from "lucide-react";
 
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
+import {
+  buildGoogleMapsPlaceUrl,
+  normalizeGooglePlaceResourceId,
+} from "@/lib/maps";
 import { cn } from "@/lib/utils";
 
 export type BookmarkPlacePreviewCardProps = {
@@ -11,6 +15,8 @@ export type BookmarkPlacePreviewCardProps = {
   address?: string;
   photoName?: string;
   primaryTypeDisplayName?: string;
+  /** 있으면 사진 클릭 시 Google Maps로 이동 */
+  googlePlaceId?: string;
   onClick?: () => void;
   className?: string;
   contentClassName?: string;
@@ -21,11 +27,34 @@ export function BookmarkPlacePreviewCard({
   address,
   photoName,
   primaryTypeDisplayName,
+  googlePlaceId,
   onClick,
   className,
   contentClassName,
 }: BookmarkPlacePreviewCardProps) {
   const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+
+  const rawGid = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  const googleMapsPlaceUrl = rawGid.length
+    ? buildGoogleMapsPlaceUrl({
+        placeId: normalizeGooglePlaceResourceId(rawGid),
+        query: name,
+      })
+    : null;
+
+  const thumbnailMedia = imageUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element -- remote place photo URL
+    <img
+      src={imageUrl}
+      alt={name}
+      className="h-full w-full object-cover"
+      loading="lazy"
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center">
+      <MapPin className="h-6 w-6 text-gray-300" />
+    </div>
+  );
 
   return (
     <article
@@ -41,7 +70,7 @@ export function BookmarkPlacePreviewCard({
     >
       <div className={cn("min-w-0 flex-1", contentClassName)}>
         <div className="flex items-baseline gap-1.5">
-          <h3 className="truncate text-[17px] font-semibold leading-5 tracking-tight text-brand-green">
+          <h3 className="truncate text-[17px] font-semibold leading-5 tracking-tight text-brand-green mobile:text-[15px]">
             {name}
           </h3>
           {primaryTypeDisplayName ? (
@@ -60,21 +89,30 @@ export function BookmarkPlacePreviewCard({
         ) : null}
       </div>
 
-      <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray">
-        {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- remote place photo URL
-          <img
-            src={imageUrl}
-            alt={name}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <MapPin className="h-6 w-6 text-gray-300" />
-          </div>
-        )}
-      </div>
+      {googleMapsPlaceUrl ? (
+        <a
+          href={googleMapsPlaceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          aria-label={`${name} — Google Maps에서 열기`}
+          className="relative block h-[80px] w-[80px] shrink-0 cursor-pointer overflow-hidden rounded-lg bg-light-gray transition hover:brightness-105"
+          draggable={false}
+        >
+          {thumbnailMedia}
+          <span
+            className="pointer-events-none absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-md bg-black/60 text-white shadow-sm ring-1 ring-white/25"
+            aria-hidden
+          >
+            <MapPin className="h-3 w-3" strokeWidth={2.4} />
+          </span>
+        </a>
+      ) : (
+        <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray">
+          {thumbnailMedia}
+        </div>
+      )}
     </article>
   );
 }

@@ -102,6 +102,21 @@ export function normalizeStartTimeToHm(value: string): string {
   return "";
 }
 
+/**
+ * 시작·종료 `HH:mm`을 자정 기준 분 차이로 환산. 종료가 시작보다 작으면 자정을 넘긴 것으로 간주.
+ * 시작/종료 중 하나라도 파싱 불가면 `null`.
+ */
+export function computeDurationMinutesFromRange(
+  startHm: string,
+  endHm: string,
+): number | null {
+  const s = hmToMinutesSinceMidnight(startHm);
+  const e = hmToMinutesSinceMidnight(endHm);
+  if (s === null || e === null) return null;
+  const raw = e - s;
+  return raw < 0 ? raw + MINUTES_PER_DAY : raw;
+}
+
 export function hmToMinutesSinceMidnight(hm: string): number | null {
   const n = normalizeStartTimeToHm(hm);
   if (!n) return null;

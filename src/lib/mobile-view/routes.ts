@@ -1,8 +1,5 @@
 const MAIN_MOBILE_BLOCKED_PREFIXES = [
   "/search",
-  "/bookmark",
-  "/member-settings",
-  "/room-settings",
   "/settings",
   "/contact",
 ] as const;
@@ -10,12 +7,9 @@ const MAIN_MOBILE_BLOCKED_PREFIXES = [
 const MOBILE_READ_ONLY_NOTICE_PREFIXES = [
   "/home",
   "/plan",
-  "/search",
   "/bookmark",
   "/member-settings",
   "/room-settings",
-  "/settings",
-  "/contact",
 ] as const;
 
 export function isMobileReadOnlyNoticeRoute(pathname: string): boolean {

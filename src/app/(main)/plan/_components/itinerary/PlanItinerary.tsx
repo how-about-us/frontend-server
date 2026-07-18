@@ -229,9 +229,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
               <PlanPlaceCard
                 place={place}
                 orderBadgeColor={orderBadgeColor}
-                scheduleTimeEdit={
-                  isReadOnly ? undefined : { roomId, scheduleId }
-                }
+                scheduleTimeEdit={{ roomId, scheduleId }}
                 {...placeCardDragProps}
               />
               {index < places.length - 1 &&
