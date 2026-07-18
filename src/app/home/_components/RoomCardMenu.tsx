@@ -44,7 +44,7 @@ export function RoomCardMenu({ room, onDelete, onLeave }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-32 overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
+        <div className="absolute right-0 top-full z-30 mt-1 w-32 overflow-hidden rounded-xl border border-gray-border bg-white shadow-lg">
           {isHost ? (
             <button
               type="button"
