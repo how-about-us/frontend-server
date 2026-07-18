@@ -25,6 +25,7 @@ export function BookmarkFolderDetailHeader({
   return (
     <div className="shrink-0 border-b border-gray-border pb-5">
       <MainPageHeader
+        className="items-center"
         title={
           <span className="flex min-w-0 items-center gap-2 mobile:text-[17px]">
             <FolderRibbonIcon
