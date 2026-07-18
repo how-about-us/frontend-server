@@ -202,8 +202,15 @@ export function PlanDaySection({
             aria-expanded={expanded}
             aria-controls={`${panelId}-panel`}
             onClick={toggle}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
           >
+            <span className="shrink-0 text-dark-gray" aria-hidden>
+              {expanded ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </span>
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-2">
                 <h2 className="min-w-0 truncate text-[19px] font-semibold text-gray-900">
@@ -217,16 +224,6 @@ export function PlanDaySection({
               </div>
             </div>
           </button>
-          <span
-            className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-dark-gray"
-            aria-hidden
-          >
-            {expanded ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </span>
           {trackedSid !== undefined ? (
             <button
               type="button"
