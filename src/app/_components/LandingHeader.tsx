@@ -14,12 +14,22 @@ export function LandingHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-gray-border/60 bg-white/90 font-sans backdrop-blur-md">
       <div className={`${LANDING_CONTAINER_CLASS} flex items-center justify-between gap-4 py-3`}>
-        <Link href="/" aria-label="우때 홈" className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red">
+        <Link
+          href="/"
+          aria-label="우때 홈"
+          className="flex items-center gap-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
+        >
           <BrandLogo
             alt=""
             variant="favicon"
             aria-hidden
-            style={{ width: "clamp(36px, 4vw, 42px)", height: "clamp(36px, 4vw, 42px)" }}
+            style={{ width: 42, height: 42 }}
+          />
+          <BrandLogo
+            alt=""
+            variant="logo"
+            aria-hidden
+            style={{ width: 60, height: "auto", marginLeft: -2 }}
           />
         </Link>
         <nav aria-label="랜딩 페이지" className="ml-auto hidden items-center gap-7 landing-sm:flex">
