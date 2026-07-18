@@ -5,6 +5,16 @@ import { appendSetCookies } from "@/lib/auth-cookies";
 import { verifySessionWithOptionalRefresh } from "@/lib/auth-server";
 import { isProtectedAppPath } from "@/lib/auth-session";
 
+const LINK_PREVIEW_BOT_UA =
+  /bot|crawler|spider|facebookexternalhit|kakaotalk|twitterbot|slackbot|discordbot|linkedinbot|telegrambot|whatsapp|line/i;
+
+function isInvitePreviewRequest(request: NextRequest): boolean {
+  const { pathname } = request.nextUrl;
+  if (!pathname.startsWith("/join/")) return false;
+  const ua = request.headers.get("user-agent") ?? "";
+  return LINK_PREVIEW_BOT_UA.test(ua);
+}
+
 function withRefreshedCookies(
   response: NextResponse,
   setCookies: readonly string[],
@@ -17,6 +27,10 @@ function withRefreshedCookies(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isInvitePreviewRequest(request)) {
+    return NextResponse.rewrite(new URL("/invite-preview.html", request.url));
+  }
 
   let hasSession = false;
   let setCookies: string[] = [];
@@ -66,6 +80,7 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/join/:path*",
     "/auth/callback",
     "/home",
     "/home/:path*",
