@@ -9,6 +9,7 @@ const SITE_URL =
 const TITLE = "우때 여행 초대";
 const DESCRIPTION =
   "우때에서 함께 여행 계획을 세워요. 초대 링크를 눌러 참여해보세요.";
+const SHARE_IMAGE_SIZE = 1200;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -21,9 +22,9 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [
       {
-        url: brandAssets.favicon,
-        width: 1254,
-        height: 1254,
+        url: brandAssets.shareImage,
+        width: SHARE_IMAGE_SIZE,
+        height: SHARE_IMAGE_SIZE,
         alt: "우때",
       },
     ],
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [brandAssets.favicon],
+    images: [brandAssets.shareImage],
   },
 };
 

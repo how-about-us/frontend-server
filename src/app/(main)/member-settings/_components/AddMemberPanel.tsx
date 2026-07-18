@@ -93,7 +93,6 @@ export function AddMemberPanel({
       try {
         await navigator.share({
           title: "우때 여행 초대",
-          text: "함께 여행 계획을 세워요!",
           url: inviteUrl,
         });
         trackAnalyticsEvent(AnalyticsEvents.sharePlan, { method: "kakao" });

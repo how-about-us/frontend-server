@@ -1,8 +1,9 @@
 /** `public/` 정적 자산 URL — 폴더·파일명 변경 시 이 모듈만 수정 */
 
 export const brandAssets = {
-  logo: "/brand/logo.svg",
-  favicon: "/brand/favicon.png",
+  logo: "/brand/textlogo.svg",
+  favicon: "/brand/iconLogo.svg",
+  shareImage: "/brand/iconLogo.png",
 } as const;
 
 export const sidebarIcons = {

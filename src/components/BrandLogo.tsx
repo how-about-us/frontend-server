@@ -12,7 +12,7 @@ export type BrandLogoProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & 
 };
 
 /**
- * 앱 공식 `brand/logo.svg` — Safari 호환을 위해 네이티브 `<img>` 사용.
+ * 앱 공식 로고 SVG — Safari 호환을 위해 네이티브 `<img>` 사용.
  * `favicon` variant는 헤더 등 compact 영역용.
  */
 export function BrandLogo({
