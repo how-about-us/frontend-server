@@ -28,7 +28,7 @@ export function PlanTravelSegment({
   return (
     <div data-plan-insert-slot className="group/segment relative pl-1">
       <div className={PLAN_SEGMENT_RAIL_LINE_CLASS} aria-hidden />
-      <div className="relative flex gap-3">
+      <div className="relative flex gap-1">
         <TravelRouteRail
           layout={isActive ? "fillHeight" : "row"}
           className={isActive ? "self-stretch" : undefined}
