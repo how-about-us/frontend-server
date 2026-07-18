@@ -9,7 +9,7 @@ export {
   isMobileReadOnlyNoticeRoute,
 } from "./routes";
 export {
-  mobileReadOnlyNoticeMessage,
+  mobileReadOnlyNoticeCopy,
   planCopy,
   planCopyForDevice,
 } from "./copy";
