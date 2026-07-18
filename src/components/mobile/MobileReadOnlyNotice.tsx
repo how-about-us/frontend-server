@@ -4,11 +4,13 @@ import { MessageSquareWarning, Monitor } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useMobileView } from "@/contexts/MobileViewContext";
-import { FEEDBACK_FORM_URL } from "@/components/layout/sidebarFeedbackForm";
 import {
   isMobileReadOnlyNoticeRoute,
   mobileReadOnlyNoticeCopy,
 } from "@/lib/mobile-view";
+
+/** 모바일 사용자 피드백 채널 — 카카오톡 오픈채팅 */
+const MOBILE_FEEDBACK_KAKAO_URL = "https://open.kakao.com/o/s4ucEBEi";
 
 export function MobileReadOnlyNotice() {
   const pathname = usePathname();
@@ -36,14 +38,14 @@ export function MobileReadOnlyNotice() {
           </p>
         </div>
         <a
-          href={FEEDBACK_FORM_URL}
+          href={MOBILE_FEEDBACK_KAKAO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="불편사항 신고 (새 창)"
+          aria-label="피드백 보내기 (새 창)"
           className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full border border-brand-red/25 bg-white px-2.5 py-1 text-[12px] font-semibold text-brand-red shadow-sm transition hover:bg-brand-red/5 active:bg-brand-red/10"
         >
           <MessageSquareWarning size={13} strokeWidth={2.2} aria-hidden />
-          신고
+          피드백
         </a>
       </div>
     </div>
