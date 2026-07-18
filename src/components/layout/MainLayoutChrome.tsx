@@ -7,6 +7,7 @@ import { useMainMobileRouteRedirect } from "@/hooks/useMobileRedirects";
 import { ChatPanel } from "@/components/chat";
 import { MapWithDetailPanel } from "@/components/map";
 
+import { MobileMainTabs } from "@/components/mobile/MobileMainTabs";
 import { MobileReadOnlyNotice } from "@/components/mobile/MobileReadOnlyNotice";
 
 import HeaderBar from "./HeaderBar";
@@ -25,6 +26,7 @@ export function MainLayoutChrome({ children }: { children: ReactNode }) {
       <div className="relative mx-auto flex min-h-0 flex-1 w-full overflow-hidden rounded-none bg-white">
         <LeftSection>
           <HeaderBar />
+          <MobileMainTabs />
           <section className="flex min-h-0 w-full min-w-0 flex-1 overflow-hidden">
             {!isMobileDevice ? <SideBar /> : null}
             <MainContentScrollArea>{children}</MainContentScrollArea>
