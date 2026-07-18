@@ -2,6 +2,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/**
+ * 모바일 전용 유틸리티 배리언트 —
+ * MobileViewProvider가 <html>에 붙이는 `is-mobile-device` 클래스가 있을 때만
+ * 규칙이 적용된다. 예) `text-[15px] mobile:text-[13px]`
+ */
+@custom-variant mobile (&:where(.is-mobile-device, .is-mobile-device *));
+
 @layer base {
   html {
     @apply font-sans;
