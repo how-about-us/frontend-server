@@ -310,6 +310,7 @@ export function PlanPlaceCard({
                     "min-w-0 flex-1",
                     PLAN_PLACE_CARD_TW.titleCompact,
                     PLAN_PLACE_CARD_TW.titleClamp,
+                    "mobile:text-lg",
                   )}
                   title={place.title}
                 >
