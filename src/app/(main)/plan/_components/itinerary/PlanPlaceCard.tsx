@@ -188,8 +188,12 @@ export function PlanPlaceCard({
   const scheduleItemId =
     scheduleTimeEdit && typeof place.itemId === "number" ? place.itemId : null;
 
+  /**
+   * 시간·메모 편집은 모바일에서도 허용한다.
+   * `isReadOnly`(모바일)는 D&D 재정렬·카드 클릭 등 구조 편집만 잠근다.
+   */
   const canEditScheduleItem =
-    !isReadOnly && scheduleTimeEdit != null && scheduleItemId !== null;
+    scheduleTimeEdit != null && scheduleItemId !== null;
 
   const memoText = typeof place.memo === "string" ? place.memo.trim() : "";
   const hasMemo = memoText.length > 0;
