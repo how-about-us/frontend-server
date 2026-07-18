@@ -17,6 +17,8 @@ import {
 } from "@/lib/plan/scheduleTime";
 import { cn } from "@/lib/utils";
 
+import { TimeWheelPicker, type TimeWheelValue } from "./TimeWheelPicker";
+
 type PlanItemTimeEditorProps = {
   roomId: string;
   scheduleId: number;
@@ -27,75 +29,20 @@ type PlanItemTimeEditorProps = {
 };
 
 const fieldLabelClass = PLAN_PLACE_CARD_TW.timeFieldLabel;
-const timeStartInputClass =
-  "cursor-pointer text-center [color-scheme:light] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:justify-center";
-const startTimeInputClassName = cn(
-  PLAN_PLACE_CARD_TW.timeInputCompact,
-  timeStartInputClass,
-  "tabular-nums",
-);
 
-function PlanStartTimeInput({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  disabled: boolean;
-  onChange: (next: string) => void;
-}) {
-  const openPicker = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (disabled) return;
-    const input = e.currentTarget;
-    try {
-      input.showPicker?.();
-    } catch {
-      input.focus();
-    }
-  };
+const DEFAULT_WHEEL_HOUR = 9;
+const DEFAULT_WHEEL_MINUTE = 0;
 
-  if (!value) {
-    return (
-      <div
-        className={cn(
-          "relative flex min-w-0 w-full items-center justify-center",
-          startTimeInputClassName,
-          disabled && "pointer-events-none opacity-70",
-        )}
-      >
-        <span
-          className="pointer-events-none text-sm tabular-nums text-dark-gray/70"
-          aria-hidden
-        >
-          --:--
-        </span>
-        <input
-          type="time"
-          aria-label="시작 시각"
-          value=""
-          disabled={disabled}
-          onClick={openPicker}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v) onChange(v);
-          }}
-          className="absolute inset-0 z-[1] h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-        />
-      </div>
-    );
-  }
+function parseHmToWheel(hm: string): TimeWheelValue {
+  const m = /^(\d{2}):(\d{2})$/.exec(hm.trim());
+  if (!m) return { hour: DEFAULT_WHEEL_HOUR, minute: DEFAULT_WHEEL_MINUTE };
+  const hour = Math.min(23, Math.max(0, parseInt(m[1]!, 10)));
+  const minute = Math.min(59, Math.max(0, parseInt(m[2]!, 10)));
+  return { hour, minute };
+}
 
-  return (
-    <input
-      type="time"
-      aria-label="시작 시각"
-      value={value}
-      disabled={disabled}
-      onClick={openPicker}
-      onChange={(e) => onChange(e.target.value)}
-      className={startTimeInputClassName}
-    />
-  );
+function formatWheelToHm({ hour, minute }: TimeWheelValue): string {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 export function PlanItemTimeEditor({
@@ -222,54 +169,59 @@ export function PlanItemTimeEditor({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 px-6 pb-6">
-          <div className={PLAN_PLACE_CARD_TW.timeFieldsRow}>
-            <label className={PLAN_PLACE_CARD_TW.timeField}>
-              <span className={fieldLabelClass}>시작</span>
-              <PlanStartTimeInput
-                value={timeHm}
-                disabled={isPending}
-                onChange={(next) => {
-                  setResetPending(false);
-                  setTimeHm(next);
-                  if (!canEditScheduleStayDuration(next)) {
-                    setDurationStr("0");
-                  }
-                }}
-              />
-            </label>
-            <label className={PLAN_PLACE_CARD_TW.timeField}>
-              <span className={fieldLabelClass}>체류(분)</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
-                step={1}
-                aria-label="체류(분)"
-                value={durationStr}
-                onChange={(e) => {
-                  setResetPending(false);
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setDurationStr("");
-                    return;
-                  }
-                  const v = parseInt(raw, 10);
-                  if (!Number.isFinite(v)) {
-                    setDurationStr(raw);
-                    return;
-                  }
-                  setDurationStr(String(clampStayDurationMinutes(v)));
-                }}
-                className={cn(
-                  PLAN_PLACE_CARD_TW.timeInputCompact,
-                  "tabular-nums",
-                )}
-                disabled={isPending || !stayDurationEnabled}
-              />
-            </label>
+        <div className="flex flex-col gap-4 px-6 pb-6">
+          <div className="flex flex-col items-center gap-2">
+            <span className={cn(fieldLabelClass, "self-center")}>시작</span>
+            <TimeWheelPicker
+              value={parseHmToWheel(timeHm)}
+              disabled={isPending}
+              onChange={(next) => {
+                setResetPending(false);
+                const hm = formatWheelToHm(next);
+                setTimeHm(hm);
+                if (!canEditScheduleStayDuration(hm)) {
+                  setDurationStr("0");
+                }
+              }}
+            />
+            {timeHm.length === 0 ? (
+              <span className="text-xs text-dark-gray/70">
+                시간 미설정 · 스크롤 또는 탭으로 시각 지정
+              </span>
+            ) : null}
           </div>
+
+          <label className={cn(PLAN_PLACE_CARD_TW.timeField, "self-stretch")}>
+            <span className={fieldLabelClass}>체류(분)</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={SCHEDULE_STAY_DURATION_MAX_MINUTES}
+              step={1}
+              aria-label="체류(분)"
+              value={durationStr}
+              onChange={(e) => {
+                setResetPending(false);
+                const raw = e.target.value;
+                if (raw === "") {
+                  setDurationStr("");
+                  return;
+                }
+                const v = parseInt(raw, 10);
+                if (!Number.isFinite(v)) {
+                  setDurationStr(raw);
+                  return;
+                }
+                setDurationStr(String(clampStayDurationMinutes(v)));
+              }}
+              className={cn(
+                PLAN_PLACE_CARD_TW.timeInputCompact,
+                "tabular-nums",
+              )}
+              disabled={isPending || !stayDurationEnabled}
+            />
+          </label>
 
           <div className="mt-2 flex items-center justify-end gap-2">
             <button
