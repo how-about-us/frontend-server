@@ -1,9 +1,10 @@
 "use client";
 
-import { Monitor } from "lucide-react";
+import { MessageSquareWarning, Monitor } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { useMobileView } from "@/contexts/MobileViewContext";
+import { FEEDBACK_FORM_URL } from "@/components/layout/sidebarFeedbackForm";
 import {
   isMobileReadOnlyNoticeRoute,
   mobileReadOnlyNoticeCopy,
@@ -34,6 +35,16 @@ export function MobileReadOnlyNotice() {
             {mobileReadOnlyNoticeCopy.description}
           </p>
         </div>
+        <a
+          href={FEEDBACK_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="불편사항 신고 (새 창)"
+          className="ml-1 inline-flex shrink-0 items-center gap-1 self-center rounded-full border border-brand-red/25 bg-white px-2.5 py-1 text-[12px] font-semibold text-brand-red shadow-sm transition hover:bg-brand-red/5 active:bg-brand-red/10"
+        >
+          <MessageSquareWarning size={13} strokeWidth={2.2} aria-hidden />
+          신고
+        </a>
       </div>
     </div>
   );
