@@ -35,12 +35,20 @@ export default function HomePage() {
       <HomeHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        {!isMobileDevice ? (
-          <div className="flex items-center justify-end">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[24px] font-bold tracking-tight text-neutral-900 mobile:text-[20px]">
+              우리의 여행
+            </h1>
+            <p className="mt-1 text-[14px] leading-relaxed text-dark-gray">
+              함께 계획 중인 여행 방을 한눈에 확인해보세요
+            </p>
+          </div>
+          {!isMobileDevice ? (
             <Link
               href="/home/new"
               className={cn(
-                "flex items-center gap-1.5 rounded-full bg-brand-red text-[17px] font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
+                "flex shrink-0 items-center gap-1.5 rounded-full bg-brand-red text-[17px] font-semibold text-white shadow-sm transition-opacity hover:opacity-95 active:opacity-90",
                 pageToolbarButtonPaddingClass,
               )}
             >
@@ -51,10 +59,10 @@ export default function HomePage() {
               />
               새 여행 계획
             </Link>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
-        <div className={isMobileDevice ? "mt-0" : "mt-6"}>
+        <div className="mt-5">
           <RoomGrid
             rooms={rooms}
             isLoading={isLoading}
