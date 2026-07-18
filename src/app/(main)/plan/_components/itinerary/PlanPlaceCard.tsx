@@ -323,6 +323,7 @@ export function PlanPlaceCard({
                   className={cn(
                     PLAN_PLACE_CARD_TW.subtitle,
                     PLAN_PLACE_CARD_TW.subtitleClamp,
+                    "mobile:hidden",
                   )}
                   title={place.subtitle}
                 >
