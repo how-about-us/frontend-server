@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AnalyticsEvents,
   buildAnalyticsUserIdCommand,
+  buildTutorialExitAnalyticsEvent,
 } from "@/lib/analytics/track";
 
 describe("AnalyticsEvents", () => {
@@ -23,7 +24,35 @@ describe("AnalyticsEvents", () => {
       search: "search",
       sharePlan: "share",
       chatMessageSent: "chat_message_sent",
+      tutorialBegin: "tutorial_begin",
+      tutorialComplete: "tutorial_complete",
+      tutorialSkip: "tutorial_skip",
     });
+  });
+});
+
+describe("buildTutorialExitAnalyticsEvent", () => {
+  it("builds the recommended completion event", () => {
+    expect(buildTutorialExitAnalyticsEvent("complete", 5)).toEqual({
+      eventName: "tutorial_complete",
+      params: { tutorial_version: "sidebar_v1" },
+    });
+  });
+
+  it("builds a skip event with the visible one-based step", () => {
+    expect(buildTutorialExitAnalyticsEvent("skip", 2)).toEqual({
+      eventName: "tutorial_skip",
+      params: {
+        skip_step: "3",
+        tutorial_version: "sidebar_v1",
+      },
+    });
+  });
+
+  it.each([-1, 5])("rejects an invalid skip step index: %i", (stepIndex) => {
+    expect(() =>
+      buildTutorialExitAnalyticsEvent("skip", stepIndex),
+    ).toThrow(RangeError);
   });
 });
 

@@ -65,6 +65,8 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 | `search_mode` | 검색 방식 |
 | `source` | 기능 진입 출처 |
 | `trip_days_bucket` | 여행 일수 구간 |
+| `tutorial_version` | 튜토리얼 버전 |
+| `skip_step` | 튜토리얼을 건너뛴 단계 |
 
 `user_id`는 GA의 전용 User-ID 기능으로만 사용하고 맞춤 측정기준으로 등록하지 않는다.
 
@@ -103,5 +105,5 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 1. 분석 쿠키가 없거나 거부 상태일 때 gtag.js 요청과 GA 이벤트가 없는지 확인한다.
 2. 허용 후 첫 화면에서 `page_view`가 한 번만 발생하는지 확인한다.
 3. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
-4. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`와 파라미터를 확인한다.
+4. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
 5. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.

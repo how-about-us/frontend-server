@@ -50,6 +50,9 @@ export const AnalyticsEvents = {
   search: "search",
   sharePlan: "share",
   chatMessageSent: "chat_message_sent",
+  tutorialBegin: "tutorial_begin",
+  tutorialComplete: "tutorial_complete",
+  tutorialSkip: "tutorial_skip",
 } as const;
 
 export type AnalyticsSource = "bookmark" | "chat" | "map" | "plan" | "search";
@@ -57,6 +60,13 @@ export type AnalyticsSource = "bookmark" | "chat" | "map" | "plan" | "search";
 export type ItinerarySource = AnalyticsSource;
 
 export type SharePlanMethod = "copy_link" | "native_share";
+
+export const TUTORIAL_ANALYTICS_VERSION = "sidebar_v1";
+
+const tutorialSkipSteps = ["1", "2", "3", "4", "5"] as const;
+
+export type TutorialAnalyticsVersion = typeof TUTORIAL_ANALYTICS_VERSION;
+export type TutorialExitReason = "complete" | "skip";
 
 export type AnalyticsEventParamsMap = {
   [AnalyticsEvents.signUp]: {
@@ -116,7 +126,51 @@ export type AnalyticsEventParamsMap = {
   [AnalyticsEvents.chatMessageSent]: {
     message_type: "ai" | "place" | "text";
   };
+  [AnalyticsEvents.tutorialBegin]: {
+    tutorial_version: TutorialAnalyticsVersion;
+  };
+  [AnalyticsEvents.tutorialComplete]: {
+    tutorial_version: TutorialAnalyticsVersion;
+  };
+  [AnalyticsEvents.tutorialSkip]: {
+    skip_step: (typeof tutorialSkipSteps)[number];
+    tutorial_version: TutorialAnalyticsVersion;
+  };
 };
+
+export type TutorialExitAnalyticsEvent =
+  | {
+      eventName: typeof AnalyticsEvents.tutorialComplete;
+      params: AnalyticsEventParamsMap[typeof AnalyticsEvents.tutorialComplete];
+    }
+  | {
+      eventName: typeof AnalyticsEvents.tutorialSkip;
+      params: AnalyticsEventParamsMap[typeof AnalyticsEvents.tutorialSkip];
+    };
+
+export function buildTutorialExitAnalyticsEvent(
+  reason: TutorialExitReason,
+  zeroBasedStep: number,
+): TutorialExitAnalyticsEvent {
+  if (reason === "complete") {
+    return {
+      eventName: AnalyticsEvents.tutorialComplete,
+      params: { tutorial_version: TUTORIAL_ANALYTICS_VERSION },
+    };
+  }
+
+  const skipStep = tutorialSkipSteps[zeroBasedStep];
+  if (!skipStep) {
+    throw new RangeError("Tutorial skip step must be between 0 and 4.");
+  }
+  return {
+    eventName: AnalyticsEvents.tutorialSkip,
+    params: {
+      skip_step: skipStep,
+      tutorial_version: TUTORIAL_ANALYTICS_VERSION,
+    },
+  };
+}
 
 type AnalyticsEventName = keyof AnalyticsEventParamsMap;
 
