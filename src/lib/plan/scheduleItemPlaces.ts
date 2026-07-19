@@ -6,8 +6,8 @@ import { awaitRoomSchedulesHydrated } from "@/lib/rooms";
 import {
   createScheduleItem,
   getScheduleItems,
-  reorderScheduleItem,
   updateScheduleItem,
+  type CreateScheduleItemResponse,
   type RoomScheduleItem,
 } from "@/lib/api/rooms/schedule-items";
 import { fetchPlacePreview } from "@/lib/places/place-queries";
@@ -18,6 +18,8 @@ import {
 } from "@/lib/plan/schedule-bulk-hydration";
 import { getQueryClient } from "@/lib/query-client";
 import {
+  bumpPlanMapRouteSegments,
+  invalidateScheduleItemRouteForSources,
   invalidateScheduleItemRouteForWholeSchedule,
   invalidateScheduleItemRoutesAfterDelete,
   invalidateScheduleItemRoutesAfterItemCreated,
@@ -271,6 +273,7 @@ export async function syncAfterCrossScheduleItemMove(
   sourceScheduleId: number,
   targetScheduleId: number,
   movedItemId?: number,
+  affectedRouteItemIds?: number[] | null,
 ): Promise<void> {
   const rid = roomId.trim();
   if (!rid.length) return;
@@ -297,6 +300,45 @@ export async function syncAfterCrossScheduleItemMove(
       sid,
       items,
     );
+  }
+
+  if (affectedRouteItemIds !== undefined) {
+    if (affectedRouteItemIds === null) {
+      for (const sid of scheduleIds) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+      }
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+      return;
+    }
+
+    const remaining = new Set(affectedRouteItemIds);
+    for (const sid of scheduleIds) {
+      const orderedIds = readOrderedItemIdsFromScheduleItemsCache(
+        queryClient,
+        rid,
+        sid,
+      );
+      const scheduleItemIds = new Set(orderedIds ?? []);
+      const sources = affectedRouteItemIds.filter(
+        (id) => remaining.has(id) && scheduleItemIds.has(id),
+      );
+      for (const id of sources) remaining.delete(id);
+      await invalidateScheduleItemRouteForSources(
+        queryClient,
+        rid,
+        sid,
+        sources,
+      );
+      bumpPlanMapRouteSegments(rid, sid, sources);
+    }
+
+    if (remaining.size > 0) {
+      for (const sid of scheduleIds) {
+        await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
+      }
+      usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
+    }
+    return;
   }
 
   if (movedItemId != null) {
@@ -624,7 +666,37 @@ function resolveInsertTargetIndex(
   return Math.max(0, Math.min(insertIndex, listLength - 1));
 }
 
-/** 1) 일차 항목 생성 2) `insertIndex` 슬롯으로 reorder(필요 시). */
+/** HTTP 생성 델타를 현재 일정 캐시에 병합합니다. 캐시가 어긋나면 null을 반환합니다. */
+export function mergeCreatedScheduleItemDelta(
+  prev: PlanPlace[] | undefined,
+  createdPlace: PlanPlace,
+  response: CreateScheduleItemResponse,
+): PlanPlace[] | null {
+  if (!prev || prev.some((place) => place.itemId === response.createdItem.itemId)) {
+    return null;
+  }
+
+  let next = [...prev];
+  for (const updated of response.updatedItems) {
+    const patched = applyRoomScheduleItemToPlanPlaces(next, updated);
+    if (!patched) return null;
+    next = patched;
+  }
+
+  const targetIndex = response.createdItem.orderIndex;
+  if (
+    !Number.isInteger(targetIndex) ||
+    targetIndex < 0 ||
+    targetIndex > next.length
+  ) {
+    return null;
+  }
+
+  next.splice(targetIndex, 0, createdPlace);
+  return next;
+}
+
+/** 서버가 지정 위치 삽입과 이동수단 추천을 함께 처리하고 델타를 반환합니다. */
 export async function createScheduleItemAtPlanIndex(
   queryClient: QueryClient,
   args: {
@@ -640,79 +712,61 @@ export async function createScheduleItemAtPlanIndex(
     throw new Error("createScheduleItemAtPlanIndex: empty roomId");
   }
 
-  const created = await createScheduleItem(rid, args.scheduleId, {
-    googlePlaceId: args.googlePlaceId,
-  });
-
   const listLengthAfterCreate = args.places.length + 1;
   const targetIndex = resolveInsertTargetIndex(
     args.insertIndex,
     listLengthAfterCreate,
   );
-  const fromIndex =
-    typeof created.orderIndex === "number" &&
-    Number.isFinite(created.orderIndex)
-      ? created.orderIndex
-      : args.places.length;
+  const response = await createScheduleItem(rid, args.scheduleId, {
+    googlePlaceId: args.googlePlaceId,
+    orderIndex: targetIndex,
+  });
 
-  if (fromIndex === targetIndex) {
-    await appendCreatedScheduleItemToPlanPlaces(
+  const key = scheduleItemsQueryKey(rid, args.scheduleId);
+  try {
+    const prev = queryClient.getQueryData<PlanPlace[]>(key);
+    const createdPlace = await planPlaceFromScheduleItem(response.createdItem);
+    const merged = mergeCreatedScheduleItemDelta(prev, createdPlace, response);
+    if (merged) {
+      queryClient.setQueryData(key, merged);
+    } else {
+      const fresh = await getScheduleItems(rid, args.scheduleId);
+      await mergeOrRefetchSchedulePlanPlacesFromItems(
+        queryClient,
+        rid,
+        args.scheduleId,
+        fresh,
+      );
+    }
+
+    await invalidateScheduleItemRouteForSources(
       queryClient,
       rid,
       args.scheduleId,
-      created,
+      response.affectedRouteItemIds,
     );
-    return created;
+    bumpPlanMapRouteSegments(
+      rid,
+      args.scheduleId,
+      response.affectedRouteItemIds,
+    );
+  } catch {
+    await Promise.allSettled([
+      queryClient.invalidateQueries({
+        queryKey: key,
+        exact: true,
+        refetchType: "active",
+      }),
+      invalidateScheduleItemRouteForWholeSchedule(
+        queryClient,
+        rid,
+        args.scheduleId,
+      ),
+    ]);
+    usePlanMapDirectionsEpochStore.getState().bumpForDirections(rid);
   }
 
-  const items = await reorderScheduleItem(
-    rid,
-    args.scheduleId,
-    created.itemId,
-    {
-      newOrderIndex: newOrderIndexAfterMove(
-        fromIndex,
-        targetIndex,
-        listLengthAfterCreate,
-      ),
-    },
-  );
-  await syncPlanPlacesAfterReorderSuccess(
-    queryClient,
-    rid,
-    args.scheduleId,
-    items,
-    created.itemId,
-  );
-
-  return created;
-}
-
-/** POST 응답으로 `schedule-items` 캐시에 새 항목을 반영합니다(GET items 생략). */
-export async function appendCreatedScheduleItemToPlanPlaces(
-  queryClient: QueryClient,
-  roomId: string,
-  scheduleId: number,
-  created: RoomScheduleItem,
-): Promise<void> {
-  const rid = roomId.trim();
-  if (!rid.length) return;
-  const key = scheduleItemsQueryKey(rid, scheduleId);
-  const prev = queryClient.getQueryData<PlanPlace[]>(key) ?? [];
-  if (prev.some((p) => p.itemId === created.itemId)) return;
-
-  const newPlace = await planPlaceFromScheduleItem(created);
-  const without = prev.filter((p) => p.itemId !== created.itemId);
-  const idx = Math.max(0, Math.min(created.orderIndex, without.length));
-  const next = [...without];
-  next.splice(idx, 0, newPlace);
-  queryClient.setQueryData(key, next);
-  await invalidateScheduleItemRoutesAfterItemCreated(
-    queryClient,
-    rid,
-    scheduleId,
-    created.itemId,
-  );
+  return response.createdItem;
 }
 
 /** 드래그를 `toIndex` 자리에 놓았을 때 PATCH에 넣을 `newOrderIndex`(0-based) */

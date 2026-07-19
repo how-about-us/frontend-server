@@ -2,7 +2,10 @@
 
 import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import type { PlanItinerarySegmentDescriptor } from "@/lib/plan/planItineraryMapSegments";
-import { canonicalScheduleTravelMode } from "@/lib/plan/scheduleTravelMode";
+import {
+  SCHEDULE_TRAVEL_MODE_DEFAULT,
+  canonicalScheduleTravelMode,
+} from "@/lib/plan/scheduleTravelMode";
 
 const STORAGE_KEY = "hau:destination-center-v1";
 
@@ -236,7 +239,8 @@ export function shouldSuggestPlacesSearchRecenter(params: {
 function toGmTravelMode(
   modeRaw: string | undefined,
 ): google.maps.TravelMode {
-  const c = canonicalScheduleTravelMode(modeRaw) ?? "WALKING";
+  const c =
+    canonicalScheduleTravelMode(modeRaw) ?? SCHEDULE_TRAVEL_MODE_DEFAULT;
   const T = google.maps.TravelMode;
   switch (c) {
     case "WALKING":
@@ -248,12 +252,12 @@ function toGmTravelMode(
     case "TRANSIT":
       return T.TRANSIT;
     default:
-      return T.WALKING;
+      return T.DRIVING;
   }
 }
 
 /**
- * Directions `overview_path` 가 출발/도착과 반대일 때 뒤집습니다.
+ * Routes `path`가 출발/도착과 반대일 때 뒤집습니다.
  * 폴리라인·화살표가 일정 순서(작은 번호 → 큰 번호) 방향을 가리키게 합니다.
  */
 export function orientPathSmallerStopToLarger(
@@ -278,48 +282,35 @@ export function orientPathSmallerStopToLarger(
 }
 
 /**
- * 일정 두 장소(Place ID) 구간 경로 좌표 — Maps JS DirectionsService.
+ * 일정 두 장소(Place ID) 구간 경로 좌표 — Maps JS Route.computeRoutes.
  */
 export async function fetchPlanSegmentPathLatLng(
   originPlaceId: string,
   destPlaceId: string,
   segmentTravelMode: string | undefined,
 ): Promise<google.maps.LatLngLiteral[]> {
-  await google.maps.importLibrary("routes");
-  const svc = new google.maps.DirectionsService();
-
   const o = originPlaceId.trim();
   const d = destPlaceId.trim();
   if (!o.length || !d.length) return [];
 
-  const travelMode = toGmTravelMode(segmentTravelMode);
-
-  return await new Promise((resolve) => {
-    svc.route(
-      {
-        origin: { placeId: o },
-        destination: { placeId: d },
-        travelMode,
-      },
-      (result, status) => {
-        if (
-          status !== google.maps.DirectionsStatus.OK ||
-          !result?.routes[0]
-        ) {
-          resolve([]);
-          return;
-        }
-        const pts = result.routes[0]?.overview_path;
-        if (!pts?.length) {
-          resolve([]);
-          return;
-        }
-        resolve(
-          pts.map((p) => ({ lat: p.lat(), lng: p.lng() })),
-        );
-      },
-    );
-  });
+  try {
+    const [{ Place }, { Route }] = await Promise.all([
+      google.maps.importLibrary("places"),
+      google.maps.importLibrary("routes"),
+    ]);
+    const { routes } = await Route.computeRoutes({
+      origin: new Place({ id: o }),
+      destination: new Place({ id: d }),
+      travelMode: toGmTravelMode(segmentTravelMode),
+      fields: ["path"],
+      polylineQuality: "OVERVIEW",
+    });
+    const path = routes?.[0]?.path;
+    if (!path?.length) return [];
+    return path.map((point) => ({ lat: point.lat, lng: point.lng }));
+  } catch {
+    return [];
+  }
 }
 
 /**

@@ -1,7 +1,11 @@
 /// <reference types="google.maps" />
 
 import type { PlanPlace } from "@/lib/plan/types";
-import { SCHEDULE_TRAVEL_MODE_DEFAULT } from "@/lib/plan/scheduleTravelMode";
+import {
+  SCHEDULE_TRAVEL_MODE_DEFAULT,
+  canonicalScheduleTravelMode,
+  type ScheduleTravelModeValue,
+} from "@/lib/plan/scheduleTravelMode";
 
 /** 펼친 일차 일정 순서에서 인접 두 장소로 만든 Directions 구간 단위 */
 export type PlanItinerarySegmentDescriptor = {
@@ -9,7 +13,7 @@ export type PlanItinerarySegmentDescriptor = {
   segmentSourceItemId: number;
   originPlaceId: string;
   destPlaceId: string;
-  travelModeCanon: string;
+  travelModeCanon: ScheduleTravelModeValue;
   /** 순서상 앞(작은 번호) 장소 — 경로 방향 보정 */
   originLocation?: google.maps.LatLngLiteral;
   /** 순서상 뒤(큰 번호) 장소 — 경로 방향 보정 */
@@ -40,8 +44,9 @@ export function flattenPlanItinerarySegmentsFromPlaces(
         segmentSourceItemId: a.itemId,
         originPlaceId: o,
         destPlaceId: d,
-        /** 지도 폴리라인은 공유 이동수단과 무관하게 자동차 고정 */
-        travelModeCanon: SCHEDULE_TRAVEL_MODE_DEFAULT,
+        travelModeCanon:
+          canonicalScheduleTravelMode(a.travelMode) ??
+          SCHEDULE_TRAVEL_MODE_DEFAULT,
         originLocation: a.location,
         destLocation: b.location,
       });
@@ -50,4 +55,3 @@ export function flattenPlanItinerarySegmentsFromPlaces(
 
   return segments;
 }
-

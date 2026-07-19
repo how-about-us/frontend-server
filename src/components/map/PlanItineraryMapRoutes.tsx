@@ -41,7 +41,7 @@ import { PlanItineraryStopMapPin } from "./PlanItineraryStopMapPin";
 /**
  * 일차별 "지도에 경로 표시" 토글(`usePlanScheduleRouteVisibilityStore`) ON인
  * 일차만 지도에 경로(polyline)와 정류장 마커를 그립니다.
- * 폴리라인 travelMode는 항상 DRIVING(`planItineraryMapSegments`).
+ * 폴리라인 travelMode는 서버에 저장된 구간별 공유 이동수단을 따릅니다.
  * STOMP 에폭은 {@link usePlanMapDirectionsEpochStore} 참고.
  */
 export function PlanItineraryMapRoutes() {
@@ -190,7 +190,7 @@ export function PlanItineraryMapRoutes() {
 
     polylines.push(
       <Polyline
-        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${directionsEpoch}-${segEpoch}`}
+        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${seg.travelModeCanon}-${directionsEpoch}-${segEpoch}`}
         zIndex={40 + segIdx}
         strokeColor={routeColor}
         strokeOpacity={0.8}
