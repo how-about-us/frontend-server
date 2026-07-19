@@ -15,6 +15,28 @@ const shouldTrackAnalytics =
   process.env.NODE_ENV === "production" &&
   Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
 
+export type AnalyticsUserIdCommand = [
+  "set",
+  { user_id: string | null },
+];
+
+export function buildAnalyticsUserIdCommand(
+  userId: number | null | undefined,
+): AnalyticsUserIdCommand {
+  const normalized =
+    typeof userId === "number" && Number.isSafeInteger(userId) && userId > 0
+      ? String(userId)
+      : null;
+  return ["set", { user_id: normalized }];
+}
+
+export function setAnalyticsUserId(userId: number | null | undefined): void {
+  if (!shouldTrackAnalytics) return;
+  if (readAnalyticsConsentCookie() !== "granted") return;
+
+  sendGAEvent(...buildAnalyticsUserIdCommand(userId));
+}
+
 export const AnalyticsEvents = {
   signUp: "sign_up",
   login: "login",

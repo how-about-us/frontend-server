@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { AnalyticsEvents } from "@/lib/analytics/track";
+import {
+  AnalyticsEvents,
+  buildAnalyticsUserIdCommand,
+} from "@/lib/analytics/track";
 
 describe("AnalyticsEvents", () => {
   it("exposes the frontend GA event schema", () => {
@@ -22,4 +25,23 @@ describe("AnalyticsEvents", () => {
       chatMessageSent: "chat_message_sent",
     });
   });
+});
+
+describe("buildAnalyticsUserIdCommand", () => {
+  it("sets an opaque string user ID for an authenticated user", () => {
+    expect(buildAnalyticsUserIdCommand(42)).toEqual([
+      "set",
+      { user_id: "42" },
+    ]);
+  });
+
+  it.each([null, undefined, 0, Number.NaN])(
+    "clears the user ID for an invalid or signed-out value: %s",
+    (userId) => {
+      expect(buildAnalyticsUserIdCommand(userId)).toEqual([
+        "set",
+        { user_id: null },
+      ]);
+    },
+  );
 });

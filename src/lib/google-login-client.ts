@@ -1,7 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { analyticsEntryPoint } from "@/lib/analytics/context";
-import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
+import {
+  AnalyticsEvents,
+  setAnalyticsUserId,
+  trackAnalyticsEvent,
+} from "@/lib/analytics/track";
 import {
   consumePendingInviteCode,
   fetchSessionUserWithRetry,
@@ -30,6 +34,7 @@ export async function finishGoogleLogin(
   const agreementFlow = readGoogleAgreementFlowSession();
   const pendingInviteCode = consumePendingInviteCode();
   clearGoogleAgreementFlowSession();
+  setAnalyticsUserId(me.id);
   trackAnalyticsEvent(
     agreementFlow?.kind === "signup"
       ? AnalyticsEvents.signUp
