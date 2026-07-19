@@ -11,6 +11,7 @@ import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
 import { reconcileClientSession } from "@/lib/auth";
+import { analyticsRuntime } from "@/lib/analytics/runtime";
 import { createQueryClient, registerQueryClient } from "@/lib/query-client";
 
 /**
@@ -28,9 +29,6 @@ function SessionReconciler() {
 
   return null;
 }
-
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const shouldShowConsentFlow = Boolean(GA_MEASUREMENT_ID);
 
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => {
@@ -63,8 +61,11 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
       <StompProvider>
         <GoogleMapsProvider>
           <MobileChrome>{children}</MobileChrome>
-          {shouldShowConsentFlow && GA_MEASUREMENT_ID ? (
-            <ConsentGatedAnalytics gaId={GA_MEASUREMENT_ID} />
+          {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
+            <ConsentGatedAnalytics
+              debugMode={analyticsRuntime.debugMode}
+              gaId={analyticsRuntime.measurementId}
+            />
           ) : null}
           <Toaster position="bottom-right" richColors />
         </GoogleMapsProvider>

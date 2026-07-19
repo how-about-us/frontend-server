@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   analyticsEntryPoint,
   analyticsPagePath,
+  buildAnalyticsPageView,
   bucketItemCount,
   bucketMemberCount,
   bucketResultCount,
@@ -69,9 +70,47 @@ describe("analytics context", () => {
     expect(bucketTripDays("2026-07-20", "2026-07-19")).toBeUndefined();
   });
 
-  it("never includes URL query parameters in the analytics page path", () => {
-    expect(analyticsPagePath("/search?q=home&inviteCode=secret")).toBe("/search");
-    expect(analyticsPagePath("/join/code#details")).toBe("/join/code");
+  it.each([
+    ["/search?q=home&inviteCode=secret", "/search"],
+    ["/join/invite-secret#details", "/join/[inviteCode]"],
+    ["/plan/123?roomTitle=Jeju", "/plan/[roomId]"],
+    ["/bookmark/456/", "/bookmark/[folderId]"],
+    ["/privacy", "/privacy"],
+    ["not-a-path", "/"],
+  ] as const)("normalizes analytics page path %s to %s", (pathname, expected) => {
+    expect(analyticsPagePath(pathname)).toBe(expected);
+  });
+
+  it("builds a page view without URL identifiers or query parameters", () => {
+    expect(
+      buildAnalyticsPageView({
+        origin: "https://uttae.example/",
+        pathname: "/plan/room-secret?roomTitle=Jeju",
+        referrer:
+          "https://uttae.example/join/invite-secret?utm_source=message",
+        title: "제주 여행 일정",
+      }),
+    ).toEqual({
+      page_path: "/plan/[roomId]",
+      page_location: "https://uttae.example/plan/[roomId]",
+      page_referrer: "https://uttae.example/join/[inviteCode]",
+      page_title: "제주 여행 일정",
+    });
+  });
+
+  it("omits an invalid page referrer", () => {
+    expect(
+      buildAnalyticsPageView({
+        origin: "https://uttae.example",
+        pathname: "/search?q=secret",
+        referrer: "not-a-url",
+        title: "장소 검색",
+      }),
+    ).toEqual({
+      page_path: "/search",
+      page_location: "https://uttae.example/search",
+      page_title: "장소 검색",
+    });
   });
 
   it("derives low-cardinality entry points and room roles", () => {

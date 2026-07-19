@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import { useCallback, useSyncExternalStore } from "react";
 
 import { AnalyticsRouteTracker } from "@/components/analytics/AnalyticsRouteTracker";
 import { CookieConsentBanner } from "@/components/analytics/CookieConsentBanner";
+import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
 import {
   readAnalyticsConsentCookie,
   writeAnalyticsConsentCookie,
@@ -14,27 +14,49 @@ import {
 type ConsentState = AnalyticsConsent | "pending";
 
 type ConsentGatedAnalyticsProps = {
+  debugMode: boolean;
   gaId: string;
 };
 
-const shouldLoadAnalyticsScripts =
-  process.env.NODE_ENV === "production" && Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+const consentListeners = new Set<() => void>();
 
-export function ConsentGatedAnalytics({ gaId }: ConsentGatedAnalyticsProps) {
-  const [consent, setConsent] = useState<ConsentState>("pending");
+function subscribeToAnalyticsConsent(listener: () => void): () => void {
+  consentListeners.add(listener);
+  return () => {
+    consentListeners.delete(listener);
+  };
+}
 
-  useEffect(() => {
-    setConsent(readAnalyticsConsentCookie() ?? "pending");
-  }, []);
+function getAnalyticsConsentSnapshot(): ConsentState {
+  return readAnalyticsConsentCookie() ?? "pending";
+}
+
+function getAnalyticsConsentServerSnapshot(): ConsentState {
+  return "pending";
+}
+
+function notifyAnalyticsConsentChanged(): void {
+  consentListeners.forEach((listener) => listener());
+}
+
+export function ConsentGatedAnalytics({
+  debugMode,
+  gaId,
+}: ConsentGatedAnalyticsProps) {
+  const consent = useSyncExternalStore(
+    subscribeToAnalyticsConsent,
+    getAnalyticsConsentSnapshot,
+    getAnalyticsConsentServerSnapshot,
+  );
 
   const handleAccept = useCallback(() => {
     writeAnalyticsConsentCookie("granted");
-    setConsent("granted");
+    notifyAnalyticsConsentChanged();
   }, []);
 
   const handleReject = useCallback(() => {
     writeAnalyticsConsentCookie("denied");
-    setConsent("denied");
+    notifyAnalyticsConsentChanged();
   }, []);
 
   return (
@@ -42,10 +64,10 @@ export function ConsentGatedAnalytics({ gaId }: ConsentGatedAnalyticsProps) {
       {consent === "pending" ? (
         <CookieConsentBanner onAccept={handleAccept} onReject={handleReject} />
       ) : null}
-      {consent === "granted" && shouldLoadAnalyticsScripts ? (
+      {consent === "granted" ? (
         <>
-          <GoogleAnalytics gaId={gaId} />
-          <AnalyticsRouteTracker gaId={gaId} />
+          <GoogleAnalyticsScript debugMode={debugMode} gaId={gaId} />
+          <AnalyticsRouteTracker />
         </>
       ) : null}
     </>

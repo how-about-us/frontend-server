@@ -15,13 +15,13 @@ describe("AnalyticsEvents", () => {
       createPlan: "create_plan",
       viewPlan: "view_plan",
       inviteView: "invite_view",
-      joinPlan: "join_plan",
+      joinPlan: "join_group",
       viewPlace: "view_place",
       addToItinerary: "add_to_itinerary",
       removeFromItinerary: "remove_from_itinerary",
       reorderItinerary: "reorder_itinerary",
       search: "search",
-      sharePlan: "share_plan",
+      sharePlan: "share",
       chatMessageSent: "chat_message_sent",
     });
   });

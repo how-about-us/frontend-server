@@ -1,4 +1,4 @@
-import { sendGAEvent } from "@next/third-parties/google";
+import { sendAnalyticsCommand } from "@/lib/analytics/client";
 
 import { readAnalyticsConsentCookie } from "@/lib/analytics/consent-cookie";
 import type {
@@ -10,10 +10,7 @@ import type {
   SearchRankBucket,
   TripDaysBucket,
 } from "@/lib/analytics/context";
-
-const shouldTrackAnalytics =
-  process.env.NODE_ENV === "production" &&
-  Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+import { analyticsRuntime } from "@/lib/analytics/runtime";
 
 export type AnalyticsUserIdCommand = [
   "set",
@@ -31,10 +28,10 @@ export function buildAnalyticsUserIdCommand(
 }
 
 export function setAnalyticsUserId(userId: number | null | undefined): void {
-  if (!shouldTrackAnalytics) return;
+  if (!analyticsRuntime.enabled) return;
   if (readAnalyticsConsentCookie() !== "granted") return;
 
-  sendGAEvent(...buildAnalyticsUserIdCommand(userId));
+  sendAnalyticsCommand(...buildAnalyticsUserIdCommand(userId));
 }
 
 export const AnalyticsEvents = {
@@ -45,13 +42,13 @@ export const AnalyticsEvents = {
   createPlan: "create_plan",
   viewPlan: "view_plan",
   inviteView: "invite_view",
-  joinPlan: "join_plan",
+  joinPlan: "join_group",
   viewPlace: "view_place",
   addToItinerary: "add_to_itinerary",
   removeFromItinerary: "remove_from_itinerary",
   reorderItinerary: "reorder_itinerary",
   search: "search",
-  sharePlan: "share_plan",
+  sharePlan: "share",
   chatMessageSent: "chat_message_sent",
 } as const;
 
@@ -61,23 +58,75 @@ export type ItinerarySource = AnalyticsSource;
 
 export type SharePlanMethod = "copy_link" | "native_share";
 
-export type AnalyticsEventParams = {
-  entry_point?: AnalyticsEntryPoint;
-  item_count_bucket?: ItemCountBucket;
-  member_count_bucket?: MemberCountBucket;
-  message_type?: "ai" | "place" | "text";
-  method?: "drag_drop" | "google" | SharePlanMethod;
-  place_category?: string;
-  rank_bucket?: SearchRankBucket;
-  result_count_bucket?: ResultCountBucket;
-  role?: AnalyticsRoomRole;
-  search_mode?: "map_recenter" | "text";
-  source?: AnalyticsSource;
-  trip_days_bucket?: TripDaysBucket;
+export type AnalyticsEventParamsMap = {
+  [AnalyticsEvents.signUp]: {
+    entry_point: AnalyticsEntryPoint;
+    method: "google";
+  };
+  [AnalyticsEvents.login]: {
+    entry_point: AnalyticsEntryPoint;
+    method: "google";
+  };
+  [AnalyticsEvents.createBookmarkFolder]: undefined;
+  [AnalyticsEvents.addToBookmark]: {
+    place_category?: string;
+    source?: AnalyticsSource;
+  };
+  [AnalyticsEvents.createPlan]: {
+    entry_point: AnalyticsEntryPoint;
+    trip_days_bucket?: TripDaysBucket;
+  };
+  [AnalyticsEvents.viewPlan]: {
+    member_count_bucket: MemberCountBucket;
+    role?: AnalyticsRoomRole;
+  };
+  [AnalyticsEvents.inviteView]: {
+    entry_point: AnalyticsEntryPoint;
+  };
+  [AnalyticsEvents.joinPlan]: {
+    member_count_bucket?: MemberCountBucket;
+    role?: AnalyticsRoomRole;
+  };
+  [AnalyticsEvents.viewPlace]: {
+    place_category?: string;
+    rank_bucket?: SearchRankBucket;
+    source?: AnalyticsSource;
+  };
+  [AnalyticsEvents.addToItinerary]: {
+    item_count_bucket: ItemCountBucket;
+    place_category?: string;
+    source: AnalyticsSource;
+  };
+  [AnalyticsEvents.removeFromItinerary]: {
+    item_count_bucket: ItemCountBucket;
+  };
+  [AnalyticsEvents.reorderItinerary]: {
+    item_count_bucket: ItemCountBucket;
+    method: "drag_drop";
+  };
+  [AnalyticsEvents.search]: {
+    result_count_bucket: ResultCountBucket;
+    search_mode: "map_recenter" | "text";
+  };
+  [AnalyticsEvents.sharePlan]: {
+    member_count_bucket?: MemberCountBucket;
+    method: SharePlanMethod;
+    role?: AnalyticsRoomRole;
+  };
+  [AnalyticsEvents.chatMessageSent]: {
+    message_type: "ai" | "place" | "text";
+  };
 };
 
+type AnalyticsEventName = keyof AnalyticsEventParamsMap;
+
+type AnalyticsEventArguments<EventName extends AnalyticsEventName> =
+  AnalyticsEventParamsMap[EventName] extends undefined
+    ? [params?: undefined]
+    : [params: AnalyticsEventParamsMap[EventName]];
+
 function cleanParams(
-  params?: AnalyticsEventParams,
+  params?: object,
 ): Record<string, string | number | boolean> {
   if (!params) return {};
   const cleaned: Record<string, string | number | boolean> = {};
@@ -89,17 +138,18 @@ function cleanParams(
   return cleaned;
 }
 
-export function trackAnalyticsEvent(
-  eventName: (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents],
-  params?: AnalyticsEventParams,
+export function trackAnalyticsEvent<EventName extends AnalyticsEventName>(
+  eventName: EventName,
+  ...args: AnalyticsEventArguments<EventName>
 ): void {
-  if (!shouldTrackAnalytics) return;
+  const params = args[0];
+  if (!analyticsRuntime.enabled) return;
   if (readAnalyticsConsentCookie() !== "granted") return;
 
   const cleaned = cleanParams(params);
   if (Object.keys(cleaned).length > 0) {
-    sendGAEvent("event", eventName, cleaned);
+    sendAnalyticsCommand("event", eventName, cleaned);
   } else {
-    sendGAEvent("event", eventName);
+    sendAnalyticsCommand("event", eventName);
   }
 }
