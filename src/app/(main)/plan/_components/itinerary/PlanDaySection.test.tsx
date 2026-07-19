@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { PlanDaySection } from "./PlanDaySection";
 
 describe("PlanDaySection", () => {
-  it("펼침 토글 아이콘을 제목과 겹치지 않게 버튼 오른쪽에 배치한다", () => {
+  it("펼침 토글 아이콘을 제목 왼쪽에 배치한다", () => {
     const html = renderToStaticMarkup(
       createElement(
         PlanDaySection,
@@ -21,8 +21,12 @@ describe("PlanDaySection", () => {
       /<button[^>]*aria-expanded="true"[^>]*>([\s\S]*?)<\/button>/,
     )?.[1];
 
-    expect(triggerMarkup).toContain("ml-auto");
-    expect(triggerMarkup).toContain("shrink-0");
+    expect(triggerMarkup).toBeDefined();
+    expect(triggerMarkup).toContain('class="shrink-0 text-dark-gray"');
+    expect(triggerMarkup).not.toContain("ml-auto");
+    expect(triggerMarkup!.indexOf("lucide-chevron-up")).toBeLessThan(
+      triggerMarkup!.indexOf("7월 16일 (목)"),
+    );
     expect(html).not.toContain("absolute left-1/2");
   });
 });

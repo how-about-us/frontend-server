@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
@@ -85,6 +85,26 @@ export function AddMemberPanel({
     });
   }
 
+  async function handleShare() {
+    if (!inviteUrl) return;
+    const canShare =
+      typeof navigator !== "undefined" && typeof navigator.share === "function";
+    if (canShare) {
+      try {
+        await navigator.share({
+          title: "우때 여행 초대",
+          url: inviteUrl,
+        });
+        trackAnalyticsEvent(AnalyticsEvents.sharePlan, { method: "kakao" });
+        return;
+      } catch (err) {
+        if ((err as Error | undefined)?.name === "AbortError") return;
+      }
+    }
+    handleCopy();
+    toast.info("공유 시트를 열 수 없어 링크를 복사했어요.");
+  }
+
   function handleRegenerate() {
     if (!roomIdTrim.length) return;
     setIssuedCode(null);
@@ -157,6 +177,16 @@ export function AddMemberPanel({
             {copied ? "복사됨 ✓" : "복사"}
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={() => void handleShare()}
+          disabled={!inviteUrl}
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-brand-red px-3 py-2.5 text-[14px] font-semibold text-white shadow-sm transition hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Share2 size={16} strokeWidth={2.2} aria-hidden />
+          친구에게 공유
+        </button>
 
         <button
           type="button"

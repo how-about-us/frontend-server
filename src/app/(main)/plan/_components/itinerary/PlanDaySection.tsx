@@ -202,9 +202,16 @@ export function PlanDaySection({
             aria-expanded={expanded}
             aria-controls={`${panelId}-panel`}
             onClick={toggle}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
+            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg text-left transition-colors hover:bg-bubble-gray/60"
           >
-            <div className="min-w-0 flex-1">
+            <span className="shrink-0 text-dark-gray" aria-hidden>
+              {expanded ? (
+                <ChevronUp className="h-5 w-5" />
+              ) : (
+                <ChevronDown className="h-5 w-5" />
+              )}
+            </span>
+            <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-2">
                 <h2 className="min-w-0 truncate text-[19px] font-semibold text-gray-900">
                   {subtitle || title}
@@ -216,13 +223,6 @@ export function PlanDaySection({
                 ) : null}
               </div>
             </div>
-            <span className="ml-auto shrink-0 self-center text-dark-gray" aria-hidden>
-              {expanded ? (
-                <ChevronUp className="h-5 w-5" />
-              ) : (
-                <ChevronDown className="h-5 w-5" />
-              )}
-            </span>
           </button>
           {trackedSid !== undefined ? (
             <button
@@ -237,7 +237,7 @@ export function PlanDaySection({
               }
               title={routeVisible ? "지도에서 경로 숨기기" : "지도에 경로 표시"}
               className={cn(
-                "shrink-0 cursor-pointer self-center rounded-lg p-2 transition-colors",
+                "shrink-0 cursor-pointer self-center rounded-lg p-2 transition-colors mobile:hidden",
                 routeVisible
                   ? "text-brand-red hover:bg-red-50"
                   : "text-dark-gray hover:bg-bubble-gray/60",

@@ -87,6 +87,25 @@ const GOOGLE_MAPS_DIRECTIONS_TRAVEL_MODE = {
   BICYCLING: "bicycling",
 } as const satisfies Record<GoogleMapsDirectionsTravelMode, string>;
 
+/** Place ID로 Google Maps 장소 상세 URL을 만든다. */
+export function buildGoogleMapsPlaceUrl({
+  placeId,
+  query,
+}: {
+  placeId: string;
+  query?: string;
+}): string | null {
+  const id = placeId.trim();
+  if (!id.length) return null;
+  const q = (query ?? "").trim() || id;
+  const params = new URLSearchParams({
+    api: "1",
+    query: q,
+    query_place_id: id,
+  });
+  return `https://www.google.com/maps/search/?${params.toString()}`;
+}
+
 /** 두 Place ID와 이동수단으로 Google Maps 길찾기 URL을 만든다. */
 export function buildGoogleMapsDirectionsUrl({
   originPlaceId,

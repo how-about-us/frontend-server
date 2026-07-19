@@ -16,7 +16,16 @@ export type ExchangeGoogleCodeResult =
       signupToken: string;
       expiresInSeconds: number;
     }
+  | {
+      ok: true;
+      status: "REACCEPTANCE_REQUIRED";
+      reacceptanceToken: string;
+      expiresInSeconds: number;
+    }
   | { ok: false; status: number; errorCode?: string; message?: string };
+
+/** 백엔드가 reacceptance 응답에 expiresInSeconds를 생략할 경우 사용할 기본 TTL(10분). */
+const REACCEPTANCE_DEFAULT_TTL_SECONDS = 10 * 60;
 
 export async function exchangeGoogleCode(
   code: string,
@@ -37,20 +46,37 @@ export async function exchangeGoogleCode(
     if (body === null) return { ok: true, status: "AUTHENTICATED" };
 
     if (body !== null && typeof body === "object") {
-      const signup = body as Record<string, unknown>;
+      const parsed = body as Record<string, unknown>;
       if (
-        signup.status === "SIGNUP_REQUIRED" &&
-        typeof signup.signupToken === "string" &&
-        signup.signupToken.length > 0 &&
-        typeof signup.expiresInSeconds === "number" &&
-        Number.isFinite(signup.expiresInSeconds) &&
-        signup.expiresInSeconds > 0
+        parsed.status === "SIGNUP_REQUIRED" &&
+        typeof parsed.signupToken === "string" &&
+        parsed.signupToken.length > 0 &&
+        typeof parsed.expiresInSeconds === "number" &&
+        Number.isFinite(parsed.expiresInSeconds) &&
+        parsed.expiresInSeconds > 0
       ) {
         return {
           ok: true,
           status: "SIGNUP_REQUIRED",
-          signupToken: signup.signupToken,
-          expiresInSeconds: signup.expiresInSeconds,
+          signupToken: parsed.signupToken,
+          expiresInSeconds: parsed.expiresInSeconds,
+        };
+      }
+      if (
+        parsed.status === "REACCEPTANCE_REQUIRED" &&
+        typeof parsed.reacceptanceToken === "string" &&
+        parsed.reacceptanceToken.length > 0
+      ) {
+        const rawTtl = parsed.expiresInSeconds;
+        const expiresInSeconds =
+          typeof rawTtl === "number" && Number.isFinite(rawTtl) && rawTtl > 0
+            ? rawTtl
+            : REACCEPTANCE_DEFAULT_TTL_SECONDS;
+        return {
+          ok: true,
+          status: "REACCEPTANCE_REQUIRED",
+          reacceptanceToken: parsed.reacceptanceToken,
+          expiresInSeconds,
         };
       }
     }
@@ -98,6 +124,38 @@ export async function completeGoogleSignup(
     message: messageForGoogleLoginError(
       body,
       "가입 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    ),
+  };
+}
+
+export type CompleteGoogleReacceptResult =
+  | { ok: true }
+  | { ok: false; status: number; errorCode?: string; message: string };
+
+/**
+ * 재동의 확정.
+ * BFF `POST /api/auth/google/reaccept` — 성공 시 access/refresh 쿠키가 발급된다.
+ */
+export async function completeGoogleReaccept(
+  reacceptanceToken: string,
+): Promise<CompleteGoogleReacceptResult> {
+  const res = await fetch("/api/auth/google/reaccept", {
+    ...FETCH_OPTS,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reacceptanceToken, agreementsAccepted: true }),
+  });
+
+  if (res.ok) return { ok: true };
+
+  const body = await tryParseJson(res);
+  return {
+    ok: false,
+    status: res.status,
+    errorCode: readNormalizedApiErrorCode(body),
+    message: messageForGoogleLoginError(
+      body,
+      "약관 재동의 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.",
     ),
   };
 }

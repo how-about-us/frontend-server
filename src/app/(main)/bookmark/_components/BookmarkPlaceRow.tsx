@@ -41,7 +41,14 @@ export function BookmarkPlaceRow({
   currentCategoryId: number;
   onOpenDetail: () => void;
 }) {
-  const { id, name, address, photoName, primaryTypeDisplayName } = place;
+  const {
+    id,
+    name,
+    address,
+    photoName,
+    primaryTypeDisplayName,
+    googlePlaceId,
+  } = place;
   const bookmarkId = Number.parseInt(id, 10);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -158,6 +165,7 @@ export function BookmarkPlaceRow({
         address={address}
         photoName={photoName}
         primaryTypeDisplayName={primaryTypeDisplayName}
+        googlePlaceId={googlePlaceId}
         className="min-w-0 w-full border-0 hover:bg-gray-50 active:bg-gray-100"
         contentClassName="pr-7"
         onClick={onOpenDetail}

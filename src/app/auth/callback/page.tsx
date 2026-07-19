@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { exchangeGoogleCode } from "@/lib/api/auth";
-import { AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE } from "@/lib/api/errors";
 import {
   consumeOAuthPendingSession,
   loginErrorQueryForExchangeFailure,
@@ -60,11 +59,12 @@ function AuthCallbackContent() {
           return;
         }
 
-        if (
-          result.errorCode ===
-          AGREEMENTS_REACCEPTANCE_REQUIRED_ERROR_CODE
-        ) {
-          saveGoogleAgreementFlowSession({ kind: "reaccept" });
+        if (result.ok && result.status === "REACCEPTANCE_REQUIRED") {
+          saveGoogleAgreementFlowSession({
+            kind: "reaccept",
+            reacceptanceToken: result.reacceptanceToken,
+            expiresAt: Date.now() + result.expiresInSeconds * 1000,
+          });
           router.replace("/login/agreements");
           return;
         }
