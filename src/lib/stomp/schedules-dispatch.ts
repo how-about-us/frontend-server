@@ -7,12 +7,8 @@ import {
 } from "@/lib/plan/scheduleItemPlaces";
 import { getScheduleItems } from "@/lib/api/rooms/schedule-items";
 import {
-  collectSegmentSourcesForCreate,
-  collectSegmentSourcesForDelete,
-  collectSegmentSourcesForReorder,
   invalidateScheduleItemRouteForSources,
   invalidateScheduleItemRouteForWholeSchedule,
-  readOrderedItemIdsFromScheduleItemsCache,
   removeRouteQueriesForDeletedItemSource,
 } from "@/lib/plan/scheduleStompRouteScope";
 import {
@@ -129,20 +125,38 @@ const syncSchedulePlacesFromItemsDebouncers = new Map<
   string,
   ReturnType<typeof setTimeout>
 >();
+const syncSchedulePlacesRouteInvalidationPending = new Map<
+  string,
+  DebouncedRouteInvBucket
+>();
 const DEBOUNCE_ITEMS_GET_MS = 90;
 
 function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
   queryClient: QueryClient,
   rid: string,
   sid: number,
+  affectedRouteItemIds?: number[] | null,
 ): void {
   const mapKey = `${rid}:${sid}`;
+  if (affectedRouteItemIds !== undefined) {
+    syncSchedulePlacesRouteInvalidationPending.set(
+      mapKey,
+      mergeRouteInvalidateBucket(
+        syncSchedulePlacesRouteInvalidationPending.get(mapKey),
+        affectedRouteItemIds ?? [],
+        affectedRouteItemIds === null,
+      ),
+    );
+  }
   const pending = syncSchedulePlacesFromItemsDebouncers.get(mapKey);
   if (pending !== undefined) clearTimeout(pending);
   syncSchedulePlacesFromItemsDebouncers.set(
     mapKey,
     setTimeout(() => {
       syncSchedulePlacesFromItemsDebouncers.delete(mapKey);
+      const routeBucket =
+        syncSchedulePlacesRouteInvalidationPending.get(mapKey);
+      syncSchedulePlacesRouteInvalidationPending.delete(mapKey);
       void (async () => {
         try {
           const rows = await getScheduleItems(rid, sid);
@@ -152,6 +166,25 @@ function enqueueDebouncedHydratePlacesFromScheduleItemsApi(
             sid,
             rows,
           );
+          if (routeBucket?.scope === "whole") {
+            await invalidateScheduleItemRouteForWholeSchedule(
+              queryClient,
+              rid,
+              sid,
+            );
+            usePlanMapDirectionsEpochStore
+              .getState()
+              .bumpForDirections(rid);
+          } else if (routeBucket && routeBucket.ids.size > 0) {
+            const sources = [...routeBucket.ids];
+            await invalidateScheduleItemRouteForSources(
+              queryClient,
+              rid,
+              sid,
+              sources,
+            );
+            bumpMapForRouteSources(rid, sid, sources);
+          }
         } catch {
           //
         }
@@ -217,6 +250,7 @@ export async function dispatchRoomScheduleEvent(
         sourceScheduleId,
         targetScheduleId,
         itemId ?? undefined,
+        event.affectedRouteItemIds,
       );
       return;
     }
@@ -236,11 +270,6 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
-      const oldIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
       removeRouteQueriesForDeletedItemSource(queryClient, rid, sid, itemId);
 
       const items = await getScheduleItems(rid, sid);
@@ -251,11 +280,8 @@ export async function dispatchRoomScheduleEvent(
         items,
       );
 
-      const { sources, useFallback } = collectSegmentSourcesForDelete(
-        oldIds,
-        itemId,
-      );
-      if (useFallback) {
+      const sources = event.affectedRouteItemIds;
+      if (sources === null) {
         await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
         epochStore.bumpForDirections(rid);
       } else {
@@ -282,16 +308,8 @@ export async function dispatchRoomScheduleEvent(
 
       await refetchScheduleItemsPlaces(queryClient, rid, sid);
 
-      const newIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
-      const { sources, useFallback } = collectSegmentSourcesForCreate(
-        newIds,
-        itemId,
-      );
-      if (useFallback) {
+      const sources = event.affectedRouteItemIds;
+      if (sources === null) {
         await invalidateScheduleItemRouteForWholeSchedule(queryClient, rid, sid);
         epochStore.bumpForDirections(rid);
       } else {
@@ -316,12 +334,6 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
-      const oldIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
-
       const items = await getScheduleItems(rid, sid);
       await mergeOrRefetchSchedulePlanPlacesFromItems(
         queryClient,
@@ -329,22 +341,13 @@ export async function dispatchRoomScheduleEvent(
         sid,
         items,
       );
-      const newIds = readOrderedItemIdsFromScheduleItemsCache(
-        queryClient,
-        rid,
-        sid,
-      );
-      const { sources, useFallback } = collectSegmentSourcesForReorder(
-        oldIds,
-        newIds,
-        itemId,
-      );
+      const sources = event.affectedRouteItemIds;
       enqueueDebouncedInvalidateScheduleRoutes(
         queryClient,
         rid,
         sid,
-        useFallback ? [] : sources,
-        useFallback,
+        sources ?? [],
+        sources === null,
       );
       return;
     }
@@ -383,11 +386,13 @@ export async function dispatchRoomScheduleEvent(
         return;
       }
 
-      /**
-       * 항목 재조회로 `place.travelMode`가 갱신되면 구간 카드가 새 수단의 route
-       * 쿼리를 켠다 — 경로 캐시는 수단별 키로 분리돼 있어 무효화 불필요.
-       */
-      enqueueDebouncedHydratePlacesFromScheduleItemsApi(queryClient, rid, sid);
+      /** 항목 재조회 후 서버가 지정한 출발 항목의 경로만 갱신합니다. */
+      enqueueDebouncedHydratePlacesFromScheduleItemsApi(
+        queryClient,
+        rid,
+        sid,
+        event.affectedRouteItemIds,
+      );
       return;
     }
   }

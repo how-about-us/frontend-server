@@ -30,6 +30,15 @@ export type RoomScheduleItemCreateRequest = {
   /** 로컬 시:분, 예: `"09:45"`. 미지정 시 서버는 저장하지 않음(미설정 상태) */
   startTime?: string;
   durationMinutes?: number;
+  /** 0-based 삽입 위치. 생략하면 맨 뒤에 추가 */
+  orderIndex?: number;
+};
+
+export type CreateScheduleItemResponse = {
+  createdItem: RoomScheduleItem;
+  /** 삽입으로 순서가 밀리거나 추천 이동수단이 변경된 기존 항목 */
+  updatedItems: RoomScheduleItem[];
+  affectedRouteItemIds: number[];
 };
 
 export type RoomScheduleItemUpdateRequest = {
@@ -181,7 +190,7 @@ export async function createScheduleItem(
   roomId: string,
   scheduleId: number,
   body: RoomScheduleItemCreateRequest,
-): Promise<RoomScheduleItem> {
+): Promise<CreateScheduleItemResponse> {
   return requestJson(
     apiUrl(`/rooms/${roomId}/schedules/${scheduleId}/items`),
     { method: "POST", ...jsonBody(body) },
