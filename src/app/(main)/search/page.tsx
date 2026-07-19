@@ -37,6 +37,7 @@ import {
   chatPlaceShareBannerGlowDurationSec,
   chatPlaceShareBannerSweepDurationSec,
 } from "@/components/chat/chat-animations";
+import { bucketResultCount, bucketSearchRank } from "@/lib/analytics/context";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useSessionStore } from "@/stores/session-store";
 import {
@@ -75,6 +76,7 @@ export default function SearchPage() {
   /** 검색·재검색 커밋마다 증가 — `usePlacesSearch` pageToken 초기화 */
   const [searchGeneration, setSearchGeneration] = useState(0);
   const lastTrackedSearchGenerationRef = useRef(0);
+  const searchModeRef = useRef<"map_recenter" | "text">("text");
   const searchPinsEpochRef = useRef(0);
 
   const commitSearchAtCurrentView = useCallback(
@@ -110,6 +112,7 @@ export default function SearchPage() {
   );
 
   useLayoutEffect(() => {
+    searchModeRef.current = "text";
     if (!qParam) {
       setQuery("");
       commitSearchAtCurrentView("");
@@ -129,6 +132,7 @@ export default function SearchPage() {
 
   function handleSearch(q: string) {
     const trimmed = q.trim();
+    searchModeRef.current = "text";
     setQuery(trimmed);
     commitSearchAtCurrentView(trimmed);
 
@@ -142,18 +146,9 @@ export default function SearchPage() {
     if (searchRecenterRequestId === 0) return;
     const trimmed = query.trim();
     if (!trimmed.length) return;
+    searchModeRef.current = "map_recenter";
     commitSearchAtCurrentView(trimmed);
   }, [searchRecenterRequestId, query, commitSearchAtCurrentView]);
-
-  useEffect(() => {
-    if (searchGeneration === 0) return;
-    if (lastTrackedSearchGenerationRef.current === searchGeneration) return;
-    const term = query.trim();
-    if (!term.length || searchCoords === null) return;
-
-    lastTrackedSearchGenerationRef.current = searchGeneration;
-    trackAnalyticsEvent(AnalyticsEvents.search, { search_term: term });
-  }, [searchGeneration, query, searchCoords]);
 
   const {
     items,
@@ -175,6 +170,25 @@ export default function SearchPage() {
     PLACES_SEARCH_PAGE_SIZE,
     searchGeneration,
   );
+
+  useEffect(() => {
+    if (searchGeneration === 0 || !isSuccess || isFetching) return;
+    if (lastTrackedSearchGenerationRef.current === searchGeneration) return;
+    if (!query.trim() || searchCoords === null) return;
+
+    lastTrackedSearchGenerationRef.current = searchGeneration;
+    trackAnalyticsEvent(AnalyticsEvents.search, {
+      result_count_bucket: bucketResultCount(items.length),
+      search_mode: searchModeRef.current,
+    });
+  }, [
+    isFetching,
+    isSuccess,
+    items.length,
+    query,
+    searchCoords,
+    searchGeneration,
+  ]);
 
   const hasActiveSearch = query.trim().length > 0 && searchCoords !== null;
   const showResultList =
@@ -226,7 +240,7 @@ export default function SearchPage() {
 
   const shareModeActive = isShareMode && hasRoom;
 
-  function handleCardClick(result: PlaceSearchResult) {
+  function handleCardClick(result: PlaceSearchResult, index: number) {
     if (shareModeActive) {
       if (!canSend) {
         toast.error("채팅 연결을 확인해주세요.");
@@ -247,6 +261,9 @@ export default function SearchPage() {
       return;
     }
     setSelectedPlace(result, {
+      analyticsRankBucket: bucketSearchRank(
+        pageIndex * PLACES_SEARCH_PAGE_SIZE + index,
+      ),
       preserveMapZoom: true,
       itinerarySource: "search",
     });
@@ -415,13 +432,13 @@ export default function SearchPage() {
             className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-color:rgba(0,0,0,0.2)_transparent]"
           >
             <ul className="w-full min-w-0">
-              {items.map((result) => (
+              {items.map((result, index) => (
                 <li key={result.googlePlaceId} className="w-full">
                   <SearchResultCard
                     {...result}
                     variant="list"
                     className="box-border h-[88px] w-full shrink-0"
-                    onClick={() => handleCardClick(result)}
+                    onClick={() => handleCardClick(result, index)}
                   />
                 </li>
               ))}

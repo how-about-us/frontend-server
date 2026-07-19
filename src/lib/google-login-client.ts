@@ -1,12 +1,16 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { analyticsEntryPoint } from "@/lib/analytics/context";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import {
   consumePendingInviteCode,
   fetchSessionUserWithRetry,
 } from "@/lib/auth";
 import { tearDownClientSession } from "@/lib/client-storage";
-import { clearGoogleAgreementFlowSession } from "@/lib/google-oauth";
+import {
+  clearGoogleAgreementFlowSession,
+  readGoogleAgreementFlowSession,
+} from "@/lib/google-oauth";
 import { setSessionUserCache } from "@/lib/session-user-cache";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -23,9 +27,18 @@ export async function finishGoogleLogin(
 
   setSessionUserCache(queryClient, me);
   useSessionStore.getState().setSessionReady(true);
-  clearGoogleAgreementFlowSession();
-  trackAnalyticsEvent(AnalyticsEvents.login, { method: "google" });
-
+  const agreementFlow = readGoogleAgreementFlowSession();
   const pendingInviteCode = consumePendingInviteCode();
+  clearGoogleAgreementFlowSession();
+  trackAnalyticsEvent(
+    agreementFlow?.kind === "signup"
+      ? AnalyticsEvents.signUp
+      : AnalyticsEvents.login,
+    {
+      method: "google",
+      entry_point: analyticsEntryPoint(pendingInviteCode),
+    },
+  );
+
   return pendingInviteCode ? `/join/${pendingInviteCode}` : "/home";
 }

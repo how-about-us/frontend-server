@@ -102,7 +102,7 @@ function DiscoverMarkerPin({
             googlePlaceId: legacyId,
             location: loc.toJSON(),
           },
-          { preserveMapZoom: true },
+          { analyticsSource: "map", preserveMapZoom: true },
         );
       }}
     >

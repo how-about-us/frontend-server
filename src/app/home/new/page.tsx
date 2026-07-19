@@ -8,6 +8,7 @@ import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { TripFormFields } from "@/components/rooms/TripFormFields";
 
+import { bucketTripDays } from "@/lib/analytics/context";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useRedirectOnMobileDevice } from "@/hooks/useMobileRedirects";
 import { useCreateRoom } from "@/hooks/useRooms";
@@ -60,7 +61,10 @@ export default function NewTripPage() {
       },
       {
         onSuccess: (room) => {
-          trackAnalyticsEvent(AnalyticsEvents.createPlan);
+          trackAnalyticsEvent(AnalyticsEvents.createPlan, {
+            entry_point: "direct",
+            trip_days_bucket: bucketTripDays(room.startDate, room.endDate),
+          });
           setCurrentRoomId(room.id);
           queryClient.setQueryData<RoomDetail>(
             roomDetailQueryKey(room.id),

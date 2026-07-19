@@ -47,16 +47,19 @@ function AiRecommendedPlaceRow({
 
   function handleClick() {
     setMapCenter({ lat: place.lat, lng: place.lng });
-    setSelectedPlace({
-      name: place.name,
-      category: place.primaryType ?? "",
-      rating: displayRating ?? null,
-      userRatingCount: displayReviewCount,
-      address: place.address,
-      googlePlaceId: place.placeId,
-      location: { lat: place.lat, lng: place.lng },
-      image: undefined,
-    });
+    setSelectedPlace(
+      {
+        name: place.name,
+        category: place.primaryType ?? "",
+        rating: displayRating ?? null,
+        userRatingCount: displayReviewCount,
+        address: place.address,
+        googlePlaceId: place.placeId,
+        location: { lat: place.lat, lng: place.lng },
+        image: undefined,
+      },
+      { analyticsSource: "chat" },
+    );
   }
 
   return (

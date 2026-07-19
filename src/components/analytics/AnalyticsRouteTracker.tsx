@@ -1,31 +1,21 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
+
+import { analyticsPagePath } from "@/lib/analytics/context";
 
 type AnalyticsRouteTrackerProps = {
   gaId: string;
 };
 
-function AnalyticsRouteTrackerInner({ gaId }: AnalyticsRouteTrackerProps) {
+export function AnalyticsRouteTracker({ gaId }: AnalyticsRouteTrackerProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const query = searchParams.toString();
-    const pagePath = query ? `${pathname}?${query}` : pathname;
-
-    sendGAEvent("config", gaId, { page_path: pagePath });
-  }, [gaId, pathname, searchParams]);
+    sendGAEvent("config", gaId, { page_path: analyticsPagePath(pathname) });
+  }, [gaId, pathname]);
 
   return null;
-}
-
-export function AnalyticsRouteTracker({ gaId }: AnalyticsRouteTrackerProps) {
-  return (
-    <Suspense fallback={null}>
-      <AnalyticsRouteTrackerInner gaId={gaId} />
-    </Suspense>
-  );
 }

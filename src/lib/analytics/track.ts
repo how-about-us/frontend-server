@@ -1,31 +1,57 @@
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { readAnalyticsConsentCookie } from "@/lib/analytics/consent-cookie";
+import type {
+  AnalyticsEntryPoint,
+  AnalyticsRoomRole,
+  ItemCountBucket,
+  MemberCountBucket,
+  ResultCountBucket,
+  SearchRankBucket,
+  TripDaysBucket,
+} from "@/lib/analytics/context";
 
 const shouldTrackAnalytics =
   process.env.NODE_ENV === "production" &&
   Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
 
 export const AnalyticsEvents = {
+  signUp: "sign_up",
   login: "login",
   createBookmarkFolder: "create_bookmark_folder",
   addToBookmark: "add_to_bookmark",
   createPlan: "create_plan",
+  viewPlan: "view_plan",
+  inviteView: "invite_view",
+  joinPlan: "join_plan",
+  viewPlace: "view_place",
   addToItinerary: "add_to_itinerary",
+  removeFromItinerary: "remove_from_itinerary",
+  reorderItinerary: "reorder_itinerary",
   search: "search",
   sharePlan: "share_plan",
+  chatMessageSent: "chat_message_sent",
 } as const;
 
-export type ItinerarySource = "bookmark" | "search";
+export type AnalyticsSource = "bookmark" | "chat" | "map" | "plan" | "search";
 
-export type SharePlanMethod = "copy_link" | "kakao";
+export type ItinerarySource = AnalyticsSource;
+
+export type SharePlanMethod = "copy_link" | "native_share";
 
 export type AnalyticsEventParams = {
-  method?: "google" | SharePlanMethod;
-  place_id?: string;
-  place_name?: string;
-  source?: ItinerarySource;
-  search_term?: string;
+  entry_point?: AnalyticsEntryPoint;
+  item_count_bucket?: ItemCountBucket;
+  member_count_bucket?: MemberCountBucket;
+  message_type?: "ai" | "place" | "text";
+  method?: "drag_drop" | "google" | SharePlanMethod;
+  place_category?: string;
+  rank_bucket?: SearchRankBucket;
+  result_count_bucket?: ResultCountBucket;
+  role?: AnalyticsRoomRole;
+  search_mode?: "map_recenter" | "text";
+  source?: AnalyticsSource;
+  trip_days_bucket?: TripDaysBucket;
 };
 
 function cleanParams(
