@@ -99,6 +99,32 @@ describe("completeWaitingJoinApproval", () => {
     expect(dependencies.navigateToPlan).toHaveBeenCalledWith("/plan/room-123");
   });
 
+  it.each(["JOINED", "ACCEPTED"])(
+    "treats raw %s as an approved completion",
+    async (status) => {
+      const steps: string[] = [];
+      const dependencies = createDependencies({
+        navigateToPlan: vi.fn(() => steps.push("navigate")),
+        trackAnalyticsEvent: vi.fn((eventName) => {
+          steps.push(`track:${eventName}`);
+        }),
+      });
+
+      const completed = await completeWaitingJoinApproval(
+        { ...approvedResponse, status },
+        dependencies,
+      );
+
+      expect(completed).toBe(true);
+      expect(dependencies.trackAnalyticsEvent).toHaveBeenCalledTimes(1);
+      expect(dependencies.trackAnalyticsEvent).toHaveBeenCalledWith(
+        AnalyticsEvents.joinPlan,
+        { member_count_bucket: "3_4", role: "member" },
+      );
+      expect(steps).toEqual(["track:join_group", "navigate"]);
+    },
+  );
+
   it.each(["PENDING", "REJECTED"])(
     "does not send join_group for %s results",
     async (status) => {
