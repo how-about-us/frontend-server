@@ -1,13 +1,17 @@
 "use client";
 
 import { ArrowLeft, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useChat } from "@/hooks/useChat";
 import { useChatActions } from "@/hooks/useChatActions";
-import type { ItinerarySource } from "@/lib/analytics/track";
+import {
+  AnalyticsEvents,
+  trackAnalyticsEvent,
+  type ItinerarySource,
+} from "@/lib/analytics/track";
 
 import type { SearchResultCardProps } from "./SearchResultCard";
 import { AddToBookmarkModal } from "./AddToBookmarkModal";
@@ -40,7 +44,11 @@ export function PlaceDetailPanel({
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
 
-  const { itinerarySourceRef } = useSelectedPlace();
+  const {
+    analyticsRankBucketRef,
+    analyticsSourceRef,
+    itinerarySourceRef,
+  } = useSelectedPlace();
   const { sendPlaceMessage, canSend } = useChatActions();
   const { openChat } = useChat();
 
@@ -59,6 +67,31 @@ export function PlaceDetailPanel({
     detailData.primaryTypeDisplayName.trim().length > 0
       ? detailData.primaryTypeDisplayName
       : category) || category;
+  const lastTrackedPlaceIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const placeId = googlePlaceId?.trim();
+    if (!placeId) {
+      lastTrackedPlaceIdRef.current = null;
+      return;
+    }
+    if (isDetailLoading || lastTrackedPlaceIdRef.current === placeId) {
+      return;
+    }
+    lastTrackedPlaceIdRef.current = placeId;
+    trackAnalyticsEvent(AnalyticsEvents.viewPlace, {
+      place_category: displayCategory,
+      rank_bucket: analyticsRankBucketRef.current ?? undefined,
+      source: analyticsSourceRef.current ?? itinerarySource,
+    });
+  }, [
+    analyticsRankBucketRef,
+    analyticsSourceRef,
+    displayCategory,
+    googlePlaceId,
+    isDetailLoading,
+    itinerarySource,
+  ]);
   const displayRating = detailData?.rating ?? rating;
 
   const handleSendToChat = useCallback(() => {
@@ -214,6 +247,7 @@ export function PlaceDetailPanel({
       {scheduleModalOpen && googlePlaceId && (
         <AddToScheduleModal
           googlePlaceId={googlePlaceId}
+          placeCategory={displayCategory}
           source={itinerarySource}
           onClose={() => setScheduleModalOpen(false)}
         />
@@ -222,7 +256,8 @@ export function PlaceDetailPanel({
       {bookmarkModalOpen && googlePlaceId && (
         <AddToBookmarkModal
           googlePlaceId={googlePlaceId}
-          placeName={displayName}
+          placeCategory={displayCategory}
+          source={itinerarySource}
           onClose={() => setBookmarkModalOpen(false)}
         />
       )}

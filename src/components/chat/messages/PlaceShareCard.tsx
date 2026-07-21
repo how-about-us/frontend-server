@@ -35,15 +35,18 @@ export function PlaceShareCard({
 
   function handleClick() {
     setMapCenter({ lat: p.latitude, lng: p.longitude });
-    setSelectedPlace({
-      name: p.name,
-      category: "",
-      rating: p.rating || null,
-      address: p.formattedAddress,
-      googlePlaceId: p.googlePlaceId,
-      location: { lat: p.latitude, lng: p.longitude },
-      image: imageUrl,
-    });
+    setSelectedPlace(
+      {
+        name: p.name,
+        category: "",
+        rating: p.rating || null,
+        address: p.formattedAddress,
+        googlePlaceId: p.googlePlaceId,
+        location: { lat: p.latitude, lng: p.longitude },
+        image: imageUrl,
+      },
+      { analyticsSource: "chat" },
+    );
   }
 
   const cardButton = (

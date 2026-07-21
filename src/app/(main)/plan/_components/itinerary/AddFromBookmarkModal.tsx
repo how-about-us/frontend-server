@@ -13,6 +13,7 @@ import {
   useRoomBookmarks,
 } from "@/hooks/useRooms";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
+import { bucketItemCount } from "@/lib/analytics/context";
 import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 import type { RoomBookmark } from "@/lib/api/rooms";
 import type { PlanPlace } from "@/lib/plan/types";
@@ -159,7 +160,7 @@ export function AddFromBookmarkModal({
           placesSnapshot: places,
         });
         trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
-          place_id: gid,
+          item_count_bucket: bucketItemCount(places.length + 1),
           source: "bookmark",
         });
         toast.success("일정에 추가했어요.");

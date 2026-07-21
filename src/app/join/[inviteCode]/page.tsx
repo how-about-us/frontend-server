@@ -2,14 +2,18 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { checkClientAuthenticated, setPendingInviteCode } from "@/lib/auth";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
-import { planPathForRoom } from "@/lib/join-room-workflow";
+import {
+  buildJoinPlanAnalyticsParams,
+  planPathForRoom,
+} from "@/lib/join-room-workflow";
 import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -22,12 +26,19 @@ export default function JoinPage() {
     : params.inviteCode;
 
   const [error, setError] = useState<string | null>(null);
+  const lastTrackedInviteCodeRef = useRef<string | null>(null);
 
   const { mutate: join } = useJoinRoom();
   const setCurrentRoomId = useSessionStore((s) => s.setCurrentRoomId);
 
   useEffect(() => {
     if (!inviteCode) return;
+    if (lastTrackedInviteCodeRef.current !== inviteCode) {
+      lastTrackedInviteCodeRef.current = inviteCode;
+      trackAnalyticsEvent(AnalyticsEvents.inviteView, {
+        entry_point: "invite",
+      });
+    }
 
     let cancelled = false;
 
@@ -45,12 +56,18 @@ export default function JoinPage() {
         onSuccess: async (data) => {
           if (data.httpStatus === 200) {
             setCurrentRoomId(data.id);
+            let memberCount: number | undefined;
             try {
               const meta = await getRoomDetail(data.id);
+              memberCount = meta.memberCount;
               queryClient.setQueryData(roomDetailQueryKey(data.id), meta);
             } catch {
               // 메타 조회 실패해도 입장은 진행 (waiting 승인 처리와 동일)
             }
+            trackAnalyticsEvent(
+              AnalyticsEvents.joinPlan,
+              buildJoinPlanAnalyticsParams(data.role, memberCount),
+            );
             router.replace(planPathForRoom(data.id));
             return;
           }

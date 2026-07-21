@@ -15,6 +15,8 @@ import {
   useUpdateScheduleItem,
 } from "@/hooks/useRooms";
 import { usePlanPlaceCardPhoto } from "@/hooks/usePlanPlaceCardPhoto";
+import { bucketItemCount } from "@/lib/analytics/context";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import {
   buildGoogleMapsPlaceUrl,
   normalizeGooglePlaceResourceId,
@@ -37,6 +39,7 @@ import {
 
 export type PlanPlaceCardProps = {
   place: PlanPlace;
+  itineraryItemCount: number;
   displayOrderIndex: number;
   orderBadgeColor?: string;
   isDragging: boolean;
@@ -55,6 +58,7 @@ function stopCardActivation(e: React.SyntheticEvent) {
 
 export function PlanPlaceCard({
   place,
+  itineraryItemCount,
   displayOrderIndex,
   orderBadgeColor,
   isDragging,
@@ -89,11 +93,19 @@ export function PlanPlaceCard({
         scheduleId: scheduleTimeEdit.scheduleId,
         itemId: place.itemId,
       });
+      trackAnalyticsEvent(AnalyticsEvents.removeFromItinerary, {
+        item_count_bucket: bucketItemCount(itineraryItemCount - 1),
+      });
       toast.success("일정에서 삭제했어요.");
     } catch {
       toast.error("삭제하지 못했어요.");
     }
-  }, [scheduleTimeEdit, place.itemId, removeScheduleItemMutate]);
+  }, [
+    itineraryItemCount,
+    scheduleTimeEdit,
+    place.itemId,
+    removeScheduleItemMutate,
+  ]);
 
   const handleDeleteMemo = useCallback(async () => {
     if (!scheduleTimeEdit || typeof place.itemId !== "number") return;
@@ -169,14 +181,17 @@ export function PlanPlaceCard({
       const gid =
         rawId.length > 0 ? normalizeGooglePlaceResourceId(rawId) : undefined;
 
-      setSelectedPlace({
-        name: place.title,
-        category: "",
-        rating: null,
-        ...(gid ? { googlePlaceId: gid } : {}),
-        location: { lat: loc.lat, lng: loc.lng },
-        address: place.subtitle,
-      });
+      setSelectedPlace(
+        {
+          name: place.title,
+          category: "",
+          rating: null,
+          ...(gid ? { googlePlaceId: gid } : {}),
+          location: { lat: loc.lat, lng: loc.lng },
+          address: place.subtitle,
+        },
+        { analyticsSource: "plan" },
+      );
     },
     [
       isReadOnly,

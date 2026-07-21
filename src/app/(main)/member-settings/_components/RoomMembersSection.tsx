@@ -156,6 +156,8 @@ export function RoomMembersSection() {
           key={currentRoomId}
           roomId={currentRoomId}
           inviteCode={roomDetail?.inviteCode}
+          memberCount={roomDetail?.memberCount}
+          role={roomDetail?.role}
           isRoomDetailLoading={isDetailLoading}
           isRoomDetailError={isDetailError}
           onClose={() => setShowInvitePanel(false)}

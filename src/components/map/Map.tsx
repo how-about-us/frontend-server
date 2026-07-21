@@ -248,13 +248,16 @@ function MapSearchResultPins() {
             position={{ lat: pin.lat, lng: pin.lng }}
             onClick={(e) => {
               e.stop();
-              setSelectedPlace({
-                name: pin.name,
-                category: "",
-                rating: null,
-                googlePlaceId: pin.googlePlaceId,
-                location: { lat: pin.lat, lng: pin.lng },
-              }, { preserveMapZoom: true });
+              setSelectedPlace(
+                {
+                  name: pin.name,
+                  category: "",
+                  rating: null,
+                  googlePlaceId: pin.googlePlaceId,
+                  location: { lat: pin.lat, lng: pin.lng },
+                },
+                { analyticsSource: "map", preserveMapZoom: true },
+              );
             }}
           >
             <MapPinWithPlaceName name={pin.name} />
@@ -388,7 +391,7 @@ export default function Map() {
           googlePlaceId: placeId,
           ...(latLng ? { location: latLng } : {}),
         },
-        { skipMapRecenter: true },
+        { analyticsSource: "map", skipMapRecenter: true },
       );
       return;
     }

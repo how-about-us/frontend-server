@@ -1,31 +1,52 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { sendGAEvent } from "@next/third-parties/google";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
-type AnalyticsRouteTrackerProps = {
-  gaId: string;
-};
+import { useSessionUser } from "@/hooks/useSessionUser";
+import { trackAnalyticsPageView } from "@/lib/analytics/client";
+import {
+  buildSessionPageViewPlan,
+  executeSessionPageViewPlan,
+} from "@/lib/analytics/page-view-session";
+import { setAnalyticsUserId } from "@/lib/analytics/track";
+import { shouldSkipReconcileClientSession } from "@/lib/auth-session";
+import { useSessionStore } from "@/stores/session-store";
 
-function AnalyticsRouteTrackerInner({ gaId }: AnalyticsRouteTrackerProps) {
+export function AnalyticsRouteTracker() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const sessionReady = useSessionStore((state) => state.sessionReady);
+  const { data: user, status: queryStatus } = useSessionUser();
+  const userId = user?.id;
+  const lastTrackedPathname = useRef<string | null>(null);
+  const previousPageLocation = useRef<string | null>(null);
 
   useEffect(() => {
-    const query = searchParams.toString();
-    const pagePath = query ? `${pathname}?${query}` : pathname;
+    const plan = buildSessionPageViewPlan({
+      origin: window.location.origin,
+      pathname,
+      referrer: previousPageLocation.current ?? document.referrer,
+      title: document.title,
+      lastTrackedPathname: lastTrackedPathname.current,
+      queryStatus,
+      // SessionReconciler의 layout effect가 같은 commit에서 갱신한 값을 읽는다.
+      sessionReady: useSessionStore.getState().sessionReady,
+      skipSessionReconciliation:
+        shouldSkipReconcileClientSession(pathname),
+      userId,
+    });
 
-    sendGAEvent("config", gaId, { page_path: pagePath });
-  }, [gaId, pathname, searchParams]);
+    if (!plan) return;
+
+    executeSessionPageViewPlan(plan, {
+      setUserId: setAnalyticsUserId,
+      trackPageView: trackAnalyticsPageView,
+    });
+
+    if (!plan.pageView) return;
+    lastTrackedPathname.current = pathname;
+    previousPageLocation.current = plan.pageView.page_location;
+  }, [pathname, queryStatus, sessionReady, userId]);
 
   return null;
-}
-
-export function AnalyticsRouteTracker({ gaId }: AnalyticsRouteTrackerProps) {
-  return (
-    <Suspense fallback={null}>
-      <AnalyticsRouteTrackerInner gaId={gaId} />
-    </Suspense>
-  );
 }

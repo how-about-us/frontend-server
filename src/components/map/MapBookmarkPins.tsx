@@ -135,7 +135,11 @@ export function MapBookmarkPins({
                   fromBookmark: true,
                   bookmarkCategoryColor: row.colorCode,
                 },
-                { preserveMapZoom: true },
+                {
+                  analyticsSource: "bookmark",
+                  itinerarySource: "bookmark",
+                  preserveMapZoom: true,
+                },
               );
             }}
           >

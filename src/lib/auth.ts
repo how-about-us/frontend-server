@@ -1,6 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { isProtectedAppPath } from "@/lib/auth-session";
+import {
+  isProtectedAppPath,
+  shouldSkipReconcileClientSession,
+} from "@/lib/auth-session";
 import { clearUserScopedBrowserStorage, tearDownClientSession } from "@/lib/client-storage";
 import {
   fetchSessionUserRaw,
@@ -25,14 +28,6 @@ export {
   fetchSessionUserWithRetry,
 };
 export type { FetchSessionUserResult } from "@/lib/session-user";
-
-const RECONCILE_SKIP_PATH_PREFIXES = ["/auth/callback", "/login"] as const;
-
-function shouldSkipReconcileClientSession(pathname: string): boolean {
-  return RECONCILE_SKIP_PATH_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
-}
 
 /** HttpOnly 세션·`users/me`로 Query user 캐시를 맞춥니다. */
 export async function reconcileClientSession(

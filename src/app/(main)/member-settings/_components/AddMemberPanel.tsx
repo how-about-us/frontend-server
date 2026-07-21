@@ -5,11 +5,17 @@ import { RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useRegenerateInviteCode } from "@/hooks/useRooms";
+import {
+  bucketMemberCount,
+  toAnalyticsRoomRole,
+} from "@/lib/analytics/context";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 
 type Props = {
   roomId: string;
   inviteCode: string | null | undefined;
+  memberCount?: number;
+  role?: string;
   isRoomDetailLoading: boolean;
   isRoomDetailError: boolean;
   onClose: () => void;
@@ -22,6 +28,8 @@ function normalizeInviteCode(inviteCode: string | null | undefined): string {
 export function AddMemberPanel({
   roomId,
   inviteCode,
+  memberCount,
+  role,
   isRoomDetailLoading,
   isRoomDetailError,
   onClose,
@@ -79,7 +87,14 @@ export function AddMemberPanel({
   function handleCopy() {
     if (!inviteUrl) return;
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      trackAnalyticsEvent(AnalyticsEvents.sharePlan, { method: "copy_link" });
+      trackAnalyticsEvent(AnalyticsEvents.sharePlan, {
+        member_count_bucket:
+          memberCount === undefined
+            ? undefined
+            : bucketMemberCount(memberCount),
+        method: "copy_link",
+        role: toAnalyticsRoomRole(role),
+      });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -95,7 +110,14 @@ export function AddMemberPanel({
           title: "우때 여행 초대",
           url: inviteUrl,
         });
-        trackAnalyticsEvent(AnalyticsEvents.sharePlan, { method: "kakao" });
+        trackAnalyticsEvent(AnalyticsEvents.sharePlan, {
+          member_count_bucket:
+            memberCount === undefined
+              ? undefined
+              : bucketMemberCount(memberCount),
+          method: "native_share",
+          role: toAnalyticsRoomRole(role),
+        });
         return;
       } catch (err) {
         if ((err as Error | undefined)?.name === "AbortError") return;

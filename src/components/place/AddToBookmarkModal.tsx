@@ -12,20 +12,26 @@ import {
   useCreateBookmarkCategory,
   useCreateRoomBookmarksInCategories,
 } from "@/hooks/useRooms";
-import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
+import {
+  AnalyticsEvents,
+  trackAnalyticsEvent,
+  type ItinerarySource,
+} from "@/lib/analytics/track";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   googlePlaceId: string;
-  placeName?: string;
+  placeCategory?: string;
+  source?: ItinerarySource;
   onClose: () => void;
   onAdded?: () => void;
 };
 
 export function AddToBookmarkModal({
   googlePlaceId,
-  placeName,
+  placeCategory,
+  source,
   onClose,
   onAdded,
 }: Props) {
@@ -132,8 +138,8 @@ export function AddToBookmarkModal({
           notifyResult(result);
           if (result.added > 0) {
             trackAnalyticsEvent(AnalyticsEvents.addToBookmark, {
-              place_id: googlePlaceId,
-              place_name: placeName,
+              place_category: placeCategory,
+              source,
             });
             onAdded?.();
           }
