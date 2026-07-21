@@ -47,7 +47,20 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 
 코드가 수동 `page_view`를 전송하므로 둘 중 하나라도 켜져 있으면 페이지뷰가 중복될 수 있다. 설정 변경 후 실시간 보고서에서 한 번의 화면 이동에 `page_view`가 한 번만 발생하는지 확인한다.
 
-### 2. 맞춤 측정기준 등록
+### 2. 사이트 검색 자동 수집 끄기
+
+관리자 → 데이터 스트림 → 웹 스트림 → 향상된 측정에서 `사이트 검색`을 끈다.
+
+우때는 검색 결과가 확정된 시점에 `view_search_results`를 직접 전송하며, 검색어 원문은 보내지 않는다. 사이트 검색 자동 수집이 켜져 있으면 `/search?q=...`의 `q` 값이 `search_term`으로 별도 수집되고 수동 이벤트와 중복될 수 있다.
+
+검색 이벤트에는 다음 파라미터만 허용한다.
+
+- `search_mode`: `text` 또는 `map_recenter`
+- `result_count_bucket`: `0`, `1_5`, `6_20`, `21_plus`
+
+데이터 가림 대상의 `q`는 설정 누락에 대비한 이중 방어로 유지한다. 데이터 가림만으로 자동 생성된 `search_term` 파라미터의 부재를 보장한다고 간주하지 않는다.
+
+### 3. 맞춤 측정기준 등록
 
 아래 이벤트 파라미터를 이벤트 범위 맞춤 측정기준으로 등록한다. 이름은 팀이 읽기 쉬운 표시명을 써도 되지만 이벤트 파라미터 값은 표와 정확히 일치시킨다.
 
@@ -70,7 +83,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 
 `user_id`는 GA의 전용 User-ID 기능으로만 사용하고 맞춤 측정기준으로 등록하지 않는다.
 
-### 3. 주요 이벤트 지정
+### 4. 주요 이벤트 지정
 
 전환 퍼널에 직접 쓰는 다음 이벤트를 주요 이벤트로 지정한다.
 
@@ -81,7 +94,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 
 로그인과 조회 이벤트는 진단·퍼널 보조 지표로 유지하고, 캠페인 목적이 정해지기 전에는 주요 이벤트로 과도하게 지정하지 않는다.
 
-### 4. 데이터 삭제 및 필터
+### 5. 데이터 삭제 및 필터
 
 웹 스트림의 데이터 삭제 설정에 다음 쿼리 파라미터를 등록한다. 프런트엔드 정규화가 누락되더라도 원문이 보고서에 남지 않게 하는 방어선이다.
 
@@ -94,7 +107,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 
 필터를 활성화하면 과거 데이터에는 소급 적용되지 않으므로 테스트 결과와 활성화 일자를 운영 기록에 남긴다.
 
-### 5. 보관 및 개인정보 설정
+### 6. 보관 및 개인정보 설정
 
 - 이벤트 데이터 보관 기간을 제품 분석에 필요한 기간으로 선택하고 결정 근거·담당자·검토일을 기록한다.
 - Google Signals와 광고 개인 최적화는 사용 목적, 동의 문구, 개인정보 처리방침 검토가 끝난 경우에만 활성화한다.
@@ -105,5 +118,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 1. 분석 쿠키가 없거나 거부 상태일 때 gtag.js 요청과 GA 이벤트가 없는지 확인한다.
 2. 허용 후 첫 화면에서 `page_view`가 한 번만 발생하는지 확인한다.
 3. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
-4. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
-5. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
+4. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
+5. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
+6. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
+7. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
