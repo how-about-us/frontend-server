@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const analyticsRuntime = vi.hoisted(() => ({
+  debugMode: false,
+  enabled: true,
+  measurementId: "G-TEST123",
+}));
+
 vi.mock("@/lib/analytics/runtime", () => ({
-  analyticsRuntime: {
-    debugMode: false,
-    enabled: true,
-    measurementId: "G-TEST123",
-  },
+  analyticsRuntime,
 }));
 
 async function freshClient(consent: "granted" | "denied") {
@@ -19,7 +21,10 @@ async function freshClient(consent: "granted" | "denied") {
   return { client, dataLayer };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  analyticsRuntime.enabled = true;
+  vi.unstubAllGlobals();
+});
 
 function createUnpersistedCookieDocument(initialCookie: string) {
   const cookie = initialCookie;
@@ -129,6 +134,51 @@ describe("Google Consent Mode", () => {
       ],
       ["set", { user_id: "42" }],
     ]);
+  });
+
+  it("discards a direct data command denied before initialization", async () => {
+    vi.resetModules();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", {
+      cookie: "uttae_analytics_consent=v1:denied",
+    });
+    const client = await import("@/lib/analytics/client");
+
+    client.sendAnalyticsDataCommand("event", "direct_bypass");
+    expect(window.dataLayer).toBeUndefined();
+    expect(window.gtag).toBeUndefined();
+
+    document.cookie = "uttae_analytics_consent=v1:granted";
+    client.initializeGoogleAnalytics("G-TEST123", false);
+
+    expect(window.dataLayer).not.toContainEqual(["event", "direct_bypass"]);
+  });
+
+  it("rechecks the runtime gate before flushing held data commands", async () => {
+    const { client, dataLayer } = await freshClient("granted");
+
+    client.sendAnalyticsDataCommand(
+      "event",
+      "held_before_runtime_disable",
+    );
+    analyticsRuntime.enabled = false;
+    client.initializeGoogleAnalytics("G-TEST123", false);
+
+    expect(dataLayer).not.toContainEqual([
+      "event",
+      "held_before_runtime_disable",
+    ]);
+  });
+
+  it("blocks direct data commands while the analytics runtime is disabled", async () => {
+    analyticsRuntime.enabled = false;
+    const { client, dataLayer } = await freshClient("granted");
+    client.initializeGoogleAnalytics("G-TEST123", false);
+    dataLayer.length = 0;
+
+    client.sendAnalyticsDataCommand("event", "runtime_disabled_bypass");
+
+    expect(dataLayer).toEqual([]);
   });
 
   it("discards held data commands when consent is denied before initialization", async () => {

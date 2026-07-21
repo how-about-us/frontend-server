@@ -60,7 +60,10 @@ function ensureGoogleTag(): GoogleTag | null {
   return window.gtag;
 }
 
-export function sendAnalyticsCommand(...args: unknown[]): void {
+export function sendAnalyticsDataCommand(...args: unknown[]): void {
+  if (!analyticsRuntime.enabled) return;
+  if (!analyticsConsentStore.isGranted()) return;
+
   if (!analyticsTransportReady) {
     pendingAnalyticsCommands.push(args);
     return;
@@ -76,7 +79,7 @@ function sendInitializationCommand(...args: unknown[]): void {
 function openAnalyticsTransport(): void {
   analyticsTransportReady = true;
   for (const command of pendingAnalyticsCommands.splice(0)) {
-    sendAnalyticsCommand(...command);
+    sendAnalyticsDataCommand(...command);
   }
 }
 
@@ -138,7 +141,5 @@ export function revokeGoogleAnalyticsConsent(): void {
 export function trackAnalyticsPageView(
   params: AnalyticsPageViewParams,
 ): void {
-  if (!analyticsRuntime.enabled) return;
-  if (!analyticsConsentStore.isGranted()) return;
-  sendAnalyticsCommand("event", "page_view", params);
+  sendAnalyticsDataCommand("event", "page_view", params);
 }

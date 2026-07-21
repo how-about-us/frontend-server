@@ -1,6 +1,4 @@
-import { sendAnalyticsCommand } from "@/lib/analytics/client";
-
-import { analyticsConsentStore } from "@/lib/analytics/consent-store";
+import { sendAnalyticsDataCommand } from "@/lib/analytics/client";
 import type {
   AnalyticsEntryPoint,
   AnalyticsRoomRole,
@@ -10,7 +8,6 @@ import type {
   SearchRankBucket,
   TripDaysBucket,
 } from "@/lib/analytics/context";
-import { analyticsRuntime } from "@/lib/analytics/runtime";
 
 export type AnalyticsUserIdCommand = [
   "set",
@@ -28,10 +25,7 @@ export function buildAnalyticsUserIdCommand(
 }
 
 export function setAnalyticsUserId(userId: number | null | undefined): void {
-  if (!analyticsRuntime.enabled) return;
-  if (!analyticsConsentStore.isGranted()) return;
-
-  sendAnalyticsCommand(...buildAnalyticsUserIdCommand(userId));
+  sendAnalyticsDataCommand(...buildAnalyticsUserIdCommand(userId));
 }
 
 export const AnalyticsEvents = {
@@ -197,13 +191,10 @@ export function trackAnalyticsEvent<EventName extends AnalyticsEventName>(
   ...args: AnalyticsEventArguments<EventName>
 ): void {
   const params = args[0];
-  if (!analyticsRuntime.enabled) return;
-  if (!analyticsConsentStore.isGranted()) return;
-
   const cleaned = cleanParams(params);
   if (Object.keys(cleaned).length > 0) {
-    sendAnalyticsCommand("event", eventName, cleaned);
+    sendAnalyticsDataCommand("event", eventName, cleaned);
   } else {
-    sendAnalyticsCommand("event", eventName);
+    sendAnalyticsDataCommand("event", eventName);
   }
 }
