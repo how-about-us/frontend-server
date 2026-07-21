@@ -12,6 +12,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function dataLayerCommands(dataLayer: readonly unknown[]): unknown[][] {
+  return dataLayer.map((command) =>
+    Array.from(command as ArrayLike<unknown>),
+  );
+}
+
 describe("AnalyticsEvents", () => {
   it("exposes the frontend GA event schema", () => {
     expect(AnalyticsEvents).toEqual({
@@ -115,7 +121,7 @@ describe("analytics consent gate", () => {
     initializeGoogleAnalytics("G-TEST123", false);
     dataLayer.length = 0;
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
-    expect(window.dataLayer).toEqual([
+    expect(dataLayerCommands(window.dataLayer ?? [])).toEqual([
       ["event", "create_bookmark_folder"],
     ]);
   });
@@ -153,7 +159,9 @@ describe("analytics consent gate", () => {
     initializeGoogleAnalytics("G-TEST123", false);
     dataLayer.length = 0;
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
-    expect(dataLayer).toEqual([["event", "create_bookmark_folder"]]);
+    expect(dataLayerCommands(dataLayer)).toEqual([
+      ["event", "create_bookmark_folder"],
+    ]);
 
     dataLayer.length = 0;
     staleCookie = "uttae_analytics_consent=v1:granted";
@@ -199,7 +207,9 @@ describe("analytics consent gate", () => {
     initializeGoogleAnalytics("G-TEST123", false);
     dataLayer.length = 0;
     setAnalyticsUserId(42);
-    expect(dataLayer).toEqual([["set", { user_id: "42" }]]);
+    expect(dataLayerCommands(dataLayer)).toEqual([
+      ["set", { user_id: "42" }],
+    ]);
 
     dataLayer.length = 0;
     staleCookie = "uttae_analytics_consent=v1:granted";

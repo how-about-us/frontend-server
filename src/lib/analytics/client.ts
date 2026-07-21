@@ -54,8 +54,10 @@ function ensureGoogleTag(): GoogleTag | null {
   if (typeof window === "undefined") return null;
 
   window.dataLayer ??= [];
-  window.gtag ??= (...args: unknown[]) => {
-    window.dataLayer?.push(args);
+  window.gtag ??= function gtag() {
+    // gtag.js는 Array가 아닌 함수의 native Arguments 객체를 명령으로 읽는다.
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments);
   };
   return window.gtag;
 }

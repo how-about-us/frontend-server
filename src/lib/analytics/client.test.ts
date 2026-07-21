@@ -21,6 +21,12 @@ async function freshClient(consent: "granted" | "denied") {
   return { client, dataLayer };
 }
 
+function dataLayerCommands(dataLayer: readonly unknown[]): unknown[][] {
+  return dataLayer.map((command) =>
+    Array.from(command as ArrayLike<unknown>),
+  );
+}
+
 afterEach(() => {
   analyticsRuntime.enabled = true;
   vi.unstubAllGlobals();
@@ -73,7 +79,7 @@ describe("Google Consent Mode", () => {
 
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(dataLayer).toEqual([
+    expect(dataLayerCommands(dataLayer)).toEqual([
       [
         "consent",
         "default",
@@ -86,6 +92,22 @@ describe("Google Consent Mode", () => {
       ],
       ["js", expect.any(Date)],
       ["config", "G-TEST123", { send_page_view: false }],
+    ]);
+  });
+
+  it("queues gtag commands as native Arguments objects", async () => {
+    const { client, dataLayer } = await freshClient("granted");
+
+    client.initializeGoogleAnalytics("G-TEST123", false);
+
+    expect(Array.isArray(dataLayer[0])).toBe(false);
+    expect(Object.prototype.toString.call(dataLayer[0])).toBe(
+      "[object Arguments]",
+    );
+    expect(dataLayerCommands(dataLayer)[0]).toEqual([
+      "consent",
+      "default",
+      client.buildGoogleAnalyticsConsentState("denied"),
     ]);
   });
 
@@ -113,7 +135,7 @@ describe("Google Consent Mode", () => {
 
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(window.dataLayer).toEqual([
+    expect(dataLayerCommands(window.dataLayer ?? [])).toEqual([
       [
         "consent",
         "default",
@@ -151,7 +173,10 @@ describe("Google Consent Mode", () => {
     document.cookie = "uttae_analytics_consent=v1:granted";
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(window.dataLayer).not.toContainEqual(["event", "direct_bypass"]);
+    expect(dataLayerCommands(window.dataLayer ?? [])).not.toContainEqual([
+      "event",
+      "direct_bypass",
+    ]);
   });
 
   it("rechecks the runtime gate before flushing held data commands", async () => {
@@ -164,7 +189,7 @@ describe("Google Consent Mode", () => {
     analyticsRuntime.enabled = false;
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(dataLayer).not.toContainEqual([
+    expect(dataLayerCommands(dataLayer)).not.toContainEqual([
       "event",
       "held_before_runtime_disable",
     ]);
@@ -200,7 +225,7 @@ describe("Google Consent Mode", () => {
 
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(window.dataLayer).toEqual([
+    expect(dataLayerCommands(window.dataLayer ?? [])).toEqual([
       [
         "consent",
         "default",
@@ -224,7 +249,7 @@ describe("Google Consent Mode", () => {
     client.revokeGoogleAnalyticsConsent();
     client.initializeGoogleAnalytics("G-TEST123", false);
 
-    expect(dataLayer).toEqual([
+    expect(dataLayerCommands(dataLayer)).toEqual([
       ["set", { user_id: null }],
       [
         "consent",
@@ -265,7 +290,7 @@ describe("Google Consent Mode", () => {
       page_referrer: "",
       page_title: "검색",
     });
-    expect(dataLayer).toEqual([
+    expect(dataLayerCommands(dataLayer)).toEqual([
       [
         "event",
         "page_view",
