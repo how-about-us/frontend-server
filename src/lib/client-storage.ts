@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 
+import { setAnalyticsUserId } from "@/lib/analytics/track";
 import { getQueryClient } from "@/lib/query-client";
 import { setSessionUserCache } from "@/lib/session-user-cache";
 import { clearCurrentRoomIdSessionStorage } from "@/lib/session-room-storage";
@@ -51,6 +52,7 @@ export function tearDownClientSession(options?: {
   queryClient?: QueryClient;
 }): void {
   const queryClient = options?.queryClient ?? getQueryClient();
+  setAnalyticsUserId(null);
   clearCurrentRoomIdSessionStorage();
   useSessionStore.getState().clearSessionRoomContext();
   clearUserScopedBrowserStorage();

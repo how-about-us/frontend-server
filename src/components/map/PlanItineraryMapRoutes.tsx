@@ -276,7 +276,7 @@ export function PlanItineraryMapRoutes() {
               location: loc,
               address: place.subtitle,
             },
-            { preserveMapZoom: true },
+            { analyticsSource: "plan", preserveMapZoom: true },
           );
         }}
       >

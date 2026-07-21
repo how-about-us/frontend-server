@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 
 import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
@@ -11,7 +12,10 @@ import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
 import { StompProvider } from "@/contexts/StompContext";
 import { reconcileClientSession } from "@/lib/auth";
+import { analyticsRuntime } from "@/lib/analytics/runtime";
+import { beginClientSessionReconciliationTransition } from "@/lib/auth-session";
 import { createQueryClient, registerQueryClient } from "@/lib/query-client";
+import { useSessionStore } from "@/stores/session-store";
 
 /**
  * 전역 레이아웃용 Provider 순서 —
@@ -20,17 +24,25 @@ import { createQueryClient, registerQueryClient } from "@/lib/query-client";
  * 순서: React Query → STOMP → Google Maps(Context) → 앱 라우트
  */
 function SessionReconciler() {
+  const pathname = usePathname();
   const queryClient = useQueryClient();
+  const previousPathname = useRef<string | null>(null);
 
-  useEffect(() => {
-    void reconcileClientSession(queryClient);
-  }, [queryClient]);
+  useLayoutEffect(() => {
+    previousPathname.current =
+      beginClientSessionReconciliationTransition({
+        previousPathname: previousPathname.current,
+        pathname,
+        markSessionPending: () =>
+          useSessionStore.getState().setSessionReady(false),
+        reconcile: () => {
+          void reconcileClientSession(queryClient);
+        },
+      });
+  }, [pathname, queryClient]);
 
   return null;
 }
-
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const shouldShowConsentFlow = Boolean(GA_MEASUREMENT_ID);
 
 export function AppRootProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => {
@@ -63,8 +75,11 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
       <StompProvider>
         <GoogleMapsProvider>
           <MobileChrome>{children}</MobileChrome>
-          {shouldShowConsentFlow && GA_MEASUREMENT_ID ? (
-            <ConsentGatedAnalytics gaId={GA_MEASUREMENT_ID} />
+          {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
+            <ConsentGatedAnalytics
+              debugMode={analyticsRuntime.debugMode}
+              gaId={analyticsRuntime.measurementId}
+            />
           ) : null}
           <Toaster position="bottom-right" richColors />
         </GoogleMapsProvider>

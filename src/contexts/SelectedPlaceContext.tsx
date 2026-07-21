@@ -9,7 +9,8 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import type { ItinerarySource } from "@/lib/analytics/track";
+import type { SearchRankBucket } from "@/lib/analytics/context";
+import type { AnalyticsSource, ItinerarySource } from "@/lib/analytics/track";
 import type { SearchResultCardProps } from "@/types/place";
 
 /** 장소 선택 직후 SelectedPlaceController가 적용하는 카메라 동작 */
@@ -25,6 +26,10 @@ export type SetSelectedPlaceOptions = {
   preserveMapZoom?: boolean;
   /** `add_to_itinerary` GA4 `source` — 장소 상세에서 일정 추가 시 사용 */
   itinerarySource?: ItinerarySource;
+  /** 검색 결과 선택 순위 버킷 — `view_place` 이벤트에서 사용 */
+  analyticsRankBucket?: SearchRankBucket;
+  /** `view_place` GA4 `source` */
+  analyticsSource?: AnalyticsSource;
 };
 
 type SelectedPlaceContextType = {
@@ -35,6 +40,8 @@ type SelectedPlaceContextType = {
   ) => void;
   placeSelectionCameraRef: MutableRefObject<PlaceSelectionCamera>;
   itinerarySourceRef: MutableRefObject<ItinerarySource | null>;
+  analyticsRankBucketRef: MutableRefObject<SearchRankBucket | null>;
+  analyticsSourceRef: MutableRefObject<AnalyticsSource | null>;
 };
 
 const SelectedPlaceContext = createContext<SelectedPlaceContextType>({
@@ -42,6 +49,8 @@ const SelectedPlaceContext = createContext<SelectedPlaceContextType>({
   setSelectedPlace: () => {},
   placeSelectionCameraRef: { current: "full" },
   itinerarySourceRef: { current: null },
+  analyticsRankBucketRef: { current: null },
+  analyticsSourceRef: { current: null },
 });
 
 export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
@@ -49,16 +58,24 @@ export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
     useState<SearchResultCardProps | null>(null);
   const placeSelectionCameraRef = useRef<PlaceSelectionCamera>("full");
   const itinerarySourceRef = useRef<ItinerarySource | null>(null);
+  const analyticsRankBucketRef = useRef<SearchRankBucket | null>(null);
+  const analyticsSourceRef = useRef<AnalyticsSource | null>(null);
 
   const setSelectedPlace = useCallback(
     (place: SearchResultCardProps | null, options?: SetSelectedPlaceOptions) => {
       if (place === null) {
         placeSelectionCameraRef.current = "full";
         itinerarySourceRef.current = null;
+        analyticsRankBucketRef.current = null;
+        analyticsSourceRef.current = null;
         setSelectedPlaceState(null);
         return;
       }
-      itinerarySourceRef.current = options?.itinerarySource ?? null;
+      itinerarySourceRef.current =
+        options?.itinerarySource ?? options?.analyticsSource ?? null;
+      analyticsRankBucketRef.current = options?.analyticsRankBucket ?? null;
+      analyticsSourceRef.current =
+        options?.analyticsSource ?? options?.itinerarySource ?? null;
       if (options?.skipMapRecenter === true) {
         placeSelectionCameraRef.current = "none";
       } else if (options?.preserveMapZoom === true) {
@@ -78,6 +95,8 @@ export function SelectedPlaceProvider({ children }: { children: ReactNode }) {
         setSelectedPlace,
         placeSelectionCameraRef,
         itinerarySourceRef,
+        analyticsRankBucketRef,
+        analyticsSourceRef,
       }}
     >
       {children}

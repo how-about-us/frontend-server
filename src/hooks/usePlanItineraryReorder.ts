@@ -14,6 +14,8 @@ import {
   useMoveScheduleItemToSchedule,
   useReorderScheduleItem,
 } from "@/hooks/useRooms";
+import { bucketItemCount } from "@/lib/analytics/context";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import {
   beginPlanItemDrag,
   clampCrossDayTargetOrderIndex,
@@ -303,6 +305,10 @@ export function usePlanItineraryReorder({
               places.length,
             ),
           },
+        });
+        trackAnalyticsEvent(AnalyticsEvents.reorderItinerary, {
+          item_count_bucket: bucketItemCount(places.length),
+          method: "drag_drop",
         });
       } catch {
         toast.error("순서를 바꾸지 못했어요.");

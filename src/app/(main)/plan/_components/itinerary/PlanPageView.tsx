@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 import {
@@ -23,6 +23,12 @@ import { MainPageHeader } from "@/components/layout/MainPageHeader";
 
 import { usePlanScheduleDayReorder } from "@/hooks/usePlanScheduleDayReorder";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
+import { useRoomDetail } from "@/hooks/useRoomDetail";
+import {
+  bucketMemberCount,
+  toAnalyticsRoomRole,
+} from "@/lib/analytics/context";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { PlanContainerRefProvider } from "../plan-container";
 import { PlanScheduleDayBlock } from "./PlanScheduleDayBlock";
 
@@ -36,6 +42,17 @@ export function PlanPageView() {
       : "";
 
   const roomIdForQueries = roomId.length > 0 ? roomId : null;
+  const { data: roomDetail } = useRoomDetail(roomIdForQueries);
+  const lastTrackedPlanIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!roomDetail || lastTrackedPlanIdRef.current === roomDetail.id) return;
+    lastTrackedPlanIdRef.current = roomDetail.id;
+    trackAnalyticsEvent(AnalyticsEvents.viewPlan, {
+      member_count_bucket: bucketMemberCount(roomDetail.memberCount),
+      role: toAnalyticsRoomRole(roomDetail.role),
+    });
+  }, [roomDetail]);
 
   const {
     data: schedules,

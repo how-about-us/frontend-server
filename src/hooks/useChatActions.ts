@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { useStompContext } from "@/contexts/StompContext";
 import { isChatSendBlocked } from "@/stores/chat-rate-limit-store";
 import { useSessionStore } from "@/stores/session-store";
+import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import type { PlaceShareData } from "@/types/chat";
 
 /**
@@ -38,6 +39,9 @@ export function useChatActions() {
           content: trimmed,
         }),
       });
+      trackAnalyticsEvent(AnalyticsEvents.chatMessageSent, {
+        message_type: "text",
+      });
     },
     [client, connected, ridTrimmed],
   );
@@ -61,6 +65,9 @@ export function useChatActions() {
           content: trimmed,
         }),
       });
+      trackAnalyticsEvent(AnalyticsEvents.chatMessageSent, {
+        message_type: "ai",
+      });
     },
     [client, connected, ridTrimmed],
   );
@@ -80,6 +87,9 @@ export function useChatActions() {
           photoName: place.photoName,
           rating: place.rating,
         }),
+      });
+      trackAnalyticsEvent(AnalyticsEvents.chatMessageSent, {
+        message_type: "place",
       });
     },
     [client, connected, ridTrimmed],

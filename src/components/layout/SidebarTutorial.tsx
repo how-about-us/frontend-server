@@ -16,6 +16,13 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { useSessionUser } from "@/hooks/useSessionUser";
 import { completeTutorial } from "@/lib/api/user";
+import {
+  AnalyticsEvents,
+  buildTutorialExitAnalyticsEvent,
+  trackAnalyticsEvent,
+  TUTORIAL_ANALYTICS_VERSION,
+  type TutorialExitReason,
+} from "@/lib/analytics/track";
 import { sessionUserQueryKey } from "@/lib/query-keys";
 import type { SessionUser } from "@/lib/session-user";
 
@@ -94,6 +101,7 @@ export function SidebarTutorial() {
   const queryClient = useQueryClient();
   const maskId = useId().replaceAll(":", "");
   const primaryButtonRef = useRef<HTMLButtonElement>(null);
+  const tutorialBeginTrackedRef = useRef(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -102,6 +110,7 @@ export function SidebarTutorial() {
   const isOpen = user?.tutorialCompleted === false;
   const step = TUTORIAL_STEPS[stepIndex];
   const isLastStep = stepIndex === TUTORIAL_STEPS.length - 1;
+  const tutorialVisible = isOpen && targetRect !== null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -134,6 +143,15 @@ export function SidebarTutorial() {
     if (!isOpen || !targetRect) return;
     primaryButtonRef.current?.focus();
   }, [isOpen, stepIndex, targetRect]);
+
+  useEffect(() => {
+    if (!tutorialVisible || tutorialBeginTrackedRef.current) return;
+
+    tutorialBeginTrackedRef.current = true;
+    trackAnalyticsEvent(AnalyticsEvents.tutorialBegin, {
+      tutorial_version: TUTORIAL_ANALYTICS_VERSION,
+    });
+  }, [tutorialVisible]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -176,18 +194,28 @@ export function SidebarTutorial() {
     maxWidth: `calc(100vw - ${targetRect.right + 44}px)`,
   };
 
-  const finishTutorial = async () => {
+  const finishTutorial = async (reason: TutorialExitReason) => {
     if (isCompleting) return;
     setIsCompleting(true);
     setErrorMessage(null);
 
     try {
+      const analyticsEvent = buildTutorialExitAnalyticsEvent(reason, stepIndex);
       await completeTutorial();
+
       queryClient.setQueryData<SessionUser | null>(
         sessionUserQueryKey,
         (current) =>
           current ? { ...current, tutorialCompleted: true } : current,
       );
+      if (analyticsEvent.eventName === AnalyticsEvents.tutorialSkip) {
+        trackAnalyticsEvent(analyticsEvent.eventName, analyticsEvent.params);
+      } else {
+        trackAnalyticsEvent(
+          analyticsEvent.eventName,
+          analyticsEvent.params,
+        );
+      }
     } catch {
       setErrorMessage("완료 상태를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
       setIsCompleting(false);
@@ -258,7 +286,7 @@ export function SidebarTutorial() {
             {!isLastStep ? (
               <button
                 type="button"
-                onClick={() => void finishTutorial()}
+                onClick={() => void finishTutorial("skip")}
                 disabled={isCompleting}
                 className="rounded-lg px-2 py-1 text-[14px] font-medium text-dark-gray transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -321,7 +349,7 @@ export function SidebarTutorial() {
               type="button"
               onClick={() => {
                 if (isLastStep) {
-                  void finishTutorial();
+                  void finishTutorial("complete");
                   return;
                 }
                 setErrorMessage(null);

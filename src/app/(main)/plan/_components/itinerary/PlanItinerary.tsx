@@ -10,6 +10,7 @@ import {
   useSchedulePlanPlaces,
 } from "@/hooks/useRooms";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
+import { bucketItemCount } from "@/lib/analytics/context";
 import { usePrefetchScheduleRoutes } from "@/hooks/usePrefetchScheduleRoutes";
 import { usePlanItineraryReorder } from "@/hooks/usePlanItineraryReorder";
 import { PLAN_ITEM_ITINERARY_DROP_ZONE_ATTR } from "@/lib/plan/planItemReorder";
@@ -156,7 +157,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
           placesSnapshot: places,
         });
         trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
-          place_id: googlePlaceId,
+          item_count_bucket: bucketItemCount(places.length + 1),
           source: "search",
         });
         setActiveInsertIndex(null);
@@ -228,6 +229,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
             >
               <PlanPlaceCard
                 place={place}
+                itineraryItemCount={places.length}
                 orderBadgeColor={orderBadgeColor}
                 scheduleTimeEdit={{ roomId, scheduleId }}
                 {...placeCardDragProps}

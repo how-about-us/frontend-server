@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { useCreateScheduleItem, useRoomSchedules } from "@/hooks/useRooms";
+import { bucketItemCount } from "@/lib/analytics/context";
 import {
   AnalyticsEvents,
   trackAnalyticsEvent,
@@ -21,6 +22,7 @@ import { useSessionStore } from "@/stores/session-store";
 
 type Props = {
   googlePlaceId: string;
+  placeCategory?: string;
   source?: ItinerarySource;
   onClose: () => void;
   onAdded?: () => void;
@@ -28,6 +30,7 @@ type Props = {
 
 export function AddToScheduleModal({
   googlePlaceId,
+  placeCategory,
   source = "search",
   onClose,
   onAdded,
@@ -72,7 +75,8 @@ export function AddToScheduleModal({
         placesSnapshot: cached,
       });
       trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
-        place_id: googlePlaceId,
+        item_count_bucket: bucketItemCount(cached.length + 1),
+        place_category: placeCategory,
         source,
       });
       toast.success("일정에 추가했어요.");
