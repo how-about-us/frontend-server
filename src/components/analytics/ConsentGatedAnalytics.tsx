@@ -6,57 +6,32 @@ import { AnalyticsRouteTracker } from "@/components/analytics/AnalyticsRouteTrac
 import { CookieConsentBanner } from "@/components/analytics/CookieConsentBanner";
 import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
 import {
-  readAnalyticsConsentCookie,
-  writeAnalyticsConsentCookie,
-  type AnalyticsConsent,
-} from "@/lib/analytics/consent-cookie";
-
-type ConsentState = AnalyticsConsent | "pending";
+  denyAnalyticsConsent,
+  grantAnalyticsConsent,
+} from "@/lib/analytics/consent-actions";
+import { analyticsConsentStore } from "@/lib/analytics/consent-store";
 
 type ConsentGatedAnalyticsProps = {
   debugMode: boolean;
   gaId: string;
 };
 
-const consentListeners = new Set<() => void>();
-
-function subscribeToAnalyticsConsent(listener: () => void): () => void {
-  consentListeners.add(listener);
-  return () => {
-    consentListeners.delete(listener);
-  };
-}
-
-function getAnalyticsConsentSnapshot(): ConsentState {
-  return readAnalyticsConsentCookie() ?? "pending";
-}
-
-function getAnalyticsConsentServerSnapshot(): ConsentState {
-  return "pending";
-}
-
-function notifyAnalyticsConsentChanged(): void {
-  consentListeners.forEach((listener) => listener());
-}
-
 export function ConsentGatedAnalytics({
   debugMode,
   gaId,
 }: ConsentGatedAnalyticsProps) {
   const consent = useSyncExternalStore(
-    subscribeToAnalyticsConsent,
-    getAnalyticsConsentSnapshot,
-    getAnalyticsConsentServerSnapshot,
+    analyticsConsentStore.subscribe,
+    analyticsConsentStore.getSnapshot,
+    analyticsConsentStore.getServerSnapshot,
   );
 
   const handleAccept = useCallback(() => {
-    writeAnalyticsConsentCookie("granted");
-    notifyAnalyticsConsentChanged();
+    grantAnalyticsConsent();
   }, []);
 
   const handleReject = useCallback(() => {
-    writeAnalyticsConsentCookie("denied");
-    notifyAnalyticsConsentChanged();
+    denyAnalyticsConsent();
   }, []);
 
   return (
