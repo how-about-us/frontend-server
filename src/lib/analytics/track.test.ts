@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 import {
   AnalyticsEvents,
+  type AnalyticsEventParamsMap,
   buildAnalyticsUserIdCommand,
   buildTutorialExitAnalyticsEvent,
 } from "@/lib/analytics/track";
@@ -21,13 +22,23 @@ describe("AnalyticsEvents", () => {
       addToItinerary: "add_to_itinerary",
       removeFromItinerary: "remove_from_itinerary",
       reorderItinerary: "reorder_itinerary",
-      search: "search",
+      search: "view_search_results",
       sharePlan: "share",
       chatMessageSent: "chat_message_sent",
       tutorialBegin: "tutorial_begin",
       tutorialComplete: "tutorial_complete",
       tutorialSkip: "tutorial_skip",
     });
+  });
+
+  it("keeps search-result analytics free of raw search terms", () => {
+    type SearchResultParams =
+      AnalyticsEventParamsMap[typeof AnalyticsEvents.search];
+
+    expectTypeOf<SearchResultParams>().toEqualTypeOf<{
+      result_count_bucket: "0" | "1_5" | "6_20" | "21_plus";
+      search_mode: "map_recenter" | "text";
+    }>();
   });
 });
 

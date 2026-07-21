@@ -47,7 +47,7 @@ export const AnalyticsEvents = {
   addToItinerary: "add_to_itinerary",
   removeFromItinerary: "remove_from_itinerary",
   reorderItinerary: "reorder_itinerary",
-  search: "search",
+  search: "view_search_results",
   sharePlan: "share",
   chatMessageSent: "chat_message_sent",
   tutorialBegin: "tutorial_begin",
