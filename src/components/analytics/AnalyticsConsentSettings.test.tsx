@@ -1,7 +1,27 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { AnalyticsConsentSettingsView } from "@/components/analytics/AnalyticsConsentSettings";
+import {
+  AnalyticsConsentSettingsView,
+  getAnalyticsConsentResultMessage,
+} from "@/components/analytics/AnalyticsConsentSettings";
+
+describe("getAnalyticsConsentResultMessage", () => {
+  it.each([
+    [{ persisted: true, state: "granted" }, "분석 쿠키를 허용했습니다."],
+    [{ persisted: true, state: "denied" }, "분석 쿠키를 거부했습니다."],
+    [
+      { persisted: false, state: "granted" },
+      "선택은 현재 탭에 적용했지만 브라우저에 저장하지 못했습니다. 새로고침 후 다시 선택해 주세요.",
+    ],
+    [
+      { persisted: false, state: "denied" },
+      "선택은 현재 탭에 적용했지만 브라우저에 저장하지 못했습니다. 새로고침 후 다시 선택해 주세요.",
+    ],
+  ] as const)("maps %o to its settings message", (result, message) => {
+    expect(getAnalyticsConsentResultMessage(result)).toBe(message);
+  });
+});
 
 describe("AnalyticsConsentSettingsView", () => {
   it.each([

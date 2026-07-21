@@ -84,6 +84,88 @@ describe("Google Consent Mode", () => {
     ]);
   });
 
+  it("holds data commands until consent initialization finishes", async () => {
+    vi.resetModules();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", {
+      cookie: "uttae_analytics_consent=v1:granted",
+    });
+    const client = await import("@/lib/analytics/client");
+    const { AnalyticsEvents, setAnalyticsUserId, trackAnalyticsEvent } =
+      await import("@/lib/analytics/track");
+
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    client.trackAnalyticsPageView({
+      page_location: "https://example.com/search",
+      page_path: "/search",
+      page_referrer: "",
+      page_title: "검색",
+    });
+    setAnalyticsUserId(42);
+
+    expect(window.dataLayer).toBeUndefined();
+    expect(window.gtag).toBeUndefined();
+
+    client.initializeGoogleAnalytics("G-TEST123", false);
+
+    expect(window.dataLayer).toEqual([
+      [
+        "consent",
+        "default",
+        client.buildGoogleAnalyticsConsentState("denied"),
+      ],
+      [
+        "consent",
+        "update",
+        client.buildGoogleAnalyticsConsentState("granted"),
+      ],
+      ["js", expect.any(Date)],
+      ["config", "G-TEST123", { send_page_view: false }],
+      ["event", "create_bookmark_folder"],
+      [
+        "event",
+        "page_view",
+        expect.objectContaining({ page_path: "/search" }),
+      ],
+      ["set", { user_id: "42" }],
+    ]);
+  });
+
+  it("discards held data commands when consent is denied before initialization", async () => {
+    vi.resetModules();
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("document", {
+      cookie: "uttae_analytics_consent=v1:granted",
+    });
+    const client = await import("@/lib/analytics/client");
+    const { AnalyticsEvents, trackAnalyticsEvent } = await import(
+      "@/lib/analytics/track"
+    );
+
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    client.revokeGoogleAnalyticsConsent();
+
+    expect(window.dataLayer).toBeUndefined();
+    expect(window.gtag).toBeUndefined();
+
+    client.initializeGoogleAnalytics("G-TEST123", false);
+
+    expect(window.dataLayer).toEqual([
+      [
+        "consent",
+        "default",
+        client.buildGoogleAnalyticsConsentState("denied"),
+      ],
+      [
+        "consent",
+        "update",
+        client.buildGoogleAnalyticsConsentState("granted"),
+      ],
+      ["js", expect.any(Date)],
+      ["config", "G-TEST123", { send_page_view: false }],
+    ]);
+  });
+
   it("clears user id and denies storage, then re-grants without duplicate config", async () => {
     const { client, dataLayer } = await freshClient("granted");
     client.initializeGoogleAnalytics("G-TEST123", false);
@@ -125,6 +207,8 @@ describe("Google Consent Mode", () => {
     expect(dataLayer).toEqual([]);
 
     document.cookie = "uttae_analytics_consent=v1:granted";
+    client.initializeGoogleAnalytics("G-TEST123", false);
+    dataLayer.length = 0;
     client.trackAnalyticsPageView({
       page_location: "https://example.com/search",
       page_path: "/search",

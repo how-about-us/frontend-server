@@ -95,7 +95,8 @@ describe("analytics consent gate", () => {
   it("blocks an event after denial and sends it after grant", async () => {
     vi.stubEnv("NEXT_PUBLIC_GA_DEBUG_MODE", "true");
     vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-TEST123");
-    vi.stubGlobal("window", { dataLayer: [] as unknown[] });
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", { dataLayer });
     vi.stubGlobal("document", {
       cookie: "uttae_analytics_consent=v1:denied",
     });
@@ -103,11 +104,16 @@ describe("analytics consent gate", () => {
     const { AnalyticsEvents, trackAnalyticsEvent } = await import(
       "@/lib/analytics/track"
     );
+    const { initializeGoogleAnalytics } = await import(
+      "@/lib/analytics/client"
+    );
 
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
     expect(window.dataLayer).toEqual([]);
 
     document.cookie = "uttae_analytics_consent=v1:granted";
+    initializeGoogleAnalytics("G-TEST123", false);
+    dataLayer.length = 0;
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
     expect(window.dataLayer).toEqual([
       ["event", "create_bookmark_folder"],
@@ -136,11 +142,16 @@ describe("analytics consent gate", () => {
     const { AnalyticsEvents, trackAnalyticsEvent } = await import(
       "@/lib/analytics/track"
     );
+    const { initializeGoogleAnalytics } = await import(
+      "@/lib/analytics/client"
+    );
 
     expect(analyticsConsentStore.set("granted")).toEqual({
       persisted: false,
       state: "granted",
     });
+    initializeGoogleAnalytics("G-TEST123", false);
+    dataLayer.length = 0;
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
     expect(dataLayer).toEqual([["event", "create_bookmark_folder"]]);
 
@@ -174,6 +185,9 @@ describe("analytics consent gate", () => {
       "@/lib/analytics/consent-store"
     );
     const { setAnalyticsUserId } = await import("@/lib/analytics/track");
+    const { initializeGoogleAnalytics } = await import(
+      "@/lib/analytics/client"
+    );
 
     setAnalyticsUserId(42);
     expect(dataLayer).toEqual([]);
@@ -182,6 +196,8 @@ describe("analytics consent gate", () => {
       persisted: false,
       state: "granted",
     });
+    initializeGoogleAnalytics("G-TEST123", false);
+    dataLayer.length = 0;
     setAnalyticsUserId(42);
     expect(dataLayer).toEqual([["set", { user_id: "42" }]]);
 

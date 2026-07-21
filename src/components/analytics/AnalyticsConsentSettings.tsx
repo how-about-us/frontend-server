@@ -14,6 +14,7 @@ import {
 import {
   analyticsConsentStore,
   type AnalyticsConsentState,
+  type AnalyticsConsentUpdateResult,
 } from "@/lib/analytics/consent-store";
 import { AGREEMENT_PUBLIC_PATH } from "@/lib/agreements/paths";
 
@@ -29,6 +30,18 @@ const consentLabels: Record<AnalyticsConsentState, string> = {
   granted: "분석 쿠키 허용",
   denied: "분석 쿠키 거부",
 };
+
+export function getAnalyticsConsentResultMessage(
+  result: AnalyticsConsentUpdateResult,
+): string {
+  if (!result.persisted) {
+    return "선택은 현재 탭에 적용했지만 브라우저에 저장하지 못했습니다. 새로고침 후 다시 선택해 주세요.";
+  }
+
+  return result.state === "granted"
+    ? "분석 쿠키를 허용했습니다."
+    : "분석 쿠키를 거부했습니다.";
+}
 
 export function AnalyticsConsentSettingsView({
   consent,
@@ -88,22 +101,16 @@ export function AnalyticsConsentSettings() {
   );
   const [message, setMessage] = useState("");
 
-  const showResult = useCallback((persisted: boolean, granted: boolean) => {
-    setMessage(
-      persisted
-        ? granted
-          ? "분석 쿠키를 허용했습니다."
-          : "분석 쿠키를 거부했습니다."
-        : "선택은 현재 탭에 적용했지만 브라우저에 저장하지 못했습니다. 새로고침 후 다시 선택해 주세요.",
-    );
+  const showResult = useCallback((result: AnalyticsConsentUpdateResult) => {
+    setMessage(getAnalyticsConsentResultMessage(result));
   }, []);
 
   return (
     <AnalyticsConsentSettingsView
       consent={consent}
       message={message}
-      onGrant={() => showResult(grantAnalyticsConsent().persisted, true)}
-      onDeny={() => showResult(denyAnalyticsConsent().persisted, false)}
+      onGrant={() => showResult(grantAnalyticsConsent())}
+      onDeny={() => showResult(denyAnalyticsConsent())}
     />
   );
 }

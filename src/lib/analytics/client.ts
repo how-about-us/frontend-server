@@ -27,6 +27,8 @@ declare global {
 
 let initializedConfiguration: string | null = null;
 let consentDefaultSent = false;
+let analyticsTransportReady = false;
+const pendingAnalyticsCommands: unknown[][] = [];
 
 export function buildGoogleAnalyticsConfig(
   debugMode: boolean,
@@ -59,7 +61,23 @@ function ensureGoogleTag(): GoogleTag | null {
 }
 
 export function sendAnalyticsCommand(...args: unknown[]): void {
+  if (!analyticsTransportReady) {
+    pendingAnalyticsCommands.push(args);
+    return;
+  }
+
   ensureGoogleTag()?.(...args);
+}
+
+function sendInitializationCommand(...args: unknown[]): void {
+  ensureGoogleTag()?.(...args);
+}
+
+function openAnalyticsTransport(): void {
+  analyticsTransportReady = true;
+  for (const command of pendingAnalyticsCommands.splice(0)) {
+    sendAnalyticsCommand(...command);
+  }
 }
 
 export function initializeGoogleAnalytics(
@@ -67,7 +85,7 @@ export function initializeGoogleAnalytics(
   debugMode: boolean,
 ): void {
   if (!consentDefaultSent) {
-    sendAnalyticsCommand(
+    sendInitializationCommand(
       "consent",
       "default",
       buildGoogleAnalyticsConsentState("denied"),
@@ -75,25 +93,32 @@ export function initializeGoogleAnalytics(
     consentDefaultSent = true;
   }
 
-  sendAnalyticsCommand(
+  sendInitializationCommand(
     "consent",
     "update",
     buildGoogleAnalyticsConsentState("granted"),
   );
 
   const configuration = `${measurementId}:${debugMode}`;
-  if (initializedConfiguration === configuration) return;
+  if (initializedConfiguration === configuration) {
+    openAnalyticsTransport();
+    return;
+  }
 
-  sendAnalyticsCommand("js", new Date());
-  sendAnalyticsCommand(
+  sendInitializationCommand("js", new Date());
+  sendInitializationCommand(
     "config",
     measurementId,
     buildGoogleAnalyticsConfig(debugMode),
   );
   initializedConfiguration = configuration;
+  openAnalyticsTransport();
 }
 
 export function revokeGoogleAnalyticsConsent(): void {
+  analyticsTransportReady = false;
+  pendingAnalyticsCommands.length = 0;
+
   if (
     initializedConfiguration === null ||
     typeof window === "undefined" ||
@@ -102,8 +127,8 @@ export function revokeGoogleAnalyticsConsent(): void {
     return;
   }
 
-  sendAnalyticsCommand("set", { user_id: null });
-  sendAnalyticsCommand(
+  sendInitializationCommand("set", { user_id: null });
+  sendInitializationCommand(
     "consent",
     "update",
     buildGoogleAnalyticsConsentState("denied"),
