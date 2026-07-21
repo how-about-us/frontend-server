@@ -17,8 +17,6 @@
 | `/plan/{방 ID}` | `/plan/[roomId]` |
 | `/bookmark/{폴더 ID}` | `/bookmark/[folderId]` |
 
-분석 동의를 나중에 변경하거나 철회하는 설정 화면은 이 작업의 범위가 아니며 별도 GitHub 이슈에서 추적한다.
-
 ## 배포 환경 변수
 
 프로덕션에는 운영 데이터 스트림의 측정 ID만 설정한다.
@@ -35,6 +33,17 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 ```
 
 `NEXT_PUBLIC_GA_DEBUG_MODE=true`는 프로덕션이 아니어도 분석을 활성화하고 gtag 설정에 `debug_mode: true`를 추가한다. 운영 데이터 스트림에 디버그 트래픽을 보내지 않는다.
+
+## 분석 동의 변경 및 철회
+
+우때는 기본 동의 모드를 사용한다. 선택 전과 거부 상태에서는 gtag.js를 로드하거나 쿠키 없는 분석 핑을 보내지 않는다.
+
+- 공개 `/privacy-settings`에서 로그인 여부와 관계없이 현재 선택을 확인하고 변경할 수 있다.
+- `analytics_storage`만 사용자 선택에 따라 바뀐다.
+- `ad_storage`, `ad_user_data`, `ad_personalization`은 항상 `denied`다.
+- 철회하면 `user_id`를 `null`로 초기화하고 분석 저장소를 거부한 뒤 `_ga`, `_ga_*` 쿠키 삭제를 시도한다.
+- 기존 `granted`, `denied`는 v1 선택으로 인정하며 다음 변경부터 `v1:granted`, `v1:denied`로 저장한다.
+- 수집 목적, 제공자, 데이터 범위처럼 동의의 의미가 중대하게 바뀔 때만 정책 버전을 올리고 재동의를 받는다.
 
 ## GA 관리자 설정
 
@@ -115,10 +124,16 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 
 ## 배포 전 검증
 
-1. 분석 쿠키가 없거나 거부 상태일 때 gtag.js 요청과 GA 이벤트가 없는지 확인한다.
-2. 허용 후 첫 화면에서 `page_view`가 한 번만 발생하는지 확인한다.
-3. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
-4. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
-5. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
-6. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
-7. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
+1. 선택 전에는 gtag.js 요청, `window.gtag`, GA 이벤트가 없는지 확인한다.
+2. 허용하면 Consent Mode 명령이 `default denied → analytics_storage granted → config` 순서인지 확인한다.
+3. `/privacy-settings`에서 거부하면 User-ID가 초기화되고 추가 `page_view`와 일반 이벤트가 중단되는지 확인한다.
+4. 철회 후 `_ga`, `_ga_*` 쿠키가 제거되고 새로고침 뒤 `v1:denied`가 유지되는지 확인한다.
+5. 다시 허용하면 `config`와 현재 페이지뷰가 중복되지 않고 추적이 재개되는지 확인한다.
+6. 홈 프로필 메뉴와 메인 사이드바에서 키보드로 개인정보 설정에 진입할 수 있는지 확인한다.
+7. 분석 쿠키가 없거나 거부 상태일 때 gtag.js 요청과 GA 이벤트가 없는지 확인한다.
+8. 허용 후 첫 화면에서 `page_view`가 한 번만 발생하는지 확인한다.
+9. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
+10. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
+11. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
+12. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
+13. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
