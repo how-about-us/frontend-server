@@ -1,6 +1,6 @@
 import { sendAnalyticsCommand } from "@/lib/analytics/client";
 
-import { readAnalyticsConsentCookie } from "@/lib/analytics/consent-cookie";
+import { analyticsConsentStore } from "@/lib/analytics/consent-store";
 import type {
   AnalyticsEntryPoint,
   AnalyticsRoomRole,
@@ -29,7 +29,7 @@ export function buildAnalyticsUserIdCommand(
 
 export function setAnalyticsUserId(userId: number | null | undefined): void {
   if (!analyticsRuntime.enabled) return;
-  if (readAnalyticsConsentCookie() !== "granted") return;
+  if (!analyticsConsentStore.isGranted()) return;
 
   sendAnalyticsCommand(...buildAnalyticsUserIdCommand(userId));
 }
@@ -198,7 +198,7 @@ export function trackAnalyticsEvent<EventName extends AnalyticsEventName>(
 ): void {
   const params = args[0];
   if (!analyticsRuntime.enabled) return;
-  if (readAnalyticsConsentCookie() !== "granted") return;
+  if (!analyticsConsentStore.isGranted()) return;
 
   const cleaned = cleanParams(params);
   if (Object.keys(cleaned).length > 0) {

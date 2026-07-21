@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import {
   AnalyticsEvents,
@@ -6,6 +6,11 @@ import {
   buildAnalyticsUserIdCommand,
   buildTutorialExitAnalyticsEvent,
 } from "@/lib/analytics/track";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe("AnalyticsEvents", () => {
   it("exposes the frontend GA event schema", () => {
@@ -84,4 +89,28 @@ describe("buildAnalyticsUserIdCommand", () => {
       ]);
     },
   );
+});
+
+describe("analytics consent gate", () => {
+  it("blocks an event after denial and sends it after grant", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GA_DEBUG_MODE", "true");
+    vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-TEST123");
+    vi.stubGlobal("window", { dataLayer: [] as unknown[] });
+    vi.stubGlobal("document", {
+      cookie: "uttae_analytics_consent=v1:denied",
+    });
+    vi.resetModules();
+    const { AnalyticsEvents, trackAnalyticsEvent } = await import(
+      "@/lib/analytics/track"
+    );
+
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    expect(window.dataLayer).toEqual([]);
+
+    document.cookie = "uttae_analytics_consent=v1:granted";
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    expect(window.dataLayer).toEqual([
+      ["event", "create_bookmark_folder"],
+    ]);
+  });
 });
