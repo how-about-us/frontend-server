@@ -27,6 +27,19 @@ describe("buildSessionPageViewPlan", () => {
     ).toBeNull();
   });
 
+  it("재조정 시작 시 이전 성공 쿼리가 남아 있어도 전송하지 않는다", () => {
+    expect(
+      buildSessionPageViewPlan({
+        ...page,
+        lastTrackedPathname: "/login",
+        queryStatus: "success",
+        sessionReady: false,
+        skipSessionReconciliation: false,
+        userId: 42,
+      }),
+    ).toBeNull();
+  });
+
   it("사용자 쿼리가 대기 중이면 전송 계획을 만들지 않는다", () => {
     expect(
       buildSessionPageViewPlan({

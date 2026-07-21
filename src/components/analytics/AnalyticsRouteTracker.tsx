@@ -29,7 +29,8 @@ export function AnalyticsRouteTracker() {
       title: document.title,
       lastTrackedPathname: lastTrackedPathname.current,
       queryStatus,
-      sessionReady,
+      // SessionReconciler의 layout effect가 같은 commit에서 갱신한 값을 읽는다.
+      sessionReady: useSessionStore.getState().sessionReady,
       skipSessionReconciliation:
         shouldSkipReconcileClientSession(pathname),
       userId,
