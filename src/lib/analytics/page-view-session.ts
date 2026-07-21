@@ -19,6 +19,11 @@ export type SessionPageViewPlan = {
   userId: number | null;
 };
 
+export type SessionPageViewPlanExecutor = {
+  setUserId: (userId: number | null) => void;
+  trackPageView: (pageView: AnalyticsPageViewParams) => void;
+};
+
 export function buildSessionPageViewPlan({
   lastTrackedPathname,
   queryStatus,
@@ -44,4 +49,14 @@ export function buildSessionPageViewPlan({
         ? null
         : buildAnalyticsPageView(pageViewInput),
   };
+}
+
+export function executeSessionPageViewPlan(
+  plan: SessionPageViewPlan,
+  executor: SessionPageViewPlanExecutor,
+): void {
+  executor.setUserId(plan.userId);
+  if (plan.pageView) {
+    executor.trackPageView(plan.pageView);
+  }
 }

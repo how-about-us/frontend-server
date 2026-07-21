@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSessionPageViewPlan } from "@/lib/analytics/page-view-session";
+import {
+  buildSessionPageViewPlan,
+  executeSessionPageViewPlan,
+} from "@/lib/analytics/page-view-session";
+import { shouldSkipReconcileClientSession } from "@/lib/auth-session";
 
 const page = {
   origin: "https://uttae.app",
@@ -134,5 +138,58 @@ describe("buildSessionPageViewPlan", () => {
       userId: 42,
       pageView: expect.objectContaining({ page_path: "/plan/[roomId]" }),
     });
+  });
+});
+
+describe("shouldSkipReconcileClientSession", () => {
+  it.each(["/login", "/login/help", "/auth/callback", "/auth/callback/google"])(
+    "%s 경로는 세션 조정을 생략한다",
+    (pathname) => {
+      expect(shouldSkipReconcileClientSession(pathname)).toBe(true);
+    },
+  );
+
+  it.each(["/", "/home", "/login-extra", "/auth/callback-extra"])(
+    "%s 경로는 세션 조정을 수행한다",
+    (pathname) => {
+      expect(shouldSkipReconcileClientSession(pathname)).toBe(false);
+    },
+  );
+});
+
+describe("executeSessionPageViewPlan", () => {
+  it("User-ID를 먼저 설정한 뒤 페이지뷰를 전송한다", () => {
+    const calls: string[] = [];
+
+    executeSessionPageViewPlan(
+      {
+        userId: 42,
+        pageView: {
+          page_location: "https://uttae.app/home",
+          page_path: "/home",
+          page_title: "홈",
+        },
+      },
+      {
+        setUserId: () => calls.push("set-user-id"),
+        trackPageView: () => calls.push("page-view"),
+      },
+    );
+
+    expect(calls).toEqual(["set-user-id", "page-view"]);
+  });
+
+  it("페이지뷰가 없는 계획은 User-ID만 동기화한다", () => {
+    const calls: string[] = [];
+
+    executeSessionPageViewPlan(
+      { userId: 84, pageView: null },
+      {
+        setUserId: () => calls.push("set-user-id"),
+        trackPageView: () => calls.push("page-view"),
+      },
+    );
+
+    expect(calls).toEqual(["set-user-id"]);
   });
 });
