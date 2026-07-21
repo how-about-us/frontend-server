@@ -7,14 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { checkClientAuthenticated, setPendingInviteCode } from "@/lib/auth";
-import {
-  bucketMemberCount,
-  toAnalyticsRoomRole,
-} from "@/lib/analytics/context";
 import { AnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/track";
 import { useJoinRoom } from "@/hooks/useRooms";
 import { getRoomDetail } from "@/lib/api/rooms";
-import { planPathForRoom } from "@/lib/join-room-workflow";
+import {
+  buildJoinPlanAnalyticsParams,
+  planPathForRoom,
+} from "@/lib/join-room-workflow";
 import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
 
@@ -65,13 +64,10 @@ export default function JoinPage() {
             } catch {
               // 메타 조회 실패해도 입장은 진행 (waiting 승인 처리와 동일)
             }
-            trackAnalyticsEvent(AnalyticsEvents.joinPlan, {
-              member_count_bucket:
-                memberCount === undefined
-                  ? undefined
-                  : bucketMemberCount(memberCount),
-              role: toAnalyticsRoomRole(data.role),
-            });
+            trackAnalyticsEvent(
+              AnalyticsEvents.joinPlan,
+              buildJoinPlanAnalyticsParams(data.role, memberCount),
+            );
             router.replace(planPathForRoom(data.id));
             return;
           }

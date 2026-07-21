@@ -9,9 +9,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 import { useCheckJoinStatus } from "@/hooks/useRooms";
 import { getRoomDetail, HttpError } from "@/lib/api/rooms";
+import { trackAnalyticsEvent } from "@/lib/analytics/track";
 import {
+  completeWaitingJoinApproval,
   joinStatusForWaitingUi,
-  planPathForRoom,
 } from "@/lib/join-room-workflow";
 import { roomDetailQueryKey } from "@/lib/query-keys";
 import { useSessionStore } from "@/stores/session-store";
@@ -42,14 +43,15 @@ function WaitingContent() {
         const uiStatus = joinStatusForWaitingUi(data);
         setStatusResult(uiStatus);
         if (uiStatus === "APPROVED") {
-          setCurrentRoomId(data.id);
-          try {
-            const meta = await getRoomDetail(data.id);
-            queryClient.setQueryData(roomDetailQueryKey(data.id), meta);
-          } catch {
-            // 메타 조회 실패해도 입장은 진행
-          }
-          router.replace(planPathForRoom(data.id));
+          await completeWaitingJoinApproval(data, {
+            setCurrentRoomId,
+            getRoomDetail,
+            cacheRoomDetail: (id, detail) => {
+              queryClient.setQueryData(roomDetailQueryKey(id), detail);
+            },
+            trackAnalyticsEvent,
+            navigateToPlan: router.replace,
+          });
         }
       },
       onError: (err) => {

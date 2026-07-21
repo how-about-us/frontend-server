@@ -1,4 +1,10 @@
-import type { JoinRoomResponse } from "@/lib/api/rooms/types";
+import type { JoinRoomResponse, RoomDetail } from "@/lib/api/rooms/types";
+import {
+  bucketMemberCount,
+  toAnalyticsRoomRole,
+} from "@/lib/analytics/context";
+import { AnalyticsEvents } from "@/lib/analytics/track";
+import type { AnalyticsEventParamsMap } from "@/lib/analytics/track";
 
 const APPROVED_ALIASES = new Set(["APPROVED", "JOINED", "ACCEPTED"]);
 const REJECTED_ALIASES = new Set(["REJECTED", "REJECT", "DENIED", "DECLINED"]);
@@ -26,4 +32,53 @@ export function joinStatusForWaitingUi(
 export function planPathForRoom(roomId: string): string {
   const id = roomId.trim();
   return id.length > 0 ? `/plan/${encodeURIComponent(id)}` : "/plan";
+}
+
+type JoinPlanAnalyticsParams = AnalyticsEventParamsMap[typeof AnalyticsEvents.joinPlan];
+
+export function buildJoinPlanAnalyticsParams(
+  role: string,
+  memberCount?: number,
+): JoinPlanAnalyticsParams {
+  return {
+    member_count_bucket:
+      memberCount === undefined ? undefined : bucketMemberCount(memberCount),
+    role: toAnalyticsRoomRole(role),
+  };
+}
+
+type WaitingApprovalDependencies = {
+  cacheRoomDetail: (roomId: string, detail: RoomDetail) => void;
+  getRoomDetail: (roomId: string) => Promise<RoomDetail>;
+  navigateToPlan: (path: string) => void;
+  setCurrentRoomId: (roomId: string) => void;
+  trackAnalyticsEvent: (
+    eventName: typeof AnalyticsEvents.joinPlan,
+    params: JoinPlanAnalyticsParams,
+  ) => void;
+};
+
+export async function completeWaitingJoinApproval(
+  response: JoinRoomResponse,
+  dependencies: WaitingApprovalDependencies,
+): Promise<boolean> {
+  if (joinStatusForWaitingUi(response) !== "APPROVED") return false;
+
+  dependencies.setCurrentRoomId(response.id);
+
+  let memberCount: number | undefined;
+  try {
+    const detail = await dependencies.getRoomDetail(response.id);
+    memberCount = detail.memberCount;
+    dependencies.cacheRoomDetail(response.id, detail);
+  } catch {
+    // 메타 조회 실패해도 입장은 진행
+  }
+
+  dependencies.trackAnalyticsEvent(
+    AnalyticsEvents.joinPlan,
+    buildJoinPlanAnalyticsParams(response.role, memberCount),
+  );
+  dependencies.navigateToPlan(planPathForRoom(response.id));
+  return true;
 }
