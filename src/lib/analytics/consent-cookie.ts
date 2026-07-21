@@ -40,7 +40,7 @@ export function writeAnalyticsConsentCookie(
 
   const secure =
     typeof window !== "undefined" && window.location.protocol === "https:"
-      ? "; Secure"
+      ? "Secure"
       : "";
   document.cookie = [
     `${ANALYTICS_CONSENT_COOKIE_NAME}=${serializeAnalyticsConsentCookieValue(value)}`,
@@ -48,7 +48,9 @@ export function writeAnalyticsConsentCookie(
     "Path=/",
     "SameSite=Lax",
     secure,
-  ].join("; ");
+  ]
+    .filter(Boolean)
+    .join("; ");
 
   return readAnalyticsConsentCookie() === value;
 }
