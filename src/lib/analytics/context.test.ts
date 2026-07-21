@@ -98,6 +98,56 @@ describe("analytics context", () => {
     });
   });
 
+  it("keeps only the origin root for an external HTTP referrer", () => {
+    expect(
+      buildAnalyticsPageView({
+        origin: "https://uttae.example",
+        pathname: "/home",
+        referrer:
+          "https://user:password@search.example:8443/private/result?utm_source=message#details",
+        title: "홈",
+      }),
+    ).toEqual({
+      page_path: "/home",
+      page_location: "https://uttae.example/home",
+      page_referrer: "https://search.example:8443/",
+      page_title: "홈",
+    });
+  });
+
+  it.each([
+    "mailto:person@example.com",
+    "ftp://files.example/private/path",
+    "javascript:alert('secret')",
+  ])("omits a non-HTTP referrer: %s", (referrer) => {
+    expect(
+      buildAnalyticsPageView({
+        origin: "https://uttae.example",
+        pathname: "/home",
+        referrer,
+        title: "홈",
+      }),
+    ).not.toHaveProperty("page_referrer");
+  });
+
+  it("removes every query parameter from the current page and referrer", () => {
+    expect(
+      buildAnalyticsPageView({
+        origin: "https://uttae.example",
+        pathname:
+          "/search?q=raw-search&utm_source=newsletter&utm_campaign=summer",
+        referrer:
+          "https://campaign.example/landing/private?utm_medium=email&q=other-secret#offer",
+        title: "검색",
+      }),
+    ).toEqual({
+      page_path: "/search",
+      page_location: "https://uttae.example/search",
+      page_referrer: "https://campaign.example/",
+      page_title: "검색",
+    });
+  });
+
   it("omits an invalid page referrer", () => {
     expect(
       buildAnalyticsPageView({

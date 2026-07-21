@@ -121,12 +121,36 @@ function analyticsPageLocation(origin: string, pathname: string): string {
   }
 }
 
-function analyticsPageReferrer(referrer: string): string | undefined {
+function analyticsPageReferrer(
+  origin: string,
+  referrer: string,
+): string | undefined {
   if (!referrer.trim()) return undefined;
 
   try {
-    const url = new URL(referrer);
-    return analyticsPageLocation(url.origin, url.pathname);
+    const referrerUrl = new URL(referrer);
+    if (
+      referrerUrl.protocol !== "http:" &&
+      referrerUrl.protocol !== "https:"
+    ) {
+      return undefined;
+    }
+
+    let currentOrigin: string | undefined;
+    try {
+      const currentUrl = new URL(origin);
+      if (
+        currentUrl.protocol === "http:" ||
+        currentUrl.protocol === "https:"
+      ) {
+        currentOrigin = currentUrl.origin;
+      }
+    } catch {}
+
+    if (referrerUrl.origin === currentOrigin) {
+      return analyticsPageLocation(referrerUrl.origin, referrerUrl.pathname);
+    }
+    return `${referrerUrl.origin}/`;
   } catch {
     return undefined;
   }
@@ -138,7 +162,7 @@ export function buildAnalyticsPageView({
   referrer,
   title,
 }: AnalyticsPageViewInput): AnalyticsPageViewParams {
-  const pageReferrer = analyticsPageReferrer(referrer);
+  const pageReferrer = analyticsPageReferrer(origin, referrer);
   return {
     page_path: analyticsPagePath(pathname),
     page_location: analyticsPageLocation(origin, pathname),

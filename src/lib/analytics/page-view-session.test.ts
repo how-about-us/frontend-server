@@ -68,7 +68,7 @@ describe("buildSessionPageViewPlan", () => {
       pageView: {
         page_location: "https://uttae.app/home",
         page_path: "/home",
-        page_referrer: "https://google.com/search",
+        page_referrer: "https://google.com/",
         page_title: "홈",
       },
     });
@@ -150,6 +150,30 @@ describe("buildSessionPageViewPlan", () => {
     ).toEqual({
       userId: 42,
       pageView: expect.objectContaining({ page_path: "/plan/[roomId]" }),
+    });
+  });
+
+  it("외부 리퍼러는 출처만 남기고 현재 경로의 전체 쿼리를 제거한다", () => {
+    expect(
+      buildSessionPageViewPlan({
+        ...page,
+        pathname: "/search?q=raw-search&utm_source=newsletter",
+        referrer:
+          "https://user:password@search.example/results/private?utm_medium=organic#result",
+        lastTrackedPathname: null,
+        queryStatus: "success",
+        sessionReady: true,
+        skipSessionReconciliation: false,
+        userId: 42,
+      }),
+    ).toEqual({
+      userId: 42,
+      pageView: {
+        page_location: "https://uttae.app/search",
+        page_path: "/search",
+        page_referrer: "https://search.example/",
+        page_title: "홈",
+      },
     });
   });
 });
