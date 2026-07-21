@@ -21,6 +21,17 @@ async function freshClient(consent: "granted" | "denied") {
 
 afterEach(() => vi.unstubAllGlobals());
 
+function createUnpersistedCookieDocument(initialCookie: string) {
+  let cookie = initialCookie;
+
+  return {
+    get cookie() {
+      return cookie;
+    },
+    set cookie(_value: string) {},
+  };
+}
+
 describe("buildGoogleAnalyticsConfig", () => {
   it("always disables automatic page views", async () => {
     const { client } = await freshClient("granted");
@@ -127,5 +138,35 @@ describe("Google Consent Mode", () => {
         expect.objectContaining({ page_path: "/search" }),
       ],
     ]);
+  });
+
+  it("uses denied session state when a stale granted cookie cannot persist", async () => {
+    vi.resetModules();
+    const dataLayer: unknown[] = [];
+    const cookieDocument = createUnpersistedCookieDocument(
+      "uttae_analytics_consent=v1:granted",
+    );
+    vi.stubGlobal("window", {
+      dataLayer,
+      location: { hostname: "example.com", protocol: "http:" },
+    });
+    vi.stubGlobal("document", cookieDocument);
+    const { analyticsConsentStore } = await import(
+      "@/lib/analytics/consent-store"
+    );
+    const client = await import("@/lib/analytics/client");
+
+    expect(analyticsConsentStore.set("denied")).toEqual({
+      persisted: false,
+      state: "denied",
+    });
+    client.trackAnalyticsPageView({
+      page_location: "https://example.com/search",
+      page_path: "/search",
+      page_referrer: "",
+      page_title: "검색",
+    });
+
+    expect(dataLayer).toEqual([]);
   });
 });

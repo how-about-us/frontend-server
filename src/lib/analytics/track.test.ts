@@ -113,4 +113,85 @@ describe("analytics consent gate", () => {
       ["event", "create_bookmark_folder"],
     ]);
   });
+
+  it("uses session state for general events when cookie persistence fails", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GA_DEBUG_MODE", "true");
+    vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-TEST123");
+    const dataLayer: unknown[] = [];
+    let staleCookie = "uttae_analytics_consent=v1:denied";
+    vi.stubGlobal("window", {
+      dataLayer,
+      location: { hostname: "example.com", protocol: "http:" },
+    });
+    vi.stubGlobal("document", {
+      get cookie() {
+        return staleCookie;
+      },
+      set cookie(_value: string) {},
+    });
+    vi.resetModules();
+    const { analyticsConsentStore } = await import(
+      "@/lib/analytics/consent-store"
+    );
+    const { AnalyticsEvents, trackAnalyticsEvent } = await import(
+      "@/lib/analytics/track"
+    );
+
+    expect(analyticsConsentStore.set("granted")).toEqual({
+      persisted: false,
+      state: "granted",
+    });
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    expect(dataLayer).toEqual([["event", "create_bookmark_folder"]]);
+
+    dataLayer.length = 0;
+    staleCookie = "uttae_analytics_consent=v1:granted";
+    expect(analyticsConsentStore.set("denied")).toEqual({
+      persisted: false,
+      state: "denied",
+    });
+    trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
+    expect(dataLayer).toEqual([]);
+  });
+
+  it("gates user ID commands by pending, granted, and denied session state", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GA_DEBUG_MODE", "true");
+    vi.stubEnv("NEXT_PUBLIC_GA_MEASUREMENT_ID", "G-TEST123");
+    const dataLayer: unknown[] = [];
+    let staleCookie = "";
+    vi.stubGlobal("window", {
+      dataLayer,
+      location: { hostname: "example.com", protocol: "http:" },
+    });
+    vi.stubGlobal("document", {
+      get cookie() {
+        return staleCookie;
+      },
+      set cookie(_value: string) {},
+    });
+    vi.resetModules();
+    const { analyticsConsentStore } = await import(
+      "@/lib/analytics/consent-store"
+    );
+    const { setAnalyticsUserId } = await import("@/lib/analytics/track");
+
+    setAnalyticsUserId(42);
+    expect(dataLayer).toEqual([]);
+
+    expect(analyticsConsentStore.set("granted")).toEqual({
+      persisted: false,
+      state: "granted",
+    });
+    setAnalyticsUserId(42);
+    expect(dataLayer).toEqual([["set", { user_id: "42" }]]);
+
+    dataLayer.length = 0;
+    staleCookie = "uttae_analytics_consent=v1:granted";
+    expect(analyticsConsentStore.set("denied")).toEqual({
+      persisted: false,
+      state: "denied",
+    });
+    setAnalyticsUserId(42);
+    expect(dataLayer).toEqual([]);
+  });
 });
