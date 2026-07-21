@@ -22,7 +22,7 @@ async function freshClient(consent: "granted" | "denied") {
 afterEach(() => vi.unstubAllGlobals());
 
 function createUnpersistedCookieDocument(initialCookie: string) {
-  let cookie = initialCookie;
+  const cookie = initialCookie;
 
   return {
     get cookie() {
