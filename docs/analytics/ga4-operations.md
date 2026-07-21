@@ -7,11 +7,15 @@
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`는 `G-`로 시작하는 유효한 형식만 사용한다.
 - 프로덕션에서는 사용자가 분석 쿠키를 허용한 뒤에만 gtag.js를 로드한다.
 - `gtag('config', ...)`에 `send_page_view: false`를 적용해 기본 페이지뷰를 끈다.
+- 페이지뷰, User-ID, 일반 이벤트는 모두 중앙 데이터 명령 게이트에서 런타임 활성화와 현재 분석 동의를 확인한다. 초기화 전에 보류된 명령도 실제 전송 직전에 같은 게이트를 다시 통과한다.
+- Consent Mode의 `default`, `update`, `js`, `config`와 철회 시 `user_id: null`은 데이터 명령과 분리된 제어 경로로 전송한다.
 - App Router 경로 변경마다 애플리케이션이 `page_view`를 한 번 전송한다.
 - 일반 경로의 첫 `page_view`는 세션 사용자 쿼리가 성공 또는 오류로 확정된 뒤 전송한다. 로그인 사용자는 `user_id` 설정 명령을 먼저 보내고, 비로그인 성공 결과와 조회 오류는 `user_id: null`로 전송한다.
 - 세션 조정을 생략하는 `/login`, `/login/*`, `/auth/callback`, `/auth/callback/*`은 쿼리를 기다리지 않고 익명 페이지뷰를 전송한다.
 - 세션 확인 중 경로가 여러 번 바뀌면 준비 완료 시점의 최신 경로만 전송하고 기술적 중간 화면은 집계하지 않는다.
-- 쿼리와 해시는 `page_path`, `page_location`, `page_referrer`에서 제거한다.
+- 현재 페이지와 같은 출처의 리퍼러는 정규화된 내부 경로를 보존하고, 외부 HTTP(S) 리퍼러는 `https://host[:port]/` 형식의 출처 루트만 보존한다. 외부 사용자 정보, 경로, 쿼리, 해시는 보내지 않는다.
+- 비 HTTP(S) 또는 파싱할 수 없는 리퍼러는 `page_referrer`에서 생략한다.
+- UTM을 포함한 모든 쿼리와 해시는 `page_path`, `page_location`, `page_referrer`에서 제거한다.
 - 동적 경로는 다음과 같이 낮은 카디널리티의 템플릿으로 전송한다.
 
 | 실제 경로 | GA 전송 경로 |
@@ -19,6 +23,12 @@
 | `/join/{초대코드}` | `/join/[inviteCode]` |
 | `/plan/{방 ID}` | `/plan/[roomId]` |
 | `/bookmark/{폴더 ID}` | `/bookmark/[folderId]` |
+
+## 리퍼러와 캠페인 수집 정책
+
+도메인 기반 유입 출처는 외부 리퍼러의 origin으로 분석한다. 외부 페이지의 세부 경로는 유입 도메인 판정에 필요하지 않으므로 수집하지 않는다.
+
+`utm_source`, `utm_medium`, `utm_campaign`을 포함한 모든 쿼리 파라미터는 현재 페이지 URL에서도 수집하지 않는다. 따라서 임의의 UTM 값에 개인정보가 섞이는 위험은 줄지만, GA4의 수동 캠페인별 획득 보고는 제한된다. 캠페인 분석이 필요해지면 허용할 키와 값, 동의 문구 및 개인정보 정책을 별도로 검토한 뒤 도입한다.
 
 ## 배포 환경 변수
 
@@ -143,3 +153,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 14. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
 15. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
 16. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
+17. 미선택 또는 거부 상태에서 페이지뷰, User-ID, 일반 이벤트 호출 경로와 중앙 데이터 명령을 직접 실행해도 `dataLayer`에 데이터 명령이 추가되지 않고, 이후 허용해도 이전 명령이 되살아나지 않는지 확인한다.
+18. 같은 출처 화면 이동의 `page_referrer`에는 정규화된 내부 경로가 남고, 외부 HTTP(S) 유입에는 출처 루트만 남는지 `page_view` 페이로드에서 확인한다.
+19. 외부 리퍼러의 사용자 정보·경로·쿼리·해시와 `mailto:`, `ftp:` 등 비 HTTP(S) 리퍼러가 `page_view` 페이로드에 없는지 확인한다.
+20. UTM이 포함된 URL로 진입해 `page_location`, `page_path`, `page_referrer`에 UTM을 포함한 어떤 쿼리도 없는지 확인한다.
