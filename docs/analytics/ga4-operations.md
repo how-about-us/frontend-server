@@ -8,6 +8,9 @@
 - 프로덕션에서는 사용자가 분석 쿠키를 허용한 뒤에만 gtag.js를 로드한다.
 - `gtag('config', ...)`에 `send_page_view: false`를 적용해 기본 페이지뷰를 끈다.
 - App Router 경로 변경마다 애플리케이션이 `page_view`를 한 번 전송한다.
+- 일반 경로의 첫 `page_view`는 세션 사용자 쿼리가 성공 또는 오류로 확정된 뒤 전송한다. 로그인 사용자는 `user_id` 설정 명령을 먼저 보내고, 비로그인 성공 결과와 조회 오류는 `user_id: null`로 전송한다.
+- 세션 조정을 생략하는 `/login`, `/login/*`, `/auth/callback`, `/auth/callback/*`은 쿼리를 기다리지 않고 익명 페이지뷰를 전송한다.
+- 세션 확인 중 경로가 여러 번 바뀌면 준비 완료 시점의 최신 경로만 전송하고 기술적 중간 화면은 집계하지 않는다.
 - 쿼리와 해시는 `page_path`, `page_location`, `page_referrer`에서 제거한다.
 - 동적 경로는 다음과 같이 낮은 카디널리티의 템플릿으로 전송한다.
 
@@ -131,9 +134,12 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 5. 다시 허용하면 `config`와 현재 페이지뷰가 중복되지 않고 추적이 재개되는지 확인한다.
 6. 홈 프로필 메뉴와 메인 사이드바에서 키보드로 개인정보 설정에 진입할 수 있는지 확인한다.
 7. 분석 쿠키가 없거나 거부 상태일 때 gtag.js 요청과 GA 이벤트가 없는지 확인한다.
-8. 허용 후 첫 화면에서 `page_view`가 한 번만 발생하는지 확인한다.
-9. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
-10. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
-11. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
-12. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
-13. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
+8. 로그인 상태로 일반 경로에 진입해 `set user_id → page_view` 순서이며 첫 화면의 `page_view`가 한 번만 발생하는지 확인한다.
+9. 비로그인 상태로 일반 경로에 진입해 세션 확인 뒤 `user_id: null → page_view` 순서로 한 번만 발생하는지 확인한다.
+10. `/login`과 `/auth/callback`에서 세션 확인을 기다리지 않고 익명 `page_view`가 한 번만 발생하는지 확인한다.
+11. 세션 확인 중 빠르게 리다이렉트되면 중간 경로는 없고 최종 경로의 `page_view`만 한 번 발생하는지 확인한다.
+12. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
+13. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
+14. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
+15. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
+16. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
