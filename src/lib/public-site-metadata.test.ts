@@ -42,7 +42,7 @@ describe("public site structured data", () => {
       operatingSystem: "Web",
     });
     expect(JSON.stringify(SOFTWARE_APPLICATION_JSON_LD)).not.toMatch(
-      /"(?:price|rating|award|funding)"|투자/i,
+      /"(?:offers|price|isAccessibleForFree|aggregateRating|rating|award|funding|userCount|reviewCount|downloadCount|interactionStatistic)"\s*:|투자/i,
     );
   });
 });
