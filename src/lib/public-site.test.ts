@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   PUBLIC_COMPANY_FACTS,
   PUBLIC_FOUNDERS,
-  PUBLIC_PRODUCT_STATUS,
   PUBLIC_SITE,
 } from "@/lib/public-site";
 
@@ -18,15 +17,9 @@ describe("public site facts", () => {
       location: "Seoul, South Korea",
       githubOrganizationUrl: "https://github.com/uttae",
     });
-    expect(PUBLIC_PRODUCT_STATUS).toEqual([
-      "정식 출시",
-      "현재 무료로 이용 가능",
-      "Google 로그인 후 바로 시작",
-    ]);
     expect(PUBLIC_COMPANY_FACTS.map((fact) => fact.value)).toEqual([
       "2026년 6월",
       "대한민국 서울",
-      "정식 출시 · 현재 무료 운영",
       "팀 우때 (Team Uttae)",
     ]);
   });
@@ -53,7 +46,6 @@ describe("public site facts", () => {
   it("does not publish application-only business or funding claims", () => {
     const publicFacts = JSON.stringify({
       site: PUBLIC_SITE,
-      status: PUBLIC_PRODUCT_STATUS,
       company: PUBLIC_COMPANY_FACTS,
       founders: PUBLIC_FOUNDERS,
     });

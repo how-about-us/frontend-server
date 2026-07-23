@@ -8,16 +8,9 @@ export const PUBLIC_SITE = {
   githubOrganizationUrl: "https://github.com/uttae",
 } as const;
 
-export const PUBLIC_PRODUCT_STATUS = [
-  "정식 출시",
-  "현재 무료로 이용 가능",
-  "Google 로그인 후 바로 시작",
-] as const;
-
 export const PUBLIC_COMPANY_FACTS = [
   { label: "설립", value: "2026년 6월" },
   { label: "소재지", value: "대한민국 서울" },
-  { label: "제품 상태", value: "정식 출시 · 현재 무료 운영" },
   { label: "운영 주체", value: "팀 우때 (Team Uttae)" },
 ] as const;
 
