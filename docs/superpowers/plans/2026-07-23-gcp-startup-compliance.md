@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 로그인하지 않은 방문자와 자동 심사기가 우때의 정식 출시 상태, 실제 제품 흐름, 운영 주체와 공동창업자를 공개 HTML에서 확인할 수 있도록 `/`, `/product`, `/login`, 검색 메타데이터를 보강한다.
+**Goal:** 로그인하지 않은 방문자와 자동 심사기가 우때의 실제 제품 흐름, 운영 주체와 공동창업자를 공개 HTML에서 확인할 수 있도록 `/`, `/product`, `/login`, 검색 메타데이터를 보강한다.
 
 **Architecture:** 검증된 공개 사실은 `src/lib/public-site.ts`의 단일 데이터 원천으로 관리하고, 기존 랜딩은 신뢰 정보를 요약한다. `/product`는 기존 6개 실제 스크린샷을 재사용하는 정적 서버 렌더링 페이지로 만들며, 검색 메타데이터와 JSON-LD도 같은 공개 사실에서 생성한다. 로그인 이후 제품, OAuth 동작, API와 백엔드는 변경하지 않는다.
 
@@ -12,7 +12,7 @@
 
 - 작업 기준 브랜치는 `origin/dev`, 구현 브랜치는 `codex/gcp-startup-compliance`이다.
 - 고객용 공개 페이지에는 비즈니스 모델과 투자 유치 계획을 노출하지 않는다.
-- 제품 상태는 `정식 출시`, 이용 상태는 `현재 무료로 이용 가능`이라고만 표시한다.
+- `정식 출시`, `현재 무료로 이용 가능` 같은 심사 대응형 상태 배지를 공개 페이지에 추가하지 않는다. 실제 화면, 전체 사용 흐름과 실제 로그인 진입점으로 작동하는 제품임을 증명한다.
 - 공동창업자 역할은 김민형과 박주영 모두 `공동창업자 · Co-founder`로 표시한다.
 - LinkedIn, Crunchbase, 사용자 수, 매출, 투자, 수상, 확인되지 않은 경력을 추가하지 않는다.
 - 실제처럼 보이는 가짜 앱 셸, 동작하지 않는 데모 컨트롤, 게스트 계정을 만들지 않는다.
@@ -40,7 +40,6 @@ import { describe, expect, it } from "vitest";
 import {
   PUBLIC_COMPANY_FACTS,
   PUBLIC_FOUNDERS,
-  PUBLIC_PRODUCT_STATUS,
   PUBLIC_SITE,
 } from "@/lib/public-site";
 
@@ -55,15 +54,9 @@ describe("public site facts", () => {
       location: "Seoul, South Korea",
       githubOrganizationUrl: "https://github.com/uttae",
     });
-    expect(PUBLIC_PRODUCT_STATUS).toEqual([
-      "정식 출시",
-      "현재 무료로 이용 가능",
-      "Google 로그인 후 바로 시작",
-    ]);
     expect(PUBLIC_COMPANY_FACTS.map((fact) => fact.value)).toEqual([
       "2026년 6월",
       "대한민국 서울",
-      "정식 출시 · 현재 무료 운영",
       "팀 우때 (Team Uttae)",
     ]);
   });
@@ -90,7 +83,6 @@ describe("public site facts", () => {
   it("does not publish application-only business or funding claims", () => {
     const publicFacts = JSON.stringify({
       site: PUBLIC_SITE,
-      status: PUBLIC_PRODUCT_STATUS,
       company: PUBLIC_COMPANY_FACTS,
       founders: PUBLIC_FOUNDERS,
     });
@@ -125,16 +117,9 @@ export const PUBLIC_SITE = {
   githubOrganizationUrl: "https://github.com/uttae",
 } as const;
 
-export const PUBLIC_PRODUCT_STATUS = [
-  "정식 출시",
-  "현재 무료로 이용 가능",
-  "Google 로그인 후 바로 시작",
-] as const;
-
 export const PUBLIC_COMPANY_FACTS = [
   { label: "설립", value: "2026년 6월" },
   { label: "소재지", value: "대한민국 서울" },
-  { label: "제품 상태", value: "정식 출시 · 현재 무료 운영" },
   { label: "운영 주체", value: "팀 우때 (Team Uttae)" },
 ] as const;
 
@@ -176,7 +161,7 @@ git commit -m "feat(landing): 공개 회사 정보 모델 추가" -m "- 출시 �
 
 ---
 
-## Task 2: 메인 랜딩에 출시·회사·공동창업자 신뢰 정보 추가
+## Task 2: 메인 랜딩에 회사·공동창업자 신뢰 정보 추가
 
 **Files:**
 
@@ -220,7 +205,7 @@ it("publishes the approved co-founder identities", () => {
 });
 ```
 
-- [ ] **Step 2: 정적 랜딩 테스트에 출시·회사·GitHub 요구사항 추가**
+- [ ] **Step 2: 정적 랜딩 테스트에 회사·GitHub 요구사항 추가**
 
 `src/app/_components/LandingStaticSections.test.tsx`에 `LandingCompanySection`을 import하고 다음 검증을 추가한다.
 
@@ -230,7 +215,6 @@ it("renders the approved operational facts", () => {
 
   expect(html).toContain("2026년 6월");
   expect(html).toContain("대한민국 서울");
-  expect(html).toContain("정식 출시 · 현재 무료 운영");
   expect(html).toContain("팀 우때 (Team Uttae)");
   expect(html).not.toMatch(/예약 수수료|투자 유치/);
 });
@@ -258,8 +242,6 @@ it("renders both co-founders and reciprocal GitHub links", () => {
 `src/app/_components/LandingView.test.tsx`의 서버 HTML 검증에 아래 단언을 추가한다.
 
 ```ts
-expect(html).toContain("정식 출시");
-expect(html).toContain("현재 무료로 이용 가능");
 expect(html).toContain('href="/product"');
 expect(html).toContain('id="company"');
 expect(html).not.toMatch(/예약 수수료|투자 유치/);
@@ -325,14 +307,14 @@ export function LandingCompanySection() {
         <div className="mx-auto max-w-3xl text-center">
           <p className={landingTypography.eyebrow}>ABOUT UTTAE</p>
           <h2 id="company-heading" className={`${landingTypography.sectionTitle} mt-3`}>
-            정식 출시된 협업 여행 플래너
+            함께 만드는 협업 여행 플래너
           </h2>
           <p className={`${landingTypography.sectionBody} mt-4`}>
             우때는 친구들과 여행 계획을 실시간으로 완성할 수 있도록 팀 우때가
             만들고 운영하는 웹 서비스입니다.
           </p>
         </div>
-        <dl className="mx-auto mt-10 grid max-w-5xl gap-4 landing-sm:grid-cols-2 landing-lg:grid-cols-4">
+        <dl className="mx-auto mt-10 grid max-w-4xl gap-4 landing-sm:grid-cols-3">
           {PUBLIC_COMPANY_FACTS.map((fact) => (
             <div
               key={fact.label}
@@ -378,30 +360,15 @@ const navItems = [
 
 모바일에서는 현재 동작대로 내비게이션을 숨기고 로고와 로그인 버튼을 유지한다.
 
-- [ ] **Step 7: 히어로에 출시 상태와 제품 페이지 CTA 추가**
+- [ ] **Step 7: 히어로에 제품 페이지 CTA 추가**
 
-`src/app/_components/LandingHero.tsx`에 `Link`와 `PUBLIC_PRODUCT_STATUS`를 import한다.
+`src/app/_components/LandingHero.tsx`에 `Link`를 import한다.
 
 ```ts
 import Link from "next/link";
-
-import { PUBLIC_PRODUCT_STATUS } from "@/lib/public-site";
 ```
 
-eyebrow 아래에 상태 목록을 추가하고 보조 CTA를 교체한다.
-
-```tsx
-<ul className="mt-5 flex flex-wrap items-center justify-center gap-2">
-  {PUBLIC_PRODUCT_STATUS.map((status) => (
-    <li
-      key={status}
-      className="rounded-full border border-brand-red/15 bg-white px-3 py-1.5 text-sm font-bold text-brand-red"
-    >
-      {status}
-    </li>
-  ))}
-</ul>
-```
+상태 배지는 추가하지 않고 기존 보조 CTA만 다음 링크로 교체한다.
 
 ```tsx
 <Link
@@ -500,7 +467,7 @@ import {
 } from "@/lib/product/product-tour-content";
 
 describe("product tour content", () => {
-  it("keeps the complete launched-product flow in review order", () => {
+  it("keeps the complete product flow in review order", () => {
     expect(PRODUCT_TOUR_FLOW).toEqual([
       "방 생성",
       "장소 탐색",
@@ -694,11 +661,9 @@ vi.mock("next/image", () => ({
 import { ProductTourView } from "@/app/product/_components/ProductTourView";
 
 describe("ProductTourView", () => {
-  it("renders the complete launched product proof in server HTML", () => {
+  it("renders the complete product proof in server HTML", () => {
     const html = renderToStaticMarkup(<ProductTourView />);
 
-    expect(html).toContain("정식 출시");
-    expect(html).toContain("현재 무료로 이용 가능");
     expect(html.match(/현재 운영 중인 우때 서비스의 실제 화면/g)).toHaveLength(6);
     expect(html.match(/<img/g)).toHaveLength(6);
     expect(html).toContain('href="/login"');
@@ -747,7 +712,6 @@ import {
 } from "@/lib/landing/landing-screenshots";
 import { landingTypography } from "@/lib/landing/landing-typography";
 import { PRODUCT_TOUR_FLOW } from "@/lib/product/product-tour-content";
-import { PUBLIC_PRODUCT_STATUS } from "@/lib/public-site";
 
 export function ProductTourHero() {
   return (
@@ -761,16 +725,6 @@ export function ProductTourHero() {
           현재 운영 중인 우때에서 장소를 찾고, 대화하고, 일정과 이동 동선을
           완성하는 전체 흐름을 확인하세요.
         </p>
-        <ul className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          {PUBLIC_PRODUCT_STATUS.slice(0, 2).map((status) => (
-            <li
-              key={status}
-              className="rounded-full border border-brand-red/15 bg-white px-3 py-1.5 text-sm font-bold text-brand-red"
-            >
-              {status}
-            </li>
-          ))}
-        </ul>
         <div className="mx-auto mt-10 max-w-[1080px] overflow-hidden rounded-2xl border border-gray-border bg-white p-2 shadow-[0_24px_70px_-28px_rgba(71,31,33,0.28)] landing-sm:p-3">
           <p className="px-3 pt-2 pb-3 text-left text-sm font-semibold text-dark-gray">
             현재 운영 중인 우때 서비스의 실제 화면
@@ -932,7 +886,7 @@ export function ProductTourFinalCta() {
           Google 로그인 후 실제 서비스 시작
         </h2>
         <p className={`${landingTypography.sectionBody} mx-auto mt-4 max-w-2xl`}>
-          현재 무료로 여행 방을 만들고 친구를 초대해 바로 계획을 시작할 수 있습니다.
+          여행 방을 만들고 친구를 초대해 함께 계획을 시작할 수 있습니다.
         </p>
         <LandingActionLink href="/login" className="mt-7 px-7 py-3">
           우때 시작하기
@@ -1068,7 +1022,7 @@ describe("public site structured data", () => {
     ]);
   });
 
-  it("describes the launched web application as currently free", () => {
+  it("describes the public web application without unverified claims", () => {
     expect(SOFTWARE_APPLICATION_JSON_LD).toMatchObject({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -1076,14 +1030,9 @@ describe("public site structured data", () => {
       url: "https://www.uttae.app/product",
       applicationCategory: "TravelApplication",
       operatingSystem: "Web",
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "KRW",
-      },
     });
     expect(JSON.stringify(SOFTWARE_APPLICATION_JSON_LD)).not.toMatch(
-      /rating|award|funding|투자/i,
+      /price|rating|award|funding|투자/i,
     );
   });
 });
@@ -1170,12 +1119,6 @@ export const SOFTWARE_APPLICATION_JSON_LD = {
   browserRequirements: "Requires a modern web browser",
   description:
     "친구들과 장소를 찾고 대화하며 일정과 이동 동선을 완성하는 실시간 협업 여행 플래너",
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "KRW",
-    availability: "https://schema.org/InStock",
-  },
   featureList: [
     "지도 기반 장소 탐색",
     "실시간 채팅과 장소 공유",
@@ -1253,9 +1196,9 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { ORGANIZATION_JSON_LD } from "@/lib/public-site-metadata";
 import { brandAssets } from "@/lib/public-assets";
 
-const title = "우때 — 정식 출시된 실시간 협업 여행 플래너";
+const title = "우때 — 실시간 협업 여행 플래너";
 const description =
-  "현재 무료로 이용 가능한 우때에서 친구들과 장소를 찾고 대화하며 여행 일정을 완성하세요.";
+  "우때에서 친구들과 장소를 찾고 대화하며 여행 일정을 함께 완성하세요.";
 
 export const metadata: Metadata = {
   title,
