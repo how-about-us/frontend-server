@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppRootProviders } from "@/providers/root-providers";
 import { brandAssets } from "@/lib/public-assets";
+import { PUBLIC_SITE } from "@/lib/public-site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -10,6 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(PUBLIC_SITE.origin),
   title: "우때",
   description: "실시간 협업 여행 플래너",
   icons: {
