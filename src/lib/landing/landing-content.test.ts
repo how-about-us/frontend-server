@@ -28,25 +28,28 @@ describe("landing content contracts", () => {
     expect(LANDING_HOW_STEPS).toHaveLength(3);
   });
 
-  it("publishes the approved team identities", () => {
+  it("publishes the approved co-founder identities", () => {
     expect(LANDING_TEAM_MEMBERS).toEqual([
       {
         name: "김민형",
-        role: "인프라 담당",
-        description:
-          "우때가 안정적으로 배포되고 운영될 수 있도록 서비스 인프라를 설계하고 관리합니다.",
+        englishName: "Minhyung Kim",
+        role: "공동창업자 · Co-founder",
+        description: "우때를 공동으로 만들고 운영합니다.",
         githubUrl: "https://github.com/minbros",
         githubLabel: "minbros",
       },
       {
         name: "박주영",
-        role: "개발 및 운영 담당",
-        description:
-          "우때의 제품 개발과 사용자에게 제공되는 서비스 운영 전반을 담당합니다.",
+        englishName: "PARK JU YEONG",
+        role: "공동창업자 · Co-founder",
+        description: "우때를 공동으로 만들고 운영합니다.",
         githubUrl: "https://github.com/parkjuyeong0312",
         githubLabel: "parkjuyeong0312",
       },
     ]);
+    expect(new Set(LANDING_TEAM_MEMBERS.map((member) => member.role))).toEqual(
+      new Set(["공동창업자 · Co-founder"]),
+    );
   });
 
   it("does not use the landing display font in text styles", () => {

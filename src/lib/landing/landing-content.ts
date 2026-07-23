@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { LandingFeatureScreenshotKey } from "@/lib/landing/landing-screenshots";
+import { PUBLIC_FOUNDERS } from "@/lib/public-site";
 
 type LandingValue = {
   title: string;
@@ -44,6 +45,7 @@ type LandingHowStep = {
 
 export type LandingTeamMember = {
   name: string;
+  englishName: string;
   role: string;
   description: string;
   githubUrl: string;
@@ -127,20 +129,9 @@ export const LANDING_HOW_STEPS: readonly LandingHowStep[] = [
   { step: "03", title: "일정과 이동 동선 완성하기", icon: Route },
 ];
 
-export const LANDING_TEAM_MEMBERS: readonly LandingTeamMember[] = [
-  {
-    name: "김민형",
-    role: "인프라 담당",
-    description:
-      "우때가 안정적으로 배포되고 운영될 수 있도록 서비스 인프라를 설계하고 관리합니다.",
-    githubUrl: "https://github.com/minbros",
-    githubLabel: "minbros",
-  },
-  {
-    name: "박주영",
-    role: "개발 및 운영 담당",
-    description: "우때의 제품 개발과 사용자에게 제공되는 서비스 운영 전반을 담당합니다.",
-    githubUrl: "https://github.com/parkjuyeong0312",
-    githubLabel: "parkjuyeong0312",
-  },
-];
+export const LANDING_TEAM_MEMBERS: readonly LandingTeamMember[] = PUBLIC_FOUNDERS.map(
+  (founder) => ({
+    ...founder,
+    description: "우때를 공동으로 만들고 운영합니다.",
+  }),
+);

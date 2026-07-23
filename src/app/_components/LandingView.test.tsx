@@ -25,11 +25,14 @@ describe("LandingView", () => {
     expect(html).toContain("흩어진 여행 계획을");
     expect(html).toContain('id="features"');
     expect(html).toContain('id="how-it-works"');
+    expect(html).toContain('href="/product"');
+    expect(html).toContain('id="company"');
     expect(html).toContain('id="team"');
     expect(html).toContain("김민형");
     expect(html).toContain("박주영");
     expect(html).not.toContain("font-landing");
     expect(html).not.toContain("opacity:0");
     expect(html).not.toContain("text-[11px]");
+    expect(html).not.toMatch(/예약 수수료|투자 유치/);
   });
 });

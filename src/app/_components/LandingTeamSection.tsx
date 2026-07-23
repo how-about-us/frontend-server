@@ -4,6 +4,7 @@ import {
   LANDING_SECTION_PY,
   LANDING_TEAM_MEMBERS,
 } from "@/lib/landing/landing-content";
+import { PUBLIC_SITE } from "@/lib/public-site";
 
 export function LandingTeamSection() {
   return (
@@ -19,6 +20,7 @@ export function LandingTeamSection() {
             <article key={member.name} className="rounded-2xl border border-white/15 bg-white/[0.06] p-7">
               <p className="text-sm font-extrabold text-[#ff8589]">{member.role}</p>
               <h3 className="mt-2 text-2xl font-bold text-white">{member.name}</h3>
+              <p className="mt-1 text-sm font-semibold text-white/55">{member.englishName}</p>
               <p className="mt-3 min-h-[5rem] text-base font-medium leading-[1.7] text-white/65">{member.description}</p>
               <a
                 href={member.githubUrl}
@@ -31,6 +33,17 @@ export function LandingTeamSection() {
               </a>
             </article>
           ))}
+        </div>
+        <div className="mt-8 text-center">
+          <a
+            href={PUBLIC_SITE.githubOrganizationUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            <GithubIcon className="h-4 w-4" aria-hidden />
+            Uttae GitHub 조직
+          </a>
         </div>
       </div>
     </section>
