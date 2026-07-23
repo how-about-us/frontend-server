@@ -29,6 +29,7 @@ describe("ProductTourView", () => {
     expect(html).toContain('href="/login"');
     expect(html).toContain("Google 로그인 후 실제 서비스 시작");
     expect(html).not.toContain("opacity:0");
+    expect(html).not.toContain("AVAILABLE NOW");
     expect(html).not.toMatch(
       /예약 수수료|투자 유치|정식 출시|현재 무료로 이용 가능/,
     );

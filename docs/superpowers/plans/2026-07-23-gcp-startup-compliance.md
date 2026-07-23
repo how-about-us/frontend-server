@@ -1690,7 +1690,7 @@ Expected: lint, TypeScript, production build, whitespace 검사 모두 성공.
 Run:
 
 ```bash
-git diff --unified=0 origin/dev...HEAD | rg -n "예약 수수료|투자 유치|Join Waitlist|Request a Demo|Beta Access"
+rg -n "예약 수수료|투자 유치|정식 출시|현재 무료로 이용 가능|AVAILABLE NOW|Join Waitlist|Request a Demo|Beta Access" src --glob '!**/*.test.*' --glob '!**/__tests__/**'
 ```
 
 Expected: 검색 결과 없음.

@@ -17,6 +17,16 @@ import { beginClientSessionReconciliationTransition } from "@/lib/auth-session";
 import { createQueryClient, registerQueryClient } from "@/lib/query-client";
 import { useSessionStore } from "@/stores/session-store";
 
+const PROVIDER_FREE_PUBLIC_PATHS = new Set([
+  "/",
+  "/product",
+  "/login",
+  "/terms",
+  "/privacy",
+  "/operations-policy",
+  "/copyright-policy",
+]);
+
 /**
  * 전역 레이아웃용 Provider 순서 —
  * 변경 시 채팅/STOMP/Google Maps 초기화를 함께 확인합니다.
@@ -44,12 +54,50 @@ function SessionReconciler() {
   return null;
 }
 
-export function AppRootProviders({ children }: { children: ReactNode }) {
+function SharedAppShell({
+  anonymousAnalytics = false,
+  children,
+}: {
+  anonymousAnalytics?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <MobileChrome>{children}</MobileChrome>
+      {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
+        <ConsentGatedAnalytics
+          anonymous={anonymousAnalytics}
+          debugMode={analyticsRuntime.debugMode}
+          gaId={analyticsRuntime.measurementId}
+        />
+      ) : null}
+      <Toaster position="bottom-right" richColors />
+    </>
+  );
+}
+
+function FullAppProviderStack({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => {
     const client = createQueryClient();
     registerQueryClient(client);
     return client;
   });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SessionReconciler />
+      <StompProvider>
+        <GoogleMapsProvider>
+          <SharedAppShell>{children}</SharedAppShell>
+        </GoogleMapsProvider>
+      </StompProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+export function AppRootProviders({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -69,22 +117,11 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
     return () => media.removeListener(apply);
   }, []);
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SessionReconciler />
-      <StompProvider>
-        <GoogleMapsProvider>
-          <MobileChrome>{children}</MobileChrome>
-          {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
-            <ConsentGatedAnalytics
-              debugMode={analyticsRuntime.debugMode}
-              gaId={analyticsRuntime.measurementId}
-            />
-          ) : null}
-          <Toaster position="bottom-right" richColors />
-        </GoogleMapsProvider>
-      </StompProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  );
+  if (PROVIDER_FREE_PUBLIC_PATHS.has(pathname)) {
+    return (
+      <SharedAppShell anonymousAnalytics>{children}</SharedAppShell>
+    );
+  }
+
+  return <FullAppProviderStack>{children}</FullAppProviderStack>;
 }

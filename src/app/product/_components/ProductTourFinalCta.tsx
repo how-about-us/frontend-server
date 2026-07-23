@@ -9,7 +9,7 @@ export function ProductTourFinalCta() {
   return (
     <section className={`border-t border-gray-border bg-white ${LANDING_SECTION_PY}`}>
       <div className={`${LANDING_CONTAINER_CLASS} text-center`}>
-        <p className={landingTypography.eyebrow}>AVAILABLE NOW</p>
+        <p className={landingTypography.eyebrow}>START PLANNING</p>
         <h2 className={`${landingTypography.ctaTitle} mt-3`}>
           Google 로그인 후 실제 서비스 시작
         </h2>
