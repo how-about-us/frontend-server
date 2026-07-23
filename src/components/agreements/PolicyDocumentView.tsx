@@ -1,42 +1,28 @@
-import { connection } from "next/server";
+"use client";
 
+import { useCurrentAgreements } from "@/hooks/useCurrentAgreements";
 import { findAgreementByType } from "@/lib/agreements/paths";
-import type {
-  AgreementType,
-  CurrentAgreementsResponse,
-} from "@/lib/agreements/types";
-import { requiredEnv } from "@/lib/required-env";
+import type { AgreementType } from "@/lib/agreements/types";
 
 import { AgreementMarkdownContent } from "./AgreementMarkdownContent";
-
-const API_BASE = requiredEnv("API_BASE_URL");
 
 type Props = {
   agreementType: AgreementType;
 };
 
-async function fetchCurrentAgreements(): Promise<CurrentAgreementsResponse> {
-  const response = await fetch(`${API_BASE}/api/agreements/current`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-    method: "GET",
-  });
+export function PolicyDocumentView({ agreementType }: Props) {
+  const { data, isPending, isError, error, refetch } = useCurrentAgreements();
+  const agreement = data ? findAgreementByType(data.items, agreementType) : undefined;
 
-  if (!response.ok) {
-    throw new Error("약관을 불러오지 못했습니다.");
+  if (isPending) {
+    return (
+      <div className="mx-auto w-full max-w-3xl rounded-3xl border border-gray-border bg-white/95 px-6 py-10 text-center shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+        <p className="text-[17px] text-dark-gray">문서를 불러오는 중…</p>
+      </div>
+    );
   }
 
-  return response.json() as Promise<CurrentAgreementsResponse>;
-}
-
-export async function PolicyDocumentView({ agreementType }: Props) {
-  await connection();
-
-  let agreement;
-  try {
-    const data = await fetchCurrentAgreements();
-    agreement = findAgreementByType(data.items, agreementType);
-  } catch (error) {
+  if (isError) {
     return (
       <div className="mx-auto w-full max-w-3xl rounded-3xl border border-brand-red/35 bg-brand-red/[0.06] px-6 py-8 text-center shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)]">
         <p className="text-[17px] font-medium text-brand-red">
@@ -47,6 +33,13 @@ export async function PolicyDocumentView({ agreementType }: Props) {
             ? error.message
             : "잠시 후 다시 시도해 주세요."}
         </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-4 text-[17px] font-medium text-brand-red underline-offset-2 hover:underline"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }

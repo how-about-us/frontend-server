@@ -1,98 +1,38 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { Toaster } from "sonner";
 
+import { AnonymousAnalyticsRouteTracker } from "@/components/analytics/AnonymousAnalyticsRouteTracker";
 import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
 import { MobileChrome } from "@/components/mobile/MobileChrome";
-import { GoogleMapsProvider } from "@/components/google-maps-provider";
-import { StompProvider } from "@/contexts/StompContext";
-import { reconcileClientSession } from "@/lib/auth";
 import { analyticsRuntime } from "@/lib/analytics/runtime";
-import { beginClientSessionReconciliationTransition } from "@/lib/auth-session";
-import { createQueryClient, registerQueryClient } from "@/lib/query-client";
-import { useSessionStore } from "@/stores/session-store";
 
-const PROVIDER_FREE_PUBLIC_PATHS = new Set([
-  "/",
-  "/product",
-  "/login",
-  "/terms",
-  "/privacy",
-  "/operations-policy",
-  "/copyright-policy",
-]);
+const PROVIDER_FREE_PUBLIC_PATHS = new Set(["/", "/product", "/login"]);
 
-/**
- * 전역 레이아웃용 Provider 순서 —
- * 변경 시 채팅/STOMP/Google Maps 초기화를 함께 확인합니다.
- *
- * 순서: React Query → STOMP → Google Maps(Context) → 앱 라우트
- */
-function SessionReconciler() {
-  const pathname = usePathname();
-  const queryClient = useQueryClient();
-  const previousPathname = useRef<string | null>(null);
+const FullAppProviderStack = dynamic(() =>
+  import("@/providers/full-app-provider-stack").then(
+    (module) => module.FullAppProviderStack,
+  ),
+);
 
-  useLayoutEffect(() => {
-    previousPathname.current =
-      beginClientSessionReconciliationTransition({
-        previousPathname: previousPathname.current,
-        pathname,
-        markSessionPending: () =>
-          useSessionStore.getState().setSessionReady(false),
-        reconcile: () => {
-          void reconcileClientSession(queryClient);
-        },
-      });
-  }, [pathname, queryClient]);
-
-  return null;
-}
-
-function SharedAppShell({
-  anonymousAnalytics = false,
-  children,
-}: {
-  anonymousAnalytics?: boolean;
-  children: ReactNode;
-}) {
+function LightweightPublicShell({ children }: { children: ReactNode }) {
   return (
     <>
       <MobileChrome>{children}</MobileChrome>
       {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
         <ConsentGatedAnalytics
-          anonymous={anonymousAnalytics}
           debugMode={analyticsRuntime.debugMode}
           gaId={analyticsRuntime.measurementId}
-        />
+        >
+          <AnonymousAnalyticsRouteTracker />
+        </ConsentGatedAnalytics>
       ) : null}
       <Toaster position="bottom-right" richColors />
     </>
-  );
-}
-
-function FullAppProviderStack({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => {
-    const client = createQueryClient();
-    registerQueryClient(client);
-    return client;
-  });
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <SessionReconciler />
-      <StompProvider>
-        <GoogleMapsProvider>
-          <SharedAppShell>{children}</SharedAppShell>
-        </GoogleMapsProvider>
-      </StompProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
   );
 }
 
@@ -118,9 +58,7 @@ export function AppRootProviders({ children }: { children: ReactNode }) {
   }, []);
 
   if (PROVIDER_FREE_PUBLIC_PATHS.has(pathname)) {
-    return (
-      <SharedAppShell anonymousAnalytics>{children}</SharedAppShell>
-    );
+    return <LightweightPublicShell>{children}</LightweightPublicShell>;
   }
 
   return <FullAppProviderStack>{children}</FullAppProviderStack>;

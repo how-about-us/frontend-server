@@ -5,8 +5,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   pathname: "/",
   createQueryClient: vi.fn(() => ({ id: "query-client" })),
+  dynamicOptions: undefined as { ssr?: boolean } | undefined,
   registerQueryClient: vi.fn(),
   useQueryClient: vi.fn(() => ({ id: "query-client" })),
+}));
+
+vi.mock("next/dynamic", () => ({
+  default: (
+    _loader: () => Promise<unknown>,
+    options?: { ssr?: boolean },
+  ) => {
+    mocks.dynamicOptions = options;
+    return ({ children }: { children: ReactNode }) => (
+      <div data-provider="full-app-stack">{children}</div>
+    );
+  },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -29,17 +42,44 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/components/analytics/ConsentGatedAnalytics", () => ({
-  ConsentGatedAnalytics: ({ anonymous = false }: { anonymous?: boolean }) => (
-    <div
-      data-analytics-mode={anonymous ? "anonymous" : "session"}
-      data-provider="analytics"
-    />
+  ConsentGatedAnalytics: ({
+    anonymous = false,
+    children,
+  }: {
+    anonymous?: boolean;
+    children?: ReactNode;
+  }) => (
+    <div data-provider="analytics">
+      {children ?? (
+        <div data-tracker={anonymous ? "anonymous" : "session"} />
+      )}
+    </div>
   ),
+}));
+
+vi.mock("@/components/analytics/AnonymousAnalyticsRouteTracker", () => ({
+  AnonymousAnalyticsRouteTracker: () => <div data-tracker="anonymous" />,
 }));
 
 vi.mock("@/components/mobile/MobileChrome", () => ({
   MobileChrome: ({ children }: { children: ReactNode }) => (
     <div data-provider="mobile-chrome">{children}</div>
+  ),
+}));
+
+vi.mock("@/providers/app-chrome-shell", () => ({
+  AppChromeShell: ({
+    analytics,
+    children,
+  }: {
+    analytics: ReactNode;
+    children: ReactNode;
+  }) => (
+    <>
+      <div data-provider="mobile-chrome">{children}</div>
+      {analytics}
+      <div data-provider="toaster" />
+    </>
   ),
 }));
 
@@ -92,17 +132,14 @@ describe("AppRootProviders route boundary", () => {
     "/",
     "/product",
     "/login",
-    "/terms",
-    "/privacy",
-    "/operations-policy",
-    "/copyright-policy",
   ])("keeps the exact public path %s on the lightweight shell", (pathname) => {
     const html = renderAt(pathname);
 
     expect(html).toContain('data-provider="mobile-chrome"');
     expect(html).toContain('data-provider="analytics"');
-    expect(html).toContain('data-analytics-mode="anonymous"');
+    expect(html).toContain('data-tracker="anonymous"');
     expect(html).toContain('data-provider="toaster"');
+    expect(html).not.toContain('data-provider="full-app-stack"');
     expect(html).not.toContain('data-provider="query-client"');
     expect(html).not.toContain('data-provider="stomp"');
     expect(html).not.toContain('data-provider="google-maps"');
@@ -110,17 +147,24 @@ describe("AppRootProviders route boundary", () => {
     expect(mocks.useQueryClient).not.toHaveBeenCalled();
   });
 
-  it.each(["/home", "/login/agreements"])(
+  it.each([
+    "/home",
+    "/login/agreements",
+    "/terms",
+    "/privacy",
+    "/operations-policy",
+    "/copyright-policy",
+  ])(
     "retains the full app provider stack on %s",
     (pathname) => {
       const html = renderAt(pathname);
 
-      expect(html).toContain('data-provider="query-client"');
-      expect(html).toContain('data-provider="stomp"');
-      expect(html).toContain('data-provider="google-maps"');
-      expect(html).toContain('data-analytics-mode="session"');
-      expect(mocks.createQueryClient).toHaveBeenCalledTimes(1);
-      expect(mocks.useQueryClient).toHaveBeenCalledTimes(1);
+      expect(html).toContain('data-provider="full-app-stack"');
+      expect(html).toContain("route content");
     },
   );
+
+  it("keeps server rendering enabled for the async full-stack entry", () => {
+    expect(mocks.dynamicOptions?.ssr).not.toBe(false);
+  });
 });

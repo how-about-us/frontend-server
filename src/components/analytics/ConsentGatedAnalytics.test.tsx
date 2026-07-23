@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/analytics/AnalyticsRouteTracker", () => ({
   AnalyticsRouteTracker: () => <div data-tracker="session" />,
-  AnonymousAnalyticsRouteTracker: () => <div data-tracker="anonymous" />,
 }));
 
 vi.mock("@/components/analytics/CookieConsentBanner", () => ({
@@ -32,7 +31,9 @@ import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalyt
 describe("ConsentGatedAnalytics", () => {
   it("uses the anonymous tracker without mounting the session tracker", () => {
     const html = renderToStaticMarkup(
-      <ConsentGatedAnalytics anonymous debugMode={false} gaId="G-TEST" />,
+      <ConsentGatedAnalytics debugMode={false} gaId="G-TEST">
+        <div data-tracker="anonymous" />
+      </ConsentGatedAnalytics>,
     );
 
     expect(html).toContain('data-tracker="anonymous"');
@@ -41,7 +42,9 @@ describe("ConsentGatedAnalytics", () => {
 
   it("retains session-aware tracking for the app stack", () => {
     const html = renderToStaticMarkup(
-      <ConsentGatedAnalytics debugMode={false} gaId="G-TEST" />,
+      <ConsentGatedAnalytics debugMode={false} gaId="G-TEST">
+        <div data-tracker="session" />
+      </ConsentGatedAnalytics>,
     );
 
     expect(html).toContain('data-tracker="session"');
