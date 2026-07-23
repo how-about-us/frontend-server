@@ -1,6 +1,28 @@
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { PUBLIC_FOUNDERS, PUBLIC_SITE } from "@/lib/public-site";
 
+export const PUBLIC_SITEMAP_ENTRIES = [
+  { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/product", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/operations-policy", changeFrequency: "yearly", priority: 0.3 },
+  { path: "/copyright-policy", changeFrequency: "yearly", priority: 0.3 },
+] as const;
+
+export const PUBLIC_ROBOT_DISALLOW_PATHS = [
+  "/api/",
+  "/auth/",
+  "/home",
+  "/plan",
+  "/bookmark",
+  "/search",
+  "/member-settings",
+  "/room-settings",
+  "/settings",
+  "/waiting",
+] as const;
+
 export const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",

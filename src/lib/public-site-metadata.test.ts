@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   ORGANIZATION_JSON_LD,
+  PUBLIC_ROBOT_DISALLOW_PATHS,
+  PUBLIC_SITEMAP_ENTRIES,
   SOFTWARE_APPLICATION_JSON_LD,
 } from "@/lib/public-site-metadata";
 
@@ -44,5 +46,19 @@ describe("public site structured data", () => {
     expect(JSON.stringify(SOFTWARE_APPLICATION_JSON_LD)).not.toMatch(
       /"(?:offers|price|isAccessibleForFree|aggregateRating|rating|award|funding|userCount|reviewCount|downloadCount|interactionStatistic)"\s*:|투자/i,
     );
+  });
+
+  it("lists only public reviewable pages in the sitemap contract", () => {
+    expect(PUBLIC_SITEMAP_ENTRIES.map((entry) => entry.path)).toEqual([
+      "/",
+      "/product",
+      "/terms",
+      "/privacy",
+      "/operations-policy",
+      "/copyright-policy",
+    ]);
+    expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/api/");
+    expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/home");
+    expect(PUBLIC_ROBOT_DISALLOW_PATHS).not.toContain("/product");
   });
 });
