@@ -5,17 +5,14 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { usePathname } from "next/navigation";
-import { Toaster } from "sonner";
 
 import { AnalyticsRouteTracker } from "@/components/analytics/AnalyticsRouteTracker";
-import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
 import { GoogleMapsProvider } from "@/components/google-maps-provider";
-import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { StompProvider } from "@/contexts/StompContext";
-import { analyticsRuntime } from "@/lib/analytics/runtime";
 import { reconcileClientSession } from "@/lib/auth";
 import { beginClientSessionReconciliationTransition } from "@/lib/auth-session";
-import { createQueryClient, registerQueryClient } from "@/lib/query-client";
+import { getOrCreateQueryClient } from "@/lib/query-client";
+import { AppChromeShell } from "@/providers/app-chrome-shell";
 import { useSessionStore } from "@/stores/session-store";
 
 /**
@@ -44,27 +41,16 @@ function SessionReconciler() {
 }
 
 export function FullAppProviderStack({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => {
-    const client = createQueryClient();
-    registerQueryClient(client);
-    return client;
-  });
+  const [queryClient] = useState(getOrCreateQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionReconciler />
       <StompProvider>
         <GoogleMapsProvider>
-          <MobileChrome>{children}</MobileChrome>
-          {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
-            <ConsentGatedAnalytics
-              debugMode={analyticsRuntime.debugMode}
-              gaId={analyticsRuntime.measurementId}
-            >
-              <AnalyticsRouteTracker />
-            </ConsentGatedAnalytics>
-          ) : null}
-          <Toaster position="bottom-right" richColors />
+          <AppChromeShell analytics={<AnalyticsRouteTracker />}>
+            {children}
+          </AppChromeShell>
         </GoogleMapsProvider>
       </StompProvider>
       <ReactQueryDevtools initialIsOpen={false} />

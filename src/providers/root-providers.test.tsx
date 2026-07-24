@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  appChromeShell: vi.fn(),
   pathname: "/",
   createQueryClient: vi.fn(() => ({ id: "query-client" })),
   dynamicOptions: undefined as { ssr?: boolean } | undefined,
@@ -37,34 +38,8 @@ vi.mock("@tanstack/react-query-devtools", () => ({
   ReactQueryDevtools: () => <div data-provider="query-devtools" />,
 }));
 
-vi.mock("sonner", () => ({
-  Toaster: () => <div data-provider="toaster" />,
-}));
-
-vi.mock("@/components/analytics/ConsentGatedAnalytics", () => ({
-  ConsentGatedAnalytics: ({
-    anonymous = false,
-    children,
-  }: {
-    anonymous?: boolean;
-    children?: ReactNode;
-  }) => (
-    <div data-provider="analytics">
-      {children ?? (
-        <div data-tracker={anonymous ? "anonymous" : "session"} />
-      )}
-    </div>
-  ),
-}));
-
 vi.mock("@/components/analytics/AnonymousAnalyticsRouteTracker", () => ({
   AnonymousAnalyticsRouteTracker: () => <div data-tracker="anonymous" />,
-}));
-
-vi.mock("@/components/mobile/MobileChrome", () => ({
-  MobileChrome: ({ children }: { children: ReactNode }) => (
-    <div data-provider="mobile-chrome">{children}</div>
-  ),
 }));
 
 vi.mock("@/providers/app-chrome-shell", () => ({
@@ -76,8 +51,9 @@ vi.mock("@/providers/app-chrome-shell", () => ({
     children: ReactNode;
   }) => (
     <>
+      {mocks.appChromeShell({ analytics, children })}
       <div data-provider="mobile-chrome">{children}</div>
-      {analytics}
+      <div data-provider="analytics">{analytics}</div>
       <div data-provider="toaster" />
     </>
   ),
@@ -138,6 +114,7 @@ describe("AppRootProviders route boundary", () => {
     expect(html).toContain('data-provider="analytics"');
     expect(html).toContain('data-tracker="anonymous"');
     expect(html).toContain('data-provider="toaster"');
+    expect(mocks.appChromeShell).toHaveBeenCalledTimes(1);
     expect(html).not.toContain('data-provider="full-app-stack"');
     expect(html).not.toContain('data-provider="query-client"');
     expect(html).not.toContain('data-provider="stomp"');

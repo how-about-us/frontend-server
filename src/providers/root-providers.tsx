@@ -4,12 +4,9 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { Toaster } from "sonner";
 
 import { AnonymousAnalyticsRouteTracker } from "@/components/analytics/AnonymousAnalyticsRouteTracker";
-import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
-import { MobileChrome } from "@/components/mobile/MobileChrome";
-import { analyticsRuntime } from "@/lib/analytics/runtime";
+import { AppChromeShell } from "@/providers/app-chrome-shell";
 
 const PROVIDER_FREE_PUBLIC_PATHS = new Set(["/", "/login"]);
 
@@ -21,18 +18,9 @@ const FullAppProviderStack = dynamic(() =>
 
 function LightweightPublicShell({ children }: { children: ReactNode }) {
   return (
-    <>
-      <MobileChrome>{children}</MobileChrome>
-      {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
-        <ConsentGatedAnalytics
-          debugMode={analyticsRuntime.debugMode}
-          gaId={analyticsRuntime.measurementId}
-        >
-          <AnonymousAnalyticsRouteTracker />
-        </ConsentGatedAnalytics>
-      ) : null}
-      <Toaster position="bottom-right" richColors />
-    </>
+    <AppChromeShell analytics={<AnonymousAnalyticsRouteTracker />}>
+      {children}
+    </AppChromeShell>
   );
 }
 

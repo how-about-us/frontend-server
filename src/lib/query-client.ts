@@ -14,6 +14,21 @@ export function createQueryClient() {
   });
 }
 
+export function getOrCreateQueryClient(): QueryClient {
+  if (typeof window === "undefined") {
+    return createQueryClient();
+  }
+
+  const existingClient = getQueryClient();
+  if (existingClient) {
+    return existingClient;
+  }
+
+  const client = createQueryClient();
+  registerQueryClient(client);
+  return client;
+}
+
 /** BFF·STOMP 등 React 밖에서 Query 캐시 접근용 — `AppRootProviders`에서 1회 등록 */
 export function registerQueryClient(client: QueryClient): void {
   registeredQueryClient = client;

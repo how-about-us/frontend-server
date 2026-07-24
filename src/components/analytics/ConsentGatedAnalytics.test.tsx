@@ -1,10 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/analytics/AnalyticsRouteTracker", () => ({
-  AnalyticsRouteTracker: () => <div data-tracker="session" />,
-}));
-
 vi.mock("@/components/analytics/CookieConsentBanner", () => ({
   CookieConsentBanner: () => <div data-consent-banner />,
 }));

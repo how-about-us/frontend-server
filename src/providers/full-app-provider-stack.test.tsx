@@ -3,8 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  createQueryClient: vi.fn(() => ({ id: "query-client" })),
-  registerQueryClient: vi.fn(),
+  getOrCreateQueryClient: vi.fn(() => ({ id: "query-client" })),
   useQueryClient: vi.fn(() => ({ id: "query-client" })),
 }));
 
@@ -64,8 +63,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/lib/query-client", () => ({
-  createQueryClient: mocks.createQueryClient,
-  registerQueryClient: mocks.registerQueryClient,
+  getOrCreateQueryClient: mocks.getOrCreateQueryClient,
 }));
 
 vi.mock("sonner", () => ({
@@ -89,7 +87,6 @@ test("retains the complete provider and session-aware analytics stack", () => {
   expect(html).toContain('data-provider="toaster"');
   expect(html).toContain('data-tracker="session"');
   expect(html).toContain("app content");
-  expect(mocks.createQueryClient).toHaveBeenCalledTimes(1);
-  expect(mocks.registerQueryClient).toHaveBeenCalledTimes(1);
+  expect(mocks.getOrCreateQueryClient).toHaveBeenCalledTimes(1);
   expect(mocks.useQueryClient).toHaveBeenCalledTimes(1);
 });
