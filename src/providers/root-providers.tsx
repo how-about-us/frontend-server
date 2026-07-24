@@ -11,7 +11,7 @@ import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalyt
 import { MobileChrome } from "@/components/mobile/MobileChrome";
 import { analyticsRuntime } from "@/lib/analytics/runtime";
 
-const PROVIDER_FREE_PUBLIC_PATHS = new Set(["/", "/product", "/login"]);
+const PROVIDER_FREE_PUBLIC_PATHS = new Set(["/", "/login"]);
 
 const FullAppProviderStack = dynamic(() =>
   import("@/providers/full-app-provider-stack").then(

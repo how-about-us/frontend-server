@@ -45,7 +45,7 @@ describe("public site structured data", () => {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       name: "우때 (Uttae)",
-      url: "https://www.uttae.app/product",
+      url: "https://www.uttae.app",
       applicationCategory: "TravelApplication",
       operatingSystem: "Web",
     });
@@ -57,7 +57,6 @@ describe("public site structured data", () => {
   it("lists only public reviewable pages in the sitemap contract", () => {
     expect(PUBLIC_SITEMAP_ENTRIES.map((entry) => entry.path)).toEqual([
       "/",
-      "/product",
       "/terms",
       "/privacy",
       "/operations-policy",
@@ -65,6 +64,8 @@ describe("public site structured data", () => {
     ]);
     expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/api/");
     expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/home");
-    expect(PUBLIC_ROBOT_DISALLOW_PATHS).not.toContain("/product");
+    expect(PUBLIC_SITEMAP_ENTRIES.map((entry) => entry.path)).not.toContain(
+      "/product",
+    );
   });
 });

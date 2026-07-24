@@ -3,7 +3,6 @@ import { PUBLIC_FOUNDERS, PUBLIC_SITE } from "@/lib/public-site";
 
 export const PUBLIC_SITEMAP_ENTRIES = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
-  { path: "/product", changeFrequency: "weekly", priority: 0.9 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
   { path: "/operations-policy", changeFrequency: "yearly", priority: 0.3 },
@@ -52,7 +51,7 @@ export const SOFTWARE_APPLICATION_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "우때 (Uttae)",
-  url: `${PUBLIC_SITE.origin}/product`,
+  url: PUBLIC_SITE.origin,
   applicationCategory: "TravelApplication",
   operatingSystem: "Web",
   browserRequirements: "Requires a modern web browser",

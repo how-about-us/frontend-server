@@ -130,7 +130,6 @@ describe("AppRootProviders route boundary", () => {
 
   it.each([
     "/",
-    "/product",
     "/login",
   ])("keeps the exact public path %s on the lightweight shell", (pathname) => {
     const html = renderAt(pathname);

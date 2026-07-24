@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 로그인하지 않은 방문자와 자동 심사기가 우때의 실제 제품 흐름, 운영 주체와 공동창업자를 공개 HTML에서 확인할 수 있도록 `/`, `/product`, `/login`, 검색 메타데이터를 보강한다.
+> **2026-07-24 변경 결정:** `/product`는 랜딩과 동일한 화면을 중복하므로 제거하고, `/`를 단일 공개 제품 소개 페이지로 사용한다. 아래 `/product` 관련 작업은 초기 구현 기록이며 최종 구조를 뜻하지 않는다.
 
-**Architecture:** 검증된 공개 사실은 `src/lib/public-site.ts`의 단일 데이터 원천으로 관리하고, 기존 랜딩은 신뢰 정보를 요약한다. `/product`는 기존 6개 실제 스크린샷을 재사용하는 정적 서버 렌더링 페이지로 만들며, 검색 메타데이터와 JSON-LD도 같은 공개 사실에서 생성한다. 로그인 이후 제품, OAuth 동작, API와 백엔드는 변경하지 않는다.
+**Goal:** 로그인하지 않은 방문자와 자동 심사기가 우때의 실제 제품 흐름, 운영 주체와 공동창업자를 공개 HTML에서 확인할 수 있도록 `/`, `/login`, 검색 메타데이터를 보강한다.
+
+**Architecture:** 검증된 공개 사실은 `src/lib/public-site.ts`의 단일 데이터 원천으로 관리하고, 랜딩에서 기존 6개 실제 스크린샷과 신뢰 정보를 함께 제공한다. 검색 메타데이터와 JSON-LD도 같은 공개 사실에서 생성하며 `SoftwareApplication`은 루트 URL을 가리킨다. 로그인 이후 제품, OAuth 동작, API와 백엔드는 변경하지 않는다.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Vitest, React DOM server rendering
 

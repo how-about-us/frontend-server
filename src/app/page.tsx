@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 import { LandingView } from "@/app/_components/LandingView";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { brandAssets } from "@/lib/public-assets";
-import { ORGANIZATION_JSON_LD } from "@/lib/public-site-metadata";
+import {
+  ORGANIZATION_JSON_LD,
+  SOFTWARE_APPLICATION_JSON_LD,
+} from "@/lib/public-site-metadata";
 
 const title = "우때 — 실시간 협업 여행 플래너";
 const description =
@@ -41,6 +44,10 @@ export default function RootPage() {
   return (
     <>
       <StructuredData id="uttae-organization" data={ORGANIZATION_JSON_LD} />
+      <StructuredData
+        id="uttae-software-application"
+        data={SOFTWARE_APPLICATION_JSON_LD}
+      />
       <LandingView />
     </>
   );

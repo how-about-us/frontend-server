@@ -9,7 +9,6 @@ describe("sitemap metadata", () => {
 
     expect(urls).toEqual([
       "https://www.uttae.app/",
-      "https://www.uttae.app/product",
       "https://www.uttae.app/terms",
       "https://www.uttae.app/privacy",
       "https://www.uttae.app/operations-policy",
