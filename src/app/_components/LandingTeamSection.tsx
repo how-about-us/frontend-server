@@ -30,7 +30,7 @@ export function LandingTeamSection() {
                   className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   <GithubIcon className="h-4 w-4" aria-hidden />
-                  GitHub · {member.githubLabel}
+                  GitHub
                 </a>
                 <a
                   href={member.linkedinUrl}

@@ -17,7 +17,7 @@ export const PUBLIC_FOUNDERS = [
   {
     name: "김민형",
     englishName: "Minhyung Kim",
-    role: "공동창업자 · Co-founder",
+    role: "Co-founder",
     githubUrl: "https://github.com/minbros",
     githubLabel: "minbros",
     linkedinUrl: "https://www.linkedin.com/in/minbros/",
@@ -25,7 +25,7 @@ export const PUBLIC_FOUNDERS = [
   {
     name: "박주영",
     englishName: "PARK JU YEONG",
-    role: "공동창업자 · Co-founder",
+    role: "Co-founder",
     githubUrl: "https://github.com/parkjuyeong0312",
     githubLabel: "parkjuyeong0312",
     linkedinUrl:

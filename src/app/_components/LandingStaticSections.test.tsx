@@ -29,7 +29,8 @@ describe("landing static sections", () => {
     expect(html).toContain("Minhyung Kim");
     expect(html).toContain("박주영");
     expect(html).toContain("PARK JU YEONG");
-    expect(html.match(/공동창업자 · Co-founder/g)).toHaveLength(2);
+    expect(html.match(/>Co-founder</g)).toHaveLength(2);
+    expect(html).not.toContain("공동창업자 · Co-founder");
     expect(html.match(/서울시립대학교 컴퓨터과학부/g)).toHaveLength(2);
     expect(html).not.toContain("우때를 공동으로 만들고 운영합니다.");
     expect(html).toContain('href="https://github.com/minbros"');
@@ -39,6 +40,8 @@ describe("landing static sections", () => {
       'href="https://www.linkedin.com/in/%EC%A3%BC%EC%98%81-%EB%B0%95-75a83a2a4/"',
     );
     expect(html).not.toContain('href="https://github.com/uttae"');
+    expect(html.match(/>GitHub</g)).toHaveLength(2);
+    expect(html).not.toContain("GitHub ·");
     expect(html.match(/>LinkedIn</g)).toHaveLength(2);
     expect(html.match(/target="_blank"/g)).toHaveLength(4);
     expect(html.match(/rel="noreferrer"/g)).toHaveLength(4);

@@ -33,7 +33,7 @@ describe("landing content contracts", () => {
       {
         name: "김민형",
         englishName: "Minhyung Kim",
-        role: "공동창업자 · Co-founder",
+        role: "Co-founder",
         description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/minbros",
         githubLabel: "minbros",
@@ -42,7 +42,7 @@ describe("landing content contracts", () => {
       {
         name: "박주영",
         englishName: "PARK JU YEONG",
-        role: "공동창업자 · Co-founder",
+        role: "Co-founder",
         description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/parkjuyeong0312",
         githubLabel: "parkjuyeong0312",
@@ -51,7 +51,7 @@ describe("landing content contracts", () => {
       },
     ]);
     expect(new Set(LANDING_TEAM_MEMBERS.map((member) => member.role))).toEqual(
-      new Set(["공동창업자 · Co-founder"]),
+      new Set(["Co-founder"]),
     );
   });
 
