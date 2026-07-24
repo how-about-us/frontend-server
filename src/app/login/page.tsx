@@ -3,10 +3,9 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, type ReactNode, useState } from "react";
 
 import { LoginErrorAlert } from "@/app/login/login-error-alert";
-import { AuthFlowSpinner } from "@/components/auth/AuthFlowSpinner";
 import { BrandLogo } from "@/components/BrandLogo";
 import {
   buildGoogleAuthorizationUrl,
@@ -43,6 +42,35 @@ function GoogleMark({ className }: { className?: string }) {
   );
 }
 
+function LoginShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4 py-12">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(241,45,51,0.08),_transparent_55%)]"
+        aria-hidden
+      />
+      <div className="relative w-full max-w-[600px] rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+        <Link
+          href="/"
+          aria-label="우때 홈으로 돌아가기"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-red"
+        >
+          <ArrowLeft className="h-5 w-5" aria-hidden />
+        </Link>
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <BrandLogo alt="" style={{ width: 116, height: 66 }} />
+            <p className="text-[17px] leading-relaxed text-dark-gray">
+              로그인하고 여행 계획을 이어가세요!
+            </p>
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginPageContent() {
   const searchParams = useSearchParams();
   const oauthErrorCode = searchParams.get("error");
@@ -64,49 +92,36 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4 py-12">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(241,45,51,0.08),_transparent_55%)]"
-        aria-hidden
-      />
-
-      <div className="relative w-full max-w-[600px] rounded-3xl border border-gray-border bg-white/95 p-8 shadow-[0_24px_80px_-12px_rgba(15,23,42,0.12)] backdrop-blur-sm">
-        <Link
-          href="/"
-          aria-label="뒤로가기"
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-red"
-        >
-          <ArrowLeft className="h-5 w-5" aria-hidden />
-        </Link>
-
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div className="flex flex-col items-center gap-3">
-            <BrandLogo alt="" style={{ width: 116, height: 66 }} />
-            <p className="text-[17px] leading-relaxed text-dark-gray">
-              로그인하고 여행 계획을 이어가세요!
-            </p>
-          </div>
-
-          {errorMessage && (
-            <LoginErrorAlert message={errorMessage} onDismiss={clearError} />
-          )}
-
-          <button
-            type="button"
-            onClick={handleContinueWithGoogle}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-lg font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <GoogleMark className="h-5 w-5 shrink-0" />
-            <span>Google로 계속하기</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    <LoginShell>
+      {errorMessage && (
+        <LoginErrorAlert message={errorMessage} onDismiss={clearError} />
+      )}
+      <button
+        type="button"
+        onClick={handleContinueWithGoogle}
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-lg font-medium text-[#1f1f1f] shadow-sm transition hover:bg-bubble-gray/60 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <GoogleMark className="h-5 w-5 shrink-0" />
+        <span>Google로 계속하기</span>
+      </button>
+    </LoginShell>
   );
 }
 
-function LoginFallback() {
-  return <AuthFlowSpinner />;
+export function LoginFallback() {
+  return (
+    <LoginShell>
+      <button
+        type="button"
+        disabled
+        aria-disabled="true"
+        className="flex w-full cursor-wait items-center justify-center gap-3 rounded-xl border border-gray-border bg-white px-4 py-3 text-lg font-medium text-[#1f1f1f] opacity-70 shadow-sm"
+      >
+        <GoogleMark className="h-5 w-5 shrink-0" />
+        <span>Google로 계속하기</span>
+      </button>
+    </LoginShell>
+  );
 }
 
 export default function LoginPage() {

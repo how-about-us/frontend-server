@@ -1,4 +1,5 @@
-import { GithubIcon } from "@/components/icons";
+import { GithubIcon, LinkedinIcon } from "@/components/icons";
+
 import {
   LANDING_CONTAINER_CLASS,
   LANDING_SECTION_PY,
@@ -19,16 +20,28 @@ export function LandingTeamSection() {
             <article key={member.name} className="rounded-2xl border border-white/15 bg-white/[0.06] p-7">
               <p className="text-sm font-extrabold text-[#ff8589]">{member.role}</p>
               <h3 className="mt-2 text-2xl font-bold text-white">{member.name}</h3>
+              <p className="mt-1 text-sm font-semibold text-white/55">{member.englishName}</p>
               <p className="mt-3 min-h-[5rem] text-base font-medium leading-[1.7] text-white/65">{member.description}</p>
-              <a
-                href={member.githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              >
-                <GithubIcon className="h-4 w-4" aria-hidden />
-                GitHub · {member.githubLabel}
-              </a>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <a
+                  href={member.githubUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <GithubIcon className="h-4 w-4" aria-hidden />
+                  GitHub
+                </a>
+                <a
+                  href={member.linkedinUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white transition hover:border-white/45 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <LinkedinIcon className="h-4 w-4" aria-hidden />
+                  LinkedIn
+                </a>
+              </div>
             </article>
           ))}
         </div>
