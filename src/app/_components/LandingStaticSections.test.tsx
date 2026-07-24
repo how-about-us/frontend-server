@@ -23,7 +23,7 @@ describe("landing static sections", () => {
     expect(html).not.toMatch(/예약 수수료|투자 유치/);
   });
 
-  it("renders both co-founders and reciprocal GitHub links", () => {
+  it("renders both co-founders with GitHub and LinkedIn links", () => {
     const html = renderToStaticMarkup(<LandingTeamSection />);
     expect(html).toContain("김민형");
     expect(html).toContain("Minhyung Kim");
@@ -32,8 +32,13 @@ describe("landing static sections", () => {
     expect(html.match(/공동창업자 · Co-founder/g)).toHaveLength(2);
     expect(html).toContain('href="https://github.com/minbros"');
     expect(html).toContain('href="https://github.com/parkjuyeong0312"');
-    expect(html).toContain('href="https://github.com/uttae"');
-    expect(html.match(/target="_blank"/g)).toHaveLength(3);
-    expect(html.match(/rel="noreferrer"/g)).toHaveLength(3);
+    expect(html).toContain('href="https://www.linkedin.com/in/minbros/"');
+    expect(html).toContain(
+      'href="https://www.linkedin.com/in/%EC%A3%BC%EC%98%81-%EB%B0%95-75a83a2a4/"',
+    );
+    expect(html).not.toContain('href="https://github.com/uttae"');
+    expect(html.match(/>LinkedIn</g)).toHaveLength(2);
+    expect(html.match(/target="_blank"/g)).toHaveLength(4);
+    expect(html.match(/rel="noreferrer"/g)).toHaveLength(4);
   });
 });

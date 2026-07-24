@@ -50,6 +50,7 @@ export type LandingTeamMember = {
   description: string;
   githubUrl: string;
   githubLabel: string;
+  linkedinUrl: string;
 };
 
 export const LANDING_CONTAINER_CLASS =

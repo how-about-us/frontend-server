@@ -37,6 +37,7 @@ describe("landing content contracts", () => {
         description: "우때를 공동으로 만들고 운영합니다.",
         githubUrl: "https://github.com/minbros",
         githubLabel: "minbros",
+        linkedinUrl: "https://www.linkedin.com/in/minbros/",
       },
       {
         name: "박주영",
@@ -45,6 +46,8 @@ describe("landing content contracts", () => {
         description: "우때를 공동으로 만들고 운영합니다.",
         githubUrl: "https://github.com/parkjuyeong0312",
         githubLabel: "parkjuyeong0312",
+        linkedinUrl:
+          "https://www.linkedin.com/in/%EC%A3%BC%EC%98%81-%EB%B0%95-75a83a2a4/",
       },
     ]);
     expect(new Set(LANDING_TEAM_MEMBERS.map((member) => member.role))).toEqual(

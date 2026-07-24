@@ -44,9 +44,8 @@ export const ORGANIZATION_JSON_LD = {
     "@type": "Person",
     name: founder.name,
     alternateName: founder.englishName,
-    sameAs: founder.githubUrl,
+    sameAs: [founder.githubUrl, founder.linkedinUrl],
   })),
-  sameAs: [PUBLIC_SITE.githubOrganizationUrl],
 } as const;
 
 export const SOFTWARE_APPLICATION_JSON_LD = {

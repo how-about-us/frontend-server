@@ -16,20 +16,26 @@ describe("public site structured data", () => {
       url: "https://www.uttae.app",
       foundingDate: "2026-06",
       email: "contact@uttae.app",
-      sameAs: ["https://github.com/uttae"],
     });
+    expect(ORGANIZATION_JSON_LD).not.toHaveProperty("sameAs");
     expect(ORGANIZATION_JSON_LD.founder).toEqual([
       {
         "@type": "Person",
         name: "김민형",
         alternateName: "Minhyung Kim",
-        sameAs: "https://github.com/minbros",
+        sameAs: [
+          "https://github.com/minbros",
+          "https://www.linkedin.com/in/minbros/",
+        ],
       },
       {
         "@type": "Person",
         name: "박주영",
         alternateName: "PARK JU YEONG",
-        sameAs: "https://github.com/parkjuyeong0312",
+        sameAs: [
+          "https://github.com/parkjuyeong0312",
+          "https://www.linkedin.com/in/%EC%A3%BC%EC%98%81-%EB%B0%95-75a83a2a4/",
+        ],
       },
     ]);
   });
