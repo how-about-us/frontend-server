@@ -133,6 +133,6 @@ export const LANDING_HOW_STEPS: readonly LandingHowStep[] = [
 export const LANDING_TEAM_MEMBERS: readonly LandingTeamMember[] = PUBLIC_FOUNDERS.map(
   (founder) => ({
     ...founder,
-    description: "우때를 공동으로 만들고 운영합니다.",
+    description: "서울시립대학교 컴퓨터과학부",
   }),
 );

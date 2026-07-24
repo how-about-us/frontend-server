@@ -34,7 +34,7 @@ describe("landing content contracts", () => {
         name: "김민형",
         englishName: "Minhyung Kim",
         role: "공동창업자 · Co-founder",
-        description: "우때를 공동으로 만들고 운영합니다.",
+        description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/minbros",
         githubLabel: "minbros",
         linkedinUrl: "https://www.linkedin.com/in/minbros/",
@@ -43,7 +43,7 @@ describe("landing content contracts", () => {
         name: "박주영",
         englishName: "PARK JU YEONG",
         role: "공동창업자 · Co-founder",
-        description: "우때를 공동으로 만들고 운영합니다.",
+        description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/parkjuyeong0312",
         githubLabel: "parkjuyeong0312",
         linkedinUrl:

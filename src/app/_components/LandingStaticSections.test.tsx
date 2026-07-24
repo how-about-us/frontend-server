@@ -30,6 +30,8 @@ describe("landing static sections", () => {
     expect(html).toContain("박주영");
     expect(html).toContain("PARK JU YEONG");
     expect(html.match(/공동창업자 · Co-founder/g)).toHaveLength(2);
+    expect(html.match(/서울시립대학교 컴퓨터과학부/g)).toHaveLength(2);
+    expect(html).not.toContain("우때를 공동으로 만들고 운영합니다.");
     expect(html).toContain('href="https://github.com/minbros"');
     expect(html).toContain('href="https://github.com/parkjuyeong0312"');
     expect(html).toContain('href="https://www.linkedin.com/in/minbros/"');
