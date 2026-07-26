@@ -10,6 +10,7 @@ export {
 } from "./routes";
 export {
   buildMobilePlanPanelHref,
+  MOBILE_PLAN_PANEL_ORDER,
   readMobilePlanPanel,
   type MobilePlanPanel,
 } from "./plan-panel";

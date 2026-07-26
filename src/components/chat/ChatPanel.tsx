@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMainChromeLayoutWidth } from "@/contexts/MainChromeLayoutWidthContext";
@@ -37,6 +38,31 @@ export function ChatPanel({
   const isMinimized = !mobileInline && chatState === "minimized";
   const panelOpen = mobileInline || chatState !== "closed";
   const { roomId } = useCurrentRoomId();
+  const rid = typeof roomId === "string" ? roomId.trim() : "";
+  const [mobileHistoryReadyState, setMobileHistoryReadyState] = useState({
+    rid: "",
+    ready: false,
+  });
+
+  useEffect(() => {
+    if (!mobileInline) return;
+
+    let timer = 0;
+    const raf = requestAnimationFrame(() => {
+      timer = window.setTimeout(
+        () => setMobileHistoryReadyState({ rid, ready: true }),
+        0,
+      );
+    });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
+    };
+  }, [mobileInline, rid]);
+  const mobileHistoryReady =
+    mobileHistoryReadyState.ready && mobileHistoryReadyState.rid === rid;
+
   const title = useCurrentRoomTitle(roomId);
   const { data: membersData } = useRoomMembers(roomId);
   const onlineCount =
@@ -57,9 +83,10 @@ export function ChatPanel({
     readDividerPlacement,
     scrollToAnchor,
     markMessagesRead,
-  } = useChatMessages(roomId, { fetchHistory: panelOpen });
+  } = useChatMessages(roomId, {
+    fetchHistory: mobileInline ? mobileHistoryReady : panelOpen,
+  });
 
-  const rid = typeof roomId === "string" ? roomId.trim() : "";
   const rateLimit = useChatRateLimitStore((s) => s.rateLimit);
   const isSendBlocked = useChatRateLimitStore((s) => s.isSendBlocked);
   const { size: minimizedSize, setSize, persistSize, clampSize } =

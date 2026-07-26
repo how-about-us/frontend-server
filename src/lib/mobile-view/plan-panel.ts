@@ -1,5 +1,11 @@
 export type MobilePlanPanel = "schedule" | "map" | "chat";
 
+export const MOBILE_PLAN_PANEL_ORDER: readonly MobilePlanPanel[] = [
+  "chat",
+  "schedule",
+  "map",
+] as const;
+
 export function readMobilePlanPanel(value: string | null): MobilePlanPanel {
   return value === "map" || value === "chat" ? value : "schedule";
 }

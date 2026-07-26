@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildMobilePlanPanelHref,
+  MOBILE_PLAN_PANEL_ORDER,
   readMobilePlanPanel,
 } from "./plan-panel";
 
@@ -15,6 +16,10 @@ describe("mobile plan panel routing", () => {
   it("accepts map and chat query values", () => {
     expect(readMobilePlanPanel("map")).toBe("map");
     expect(readMobilePlanPanel("chat")).toBe("chat");
+  });
+
+  it("orders mobile plan panels as chat, schedule, map", () => {
+    expect(MOBILE_PLAN_PANEL_ORDER).toEqual(["chat", "schedule", "map"]);
   });
 
   it("keeps the current plan room path when building panel links", () => {

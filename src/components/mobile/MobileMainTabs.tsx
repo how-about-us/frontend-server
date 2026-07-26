@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useMobileView } from "@/contexts/MobileViewContext";
 import {
   buildMobilePlanPanelHref,
+  MOBILE_PLAN_PANEL_ORDER,
   readMobilePlanPanel,
   type MobilePlanPanel,
 } from "@/lib/mobile-view";
@@ -24,6 +25,12 @@ const STATIC_TABS: readonly MobileTab[] = [
   { label: "방설정", href: "/room-settings", matchPrefix: "/room-settings" },
 ];
 
+const PLAN_PANEL_LABELS: Record<MobilePlanPanel, string> = {
+  chat: "채팅",
+  schedule: "일정",
+  map: "지도",
+};
+
 function isTabActive(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
@@ -37,26 +44,14 @@ export function MobileMainTabs() {
   if (!isMobileDevice) return null;
 
   const currentPanel = readMobilePlanPanel(searchParams.get("view"));
-  const planTabs: readonly MobileTab[] = [
-    {
-      label: "일정",
-      href: buildMobilePlanPanelHref(pathname, "schedule"),
+  const planTabs: readonly MobileTab[] = MOBILE_PLAN_PANEL_ORDER.map(
+    (panel) => ({
+      label: PLAN_PANEL_LABELS[panel],
+      href: buildMobilePlanPanelHref(pathname, panel),
       matchPrefix: "/plan",
-      panel: "schedule",
-    },
-    {
-      label: "지도",
-      href: buildMobilePlanPanelHref(pathname, "map"),
-      matchPrefix: "/plan",
-      panel: "map",
-    },
-    {
-      label: "채팅",
-      href: buildMobilePlanPanelHref(pathname, "chat"),
-      matchPrefix: "/plan",
-      panel: "chat",
-    },
-  ];
+      panel,
+    }),
+  );
   const tabs = [...planTabs, ...STATIC_TABS];
 
   return (

@@ -49,7 +49,7 @@ export function MapWithDetailPanel({
         } ${
           selectedPlace
             ? "pointer-events-auto translate-x-0"
-            : "pointer-events-none -translate-x-[400px]"
+            : "pointer-events-none -translate-x-[calc(100%+32px)]"
         }`}
       >
         {selectedPlace && (
