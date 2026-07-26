@@ -25,13 +25,17 @@ import {
   getPanelAnimate,
 } from "./chat-animations";
 
-export function ChatPanel() {
+export function ChatPanel({
+  mobileInline = false,
+}: {
+  mobileInline?: boolean;
+}) {
   const router = useRouter();
   const { chatState, openChat, minimizeChat, closeChat } = useChat();
   const { chatPanelDockWidthCss, chatPanelRevealReady } =
     useMainChromeLayoutWidth();
-  const isMinimized = chatState === "minimized";
-  const panelOpen = chatState !== "closed";
+  const isMinimized = !mobileInline && chatState === "minimized";
+  const panelOpen = mobileInline || chatState !== "closed";
   const { roomId } = useCurrentRoomId();
   const title = useCurrentRoomTitle(roomId);
   const { data: membersData } = useRoomMembers(roomId);
@@ -69,14 +73,16 @@ export function ChatPanel() {
 
   const panelBody = (
     <>
-      <ChatPanelHeader
-        roomTitle={title}
-        onlineCount={onlineCount}
-        isMinimized={isMinimized}
-        onMaximize={openChat}
-        onMinimize={minimizeChat}
-        onClose={closeChat}
-      />
+      {!mobileInline ? (
+        <ChatPanelHeader
+          roomTitle={title}
+          onlineCount={onlineCount}
+          isMinimized={isMinimized}
+          onMaximize={openChat}
+          onMinimize={minimizeChat}
+          onClose={closeChat}
+        />
+      ) : null}
       <ChatMessageList
         key={rid || "no-room"}
         messages={messages}
@@ -108,11 +114,19 @@ export function ChatPanel() {
         onSendChat={sendChatMessage}
         onSendAi={sendAiMessage}
         onPlusClick={handlePlusClick}
-        plusDisabled={!rid}
+        plusDisabled={!rid || mobileInline}
         sendDisabled={isSendBlocked}
       />
     </>
   );
+
+  if (mobileInline) {
+    return (
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
+        {panelBody}
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">

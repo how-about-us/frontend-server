@@ -19,7 +19,13 @@ function isSearchPath(pathname: string): boolean {
   return pathname === "/search";
 }
 
-export function MainContentScrollArea({ children }: { children: ReactNode }) {
+export function MainContentScrollArea({
+  children,
+  fill = false,
+}: {
+  children: ReactNode;
+  fill?: boolean;
+}) {
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchPage = isSearchPath(pathname);
@@ -33,20 +39,23 @@ export function MainContentScrollArea({ children }: { children: ReactNode }) {
       ref={scrollRef}
       data-main-content-scroll
       className={cn(
-        "min-h-0 min-w-0 flex-1 pt-2.5",
-        searchPage
+        "min-h-0 min-w-0 flex-1",
+        !fill && "pt-2.5",
+        fill
           ? "flex flex-col overflow-hidden"
-          : cn(
-              "overflow-x-hidden overflow-y-auto",
-              MAIN_SCROLLBAR_GUTTER_CLASS,
-            ),
+          : searchPage
+            ? "flex flex-col overflow-hidden"
+            : cn(
+                "overflow-x-hidden overflow-y-auto",
+                MAIN_SCROLLBAR_GUTTER_CLASS,
+              ),
       )}
     >
       <div
         className={cn(
           "min-w-0",
-          searchPage && "flex min-h-0 flex-1 flex-col",
-          !searchPage && MAIN_PAGE_INLINE_PADDING_CLASS,
+          (fill || searchPage) && "flex min-h-0 flex-1 flex-col",
+          !fill && !searchPage && MAIN_PAGE_INLINE_PADDING_CLASS,
         )}
       >
         {children}
