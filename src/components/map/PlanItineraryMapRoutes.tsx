@@ -307,7 +307,7 @@ export function PlanItineraryMapRoutes() {
         <PlanItineraryStopMapPin
           orderLabel={stop.orderIndex + 1}
           pinColor={dayColor}
-          className="cursor-pointer scale-90 select-none"
+          className="cursor-pointer select-none"
         />
       </AdvancedMarker>,
     );
