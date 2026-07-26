@@ -34,6 +34,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${inter.variable} h-full`}>
+      <head>
+        <script
+          {...{
+            nowprocket: "",
+            "data-noptimize": "1",
+            "data-cfasync": "false",
+            "data-wpfc-render": "false",
+            "seraph-accel-crit": "1",
+            "data-no-defer": "1",
+          }}
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  var script = document.createElement("script");
+  script.async = 1;
+  script.src = 'https://emrldtp.com/NTU0ODU1.js?t=554855';
+  document.head.appendChild(script);
+})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full w-full flex flex-col">
         <AppRootProviders>{children}</AppRootProviders>
       </body>
