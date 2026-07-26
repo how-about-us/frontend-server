@@ -2,7 +2,7 @@ import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import type { PlanPlace } from "@/lib/plan/types";
 
 /** Plan 카드 썸네일 — 캐시 우선, 미시딩 시 `GET /places/photos`로 개별 조회 */
-export function usePlanPlaceCardPhoto(place: PlanPlace) {
+export function usePlanPlaceCardPhoto(place: PlanPlace, options?: { enabled?: boolean }) {
   const fallbackPhotoUrl =
     typeof place.imageUrl === "string" && place.imageUrl.trim().length > 0
       ? place.imageUrl.trim()
@@ -12,7 +12,9 @@ export function usePlanPlaceCardPhoto(place: PlanPlace) {
       ? place.photoName.trim()
       : null;
 
-  const photoQuery = usePlacePhotoUrlQuery(photoName);
+  const photoQuery = usePlacePhotoUrlQuery(photoName, {
+    enabled: options?.enabled ?? true,
+  });
 
   const resolvedPhotoUrl = photoName
     ? photoQuery.data?.trim() || fallbackPhotoUrl

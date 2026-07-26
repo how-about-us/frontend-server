@@ -10,6 +10,8 @@ export type SearchResultCardProps = {
   isOpen?: boolean | null;
   /** Single preview image URL from /places/photos */
   image?: string;
+  /** Google Places photo resource name; URL은 썸네일 노출 시점에 요청 */
+  photoName?: string;
   address?: string;
   phone?: string;
   hours?: string;

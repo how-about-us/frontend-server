@@ -7,9 +7,6 @@ import {
   searchPlaces,
   type PlaceSearchItem,
 } from "@/lib/api/places";
-import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
-import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
-import { getQueryClient } from "@/lib/query-client";
 import type { SearchResultCardProps } from "@/types/place";
 
 export type PlaceSearchResult = SearchResultCardProps & {
@@ -57,28 +54,7 @@ export async function fetchPlacesPageWithPhotos(args: {
     pageToken: args.pageToken,
   });
 
-  const itemsBase = rawItems.map((item) => mapPlaceSearchItem(item));
-  const photoNames = rawItems
-    .map((item) => item.photoName?.trim() ?? "")
-    .filter((name) => name.length > 0);
-
-  if (photoNames.length) {
-    await fetchAndSeedPlacePhotoUrls(photoNames, getQueryClient());
-  }
-
-  const items = itemsBase.map((base, index) => {
-    const photoName = rawItems[index]?.photoName?.trim();
-    let imageUrl: string | undefined;
-    if (photoName) {
-      const cached = getQueryClient()?.getQueryData<string>(
-        placePhotoUrlQueryKey(photoName),
-      );
-      if (typeof cached === "string" && cached.trim().length > 0) {
-        imageUrl = cached.trim();
-      }
-    }
-    return { ...base, image: imageUrl };
-  });
+  const items = rawItems.map((item) => mapPlaceSearchItem(item));
 
   return { items, nextPageToken };
 }

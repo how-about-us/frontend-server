@@ -2,6 +2,8 @@
 
 import { Star, MapPin } from "lucide-react";
 import type { SearchResultCardProps } from "@/types/place";
+import { useInViewport } from "@/hooks/useInViewport";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
@@ -13,6 +15,7 @@ export function SearchResultCard({
   userRatingCount,
   isOpen,
   image,
+  photoName,
   address,
   onClick,
   className,
@@ -24,6 +27,14 @@ export function SearchResultCard({
   variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
+  const { ref: thumbnailRef, isInViewport } = useInViewport<HTMLDivElement>({
+    enabled: showThumbnail && Boolean(photoName?.trim()) && !image,
+  });
+  const { data: lazyImage } = usePlacePhotoUrlQuery(photoName, {
+    enabled: showThumbnail && isInViewport && !image,
+  });
+  const resolvedImage = image ?? lazyImage?.trim();
+
   return (
     <article
       className={cn(
@@ -86,14 +97,15 @@ export function SearchResultCard({
 
       {showThumbnail ? (
         <div
+          ref={thumbnailRef}
           className={cn(
             "shrink-0 overflow-hidden rounded-lg bg-light-gray",
             "h-[80px] w-[80px]",
           )}
         >
-          {image ? (
+          {resolvedImage ? (
             <img
-              src={image}
+              src={resolvedImage}
               alt={name}
               className="h-full w-full object-cover"
               loading="lazy"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { requestPlacePhotoUrl } from "@/lib/api/places";
@@ -10,7 +10,10 @@ import {
 } from "@/lib/place-photo-query";
 import { getQueryClient } from "@/lib/query-client";
 
-export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
+export function usePlacePhotoUrlQuery(
+  photoName: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
   const name = typeof photoName === "string" ? photoName.trim() : "";
   return useQuery({
     queryKey: placePhotoUrlQueryKey(name),
@@ -22,7 +25,7 @@ export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
       }
       return requestPlacePhotoUrl(name);
     },
-    enabled: name.length > 0,
+    enabled: (options?.enabled ?? true) && name.length > 0,
     ...placePhotoUrlQueryDefaults,
   });
 }
@@ -45,7 +48,9 @@ export function useSeededPlacePhotoUrlQuery(
  */
 export function usePlacePhotoUrlsQuery(
   photoNames: readonly (string | null | undefined)[] | null | undefined,
+  options?: { enabled?: boolean },
 ) {
+  const enabled = options?.enabled ?? true;
   const names = useMemo(
     () =>
       (photoNames ?? [])
@@ -55,28 +60,21 @@ export function usePlacePhotoUrlsQuery(
   );
 
   const namesKey = names.join("\0");
-  const [photosSeeded, setPhotosSeeded] = useState(false);
+  const seedQuery = useQuery({
+    queryKey: ["places", "photoUrlsBatch", namesKey],
+    queryFn: async () => {
+      await fetchAndSeedPlacePhotoUrls(names, getQueryClient());
+      return true;
+    },
+    enabled: enabled && names.length > 0,
+    ...placePhotoUrlQueryDefaults,
+  });
 
-  useEffect(() => {
-    if (!namesKey.length) {
-      setPhotosSeeded(true);
-      return;
-    }
-
-    let cancelled = false;
-    setPhotosSeeded(false);
-    void fetchAndSeedPlacePhotoUrls(names, getQueryClient()).then(() => {
-      if (!cancelled) setPhotosSeeded(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [namesKey, names]);
+  const photosSeeded = names.length === 0 || seedQuery.data === true;
 
   const results = useQueries({
     queries: names.map((name) =>
-      seededPlacePhotoUrlQueryOptions(name, { enabled: photosSeeded }),
+      seededPlacePhotoUrlQueryOptions(name, { enabled: enabled && photosSeeded }),
     ),
   });
 
@@ -89,7 +87,9 @@ export function usePlacePhotoUrlsQuery(
   );
 
   const isLoading =
-    names.length > 0 && (!photosSeeded || results.some((r) => r.isLoading));
+    enabled &&
+    names.length > 0 &&
+    (!photosSeeded || results.some((r) => r.isLoading));
 
   return { photoUrls, isLoading };
 }

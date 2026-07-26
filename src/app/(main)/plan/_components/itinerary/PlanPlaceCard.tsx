@@ -8,6 +8,7 @@ import { Clock, Loader2, MapPin } from "lucide-react";
 import { MemoIcon } from "@/components/icons";
 import { toast } from "sonner";
 
+import { useInViewport } from "@/hooks/useInViewport";
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
@@ -71,7 +72,15 @@ export function PlanPlaceCard({
   const { setSelectedPlace } = useSelectedPlace();
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const blockCardDragRef = useRef(false);
-  const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place);
+  const hasRemotePhotoName =
+    typeof place.photoName === "string" && place.photoName.trim().length > 0;
+  const { ref: thumbnailRef, isInViewport: thumbnailInViewport } =
+    useInViewport<HTMLElement>({
+      enabled: hasRemotePhotoName,
+    });
+  const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place, {
+    enabled: thumbnailInViewport,
+  });
 
   const [memoOpen, setMemoOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
@@ -329,12 +338,15 @@ export function PlanPlaceCard({
 
           if (!googleMapsPlaceUrl) {
             return (
-              <div className={PLAN_PLACE_CARD_TW.thumbnail}>{media}</div>
+              <div ref={thumbnailRef} className={PLAN_PLACE_CARD_TW.thumbnail}>
+                {media}
+              </div>
             );
           }
 
           return (
             <a
+              ref={thumbnailRef}
               href={googleMapsPlaceUrl}
               target="_blank"
               rel="noopener noreferrer"
