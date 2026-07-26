@@ -1,4 +1,5 @@
 import { LandingCollaborationSection } from "@/app/_components/LandingCollaborationSection";
+import { LandingCompanySection } from "@/app/_components/LandingCompanySection";
 import { LandingFeatureStory } from "@/app/_components/LandingFeatureStory";
 import { LandingFinalCta } from "@/app/_components/LandingFinalCta";
 import { LandingHeader } from "@/app/_components/LandingHeader";
@@ -32,6 +33,9 @@ export function LandingView() {
         </LandingMotion>
         <LandingMotion>
           <LandingHowItWorks />
+        </LandingMotion>
+        <LandingMotion>
+          <LandingCompanySection />
         </LandingMotion>
         <LandingMotion>
           <LandingTeamSection />

@@ -5,9 +5,9 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LANDING_CONTAINER_CLASS } from "@/lib/landing/landing-content";
 
 const navItems = [
-  { href: "#features", label: "기능" },
-  { href: "#how-it-works", label: "사용 방법" },
-  { href: "#team", label: "팀" },
+  { href: "/#features", label: "기능" },
+  { href: "/#how-it-works", label: "사용 방법" },
+  { href: "/#team", label: "팀" },
 ] as const;
 
 export function LandingHeader() {
@@ -34,13 +34,13 @@ export function LandingHeader() {
         </Link>
         <nav aria-label="랜딩 페이지" className="ml-auto hidden items-center gap-7 landing-sm:flex">
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
               className="text-sm font-semibold text-dark-gray transition hover:text-brand-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
             >
               {item.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <LandingActionLink href="/login" className="px-5 py-2.5 text-sm">

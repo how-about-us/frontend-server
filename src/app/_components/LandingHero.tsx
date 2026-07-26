@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { LandingActionLink } from "@/app/_components/LandingActionLink";
 import { LandingScreenshot } from "@/app/_components/LandingScreenshot";
 import { LANDING_CONTAINER_CLASS } from "@/lib/landing/landing-content";
@@ -24,14 +26,17 @@ export function LandingHero() {
           <LandingActionLink href="/login" className="px-7 py-3">
             무료로 시작하기
           </LandingActionLink>
-          <a
-            href="#features"
+          <Link
+            href="/#features"
             className="inline-flex items-center justify-center rounded-full border border-gray-border bg-white px-7 py-3 text-base font-bold text-dark-gray transition hover:border-brand-red/40 hover:text-brand-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
           >
-            기능 둘러보기
-          </a>
+            기능 살펴보기
+          </Link>
         </div>
         <div className="mx-auto mt-12 max-w-[1080px] overflow-hidden rounded-2xl border border-gray-border bg-white p-2 shadow-[0_24px_70px_-28px_rgba(71,31,33,0.28)] landing-sm:p-3">
+          <p className="px-3 pb-3 pt-2 text-left text-sm font-semibold text-dark-gray">
+            우때 실제 서비스 화면
+          </p>
           <LandingScreenshot
             screenshot={LANDING_HERO_SCREENSHOT}
             priority

@@ -1,8 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useSyncExternalStore } from "react";
 
-import { AnalyticsRouteTracker } from "@/components/analytics/AnalyticsRouteTracker";
 import { CookieConsentBanner } from "@/components/analytics/CookieConsentBanner";
 import { GoogleAnalyticsScript } from "@/components/analytics/GoogleAnalyticsScript";
 import {
@@ -12,11 +12,13 @@ import {
 import { analyticsConsentStore } from "@/lib/analytics/consent-store";
 
 type ConsentGatedAnalyticsProps = {
+  children: ReactNode;
   debugMode: boolean;
   gaId: string;
 };
 
 export function ConsentGatedAnalytics({
+  children,
   debugMode,
   gaId,
 }: ConsentGatedAnalyticsProps) {
@@ -42,7 +44,7 @@ export function ConsentGatedAnalytics({
       {consent === "granted" ? (
         <>
           <GoogleAnalyticsScript debugMode={debugMode} gaId={gaId} />
-          <AnalyticsRouteTracker />
+          {children}
         </>
       ) : null}
     </>

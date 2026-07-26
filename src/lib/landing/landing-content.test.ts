@@ -28,25 +28,31 @@ describe("landing content contracts", () => {
     expect(LANDING_HOW_STEPS).toHaveLength(3);
   });
 
-  it("publishes the approved team identities", () => {
+  it("publishes the approved co-founder identities", () => {
     expect(LANDING_TEAM_MEMBERS).toEqual([
       {
         name: "김민형",
-        role: "인프라 담당",
-        description:
-          "우때가 안정적으로 배포되고 운영될 수 있도록 서비스 인프라를 설계하고 관리합니다.",
+        englishName: "Minhyung Kim",
+        role: "Co-founder",
+        description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/minbros",
         githubLabel: "minbros",
+        linkedinUrl: "https://www.linkedin.com/in/minbros/",
       },
       {
         name: "박주영",
-        role: "개발 및 운영 담당",
-        description:
-          "우때의 제품 개발과 사용자에게 제공되는 서비스 운영 전반을 담당합니다.",
+        englishName: "PARK JU YEONG",
+        role: "Co-founder",
+        description: "서울시립대학교 컴퓨터과학부",
         githubUrl: "https://github.com/parkjuyeong0312",
         githubLabel: "parkjuyeong0312",
+        linkedinUrl:
+          "https://www.linkedin.com/in/%EC%A3%BC%EC%98%81-%EB%B0%95-75a83a2a4/",
       },
     ]);
+    expect(new Set(LANDING_TEAM_MEMBERS.map((member) => member.role))).toEqual(
+      new Set(["Co-founder"]),
+    );
   });
 
   it("does not use the landing display font in text styles", () => {
