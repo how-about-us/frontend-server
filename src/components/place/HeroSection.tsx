@@ -7,16 +7,15 @@ export function HeroSkeleton() {
 }
 
 export function HeroImage({
-  photoNames,
+  googlePlaceId,
   fallbackImage,
   name,
 }: {
-  photoNames: string[];
+  googlePlaceId?: string;
   fallbackImage?: string;
   name: string;
 }) {
-  const firstPhotoName = photoNames[0] ? [photoNames[0]] : [];
-  const { photoUrls } = usePlacePhotoUrlsQuery(firstPhotoName);
+  const { photoUrls } = usePlacePhotoUrlsQuery(googlePlaceId ? [googlePlaceId] : []);
   const photoUrl = photoUrls[0] ?? fallbackImage ?? null;
 
   if (!photoUrl) {

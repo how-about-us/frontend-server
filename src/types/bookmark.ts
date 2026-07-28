@@ -3,8 +3,6 @@ export type BookmarkedPlace = {
   id: string;
   name: string;
   address: string;
-  /** `GET /places/photos` — 카드에서 별도 로드 */
-  photoName?: string;
   primaryTypeDisplayName?: string;
   googlePlaceId: string;
   location?: { lat: number; lng: number };

@@ -101,7 +101,6 @@ function planPlaceFromItemAndPreview(
       location: preview.location,
       title: preview.name,
       subtitle: preview.formattedAddress,
-      photoName: preview.photoName,
       primaryTypeDisplayName: preview.primaryTypeDisplayName,
       startTime: item.startTime ?? undefined,
       durationMinutes: item.durationMinutes ?? undefined,
@@ -188,14 +187,14 @@ function collectGooglePlaceIdsFromSchedules(
   return [...ids];
 }
 
-function collectPhotoNamesFromPlanPlaces(places: readonly PlanPlace[]): string[] {
-  const names = new Set<string>();
+function collectPhotoPlaceIdsFromPlanPlaces(places: readonly PlanPlace[]): string[] {
+  const ids = new Set<string>();
   for (const place of places) {
-    const name =
-      typeof place.photoName === "string" ? place.photoName.trim() : "";
-    if (name.length) names.add(name);
+    const id =
+      typeof place.googlePlaceId === "string" ? place.googlePlaceId.trim() : "";
+    if (id.length) ids.add(id);
   }
-  return [...names];
+  return [...ids];
 }
 
 export async function hydrateScheduleItemsFromSchedulesWithItems(
@@ -211,7 +210,7 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
     await fetchAndSeedPlacePreviews(placeIds, queryClient);
   }
 
-  const photoNames: string[] = [];
+  const photoPlaceIds: string[] = [];
 
   for (const schedule of schedules) {
     const sid = schedule.scheduleId;
@@ -223,11 +222,11 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
       items,
     );
     queryClient.setQueryData(scheduleItemsQueryKey(rid, sid), places);
-    photoNames.push(...collectPhotoNamesFromPlanPlaces(places));
+    photoPlaceIds.push(...collectPhotoPlaceIdsFromPlanPlaces(places));
   }
 
-  if (photoNames.length) {
-    await fetchAndSeedPlacePhotoUrls(photoNames, queryClient);
+  if (photoPlaceIds.length) {
+    await fetchAndSeedPlacePhotoUrls(photoPlaceIds, queryClient);
   }
 }
 

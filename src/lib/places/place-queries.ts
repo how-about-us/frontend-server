@@ -1,6 +1,5 @@
 import {
   requestPlaceDetail,
-  requestPlacePhotoNames,
   requestPlacePhotoUrl,
   requestPlacePreview,
   type PlaceDetail,
@@ -23,17 +22,6 @@ export const placePreviewQueryDefaults = {
   staleTime: 60_000,
   refetchOnWindowFocus: false,
 } as const;
-
-/** 로그인 사용자별 Rate Limit 대응 — 동일 장소 사진 이름 목록 재호출 최소화 */
-export const placePhotoNamesQueryDefaults = {
-  staleTime: 5 * 60_000,
-  refetchOnWindowFocus: false,
-} as const;
-
-export function placePhotoNamesQueryKey(googlePlaceId: string) {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  return ["places", "photoNames", id] as const;
-}
 
 function placeDetailQueryKey(googlePlaceId: string) {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
@@ -80,16 +68,11 @@ function normalizeOptionalPreviewString(value: unknown): string | undefined {
 }
 
 export function normalizePlacePreview(raw: PlacePreviewResponse): PlacePreview {
-  const photoName =
-    typeof raw.photoName === "string" && raw.photoName.trim().length > 0
-      ? raw.photoName.trim()
-      : undefined;
   return {
     googlePlaceId: raw.googlePlaceId,
     name: raw.name,
     formattedAddress: raw.formattedAddress,
     location: normalizePreviewLocation(raw.location),
-    photoName,
     primaryType: normalizeOptionalPreviewString(raw.primaryType),
     primaryTypeDisplayName: normalizeOptionalPreviewString(
       raw.primaryTypeDisplayName,
@@ -113,65 +96,6 @@ export async function fetchPlaceDetail(googlePlaceId: string): Promise<PlaceDeta
     queryFn: () => requestPlaceDetail(id),
     ...placeDetailQueryDefaults,
   });
-}
-
-/** useQueries queryFn 등 중첩 fetchQuery 없이 photo-names API만 호출 */
-export async function loadPlacePhotoNames(
-  googlePlaceId: string,
-): Promise<string[]> {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  if (!id.length) {
-    throw new Error("loadPlacePhotoNames: empty googlePlaceId");
-  }
-  const names = await requestPlacePhotoNames(id);
-  return names
-    .map((n) => (typeof n === "string" ? n.trim() : ""))
-    .filter((n) => n.length > 0);
-}
-
-/** imperative — 동일 장소 사진 이름 목록 캐시 재사용으로 Rate Limit 반복 호출 방지 */
-export async function fetchPlacePhotoNames(
-  googlePlaceId: string,
-): Promise<string[]> {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  if (!id.length) {
-    throw new Error("fetchPlacePhotoNames: empty googlePlaceId");
-  }
-
-  const queryClient = getQueryClient();
-  if (!queryClient) {
-    return loadPlacePhotoNames(id);
-  }
-
-  return queryClient.fetchQuery({
-    queryKey: placePhotoNamesQueryKey(id),
-    queryFn: () => loadPlacePhotoNames(id),
-    ...placePhotoNamesQueryDefaults,
-  });
-}
-
-/** AI 카드·히스토리 warm — photo-names 첫 항목만 (실패 시 null) */
-export async function fetchFirstPlacePhotoName(
-  googlePlaceId: string,
-): Promise<string | null> {
-  try {
-    const names = await fetchPlacePhotoNames(googlePlaceId);
-    return names[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** `useQuery` / `useQueries`용 — `fetchPlacePhotoNames`와 동일 queryKey·캐시 */
-export function placePhotoNamesQueryOptions(googlePlaceId: string) {
-  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  return {
-    queryKey: placePhotoNamesQueryKey(id),
-    queryFn: () => loadPlacePhotoNames(id),
-    enabled: id.length > 0,
-    ...placePhotoNamesQueryDefaults,
-    retry: 1,
-  };
 }
 
 export function resolvePreviewGooglePlaceId(googlePlaceId: string): string {
@@ -249,22 +173,20 @@ export async function fetchPlacePreview(googlePlaceId: string): Promise<PlacePre
   });
 }
 
-/** imperative·다른 queryKey의 queryFn에서만 사용 — `usePlacePhotoUrlQuery` queryFn에는 `requestPlacePhotoUrl` */
-export async function fetchPlacePhotoUrl(photoName: string): Promise<string> {
-  const name = typeof photoName === "string" ? photoName.trim() : "";
-  if (!name.length) {
-    throw new Error("fetchPlacePhotoUrl: empty photoName");
+export async function fetchPlacePhotoUrl(googlePlaceId: string): Promise<string> {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  if (!id.length) {
+    throw new Error("fetchPlacePhotoUrl: empty googlePlaceId");
   }
 
   const queryClient = getQueryClient();
   if (!queryClient) {
-    return requestPlacePhotoUrl(name);
+    return requestPlacePhotoUrl(id);
   }
 
   return queryClient.fetchQuery({
-    queryKey: placePhotoUrlQueryKey(name),
-    queryFn: () => requestPlacePhotoUrl(name),
+    queryKey: placePhotoUrlQueryKey(id),
+    queryFn: () => requestPlacePhotoUrl(id),
     ...placePhotoUrlQueryDefaults,
   });
 }
-

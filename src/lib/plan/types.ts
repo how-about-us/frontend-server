@@ -4,8 +4,6 @@ export type PlanPlace = {
   title: string;
   /** 짧은 부제 또는 긴 설명(여러 줄) */
   subtitle?: string;
-  /** `GET /places/photos?photoName=` 로 카드에서 로드 */
-  photoName?: string;
   /** preview API `primaryTypeDisplayName` — 카드 타입 라벨 */
   primaryTypeDisplayName?: string;
   /** 레거시·폴백: 이미 해석된 미리보기 URL */

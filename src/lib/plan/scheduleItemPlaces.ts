@@ -96,7 +96,7 @@ function patchPlanPlaceFromScheduleItem(
 
 /**
  * 리오더 등으로 서버 `RoomScheduleItem[]`만 바뀐 경우, 캐시된 PlanPlace의
- * 제목·photoName·location 등은 유지하고 순서·시간·수단만 반영합니다.
+ * 제목·location 등은 유지하고 순서·시간·수단만 반영합니다.
  * 항목 1개 추가(+1)는 신규 항목만 Preview enrich.
  * 항목 1개 삭제(-1)는 기존 PlanPlace 유지·순서·시간만 패치(Preview 없음).
  * 그 외 길이/집합 불일치는 null → 전체 재조회.
@@ -635,7 +635,6 @@ async function planPlaceFromScheduleItem(
       location: preview.location,
       title: preview.name,
       subtitle: preview.formattedAddress,
-      photoName: preview.photoName,
       primaryTypeDisplayName: preview.primaryTypeDisplayName,
       startTime: item.startTime ?? undefined,
       durationMinutes: item.durationMinutes ?? undefined,

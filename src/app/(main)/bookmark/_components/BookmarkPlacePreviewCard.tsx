@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 export type BookmarkPlacePreviewCardProps = {
   name: string;
   address?: string;
-  photoName?: string;
   primaryTypeDisplayName?: string;
   /** 있으면 사진 클릭 시 Google Maps로 이동 */
   googlePlaceId?: string;
@@ -25,14 +24,13 @@ export type BookmarkPlacePreviewCardProps = {
 export function BookmarkPlacePreviewCard({
   name,
   address,
-  photoName,
   primaryTypeDisplayName,
   googlePlaceId,
   onClick,
   className,
   contentClassName,
 }: BookmarkPlacePreviewCardProps) {
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId);
 
   const rawGid = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   const googleMapsPlaceUrl = rawGid.length

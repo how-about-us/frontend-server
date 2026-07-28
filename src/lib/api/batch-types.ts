@@ -1,8 +1,8 @@
 /** 벌크 API 항목별 부분 실패 공통 형태 */
-export type BatchItemStatus = "OK" | "ERROR";
+export type BatchItemStatus = "OK" | "ERROR" | "FAILED";
 
 export type BatchItemError = {
-  status: "ERROR";
+  status: "ERROR" | "FAILED";
   errorCode?: string;
 };
 
@@ -15,5 +15,5 @@ export function isBatchItemOk<T extends { status: BatchItemStatus }>(
 export function isBatchItemError(
   item: { status?: string },
 ): item is BatchItemError {
-  return item.status === "ERROR";
+  return item.status === "ERROR" || item.status === "FAILED";
 }

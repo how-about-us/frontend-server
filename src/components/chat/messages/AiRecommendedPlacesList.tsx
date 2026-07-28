@@ -1,7 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { ChatMarkdownContent } from "@/components/chat/ChatMarkdownContent";
 import {
@@ -10,7 +8,6 @@ import {
   chatAiBubblePlaceRecommendationReasonClass,
 } from "@/components/chat/chat-typography";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
-import { placePhotoNamesQueryOptions } from "@/lib/places/place-queries";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { stripRecommendedPlaceReasonPrefix } from "@/lib/recommended-place-reason";
 import type {
@@ -29,15 +26,6 @@ function AiRecommendedPlaceRow({
   const { setSelectedPlace } = useSelectedPlace();
   const setMapCenter = useMapCenterStore((s) => s.setMapCenter);
 
-  const fromMeta =
-    typeof place.photoName === "string" ? place.photoName.trim() : "";
-  const needsPhotoNames = fromMeta.length === 0;
-  const { data: enrichedPhotoName } = useQuery({
-    ...placePhotoNamesQueryOptions(place.placeId),
-    select: (names) => names[0] ?? null,
-    enabled: needsPhotoNames && place.placeId.trim().length > 0,
-  });
-  const photoName = fromMeta || enrichedPhotoName?.trim() || "";
   const displayRating = place.rating ?? null;
   const displayReviewCount = place.userRatingCount ?? null;
 
@@ -67,7 +55,7 @@ function AiRecommendedPlaceRow({
       <OgPlacePreviewCard
         name={place.name}
         formattedAddress={place.address}
-        photoName={photoName}
+        googlePlaceId={place.placeId}
         rating={displayRating}
         userRatingCount={displayReviewCount}
         isMinimized={isMinimized}

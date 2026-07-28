@@ -1,82 +1,87 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { requestPlacePhotoUrl } from "@/lib/api/places";
 import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
 import {
+  PLACE_PHOTO_QUERY_GC_MS,
   placePhotoUrlQueryDefaults,
   placePhotoUrlQueryKey,
   seededPlacePhotoUrlQueryOptions,
 } from "@/lib/place-photo-query";
 import { getQueryClient } from "@/lib/query-client";
 
-export function usePlacePhotoUrlQuery(photoName: string | null | undefined) {
-  const name = typeof photoName === "string" ? photoName.trim() : "";
+export function usePlacePhotoUrlQuery(googlePlaceId: string | null | undefined) {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   return useQuery({
-    queryKey: placePhotoUrlQueryKey(name),
-    // queryFn 안에서 fetchPlacePhotoUrl(동일 queryKey fetchQuery)을 쓰면 대기 데드락
+    queryKey: placePhotoUrlQueryKey(id),
     queryFn: async () => {
-      const cached = getQueryClient()?.getQueryData<string>(placePhotoUrlQueryKey(name));
+      const queryClient = getQueryClient();
+      if (!queryClient) {
+        return requestPlacePhotoUrl(id);
+      }
+      const cached = queryClient?.getQueryData<string>(placePhotoUrlQueryKey(id));
       if (typeof cached === "string" && cached.trim().length > 0) {
         return cached.trim();
       }
-      return requestPlacePhotoUrl(name);
+      await fetchAndSeedPlacePhotoUrls([id], queryClient);
+      const seeded = queryClient?.getQueryData<string>(placePhotoUrlQueryKey(id));
+      return typeof seeded === "string" ? seeded.trim() : "";
     },
-    enabled: name.length > 0,
+    enabled: id.length > 0,
     ...placePhotoUrlQueryDefaults,
   });
 }
 
 export function useSeededPlacePhotoUrlQuery(
-  photoName: string | null | undefined,
+  googlePlaceId: string | null | undefined,
   options?: { enabled?: boolean },
 ) {
-  const name = typeof photoName === "string" ? photoName.trim() : "";
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   return useQuery(
-    seededPlacePhotoUrlQueryOptions(name, {
-      enabled: (options?.enabled ?? true) && name.length > 0,
+    seededPlacePhotoUrlQueryOptions(id, {
+      enabled: (options?.enabled ?? true) && id.length > 0,
     }),
   );
 }
 
 /**
- * 여러 photoName을 단일 카드와 동일한 `["places","photoUrl",name]` 캐시 키로 해석.
- * 미캐시 name은 batch API 1회로 시딩 후 개별 query subscribe.
+ * 여러 googlePlaceId를 단일 카드와 동일한 `["places","photoUrl",id]` 캐시 키로 해석.
+ * 미캐시 id는 batch API 1회로 시딩 후 개별 query subscribe.
  */
 export function usePlacePhotoUrlsQuery(
-  photoNames: readonly (string | null | undefined)[] | null | undefined,
+  googlePlaceIds: readonly (string | null | undefined)[] | null | undefined,
 ) {
-  const names = useMemo(
+  const ids = useMemo(
     () =>
-      (photoNames ?? [])
-        .map((n) => (typeof n === "string" ? n.trim() : ""))
-        .filter((n) => n.length > 0),
-    [photoNames],
+      (googlePlaceIds ?? [])
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter((id) => id.length > 0),
+    [googlePlaceIds],
   );
 
-  const namesKey = names.join("\0");
-  const [photosSeeded, setPhotosSeeded] = useState(false);
+  const idsKey = ids.join("\0");
 
-  useEffect(() => {
-    if (!namesKey.length) {
-      setPhotosSeeded(true);
-      return;
-    }
+  const seedQuery = useQuery({
+    queryKey: ["places", "photoUrlsSeed", idsKey],
+    queryFn: async () => {
+      await fetchAndSeedPlacePhotoUrls(ids, getQueryClient());
+      return true;
+    },
+    enabled: ids.length > 0,
+    staleTime: Infinity,
+    gcTime: PLACE_PHOTO_QUERY_GC_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
 
-    let cancelled = false;
-    setPhotosSeeded(false);
-    void fetchAndSeedPlacePhotoUrls(names, getQueryClient()).then(() => {
-      if (!cancelled) setPhotosSeeded(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [namesKey, names]);
+  const photosSeeded = ids.length === 0 || seedQuery.isSuccess;
 
   const results = useQueries({
-    queries: names.map((name) =>
-      seededPlacePhotoUrlQueryOptions(name, { enabled: photosSeeded }),
+    queries: ids.map((id) =>
+      seededPlacePhotoUrlQueryOptions(id, { enabled: photosSeeded }),
     ),
   });
 
@@ -89,7 +94,8 @@ export function usePlacePhotoUrlsQuery(
   );
 
   const isLoading =
-    names.length > 0 && (!photosSeeded || results.some((r) => r.isLoading));
+    ids.length > 0 &&
+    (seedQuery.isLoading || !photosSeeded || results.some((r) => r.isLoading));
 
   return { photoUrls, isLoading };
 }

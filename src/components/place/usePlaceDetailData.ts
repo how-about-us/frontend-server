@@ -8,17 +8,10 @@ import {
 import type { PlaceDetailResult } from "./types";
 
 export function toPlaceDetailResult(detail: PlaceDetail): PlaceDetailResult {
-  const photoNames = (detail.photoNames ?? [])
-    .map((name) => (typeof name === "string" ? name.trim() : ""))
-    .filter((name) => name.length > 0)
-    .slice(0, 9);
-
   return {
     name: detail.name,
     primaryTypeDisplayName: detail.primaryTypeDisplayName,
     rating: detail.rating,
-    photoNames,
-    photoName: photoNames[0] ?? "",
     formattedAddress: detail.formattedAddress,
     location: detail.location,
     phone: detail.phoneNumber,

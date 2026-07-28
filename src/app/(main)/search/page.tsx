@@ -252,7 +252,6 @@ export default function SearchPage() {
         formattedAddress: result.address ?? "",
         latitude: result.location.lat,
         longitude: result.location.lng,
-        photoName: result.photoName,
         rating: result.rating ?? 0,
       });
       toast.success("장소를 채팅으로 보냈어요");
