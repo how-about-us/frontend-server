@@ -1,7 +1,7 @@
 "use client";
 
 import { usePlacePhotoUrlsQuery } from "@/hooks/usePlacePhotoUrl";
-import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 
 export function HeroSkeleton() {
   return <div className="h-full animate-pulse bg-gray-200" />;
@@ -30,7 +30,7 @@ export function HeroImage({
         alt={name}
         className="h-full w-full object-cover"
         onError={(event) =>
-          logPlacePhotoImageError({
+          handlePlacePhotoImageError({
             source: "place-hero",
             googlePlaceId,
             placeName: name,

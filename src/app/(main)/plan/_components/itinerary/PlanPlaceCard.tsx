@@ -22,7 +22,7 @@ import {
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
-import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import {
   formatScheduleStaySummary,
   formatScheduleTimeRange,
@@ -326,7 +326,7 @@ export function PlanPlaceCard({
               sizes="96px"
               draggable={false}
               onError={(event) =>
-                logPlacePhotoImageError({
+                handlePlacePhotoImageError({
                   source: "plan-place-card",
                   googlePlaceId: place.googlePlaceId,
                   placeName: place.title,

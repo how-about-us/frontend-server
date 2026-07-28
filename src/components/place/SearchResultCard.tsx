@@ -2,7 +2,7 @@
 
 import { Star, MapPin } from "lucide-react";
 import type { SearchResultCardProps } from "@/types/place";
-import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
@@ -100,7 +100,7 @@ export function SearchResultCard({
               className="h-full w-full object-cover"
               loading="lazy"
               onError={(event) =>
-                logPlacePhotoImageError({
+                handlePlacePhotoImageError({
                   source: "search-result-card",
                   googlePlaceId,
                   placeName: name,
