@@ -2,6 +2,7 @@
 
 import { Star, MapPin } from "lucide-react";
 import type { SearchResultCardProps } from "@/types/place";
+import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
 import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
@@ -14,6 +15,7 @@ export function SearchResultCard({
   isOpen,
   image,
   address,
+  googlePlaceId,
   onClick,
   className,
   variant = "list",
@@ -97,6 +99,14 @@ export function SearchResultCard({
               alt={name}
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={(event) =>
+                logPlacePhotoImageError({
+                  source: "search-result-card",
+                  googlePlaceId,
+                  placeName: name,
+                  image: event.currentTarget,
+                })
+              }
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
