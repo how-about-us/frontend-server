@@ -24,7 +24,7 @@ export function PlacesSearchPagination({
   return (
     <nav
       aria-label="검색 결과 페이지"
-      className="grid w-full min-w-0 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-t border-gray-border bg-white px-6 py-3"
+      className="grid w-full min-w-0 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 bg-white px-5 pb-4 pt-3"
     >
       <div className="flex min-w-0 justify-start">
         {hasPrevious ? (
@@ -33,7 +33,7 @@ export function PlacesSearchPagination({
             disabled={disabled}
             onClick={onPrevious}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-0.5 text-[17px] font-medium text-dark-gray transition hover:text-brand-green disabled:cursor-not-allowed disabled:opacity-50",
+              "inline-flex h-9 cursor-pointer items-center gap-1 rounded-full border border-gray-border bg-white px-3 text-[15px] font-semibold text-dark-gray shadow-sm transition hover:border-brand-green/40 hover:text-brand-green disabled:cursor-not-allowed disabled:opacity-45",
             )}
             aria-label="이전 페이지"
           >
@@ -43,7 +43,7 @@ export function PlacesSearchPagination({
         ) : null}
       </div>
 
-      <span className="shrink-0 px-2 text-center text-[17px] font-medium text-brand-green">
+      <span className="shrink-0 rounded-full bg-brand-green/[0.08] px-3 py-1.5 text-center text-[14px] font-semibold text-brand-green">
         {pageLabel}
       </span>
 
@@ -54,7 +54,7 @@ export function PlacesSearchPagination({
             disabled={disabled}
             onClick={onNext}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-0.5 text-[17px] font-medium text-dark-gray transition hover:text-brand-green disabled:cursor-not-allowed disabled:opacity-50",
+              "inline-flex h-9 cursor-pointer items-center gap-1 rounded-full border border-gray-border bg-white px-3 text-[15px] font-semibold text-dark-gray shadow-sm transition hover:border-brand-green/40 hover:text-brand-green disabled:cursor-not-allowed disabled:opacity-45",
             )}
             aria-label="다음 페이지"
           >
