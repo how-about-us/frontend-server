@@ -3,6 +3,7 @@
 import { MapPin } from "lucide-react";
 
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
+import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import {
   buildGoogleMapsPlaceUrl,
@@ -47,6 +48,14 @@ export function BookmarkPlacePreviewCard({
       alt={name}
       className="h-full w-full object-cover"
       loading="lazy"
+      onError={(event) =>
+        logPlacePhotoImageError({
+          source: "bookmark-preview-card",
+          googlePlaceId,
+          placeName: name,
+          image: event.currentTarget,
+        })
+      }
     />
   ) : (
     <div className="flex h-full w-full items-center justify-center">

@@ -2,8 +2,7 @@
 
 import { Star, MapPin } from "lucide-react";
 import type { SearchResultCardProps } from "@/types/place";
-import { useInViewport } from "@/hooks/useInViewport";
-import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
+import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
 import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
@@ -15,8 +14,8 @@ export function SearchResultCard({
   userRatingCount,
   isOpen,
   image,
-  photoName,
   address,
+  googlePlaceId,
   onClick,
   className,
   variant = "list",
@@ -27,14 +26,6 @@ export function SearchResultCard({
   variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
-  const { ref: thumbnailRef, isInViewport } = useInViewport<HTMLDivElement>({
-    enabled: showThumbnail && Boolean(photoName?.trim()) && !image,
-  });
-  const { data: lazyImage } = usePlacePhotoUrlQuery(photoName, {
-    enabled: showThumbnail && isInViewport && !image,
-  });
-  const resolvedImage = image ?? lazyImage?.trim();
-
   return (
     <article
       className={cn(
@@ -97,18 +88,25 @@ export function SearchResultCard({
 
       {showThumbnail ? (
         <div
-          ref={thumbnailRef}
           className={cn(
             "shrink-0 overflow-hidden rounded-lg bg-light-gray",
             "h-[80px] w-[80px]",
           )}
         >
-          {resolvedImage ? (
+          {image ? (
             <img
-              src={resolvedImage}
+              src={image}
               alt={name}
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={(event) =>
+                logPlacePhotoImageError({
+                  source: "search-result-card",
+                  googlePlaceId,
+                  placeName: name,
+                  image: event.currentTarget,
+                })
+              }
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

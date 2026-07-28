@@ -23,6 +23,7 @@ import {
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
+import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
 import {
   formatScheduleStaySummary,
   formatScheduleTimeRange,
@@ -333,6 +334,14 @@ export function PlanPlaceCard({
               className="object-cover"
               sizes="96px"
               draggable={false}
+              onError={(event) =>
+                logPlacePhotoImageError({
+                  source: "plan-place-card",
+                  googlePlaceId: place.googlePlaceId,
+                  placeName: place.title,
+                  image: event.currentTarget,
+                })
+              }
             />
           ) : null;
 
