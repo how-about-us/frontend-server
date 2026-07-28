@@ -7,9 +7,6 @@ import {
   searchPlaces,
   type PlaceSearchItem,
 } from "@/lib/api/places";
-import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
-import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
-import { getQueryClient } from "@/lib/query-client";
 import type { SearchResultCardProps } from "@/types/place";
 
 export type PlaceSearchResult = SearchResultCardProps & {
@@ -55,29 +52,7 @@ export async function fetchPlacesPageWithPhotos(args: {
   });
 
   const itemsBase = rawItems.map((item) => mapPlaceSearchItem(item));
-  const googlePlaceIds = rawItems
-    .map((item) => item.googlePlaceId?.trim() ?? "")
-    .filter((id) => id.length > 0);
-
-  if (googlePlaceIds.length) {
-    await fetchAndSeedPlacePhotoUrls(googlePlaceIds, getQueryClient());
-  }
-
-  const items = itemsBase.map((base, index) => {
-    const googlePlaceId = rawItems[index]?.googlePlaceId?.trim();
-    let imageUrl: string | undefined;
-    if (googlePlaceId) {
-      const cached = getQueryClient()?.getQueryData<string>(
-        placePhotoUrlQueryKey(googlePlaceId),
-      );
-      if (typeof cached === "string" && cached.trim().length > 0) {
-        imageUrl = cached.trim();
-      }
-    }
-    return { ...base, image: imageUrl };
-  });
-
-  return { items, nextPageToken };
+  return { items: itemsBase, nextPageToken };
 }
 
 export function placesSearchQueryKey(

@@ -1,6 +1,8 @@
 "use client";
 
 import { Star, MapPin } from "lucide-react";
+import { useInViewport } from "@/hooks/useInViewport";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import type { SearchResultCardProps } from "@/types/place";
 import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,14 @@ export function SearchResultCard({
   variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>({
+    enabled: showThumbnail,
+  });
+  const { data: lazyImage } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: showThumbnail && thumbnailInViewport && !image,
+  });
+  const resolvedImage = image ?? lazyImage;
+
   return (
     <article
       className={cn(
@@ -88,14 +98,15 @@ export function SearchResultCard({
 
       {showThumbnail ? (
         <div
+          ref={thumbnailRef}
           className={cn(
             "shrink-0 overflow-hidden rounded-lg bg-light-gray",
             "h-[80px] w-[80px]",
           )}
         >
-          {image ? (
+          {resolvedImage ? (
             <img
-              src={image}
+              src={resolvedImage}
               alt={name}
               className="h-full w-full object-cover"
               loading="lazy"

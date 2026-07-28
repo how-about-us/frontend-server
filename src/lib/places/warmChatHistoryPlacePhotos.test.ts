@@ -12,7 +12,7 @@ describe("warmPlacePhotoQueriesFromChatHistory", () => {
     fetchAndSeedPlacePhotoUrls.mockReset();
   });
 
-  it("warms photo URLs by googlePlaceId and ignores stale metadata photoName values", async () => {
+  it("does not warm photo URLs before place cards enter the viewport", async () => {
     const { warmPlacePhotoQueriesFromChatHistory } = await import(
       "@/lib/places/warmChatHistoryPlacePhotos"
     );
@@ -57,10 +57,6 @@ describe("warmPlacePhotoQueriesFromChatHistory", () => {
       },
     ]);
 
-    expect(fetchAndSeedPlacePhotoUrls).toHaveBeenCalledTimes(1);
-    expect(fetchAndSeedPlacePhotoUrls).toHaveBeenCalledWith(
-      ["ChIJ-share", "ChIJ-ai"],
-      queryClient,
-    );
+    expect(fetchAndSeedPlacePhotoUrls).not.toHaveBeenCalled();
   });
 });

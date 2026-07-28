@@ -9,7 +9,6 @@ import {
 import { getRoomSchedules } from "@/lib/api/rooms/schedules";
 import { isBatchItemOk } from "@/lib/api/batch-types";
 import {
-  fetchAndSeedPlacePhotoUrls,
   fetchAndSeedPlacePreviews,
 } from "@/lib/places/place-batch-cache";
 import type { PlacePreview } from "@/lib/api/places";
@@ -187,16 +186,6 @@ function collectGooglePlaceIdsFromSchedules(
   return [...ids];
 }
 
-function collectPhotoPlaceIdsFromPlanPlaces(places: readonly PlanPlace[]): string[] {
-  const ids = new Set<string>();
-  for (const place of places) {
-    const id =
-      typeof place.googlePlaceId === "string" ? place.googlePlaceId.trim() : "";
-    if (id.length) ids.add(id);
-  }
-  return [...ids];
-}
-
 export async function hydrateScheduleItemsFromSchedulesWithItems(
   queryClient: QueryClient,
   roomId: string,
@@ -210,8 +199,6 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
     await fetchAndSeedPlacePreviews(placeIds, queryClient);
   }
 
-  const photoPlaceIds: string[] = [];
-
   for (const schedule of schedules) {
     const sid = schedule.scheduleId;
     if (typeof sid !== "number" || !Number.isFinite(sid)) continue;
@@ -222,11 +209,6 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
       items,
     );
     queryClient.setQueryData(scheduleItemsQueryKey(rid, sid), places);
-    photoPlaceIds.push(...collectPhotoPlaceIdsFromPlanPlaces(places));
-  }
-
-  if (photoPlaceIds.length) {
-    await fetchAndSeedPlacePhotoUrls(photoPlaceIds, queryClient);
   }
 }
 

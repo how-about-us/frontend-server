@@ -2,6 +2,7 @@
 
 import { MapPin, Star } from "lucide-react";
 
+import { useInViewport } from "@/hooks/useInViewport";
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
 import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
@@ -31,7 +32,10 @@ export function OgPlacePreviewCard({
 }: OgPlacePreviewCardProps) {
   const typo = resolveChatMessageTypography(isMinimized);
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId);
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>();
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: thumbnailInViewport,
+  });
 
   return (
     <button
@@ -44,6 +48,7 @@ export function OgPlacePreviewCard({
       )}
     >
       <div
+        ref={thumbnailRef}
         className={cn(
           "shrink-0 overflow-hidden bg-light-gray",
           isMinimized ? "h-[72px] w-[72px]" : "h-[88px] w-[88px]",
