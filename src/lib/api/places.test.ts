@@ -35,6 +35,20 @@ describe("place photo API requests", () => {
     expect(requestedUrl.searchParams.has("photoName")).toBe(false);
   });
 
+  it("requests a refreshed single photo URL when refresh is true", async () => {
+    const { requestPlacePhotoUrl } = await import("@/lib/api/places");
+    apiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ photoUrl: "https://cdn.example/fresh.jpg" }),
+    });
+
+    await requestPlacePhotoUrl("ChIJ-place-1", { refresh: true });
+
+    const requestedUrl = new URL(apiFetch.mock.calls[0]![0] as string);
+    expect(requestedUrl.searchParams.get("googlePlaceId")).toBe("ChIJ-place-1");
+    expect(requestedUrl.searchParams.get("refresh")).toBe("true");
+  });
+
   it("requests batch photo URLs with googlePlaceIds and reads googlePlaceId response items", async () => {
     const { requestPlacePhotoUrlsBatch } = await import("@/lib/api/places");
     apiFetch.mockResolvedValueOnce({
@@ -68,5 +82,22 @@ describe("place photo API requests", () => {
         photoUrl: "https://cdn.example/one.jpg",
       },
     ]);
+  });
+
+  it("requests refreshed batch photo URLs when refresh is true", async () => {
+    const { requestPlacePhotoUrlsBatch } = await import("@/lib/api/places");
+    apiFetch.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      json: async () => ({ photos: [] }),
+    });
+
+    await requestPlacePhotoUrlsBatch(["ChIJ-place-1"], { refresh: true });
+
+    const init = apiFetch.mock.calls[0]![1] as RequestInit & { body: string };
+    expect(JSON.parse(init.body)).toEqual({
+      googlePlaceIds: ["ChIJ-place-1"],
+      refresh: true,
+    });
   });
 });

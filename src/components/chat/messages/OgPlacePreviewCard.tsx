@@ -4,7 +4,7 @@ import { MapPin, Star } from "lucide-react";
 
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
-import { logPlacePhotoImageError } from "@/lib/debug/photo-url-events";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import { cn } from "@/lib/utils";
 
 export type OgPlacePreviewCardProps = {
@@ -57,7 +57,7 @@ export function OgPlacePreviewCard({
             className="h-full w-full object-cover"
             loading="lazy"
             onError={(event) =>
-              logPlacePhotoImageError({
+              handlePlacePhotoImageError({
                 source: "chat-og-place-card",
                 googlePlaceId,
                 placeName: name,

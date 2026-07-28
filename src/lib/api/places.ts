@@ -189,11 +189,15 @@ export async function requestPlacePreview(
 
 export async function requestPlacePhotoUrl(
   googlePlaceId: string,
+  options?: { refresh?: boolean },
 ): Promise<string> {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   countPhotoRequest("photoUrl", 1, [id]);
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("googlePlaceId", id);
+  if (options?.refresh === true) {
+    url.searchParams.set("refresh", "true");
+  }
 
   const res = await apiFetch(url.toString());
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
@@ -235,11 +239,15 @@ export async function requestPlacePreviewsBatch(
 
 async function requestPlacePhotoUrlsBatchChunk(
   googlePlaceIds: string[],
+  options?: { refresh?: boolean },
 ): Promise<PlacePhotoUrlBatchItem[]> {
   countPhotoRequest("photoUrlsBatch", googlePlaceIds.length, googlePlaceIds);
   const res = await apiFetch(apiUrl("/places/photos/batch"), {
     method: "POST",
-    ...jsonBody({ googlePlaceIds }),
+    ...jsonBody({
+      googlePlaceIds,
+      ...(options?.refresh === true ? { refresh: true } : {}),
+    }),
   });
   if (res.status === 204) return [];
   if (!res.ok) {
@@ -253,6 +261,7 @@ async function requestPlacePhotoUrlsBatchChunk(
 
 export async function requestPlacePhotoUrlsBatch(
   googlePlaceIds: readonly string[],
+  options?: { refresh?: boolean },
 ): Promise<PlacePhotoUrlBatchItem[]> {
   const ids = [
     ...new Set(
@@ -266,7 +275,7 @@ export async function requestPlacePhotoUrlsBatch(
   const chunks = chunkArray(ids, PLACE_BATCH_MAX_SIZE);
   const out: PlacePhotoUrlBatchItem[] = [];
   for (const chunk of chunks) {
-    out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk)));
+    out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk, options)));
   }
   return out;
 }
