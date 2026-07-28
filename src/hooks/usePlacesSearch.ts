@@ -7,16 +7,11 @@ import {
   searchPlaces,
   type PlaceSearchItem,
 } from "@/lib/api/places";
-import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
-import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
-import { getQueryClient } from "@/lib/query-client";
 import type { SearchResultCardProps } from "@/types/place";
 
 export type PlaceSearchResult = SearchResultCardProps & {
   googlePlaceId: string;
   location: { lat: number; lng: number };
-  /** 채팅으로 공유 시 STOMP payload 에 그대로 전달되는 원본 photoName */
-  photoName: string;
 };
 
 export type PlaceSearchPage = {
@@ -36,7 +31,6 @@ function mapPlaceSearchItem(
     userRatingCount: item.userRatingCount,
     isOpen: item.openNow,
     location: item.location,
-    photoName: item.photoName ?? "",
   };
 }
 
@@ -58,29 +52,7 @@ export async function fetchPlacesPageWithPhotos(args: {
   });
 
   const itemsBase = rawItems.map((item) => mapPlaceSearchItem(item));
-  const photoNames = rawItems
-    .map((item) => item.photoName?.trim() ?? "")
-    .filter((name) => name.length > 0);
-
-  if (photoNames.length) {
-    await fetchAndSeedPlacePhotoUrls(photoNames, getQueryClient());
-  }
-
-  const items = itemsBase.map((base, index) => {
-    const photoName = rawItems[index]?.photoName?.trim();
-    let imageUrl: string | undefined;
-    if (photoName) {
-      const cached = getQueryClient()?.getQueryData<string>(
-        placePhotoUrlQueryKey(photoName),
-      );
-      if (typeof cached === "string" && cached.trim().length > 0) {
-        imageUrl = cached.trim();
-      }
-    }
-    return { ...base, image: imageUrl };
-  });
-
-  return { items, nextPageToken };
+  return { items: itemsBase, nextPageToken };
 }
 
 export function placesSearchQueryKey(

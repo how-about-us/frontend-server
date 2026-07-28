@@ -40,7 +40,6 @@ describe("toPlaceDetailResult", () => {
         photosUri: null,
       },
       regularOpeningHours: null,
-      photoNames: [],
       reviewSummary: null,
       reviews: [],
     };

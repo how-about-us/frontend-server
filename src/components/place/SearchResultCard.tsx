@@ -1,7 +1,10 @@
 "use client";
 
 import { Star, MapPin } from "lucide-react";
+import { useInViewport } from "@/hooks/useInViewport";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import type { SearchResultCardProps } from "@/types/place";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
@@ -14,6 +17,7 @@ export function SearchResultCard({
   isOpen,
   image,
   address,
+  googlePlaceId,
   onClick,
   className,
   variant = "list",
@@ -24,13 +28,21 @@ export function SearchResultCard({
   variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>({
+    enabled: showThumbnail,
+  });
+  const { data: lazyImage } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: showThumbnail && thumbnailInViewport && !image,
+  });
+  const resolvedImage = image ?? lazyImage;
+
   return (
     <article
       className={cn(
         "flex items-center gap-3 bg-white transition-colors",
         variant === "tile"
           ? "cursor-pointer rounded-2xl border border-gray-border px-4 py-3 shadow-sm hover:bg-gray-50 active:bg-bubble-gray/60"
-          : "border-b border-gray-border px-4 py-2 hover:bg-gray-50 active:bg-gray-100",
+          : "border-b border-gray-border px-5 py-3 hover:bg-gray-50 active:bg-gray-100",
         className,
       )}
       onClick={onClick}
@@ -86,17 +98,26 @@ export function SearchResultCard({
 
       {showThumbnail ? (
         <div
+          ref={thumbnailRef}
           className={cn(
             "shrink-0 overflow-hidden rounded-lg bg-light-gray",
-            "h-[80px] w-[80px]",
+            variant === "tile" ? "h-[80px] w-[80px]" : "h-[88px] w-[88px]",
           )}
         >
-          {image ? (
+          {resolvedImage ? (
             <img
-              src={image}
+              src={resolvedImage}
               alt={name}
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={(event) =>
+                handlePlacePhotoImageError({
+                  source: "search-result-card",
+                  googlePlaceId,
+                  placeName: name,
+                  image: event.currentTarget,
+                })
+              }
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">

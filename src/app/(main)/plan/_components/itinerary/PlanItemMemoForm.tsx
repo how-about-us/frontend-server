@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 
 import { MemoIcon } from "@/components/icons";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useUpdateScheduleItem } from "@/hooks/useRooms";
@@ -160,29 +160,31 @@ export function PlanItemMemoEditor({
   onClose,
 }: PlanItemMemoEditorProps) {
   const incomingMemo = memo ?? "";
-  const editStartMemoRef = useRef(incomingMemo);
+  const [editStartMemo, setEditStartMemo] = useState(incomingMemo);
   const [draft, setDraft] = useState(incomingMemo);
   const [hasRemoteConflict, setHasRemoteConflict] = useState(false);
   const [overwriteDialogOpen, setOverwriteDialogOpen] = useState(false);
   const { mutateAsync, isPending } = useUpdateScheduleItem();
 
+  /* eslint-disable react-hooks/set-state-in-effect -- 서버 메모 변경을 편집 draft와 충돌 상태에 동기화합니다. */
   useEffect(() => {
-    if (!isLocallyDirty(draft, editStartMemoRef.current)) {
+    if (!isLocallyDirty(draft, editStartMemo)) {
       setDraft(incomingMemo);
-      editStartMemoRef.current = incomingMemo;
+      setEditStartMemo(incomingMemo);
       setHasRemoteConflict(false);
       return;
     }
 
     if (
       normalizeMemoDraft(incomingMemo) !==
-      normalizeMemoDraft(editStartMemoRef.current)
+      normalizeMemoDraft(editStartMemo)
     ) {
       setHasRemoteConflict(true);
     }
-  }, [incomingMemo, draft]);
+  }, [incomingMemo, draft, editStartMemo]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const dirty = isLocallyDirty(draft, editStartMemoRef.current);
+  const dirty = isLocallyDirty(draft, editStartMemo);
 
   const commitSave = useCallback(async () => {
     const next = normalizeMemoDraft(draft);
@@ -197,7 +199,7 @@ export function PlanItemMemoEditor({
         itemId,
         body: { memo: next.length > 0 ? next : "" },
       });
-      editStartMemoRef.current = next;
+      setEditStartMemo(next);
       setHasRemoteConflict(false);
       setOverwriteDialogOpen(false);
       toast.success(
@@ -257,7 +259,7 @@ export function PlanItemMemoEditor({
               type="button"
               onClick={() => {
                 setDraft(incomingMemo);
-                editStartMemoRef.current = normalizeMemoDraft(incomingMemo);
+                setEditStartMemo(normalizeMemoDraft(incomingMemo));
                 setHasRemoteConflict(false);
                 onClose();
               }}

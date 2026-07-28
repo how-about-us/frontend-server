@@ -84,7 +84,6 @@ export function useChatActions() {
           latitude: place.latitude,
           longitude: place.longitude,
           name: place.name,
-          photoName: place.photoName,
           rating: place.rating,
         }),
       });

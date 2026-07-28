@@ -316,8 +316,8 @@ export function AddFromBookmarkModal({
                       key={bookmarkId}
                       name={preview.name}
                       address={preview.formattedAddress}
-                      photoName={preview.photoName}
                       primaryTypeDisplayName={preview.primaryTypeDisplayName}
+                      googlePlaceId={googlePlaceId}
                       className={cn(
                         "w-full border-x-0 px-5",
                         alreadyAdded && "opacity-50",

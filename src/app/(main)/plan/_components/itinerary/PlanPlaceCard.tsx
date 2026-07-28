@@ -9,6 +9,7 @@ import { MemoIcon } from "@/components/icons";
 import { toast } from "sonner";
 
 import { usePlanMobileReadOnly } from "@/hooks/usePlanMobileReadOnly";
+import { useInViewport } from "@/hooks/useInViewport";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import {
   useDeleteScheduleItem,
@@ -22,6 +23,7 @@ import {
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
 import { PLAN_PLACE_CARD_TW } from "@/lib/layout-tokens";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import {
   formatScheduleStaySummary,
   formatScheduleTimeRange,
@@ -71,7 +73,10 @@ export function PlanPlaceCard({
   const { setSelectedPlace } = useSelectedPlace();
   const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
   const blockCardDragRef = useRef(false);
-  const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place);
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLElement>();
+  const { resolvedPhotoUrl, photoLoading } = usePlanPlaceCardPhoto(place, {
+    enabled: thumbnailInViewport,
+  });
 
   const [memoOpen, setMemoOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
@@ -324,17 +329,28 @@ export function PlanPlaceCard({
               className="object-cover"
               sizes="96px"
               draggable={false}
+              onError={(event) =>
+                handlePlacePhotoImageError({
+                  source: "plan-place-card",
+                  googlePlaceId: place.googlePlaceId,
+                  placeName: place.title,
+                  image: event.currentTarget,
+                })
+              }
             />
           ) : null;
 
           if (!googleMapsPlaceUrl) {
             return (
-              <div className={PLAN_PLACE_CARD_TW.thumbnail}>{media}</div>
+              <div ref={thumbnailRef} className={PLAN_PLACE_CARD_TW.thumbnail}>
+                {media}
+              </div>
             );
           }
 
           return (
             <a
+              ref={thumbnailRef}
               href={googleMapsPlaceUrl}
               target="_blank"
               rel="noopener noreferrer"

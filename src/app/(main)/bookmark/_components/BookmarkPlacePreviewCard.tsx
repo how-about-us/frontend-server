@@ -2,8 +2,10 @@
 
 import { MapPin } from "lucide-react";
 
+import { useInViewport } from "@/hooks/useInViewport";
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import {
   buildGoogleMapsPlaceUrl,
   normalizeGooglePlaceResourceId,
@@ -13,7 +15,6 @@ import { cn } from "@/lib/utils";
 export type BookmarkPlacePreviewCardProps = {
   name: string;
   address?: string;
-  photoName?: string;
   primaryTypeDisplayName?: string;
   /** 있으면 사진 클릭 시 Google Maps로 이동 */
   googlePlaceId?: string;
@@ -25,14 +26,16 @@ export type BookmarkPlacePreviewCardProps = {
 export function BookmarkPlacePreviewCard({
   name,
   address,
-  photoName,
   primaryTypeDisplayName,
   googlePlaceId,
   onClick,
   className,
   contentClassName,
 }: BookmarkPlacePreviewCardProps) {
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLElement>();
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: thumbnailInViewport,
+  });
 
   const rawGid = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   const googleMapsPlaceUrl = rawGid.length
@@ -49,6 +52,14 @@ export function BookmarkPlacePreviewCard({
       alt={name}
       className="h-full w-full object-cover"
       loading="lazy"
+      onError={(event) =>
+        handlePlacePhotoImageError({
+          source: "bookmark-preview-card",
+          googlePlaceId,
+          placeName: name,
+          image: event.currentTarget,
+        })
+      }
     />
   ) : (
     <div className="flex h-full w-full items-center justify-center">
@@ -91,6 +102,7 @@ export function BookmarkPlacePreviewCard({
 
       {googleMapsPlaceUrl ? (
         <a
+          ref={thumbnailRef}
           href={googleMapsPlaceUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -109,7 +121,10 @@ export function BookmarkPlacePreviewCard({
           </span>
         </a>
       ) : (
-        <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray">
+        <div
+          ref={thumbnailRef}
+          className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray"
+        >
           {thumbnailMedia}
         </div>
       )}

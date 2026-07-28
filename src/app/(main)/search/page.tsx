@@ -252,7 +252,6 @@ export default function SearchPage() {
         formattedAddress: result.address ?? "",
         latitude: result.location.lat,
         longitude: result.location.lng,
-        photoName: result.photoName,
         rating: result.rating ?? 0,
       });
       toast.success("장소를 채팅으로 보냈어요");
@@ -437,12 +436,22 @@ export default function SearchPage() {
                   <SearchResultCard
                     {...result}
                     variant="list"
-                    className="box-border h-[88px] w-full shrink-0"
+                    className="box-border min-h-[112px] w-full shrink-0"
                     onClick={() => handleCardClick(result, index)}
                   />
                 </li>
               ))}
             </ul>
+            {showPagination ? (
+              <PlacesSearchPagination
+                hasPrevious={hasPreviousPage}
+                hasNext={hasNextPage}
+                pageLabel={`${pageIndex + 1}페이지`}
+                onPrevious={goToPreviousPage}
+                onNext={goToNextPage}
+                disabled={isFetching}
+              />
+            ) : null}
             {isFetching && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/50">
                 <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
@@ -451,17 +460,6 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-
-      {showPagination ? (
-        <PlacesSearchPagination
-          hasPrevious={hasPreviousPage}
-          hasNext={hasNextPage}
-          pageLabel={`${pageIndex + 1}페이지`}
-          onPrevious={goToPreviousPage}
-          onNext={goToNextPage}
-          disabled={isFetching}
-        />
-      ) : null}
     </div>
   );
 }

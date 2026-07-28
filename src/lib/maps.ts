@@ -256,6 +256,28 @@ function toGmTravelMode(
   }
 }
 
+type PlanRoutePlacesLibrary = {
+  Place: new (options: { id: string }) => unknown;
+};
+
+type PlanRouteComputeResponse = {
+  routes?: Array<{
+    path?: Array<{ lat: number; lng: number }>;
+  }>;
+};
+
+type PlanRoutesLibrary = {
+  Route: {
+    computeRoutes(options: {
+      origin: unknown;
+      destination: unknown;
+      travelMode: google.maps.TravelMode;
+      fields: string[];
+      polylineQuality: "OVERVIEW";
+    }): Promise<PlanRouteComputeResponse>;
+  };
+};
+
 /**
  * Routes `path`가 출발/도착과 반대일 때 뒤집습니다.
  * 폴리라인·화살표가 일정 순서(작은 번호 → 큰 번호) 방향을 가리키게 합니다.
@@ -281,6 +303,32 @@ export function orientPathSmallerStopToLarger(
   return pts;
 }
 
+const PLAN_ROUTE_CONNECTOR_MIN_METERS = 5;
+
+export function buildPlanItineraryRouteConnectorPaths({
+  path,
+  origin,
+  dest,
+}: {
+  path: readonly google.maps.LatLngLiteral[];
+  origin: google.maps.LatLngLiteral | undefined;
+  dest: google.maps.LatLngLiteral | undefined;
+}): google.maps.LatLngLiteral[][] {
+  if (!origin || !dest) return [];
+  if (path.length === 0) return [[origin, dest]];
+
+  const first = path[0]!;
+  const last = path[path.length - 1]!;
+  const out: google.maps.LatLngLiteral[][] = [];
+  if (haversineMeters(origin, first) >= PLAN_ROUTE_CONNECTOR_MIN_METERS) {
+    out.push([origin, first]);
+  }
+  if (haversineMeters(last, dest) >= PLAN_ROUTE_CONNECTOR_MIN_METERS) {
+    out.push([last, dest]);
+  }
+  return out;
+}
+
 /**
  * 일정 두 장소(Place ID) 구간 경로 좌표 — Maps JS Route.computeRoutes.
  */
@@ -295,8 +343,8 @@ export async function fetchPlanSegmentPathLatLng(
 
   try {
     const [{ Place }, { Route }] = await Promise.all([
-      google.maps.importLibrary("places"),
-      google.maps.importLibrary("routes"),
+      google.maps.importLibrary("places") as unknown as Promise<PlanRoutePlacesLibrary>,
+      google.maps.importLibrary("routes") as unknown as Promise<PlanRoutesLibrary>,
     ]);
     const { routes } = await Route.computeRoutes({
       origin: new Place({ id: o }),
@@ -349,6 +397,27 @@ export function buildPlanItineraryRouteArrowIcons(
         scale: 3,
       },
       repeat: "70px",
+    },
+  ];
+}
+
+export function buildPlanItineraryRouteConnectorDotIcons(
+  routeStrokeHex: string,
+): google.maps.IconSequence[] {
+  const color = routeStrokeHex.trim() || "#f12d33";
+  return [
+    {
+      icon: {
+        path: 0 satisfies google.maps.SymbolPath,
+        fillColor: color,
+        fillOpacity: 0.8,
+        strokeColor: "#ffffff",
+        strokeOpacity: 0.95,
+        strokeWeight: 1,
+        scale: 5,
+      },
+      offset: "0",
+      repeat: "18px",
     },
   ];
 }

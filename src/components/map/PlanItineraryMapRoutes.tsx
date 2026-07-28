@@ -9,6 +9,8 @@ import { useEffect, useMemo, type JSX } from "react";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useRoomSchedules } from "@/hooks/useRooms";
 import {
+  buildPlanItineraryRouteConnectorDotIcons,
+  buildPlanItineraryRouteConnectorPaths,
   buildPlanItineraryRouteArrowIcons,
   fetchOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
@@ -175,8 +177,9 @@ export function PlanItineraryMapRoutes() {
 
   const polylines: Array<JSX.Element> = [];
   segments.forEach((seg, segIdx) => {
-    const pts = pathsPerSegmentQueries[segIdx]?.data;
-    if (!pts?.length) return;
+    const query = pathsPerSegmentQueries[segIdx];
+    if (!query || query.isPending || query.isFetching) return;
+    const pts = query.data ?? [];
 
     const segEpochKey = planMapSegmentEpochStoreKey(
       rid,
@@ -188,17 +191,38 @@ export function PlanItineraryMapRoutes() {
     const routeColor =
       routeColorByScheduleId.get(seg.scheduleId) ?? fallbackRouteStroke;
 
-    polylines.push(
-      <Polyline
-        key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${seg.travelModeCanon}-${directionsEpoch}-${segEpoch}`}
-        zIndex={40 + segIdx}
-        strokeColor={routeColor}
-        strokeOpacity={0.8}
-        strokeWeight={8}
-        path={pts}
-        icons={buildPlanItineraryRouteArrowIcons(routeColor)}
-      />,
-    );
+    if (pts.length) {
+      polylines.push(
+        <Polyline
+          key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${seg.travelModeCanon}-${directionsEpoch}-${segEpoch}`}
+          zIndex={40 + segIdx}
+          strokeColor={routeColor}
+          strokeOpacity={0.8}
+          strokeWeight={8}
+          path={pts}
+          icons={buildPlanItineraryRouteArrowIcons(routeColor)}
+        />,
+      );
+    }
+
+    const connectorPaths = buildPlanItineraryRouteConnectorPaths({
+      path: pts,
+      origin: seg.originLocation,
+      dest: seg.destLocation,
+    });
+    connectorPaths.forEach((connectorPath, connectorIdx) => {
+      polylines.push(
+        <Polyline
+          key={`${seg.scheduleId}-${seg.segmentSourceItemId}-${seg.travelModeCanon}-${directionsEpoch}-${segEpoch}-connector-${connectorIdx}`}
+          zIndex={35 + segIdx}
+          strokeColor={routeColor}
+          strokeOpacity={0}
+          strokeWeight={8}
+          path={connectorPath}
+          icons={buildPlanItineraryRouteConnectorDotIcons(routeColor)}
+        />,
+      );
+    });
   });
 
   const stopsForOffset = useMemo(() => {
@@ -283,7 +307,7 @@ export function PlanItineraryMapRoutes() {
         <PlanItineraryStopMapPin
           orderLabel={stop.orderIndex + 1}
           pinColor={dayColor}
-          className="cursor-pointer scale-90 select-none"
+          className="cursor-pointer select-none"
         />
       </AdvancedMarker>,
     );

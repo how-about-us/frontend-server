@@ -53,6 +53,6 @@ export function TravelRouteSummaryLine({
     );
   }
   if (isError) return "이동 시간을 불러오지 못했어요";
-  if (routeUnavailable) return "이 구간은 이동 안내를 제공하지 않아요";
+  if (routeUnavailable) return "이동 안내 없음";
   return "다음 장소로 이동";
 }

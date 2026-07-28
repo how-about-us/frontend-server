@@ -45,7 +45,6 @@ export function BookmarkPlaceRow({
     id,
     name,
     address,
-    photoName,
     primaryTypeDisplayName,
     googlePlaceId,
   } = place;
@@ -163,7 +162,6 @@ export function BookmarkPlaceRow({
       <BookmarkPlacePreviewCard
         name={name}
         address={address}
-        photoName={photoName}
         primaryTypeDisplayName={primaryTypeDisplayName}
         googlePlaceId={googlePlaceId}
         className="min-w-0 w-full border-0 hover:bg-gray-50 active:bg-gray-100"

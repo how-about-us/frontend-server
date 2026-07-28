@@ -1,7 +1,7 @@
 /** 맵 북마크·일차·일반 핀 공통 크기·테두리 */
-export const MAP_PIN_DISPLAY_SIZE_PX = 36;
+export const MAP_PIN_DISPLAY_SIZE_PX = 42;
 /** 선택된 장소 마커 — 일반 핀보다 약간 크게 */
-export const MAP_PIN_SELECTED_DISPLAY_SIZE_PX = 42;
+export const MAP_PIN_SELECTED_DISPLAY_SIZE_PX = 50;
 
 export const MAP_PIN_BORDER_STROKE = "#ffffff";
 

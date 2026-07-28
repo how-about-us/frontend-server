@@ -2,14 +2,16 @@
 
 import { MapPin, Star } from "lucide-react";
 
+import { useInViewport } from "@/hooks/useInViewport";
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
+import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 import { cn } from "@/lib/utils";
 
 export type OgPlacePreviewCardProps = {
   name: string;
   formattedAddress: string;
-  photoName: string;
+  googlePlaceId: string;
   /** Google 평점. null/omit 시 "-" */
   rating?: number | null;
   userRatingCount?: number | null;
@@ -21,7 +23,7 @@ export type OgPlacePreviewCardProps = {
 export function OgPlacePreviewCard({
   name,
   formattedAddress,
-  photoName,
+  googlePlaceId,
   rating = null,
   userRatingCount,
   isMinimized = false,
@@ -30,7 +32,10 @@ export function OgPlacePreviewCard({
 }: OgPlacePreviewCardProps) {
   const typo = resolveChatMessageTypography(isMinimized);
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>();
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: thumbnailInViewport,
+  });
 
   return (
     <button
@@ -43,6 +48,7 @@ export function OgPlacePreviewCard({
       )}
     >
       <div
+        ref={thumbnailRef}
         className={cn(
           "shrink-0 overflow-hidden bg-light-gray",
           isMinimized ? "h-[72px] w-[72px]" : "h-[88px] w-[88px]",
@@ -55,6 +61,14 @@ export function OgPlacePreviewCard({
             alt={name}
             className="h-full w-full object-cover"
             loading="lazy"
+            onError={(event) =>
+              handlePlacePhotoImageError({
+                source: "chat-og-place-card",
+                googlePlaceId,
+                placeName: name,
+                image: event.currentTarget,
+              })
+            }
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
