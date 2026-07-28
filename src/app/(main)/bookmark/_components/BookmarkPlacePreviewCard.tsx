@@ -2,6 +2,7 @@
 
 import { MapPin } from "lucide-react";
 
+import { useInViewport } from "@/hooks/useInViewport";
 import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { MAIN_CARD_INNER_PADDING_X_CLASS } from "@/lib/layout-tokens";
 import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
@@ -31,7 +32,10 @@ export function BookmarkPlacePreviewCard({
   className,
   contentClassName,
 }: BookmarkPlacePreviewCardProps) {
-  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId);
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLElement>();
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: thumbnailInViewport,
+  });
 
   const rawGid = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   const googleMapsPlaceUrl = rawGid.length
@@ -98,6 +102,7 @@ export function BookmarkPlacePreviewCard({
 
       {googleMapsPlaceUrl ? (
         <a
+          ref={thumbnailRef}
           href={googleMapsPlaceUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -116,7 +121,10 @@ export function BookmarkPlacePreviewCard({
           </span>
         </a>
       ) : (
-        <div className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray">
+        <div
+          ref={thumbnailRef}
+          className="h-[80px] w-[80px] shrink-0 overflow-hidden rounded-lg bg-light-gray"
+        >
           {thumbnailMedia}
         </div>
       )}

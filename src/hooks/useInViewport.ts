@@ -1,41 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export function useInViewport<T extends Element = HTMLElement>(options?: {
+export function useInViewport<T extends Element>(options?: {
   enabled?: boolean;
   rootMargin?: string;
-}) {
-  const enabled = options?.enabled ?? true;
-  const rootMargin = options?.rootMargin ?? "200px";
+}): [(node: T | null) => void, boolean] {
   const [node, setNode] = useState<T | null>(null);
-  const [hasIntersected, setHasIntersected] = useState(false);
-
-  const ref = useCallback((nextNode: T | null) => {
-    setNode(nextNode);
-  }, []);
+  const [inViewport, setInViewport] = useState(false);
+  const enabled = options?.enabled ?? true;
+  const rootMargin = options?.rootMargin ?? "240px";
+  const supportsIntersectionObserver =
+    typeof IntersectionObserver !== "undefined";
 
   useEffect(() => {
-    if (!enabled || hasIntersected) return;
+    if (!enabled) {
+      return;
+    }
     if (!node) return;
-
-    if (typeof IntersectionObserver === "undefined") {
-      queueMicrotask(() => setHasIntersected(true));
+    if (!supportsIntersectionObserver) {
       return;
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setHasIntersected(true);
-        observer.disconnect();
+        if (entry?.isIntersecting) {
+          setInViewport(true);
+          observer.disconnect();
+        }
       },
       { rootMargin },
     );
-
     observer.observe(node);
     return () => observer.disconnect();
-  }, [enabled, hasIntersected, node, rootMargin]);
+  }, [enabled, node, rootMargin, supportsIntersectionObserver]);
 
-  return { ref, isInViewport: hasIntersected };
+  return [setNode, enabled && (!supportsIntersectionObserver || inViewport)];
 }

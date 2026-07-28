@@ -1,49 +1,64 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { searchPlaces } from "@/lib/api/places";
+const apiFetch = vi.fn();
+const fetchAndSeedPlacePhotoUrls = vi.fn();
 
-import { fetchPlacesPageWithPhotos } from "./usePlacesSearch";
+vi.mock("@/lib/api/client", () => ({
+  apiFetch,
+}));
 
-vi.mock("@/lib/api/places", () => ({
-  searchPlaces: vi.fn(),
+vi.mock("@/lib/api/config", () => ({
+  API_BASE: "https://api.example.test",
+}));
+
+vi.mock("@/lib/debug/photo-metrics", () => ({
+  countPhotoRequest: vi.fn(),
+  countCacheFilter: vi.fn(),
+}));
+
+vi.mock("@/lib/places/place-batch-cache", () => ({
+  fetchAndSeedPlacePhotoUrls,
 }));
 
 describe("fetchPlacesPageWithPhotos", () => {
-  it("검색 결과에서는 사진 URL을 미리 batch로 요청하지 않고 photoName만 반환한다", async () => {
-    vi.mocked(searchPlaces).mockResolvedValueOnce({
-      nextPageToken: null,
-      items: [
-        {
-          googlePlaceId: "places/abc",
-          name: "성수 카페",
-          formattedAddress: "서울 성동구",
-          location: { lat: 37.5, lng: 127 },
-          primaryType: "cafe",
-          primaryTypeDisplayName: "카페",
-          rating: 4.6,
-          userRatingCount: 12,
-          openNow: true,
-          photoName: "places/abc/photos/one",
-        },
-      ],
+  beforeEach(() => {
+    apiFetch.mockReset();
+    fetchAndSeedPlacePhotoUrls.mockReset();
+  });
+
+  it("does not prefetch photo URLs for the full search result page", async () => {
+    const { fetchPlacesPageWithPhotos } = await import("@/hooks/usePlacesSearch");
+    apiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        items: [
+          {
+            googlePlaceId: "ChIJ-place-1",
+            name: "Place one",
+            formattedAddress: "서울",
+            location: { lat: 37.5, lng: 127.0 },
+            primaryType: "restaurant",
+            primaryTypeDisplayName: "음식점",
+            rating: 4.5,
+            userRatingCount: 10,
+            openNow: true,
+          },
+        ],
+        nextPageToken: null,
+      }),
     });
 
     const page = await fetchPlacesPageWithPhotos({
-      query: "카페",
+      query: "맛집",
       latitude: 37.5,
-      longitude: 127,
-      radius: 1000,
-      pageSize: 20,
+      longitude: 127.0,
+      radius: undefined,
+      pageSize: 10,
       pageToken: undefined,
     });
 
-    expect(page.items[0]).toEqual(
-      expect.objectContaining({
-        googlePlaceId: "places/abc",
-        name: "성수 카페",
-        photoName: "places/abc/photos/one",
-      }),
-    );
+    expect(fetchAndSeedPlacePhotoUrls).not.toHaveBeenCalled();
+    expect(page.items[0]?.googlePlaceId).toBe("ChIJ-place-1");
     expect(page.items[0]).not.toHaveProperty("image");
   });
 });

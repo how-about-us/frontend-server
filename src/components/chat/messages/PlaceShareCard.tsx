@@ -1,10 +1,11 @@
 "use client";
 
-import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { OgPlacePreviewCard } from "@/components/chat/messages/OgPlacePreviewCard";
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useMapCenterStore } from "@/stores/map-center-store";
 import { useSessionUser } from "@/hooks/useSessionUser";
+import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
+import { getQueryClient } from "@/lib/query-client";
 import { cn } from "@/lib/utils";
 import { chatMessageChrome } from "@/components/chat/chat-message-chrome";
 import { resolveChatMessageTypography } from "@/components/chat/chat-typography";
@@ -28,7 +29,11 @@ export function PlaceShareCard({
   const senderUserId = message.senderUserId;
   const isMine = myId != null && senderUserId != null && senderUserId === myId;
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.googlePlaceId);
+  const imageUrl = place?.googlePlaceId
+    ? getQueryClient()?.getQueryData<string>(
+        placePhotoUrlQueryKey(place.googlePlaceId),
+      )
+    : undefined;
 
   if (!place) return null;
   const p = place;

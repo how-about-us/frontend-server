@@ -11,7 +11,10 @@ import {
 } from "@/lib/place-photo-query";
 import { getQueryClient } from "@/lib/query-client";
 
-export function usePlacePhotoUrlQuery(googlePlaceId: string | null | undefined) {
+export function usePlacePhotoUrlQuery(
+  googlePlaceId: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
   return useQuery({
     queryKey: placePhotoUrlQueryKey(id),
@@ -28,7 +31,7 @@ export function usePlacePhotoUrlQuery(googlePlaceId: string | null | undefined) 
       const seeded = queryClient?.getQueryData<string>(placePhotoUrlQueryKey(id));
       return typeof seeded === "string" ? seeded.trim() : "";
     },
-    enabled: id.length > 0,
+    enabled: id.length > 0 && (options?.enabled ?? true),
     ...placePhotoUrlQueryDefaults,
   });
 }
