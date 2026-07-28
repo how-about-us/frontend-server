@@ -11,11 +11,6 @@ vi.mock("@/lib/api/config", () => ({
   API_BASE: "https://api.example.test",
 }));
 
-vi.mock("@/lib/debug/photo-metrics", () => ({
-  countPhotoRequest: vi.fn(),
-  countCacheFilter: vi.fn(),
-}));
-
 vi.mock("@/lib/places/place-batch-cache", () => ({
   fetchAndSeedPlacePhotoUrls,
 }));

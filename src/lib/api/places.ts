@@ -3,8 +3,6 @@ import { apiFetch } from "./client";
 import { chunkArray, PLACE_BATCH_MAX_SIZE } from "./batch-chunk";
 import { readUserFacingMessageFromApiBody } from "./errors";
 import { apiUrl, jsonBody, requestJson, tryParseJson } from "./http";
-// [임시 계측] chore/gcp-photo-metrics 브랜치와 함께 폐기
-import { countPhotoRequest } from "@/lib/debug/photo-metrics";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -192,7 +190,6 @@ export async function requestPlacePhotoUrl(
   options?: { refresh?: boolean },
 ): Promise<string> {
   const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
-  countPhotoRequest("photoUrl", 1, [id]);
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("googlePlaceId", id);
   if (options?.refresh === true) {
@@ -213,7 +210,6 @@ export async function requestPlacePhotoUrl(
 async function requestPlacePreviewsBatchChunk(
   googlePlaceIds: string[],
 ): Promise<PlacePreviewBatchItem[]> {
-  countPhotoRequest("previewsBatch", googlePlaceIds.length);
   const data = await requestJson<PlacePreviewBatchResponse>(
     apiUrl("/places/previews/batch"),
     { method: "POST", ...jsonBody({ googlePlaceIds }) },
@@ -246,7 +242,6 @@ async function requestPlacePhotoUrlsBatchChunk(
   googlePlaceIds: string[],
   options?: { refresh?: boolean },
 ): Promise<PlacePhotoUrlBatchItem[]> {
-  countPhotoRequest("photoUrlsBatch", googlePlaceIds.length, googlePlaceIds);
   const res = await apiFetch(apiUrl("/places/photos/batch"), {
     method: "POST",
     ...jsonBody({

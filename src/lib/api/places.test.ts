@@ -10,10 +10,6 @@ vi.mock("@/lib/api/config", () => ({
   API_BASE: "https://api.example.test",
 }));
 
-vi.mock("@/lib/debug/photo-metrics", () => ({
-  countPhotoRequest: vi.fn(),
-}));
-
 describe("place photo API requests", () => {
   beforeEach(() => {
     apiFetch.mockReset();

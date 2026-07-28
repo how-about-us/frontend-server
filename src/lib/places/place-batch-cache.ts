@@ -10,8 +10,6 @@ import {
   requestPlacePreviewsBatch,
 } from "@/lib/api/places";
 import { isBatchItemError, isBatchItemOk } from "@/lib/api/batch-types";
-// [임시 계측] chore/gcp-photo-metrics 브랜치와 함께 폐기
-import { countCacheFilter } from "@/lib/debug/photo-metrics";
 import {
   placePhotoUrlQueryDefaults,
   placePhotoUrlQueryKey,
@@ -238,7 +236,6 @@ export async function fetchAndSeedPlacePreviews(
   if (!qc) return;
 
   const missing = uncachedPreviewIds(qc, googlePlaceIds);
-  countCacheFilter("previews", googlePlaceIds.length, missing.length);
   if (!missing.length) return;
 
   const toFetch: string[] = [];
@@ -288,7 +285,6 @@ export async function fetchAndSeedPlacePhotoUrls(
   if (!qc) return;
 
   const missing = uncachedPhotoPlaceIds(qc, googlePlaceIds);
-  countCacheFilter("photoUrls", googlePlaceIds.length, missing.length);
   if (!missing.length) return;
 
   const toFetch: string[] = [];
