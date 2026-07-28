@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export type OgPlacePreviewCardProps = {
   name: string;
   formattedAddress: string;
-  photoName: string;
+  googlePlaceId: string;
   /** Google 평점. null/omit 시 "-" */
   rating?: number | null;
   userRatingCount?: number | null;
@@ -21,7 +21,7 @@ export type OgPlacePreviewCardProps = {
 export function OgPlacePreviewCard({
   name,
   formattedAddress,
-  photoName,
+  googlePlaceId,
   rating = null,
   userRatingCount,
   isMinimized = false,
@@ -30,7 +30,7 @@ export function OgPlacePreviewCard({
 }: OgPlacePreviewCardProps) {
   const typo = resolveChatMessageTypography(isMinimized);
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(googlePlaceId);
 
   return (
     <button

@@ -114,7 +114,6 @@ export function PlaceDetailPanel({
       formattedAddress: address ?? detailData?.formattedAddress ?? "",
       latitude: loc.lat,
       longitude: loc.lng,
-      photoName: detailData?.photoName ?? "",
       rating: displayRating ?? 0,
     });
     toast.success("장소를 채팅으로 보냈어요");
@@ -124,7 +123,6 @@ export function PlaceDetailPanel({
     canSend,
     detailData?.formattedAddress,
     detailData?.location,
-    detailData?.photoName,
     displayName,
     displayRating,
     googlePlaceId,
@@ -136,7 +134,6 @@ export function PlaceDetailPanel({
   const phone = detailData?.phone;
   const website = detailData?.websiteUri;
   const hours = detailData?.weekdayDescriptions?.join("\n");
-  const photoNames = detailData?.photoNames ?? [];
   const openNow = detailData?.openNow ?? propIsOpen;
   const userRatingCount = detailData?.userRatingCount ?? propUserRatingCount;
   const reviewSummary = detailData?.reviewSummary ?? propReviewSummary;
@@ -151,7 +148,7 @@ export function PlaceDetailPanel({
           <HeroSkeleton />
         ) : (
           <HeroImage
-            photoNames={photoNames}
+            googlePlaceId={googlePlaceId}
             fallbackImage={image}
             name={displayName}
           />

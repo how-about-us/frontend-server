@@ -7,13 +7,14 @@ import {
   searchPlaces,
   type PlaceSearchItem,
 } from "@/lib/api/places";
+import { fetchAndSeedPlacePhotoUrls } from "@/lib/places/place-batch-cache";
+import { placePhotoUrlQueryKey } from "@/lib/place-photo-query";
+import { getQueryClient } from "@/lib/query-client";
 import type { SearchResultCardProps } from "@/types/place";
 
 export type PlaceSearchResult = SearchResultCardProps & {
   googlePlaceId: string;
   location: { lat: number; lng: number };
-  /** 채팅으로 공유 시 STOMP payload 에 그대로 전달되는 원본 photoName */
-  photoName: string;
 };
 
 export type PlaceSearchPage = {
@@ -33,7 +34,6 @@ function mapPlaceSearchItem(
     userRatingCount: item.userRatingCount,
     isOpen: item.openNow,
     location: item.location,
-    photoName: item.photoName ?? "",
   };
 }
 
@@ -54,7 +54,28 @@ export async function fetchPlacesPageWithPhotos(args: {
     pageToken: args.pageToken,
   });
 
-  const items = rawItems.map((item) => mapPlaceSearchItem(item));
+  const itemsBase = rawItems.map((item) => mapPlaceSearchItem(item));
+  const googlePlaceIds = rawItems
+    .map((item) => item.googlePlaceId?.trim() ?? "")
+    .filter((id) => id.length > 0);
+
+  if (googlePlaceIds.length) {
+    await fetchAndSeedPlacePhotoUrls(googlePlaceIds, getQueryClient());
+  }
+
+  const items = itemsBase.map((base, index) => {
+    const googlePlaceId = rawItems[index]?.googlePlaceId?.trim();
+    let imageUrl: string | undefined;
+    if (googlePlaceId) {
+      const cached = getQueryClient()?.getQueryData<string>(
+        placePhotoUrlQueryKey(googlePlaceId),
+      );
+      if (typeof cached === "string" && cached.trim().length > 0) {
+        imageUrl = cached.trim();
+      }
+    }
+    return { ...base, image: imageUrl };
+  });
 
   return { items, nextPageToken };
 }

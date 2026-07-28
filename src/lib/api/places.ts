@@ -18,7 +18,6 @@ export type PlaceSearchItem = {
   rating: number;
   userRatingCount: number;
   openNow: boolean;
-  photoName: string | null;
 };
 
 export type PlaceSearchPageResponse = {
@@ -59,18 +58,12 @@ export type PlaceDetail = {
     nextOpenTime?: string;
     nextCloseTime?: string;
   } | null;
-  photoNames: string[];
   reviewSummary: string | null;
   reviews: PlaceReview[];
 };
 
 export type PlacePhotoResponse = {
-  photoUrl: string;
-};
-
-/** Raw JSON from `GET /places/{googlePlaceId}/photo-names` */
-export type PlacePhotoNamesResponse = {
-  photoNames: string[];
+  photoUrl: string | null;
 };
 
 /** Raw JSON from `GET /places/{googlePlaceId}/preview` */
@@ -79,7 +72,6 @@ export type PlacePreviewResponse = {
   name: string;
   formattedAddress: string;
   location: { latitude: number; longitude: number } | null;
-  photoName: string | null;
   primaryType: string;
   primaryTypeDisplayName: string;
 };
@@ -90,7 +82,6 @@ export type PlacePreview = {
   name: string;
   formattedAddress: string;
   location?: { lat: number; lng: number };
-  photoName?: string;
   primaryType?: string;
   primaryTypeDisplayName?: string;
 };
@@ -104,7 +95,6 @@ export type PlacePreviewBatchItem =
       name: string;
       formattedAddress: string;
       location: { latitude: number; longitude: number } | null;
-      photoName: string | null;
       primaryType: string;
       primaryTypeDisplayName: string;
     })
@@ -121,30 +111,14 @@ export type PlacePreviewBatchResponse = {
   items?: PlacePreviewBatchItem[];
 };
 
-export type PlacePhotoNamesBatchItem =
+export type PlacePhotoUrlBatchItem =
   | {
       status: "OK";
       googlePlaceId: string;
-      photoName: string;
+      photoUrl?: string | null;
       errorCode?: string | null;
     }
-  | {
-      status: "ERROR";
-      googlePlaceId: string;
-      errorCode?: string;
-      photoName?: string | null;
-    };
-
-export type PlacePhotoNamesBatchResponse = {
-  /** 서버 명세 — `POST /places/photo-names/batch` */
-  photoNames?: PlacePhotoNamesBatchItem[];
-  /** 레거시·내부 호환 */
-  items?: PlacePhotoNamesBatchItem[];
-};
-
-export type PlacePhotoUrlBatchItem =
-  | { status: "OK"; photoName: string; photoUrl: string; errorCode?: string | null }
-  | { status: "ERROR"; photoName: string; errorCode?: string };
+  | { status: "ERROR" | "FAILED"; googlePlaceId: string; errorCode?: string };
 
 export type PlacePhotoUrlBatchResponse = {
   /** 서버 명세 — `POST /places/photos/batch` */
@@ -213,27 +187,18 @@ export async function requestPlacePreview(
   return res.json();
 }
 
-export async function requestPlacePhotoNames(
+export async function requestPlacePhotoUrl(
   googlePlaceId: string,
-): Promise<string[]> {
-  countPhotoRequest("photoNames", 1);
-  const res = await apiFetch(
-    `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}/photo-names`,
-  );
-  if (!res.ok) throw new Error(`Place photo-names failed: ${res.status}`);
-  const data: PlacePhotoNamesResponse = await res.json();
-  return Array.isArray(data.photoNames) ? data.photoNames : [];
-}
-
-export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
-  countPhotoRequest("photoUrl", 1, [photoName]);
+): Promise<string> {
+  const id = typeof googlePlaceId === "string" ? googlePlaceId.trim() : "";
+  countPhotoRequest("photoUrl", 1, [id]);
   const url = new URL(`${API_BASE}/places/photos`);
-  url.searchParams.set("photoName", photoName);
+  url.searchParams.set("googlePlaceId", id);
 
   const res = await apiFetch(url.toString());
   if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
   const data: PlacePhotoResponse = await res.json();
-  return data.photoUrl;
+  return typeof data.photoUrl === "string" ? data.photoUrl : "";
 }
 
 async function requestPlacePreviewsBatchChunk(
@@ -268,45 +233,13 @@ export async function requestPlacePreviewsBatch(
   return out;
 }
 
-async function requestPlacePhotoNamesBatchChunk(
-  googlePlaceIds: string[],
-): Promise<PlacePhotoNamesBatchItem[]> {
-  countPhotoRequest("photoNamesBatch", googlePlaceIds.length);
-  const data = await requestJson<PlacePhotoNamesBatchResponse>(
-    apiUrl("/places/photo-names/batch"),
-    { method: "POST", ...jsonBody({ googlePlaceIds }) },
-    { errorMessage: "장소 사진 이름 일괄 조회 실패" },
-  );
-  return readBatchResponseList<PlacePhotoNamesBatchItem>(data, "photoNames");
-}
-
-export async function requestPlacePhotoNamesBatch(
-  googlePlaceIds: readonly string[],
-): Promise<PlacePhotoNamesBatchItem[]> {
-  const ids = [
-    ...new Set(
-      googlePlaceIds
-        .map((id) => (typeof id === "string" ? id.trim() : ""))
-        .filter((id) => id.length > 0),
-    ),
-  ];
-  if (!ids.length) return [];
-
-  const chunks = chunkArray(ids, PLACE_BATCH_MAX_SIZE);
-  const out: PlacePhotoNamesBatchItem[] = [];
-  for (const chunk of chunks) {
-    out.push(...(await requestPlacePhotoNamesBatchChunk(chunk)));
-  }
-  return out;
-}
-
 async function requestPlacePhotoUrlsBatchChunk(
-  photoNames: string[],
+  googlePlaceIds: string[],
 ): Promise<PlacePhotoUrlBatchItem[]> {
-  countPhotoRequest("photoUrlsBatch", photoNames.length, photoNames);
+  countPhotoRequest("photoUrlsBatch", googlePlaceIds.length, googlePlaceIds);
   const res = await apiFetch(apiUrl("/places/photos/batch"), {
     method: "POST",
-    ...jsonBody({ photoNames }),
+    ...jsonBody({ googlePlaceIds }),
   });
   if (res.status === 204) return [];
   if (!res.ok) {
@@ -319,18 +252,18 @@ async function requestPlacePhotoUrlsBatchChunk(
 }
 
 export async function requestPlacePhotoUrlsBatch(
-  photoNames: readonly string[],
+  googlePlaceIds: readonly string[],
 ): Promise<PlacePhotoUrlBatchItem[]> {
-  const names = [
+  const ids = [
     ...new Set(
-      photoNames
-        .map((n) => (typeof n === "string" ? n.trim() : ""))
-        .filter((n) => n.length > 0),
+      googlePlaceIds
+        .map((id) => (typeof id === "string" ? id.trim() : ""))
+        .filter((id) => id.length > 0),
     ),
   ];
-  if (!names.length) return [];
+  if (!ids.length) return [];
 
-  const chunks = chunkArray(names, PLACE_BATCH_MAX_SIZE);
+  const chunks = chunkArray(ids, PLACE_BATCH_MAX_SIZE);
   const out: PlacePhotoUrlBatchItem[] = [];
   for (const chunk of chunks) {
     out.push(...(await requestPlacePhotoUrlsBatchChunk(chunk)));

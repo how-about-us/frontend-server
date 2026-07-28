@@ -28,7 +28,7 @@ export function PlaceShareCard({
   const senderUserId = message.senderUserId;
   const isMine = myId != null && senderUserId != null && senderUserId === myId;
 
-  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.photoName);
+  const { data: imageUrl } = usePlacePhotoUrlQuery(place?.googlePlaceId);
 
   if (!place) return null;
   const p = place;
@@ -53,7 +53,7 @@ export function PlaceShareCard({
     <OgPlacePreviewCard
       name={p.name}
       formattedAddress={p.formattedAddress}
-      photoName={p.photoName}
+      googlePlaceId={p.googlePlaceId}
       rating={p.rating}
       isMinimized={isMinimized}
       onClick={handleClick}
