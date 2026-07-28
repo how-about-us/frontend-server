@@ -3,6 +3,8 @@ import { apiFetch } from "./client";
 import { chunkArray, PLACE_BATCH_MAX_SIZE } from "./batch-chunk";
 import { readUserFacingMessageFromApiBody } from "./errors";
 import { apiUrl, jsonBody, requestJson, tryParseJson } from "./http";
+// [임시 계측] chore/gcp-photo-metrics 브랜치와 함께 폐기
+import { countPhotoRequest } from "@/lib/debug/photo-metrics";
 
 // ─── Response types ────────────────────────────────────────────────────────
 
@@ -214,6 +216,7 @@ export async function requestPlacePreview(
 export async function requestPlacePhotoNames(
   googlePlaceId: string,
 ): Promise<string[]> {
+  countPhotoRequest("photoNames", 1);
   const res = await apiFetch(
     `${API_BASE}/places/${encodeURIComponent(googlePlaceId)}/photo-names`,
   );
@@ -223,6 +226,7 @@ export async function requestPlacePhotoNames(
 }
 
 export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
+  countPhotoRequest("photoUrl", 1, [photoName]);
   const url = new URL(`${API_BASE}/places/photos`);
   url.searchParams.set("photoName", photoName);
 
@@ -235,6 +239,7 @@ export async function requestPlacePhotoUrl(photoName: string): Promise<string> {
 async function requestPlacePreviewsBatchChunk(
   googlePlaceIds: string[],
 ): Promise<PlacePreviewBatchItem[]> {
+  countPhotoRequest("previewsBatch", googlePlaceIds.length);
   const data = await requestJson<PlacePreviewBatchResponse>(
     apiUrl("/places/previews/batch"),
     { method: "POST", ...jsonBody({ googlePlaceIds }) },
@@ -266,6 +271,7 @@ export async function requestPlacePreviewsBatch(
 async function requestPlacePhotoNamesBatchChunk(
   googlePlaceIds: string[],
 ): Promise<PlacePhotoNamesBatchItem[]> {
+  countPhotoRequest("photoNamesBatch", googlePlaceIds.length);
   const data = await requestJson<PlacePhotoNamesBatchResponse>(
     apiUrl("/places/photo-names/batch"),
     { method: "POST", ...jsonBody({ googlePlaceIds }) },
@@ -297,6 +303,7 @@ export async function requestPlacePhotoNamesBatch(
 async function requestPlacePhotoUrlsBatchChunk(
   photoNames: string[],
 ): Promise<PlacePhotoUrlBatchItem[]> {
+  countPhotoRequest("photoUrlsBatch", photoNames.length, photoNames);
   const res = await apiFetch(apiUrl("/places/photos/batch"), {
     method: "POST",
     ...jsonBody({ photoNames }),
