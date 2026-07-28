@@ -49,6 +49,32 @@ describe("place photo API requests", () => {
     expect(requestedUrl.searchParams.get("refresh")).toBe("true");
   });
 
+  it("returns an empty photo URL for a disabled single photo response", async () => {
+    const { requestPlacePhotoUrl } = await import("@/lib/api/places");
+    apiFetch.mockResolvedValueOnce({
+      status: 204,
+      ok: true,
+      json: async () => {
+        throw new Error("body should not be parsed");
+      },
+    });
+
+    await expect(requestPlacePhotoUrl("ChIJ-place-1")).resolves.toBe("");
+  });
+
+  it("includes the API error detail when a single photo request fails", async () => {
+    const { requestPlacePhotoUrl } = await import("@/lib/api/places");
+    apiFetch.mockResolvedValueOnce({
+      status: 500,
+      ok: false,
+      json: async () => ({ message: "Google photo refresh failed" }),
+    });
+
+    await expect(requestPlacePhotoUrl("ChIJ-place-1")).rejects.toThrow(
+      "Google photo refresh failed",
+    );
+  });
+
   it("requests batch photo URLs with googlePlaceIds and reads googlePlaceId response items", async () => {
     const { requestPlacePhotoUrlsBatch } = await import("@/lib/api/places");
     apiFetch.mockResolvedValueOnce({

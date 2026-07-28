@@ -200,7 +200,12 @@ export async function requestPlacePhotoUrl(
   }
 
   const res = await apiFetch(url.toString());
-  if (!res.ok) throw new Error(`Place photo failed: ${res.status}`);
+  if (res.status === 204) return "";
+  if (!res.ok) {
+    const body = await tryParseJson(res);
+    const detail = readUserFacingMessageFromApiBody(body);
+    throw new Error(detail ?? `Place photo failed: ${res.status}`);
+  }
   const data: PlacePhotoResponse = await res.json();
   return typeof data.photoUrl === "string" ? data.photoUrl : "";
 }
