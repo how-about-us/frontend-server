@@ -7,6 +7,21 @@ import { getQueryClient } from "@/lib/query-client";
 
 const inFlightRefreshByPlaceId = new Map<string, Promise<string>>();
 
+function describeUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack,
+    };
+  }
+  return {
+    errorName: typeof error,
+    errorMessage: String(error),
+    errorStack: null,
+  };
+}
+
 export async function refreshPlacePhotoUrl(
   googlePlaceId: string,
   queryClient?: QueryClient | null,
@@ -55,14 +70,21 @@ export function handlePlacePhotoImageError(args: {
     .then((freshUrl) => {
       if (freshUrl && args.image.isConnected) {
         args.image.src = freshUrl;
+        return;
       }
+      console.warn("[PHOTO-URL] refresh empty", {
+        source: args.source,
+        googlePlaceId: id,
+        placeName: args.placeName ?? null,
+        imageConnected: args.image.isConnected,
+      });
     })
     .catch((error: unknown) => {
       console.warn("[PHOTO-URL] refresh failed", {
         source: args.source,
         googlePlaceId: id,
         placeName: args.placeName ?? null,
-        error,
+        ...describeUnknownError(error),
       });
     });
 }
