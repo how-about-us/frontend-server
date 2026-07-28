@@ -442,6 +442,16 @@ export default function SearchPage() {
                 </li>
               ))}
             </ul>
+            {showPagination ? (
+              <PlacesSearchPagination
+                hasPrevious={hasPreviousPage}
+                hasNext={hasNextPage}
+                pageLabel={`${pageIndex + 1}페이지`}
+                onPrevious={goToPreviousPage}
+                onNext={goToNextPage}
+                disabled={isFetching}
+              />
+            ) : null}
             {isFetching && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/50">
                 <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
@@ -450,17 +460,6 @@ export default function SearchPage() {
           </div>
         )}
       </div>
-
-      {showPagination ? (
-        <PlacesSearchPagination
-          hasPrevious={hasPreviousPage}
-          hasNext={hasNextPage}
-          pageLabel={`${pageIndex + 1}페이지`}
-          onPrevious={goToPreviousPage}
-          onNext={goToNextPage}
-          disabled={isFetching}
-        />
-      ) : null}
     </div>
   );
 }
