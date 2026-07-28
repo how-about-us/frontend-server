@@ -42,7 +42,7 @@ export function SearchResultCard({
         "flex items-center gap-3 bg-white transition-colors",
         variant === "tile"
           ? "cursor-pointer rounded-2xl border border-gray-border px-4 py-3 shadow-sm hover:bg-gray-50 active:bg-bubble-gray/60"
-          : "border-b border-gray-border px-4 py-2 hover:bg-gray-50 active:bg-gray-100",
+          : "border-b border-gray-border px-5 py-3 hover:bg-gray-50 active:bg-gray-100",
         className,
       )}
       onClick={onClick}
@@ -101,7 +101,7 @@ export function SearchResultCard({
           ref={thumbnailRef}
           className={cn(
             "shrink-0 overflow-hidden rounded-lg bg-light-gray",
-            "h-[80px] w-[80px]",
+            variant === "tile" ? "h-[80px] w-[80px]" : "h-[88px] w-[88px]",
           )}
         >
           {resolvedImage ? (

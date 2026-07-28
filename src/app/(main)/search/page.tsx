@@ -436,7 +436,7 @@ export default function SearchPage() {
                   <SearchResultCard
                     {...result}
                     variant="list"
-                    className="box-border h-[88px] w-full shrink-0"
+                    className="box-border min-h-[112px] w-full shrink-0"
                     onClick={() => handleCardClick(result, index)}
                   />
                 </li>
