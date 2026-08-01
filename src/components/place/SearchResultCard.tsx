@@ -9,6 +9,52 @@ import { cn } from "@/lib/utils";
 
 export type { SearchResultCardProps } from "@/types/place";
 
+function SearchResultThumbnail({
+  name,
+  image,
+  googlePlaceId,
+  variant,
+}: Pick<SearchResultCardProps, "name" | "image" | "googlePlaceId"> & {
+  variant: "list" | "tile";
+}) {
+  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>();
+  const { data: lazyImage } = usePlacePhotoUrlQuery(googlePlaceId, {
+    enabled: thumbnailInViewport && !image,
+  });
+  const resolvedImage = image ?? lazyImage;
+
+  return (
+    <div
+      ref={thumbnailRef}
+      className={cn(
+        "shrink-0 overflow-hidden rounded-lg bg-light-gray",
+        variant === "tile" ? "h-[80px] w-[80px]" : "h-[88px] w-[88px]",
+      )}
+    >
+      {resolvedImage ? (
+        <img
+          src={resolvedImage}
+          alt={name}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={(event) =>
+            handlePlacePhotoImageError({
+              source: "search-result-card",
+              googlePlaceId,
+              placeName: name,
+              image: event.currentTarget,
+            })
+          }
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <MapPin className="h-6 w-6 text-gray-300" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SearchResultCard({
   name,
   category,
@@ -28,14 +74,6 @@ export function SearchResultCard({
   variant?: "list" | "tile";
   showThumbnail?: boolean;
 }) {
-  const [thumbnailRef, thumbnailInViewport] = useInViewport<HTMLDivElement>({
-    enabled: showThumbnail,
-  });
-  const { data: lazyImage } = usePlacePhotoUrlQuery(googlePlaceId, {
-    enabled: showThumbnail && thumbnailInViewport && !image,
-  });
-  const resolvedImage = image ?? lazyImage;
-
   return (
     <article
       className={cn(
@@ -97,34 +135,12 @@ export function SearchResultCard({
       </div>
 
       {showThumbnail ? (
-        <div
-          ref={thumbnailRef}
-          className={cn(
-            "shrink-0 overflow-hidden rounded-lg bg-light-gray",
-            variant === "tile" ? "h-[80px] w-[80px]" : "h-[88px] w-[88px]",
-          )}
-        >
-          {resolvedImage ? (
-            <img
-              src={resolvedImage}
-              alt={name}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              onError={(event) =>
-                handlePlacePhotoImageError({
-                  source: "search-result-card",
-                  googlePlaceId,
-                  placeName: name,
-                  image: event.currentTarget,
-                })
-              }
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <MapPin className="h-6 w-6 text-gray-300" />
-            </div>
-          )}
-        </div>
+        <SearchResultThumbnail
+          name={name}
+          image={image}
+          googlePlaceId={googlePlaceId}
+          variant={variant}
+        />
       ) : null}
     </article>
   );
