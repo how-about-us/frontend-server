@@ -436,6 +436,7 @@ export default function SearchPage() {
                   <SearchResultCard
                     {...result}
                     variant="list"
+                    showThumbnail={false}
                     className="box-border min-h-[112px] w-full shrink-0"
                     onClick={() => handleCardClick(result, index)}
                   />

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePlacePhotoUrlsQuery } from "@/hooks/usePlacePhotoUrl";
+import { usePlacePhotoUrlQuery } from "@/hooks/usePlacePhotoUrl";
 import { handlePlacePhotoImageError } from "@/lib/places/place-photo-refresh";
 
 export function HeroSkeleton() {
@@ -16,8 +16,8 @@ export function HeroImage({
   fallbackImage?: string;
   name: string;
 }) {
-  const { photoUrls } = usePlacePhotoUrlsQuery(googlePlaceId ? [googlePlaceId] : []);
-  const photoUrl = photoUrls[0] ?? fallbackImage ?? null;
+  const { data: queriedPhotoUrl } = usePlacePhotoUrlQuery(googlePlaceId);
+  const photoUrl = queriedPhotoUrl || fallbackImage || null;
 
   if (!photoUrl) {
     return <div className="h-full bg-light-gray" />;
