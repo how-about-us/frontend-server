@@ -87,7 +87,8 @@ describe("hydrateScheduleRoutesBatch", () => {
       scheduleItemsQueryKey(ROOM_ID, SCHEDULE_ID),
       snapshot,
     );
-    const { encodedPolyline: _omitted, ...withoutPolyline } = routeResult;
+    const withoutPolyline = { ...routeResult };
+    delete (withoutPolyline as { encodedPolyline?: string }).encodedPolyline;
     getScheduleItemRoutesBatchMock.mockResolvedValue([withoutPolyline]);
 
     await hydrateScheduleRoutesBatch(queryClient, ROOM_ID, SCHEDULE_ID, snapshot);
