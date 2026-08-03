@@ -220,6 +220,7 @@ function batchRouteItemToResponse(
     distanceMeters: item.distanceMeters,
     durationSeconds: item.durationSeconds,
     travelMode: item.travelMode,
+    ...(item.encodedPolyline ? { encodedPolyline: item.encodedPolyline } : {}),
   };
 }
 

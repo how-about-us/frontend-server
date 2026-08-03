@@ -12,9 +12,11 @@ import {
   buildPlanItineraryRouteConnectorDotIcons,
   buildPlanItineraryRouteConnectorPaths,
   buildPlanItineraryRouteArrowIcons,
-  fetchOrientedPlanItinerarySegmentPath,
+  decodeOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
+import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import {
   scheduleIdsToRouteColors,
@@ -122,6 +124,17 @@ export function PlanItineraryMapRoutes() {
     buckets,
   );
 
+  /**
+   * sessionStorage 시드가 일정 변경 뒤 엇나가지 않도록 리스트와 같은 지문을 넘깁니다.
+   * `buckets`는 매 렌더 새로 만들어지므로 memo 없이 그때그때 계산합니다.
+   */
+  const fingerprintByScheduleId = new Map<number, string>(
+    orderedScheduleIdsForQueries.map((scheduleId, bucketIdx) => [
+      scheduleId,
+      schedulePlacesFingerprint(buckets[bucketIdx] ?? []),
+    ]),
+  );
+
   const pathsPerSegmentQueries = useQueries({
     queries: segments.map((seg) => {
       const epochKey = planMapSegmentEpochStoreKey(
@@ -142,7 +155,30 @@ export function PlanItineraryMapRoutes() {
           directionsEpoch,
           segmentEpoch,
         ),
-        queryFn: () => fetchOrientedPlanItinerarySegmentPath(seg),
+        /**
+         * 구간 경로는 일정 리스트와 같은 쿼리를 통해 가져옵니다. `fetchQuery`에 맡겨야
+         * in-flight 합치기와 재정렬 중 뒤늦게 온 응답 폐기를 React Query가 처리합니다.
+         */
+        queryFn: async () => {
+          const route = await queryClient.fetchQuery(
+            persistedScheduleItemRouteQueryOptions(
+              rid,
+              seg.scheduleId,
+              seg.segmentSourceItemId,
+              seg.travelModeCanon,
+              fingerprintByScheduleId.get(seg.scheduleId) ?? "",
+              { segmentReady: true },
+            ),
+          );
+          /** 경로 없음과 "경로는 있는데 폴리라인이 없음"을 구분해야 렌더링 경고가 정확해집니다. */
+          return {
+            path: await decodeOrientedPlanItinerarySegmentPath(
+              seg,
+              route?.encodedPolyline,
+            ),
+            hasRoute: route != null,
+          };
+        },
         enabled: rid.length > 0 && segments.length > 0,
         staleTime: Infinity,
         refetchOnMount: false,
@@ -159,9 +195,13 @@ export function PlanItineraryMapRoutes() {
         const status =
           !query || query.isPending || query.isFetching
             ? "loading"
-            : query.isError || !query.data?.length
+            : query.isError
               ? "unavailable"
-              : "available";
+              : !query.data?.hasRoute
+                ? "no-route"
+                : !query.data.path.length
+                  ? "unavailable"
+                  : "available";
         return {
           scheduleId: seg.scheduleId,
           segmentSourceItemId: seg.segmentSourceItemId,
@@ -179,7 +219,7 @@ export function PlanItineraryMapRoutes() {
   segments.forEach((seg, segIdx) => {
     const query = pathsPerSegmentQueries[segIdx];
     if (!query || query.isPending || query.isFetching) return;
-    const pts = query.data ?? [];
+    const pts = query.data?.path ?? [];
 
     const segEpochKey = planMapSegmentEpochStoreKey(
       rid,

@@ -8,7 +8,10 @@ type PlanMapSegmentEpochEntry = {
 export type PlanMapRouteRenderStatus =
   | "loading"
   | "available"
-  | "unavailable";
+  /** 경로는 있는데 폴리라인을 그릴 수 없음 — 렌더링 경고 대상 */
+  | "unavailable"
+  /** 구간에 경로 자체가 없음 — 요약이 이미 "이동 안내 없음"을 알리므로 경고하지 않음 */
+  | "no-route";
 
 type PlanMapRouteRenderStatusEntry = PlanMapSegmentEpochEntry & {
   status: PlanMapRouteRenderStatus;

@@ -2,10 +2,6 @@
 
 import { clampPlacesSearchRadiusMeters } from "@/lib/places/placesSearchRadius";
 import type { PlanItinerarySegmentDescriptor } from "@/lib/plan/planItineraryMapSegments";
-import {
-  SCHEDULE_TRAVEL_MODE_DEFAULT,
-  canonicalScheduleTravelMode,
-} from "@/lib/plan/scheduleTravelMode";
 
 const STORAGE_KEY = "hau:destination-center-v1";
 
@@ -236,45 +232,9 @@ export function shouldSuggestPlacesSearchRecenter(params: {
   return dist > threshold || zoomDelta >= 1;
 }
 
-function toGmTravelMode(
-  modeRaw: string | undefined,
-): google.maps.TravelMode {
-  const c =
-    canonicalScheduleTravelMode(modeRaw) ?? SCHEDULE_TRAVEL_MODE_DEFAULT;
-  const T = google.maps.TravelMode;
-  switch (c) {
-    case "WALKING":
-      return T.WALKING;
-    case "DRIVING":
-      return T.DRIVING;
-    case "BICYCLING":
-      return T.BICYCLING;
-    case "TRANSIT":
-      return T.TRANSIT;
-    default:
-      return T.DRIVING;
-  }
-}
-
-type PlanRoutePlacesLibrary = {
-  Place: new (options: { id: string }) => unknown;
-};
-
-type PlanRouteComputeResponse = {
-  routes?: Array<{
-    path?: Array<{ lat: number; lng: number }>;
-  }>;
-};
-
-type PlanRoutesLibrary = {
-  Route: {
-    computeRoutes(options: {
-      origin: unknown;
-      destination: unknown;
-      travelMode: google.maps.TravelMode;
-      fields: string[];
-      polylineQuality: "OVERVIEW";
-    }): Promise<PlanRouteComputeResponse>;
+type PlanGeometryLibrary = {
+  encoding: {
+    decodePath(encodedPath: string): Array<{ lat(): number; lng(): number }>;
   };
 };
 
@@ -330,32 +290,22 @@ export function buildPlanItineraryRouteConnectorPaths({
 }
 
 /**
- * 일정 두 장소(Place ID) 구간 경로 좌표 — Maps JS Route.computeRoutes.
+ * 서버가 준 Google encoded polyline을 지도 좌표로 디코딩합니다.
+ * 폴리라인은 백엔드 경로 응답에 실려 오므로 여기서 Routes API를 호출하지 않습니다.
  */
-export async function fetchPlanSegmentPathLatLng(
-  originPlaceId: string,
-  destPlaceId: string,
-  segmentTravelMode: string | undefined,
+export async function decodePlanSegmentPathLatLng(
+  encodedPolyline: string | undefined,
 ): Promise<google.maps.LatLngLiteral[]> {
-  const o = originPlaceId.trim();
-  const d = destPlaceId.trim();
-  if (!o.length || !d.length) return [];
+  const encoded = encodedPolyline?.trim() ?? "";
+  if (!encoded.length) return [];
 
   try {
-    const [{ Place }, { Route }] = await Promise.all([
-      google.maps.importLibrary("places") as unknown as Promise<PlanRoutePlacesLibrary>,
-      google.maps.importLibrary("routes") as unknown as Promise<PlanRoutesLibrary>,
-    ]);
-    const { routes } = await Route.computeRoutes({
-      origin: new Place({ id: o }),
-      destination: new Place({ id: d }),
-      travelMode: toGmTravelMode(segmentTravelMode),
-      fields: ["path"],
-      polylineQuality: "OVERVIEW",
-    });
-    const path = routes?.[0]?.path;
-    if (!path?.length) return [];
-    return path.map((point) => ({ lat: point.lat, lng: point.lng }));
+    const { encoding } = (await google.maps.importLibrary(
+      "geometry",
+    )) as unknown as PlanGeometryLibrary;
+    return encoding
+      .decodePath(encoded)
+      .map((point) => ({ lat: point.lat(), lng: point.lng() }));
   } catch {
     return [];
   }
@@ -428,15 +378,12 @@ export function buildPlanItineraryRouteConnectorDotIcons(
 export const PLAN_ITINERARY_ROUTE_ARROW_ICONS: google.maps.IconSequence[] =
   buildPlanItineraryRouteArrowIcons("#f12d33");
 
-/** 일정 맵 폴리라인 한 구간 — Google Directions 호출 후 일정 순서에 맞게 방향 보정. */
-export async function fetchOrientedPlanItinerarySegmentPath(
+/** 일정 맵 폴리라인 한 구간 — 서버 폴리라인을 디코딩한 뒤 일정 순서에 맞게 방향 보정. */
+export async function decodeOrientedPlanItinerarySegmentPath(
   seg: PlanItinerarySegmentDescriptor,
+  encodedPolyline: string | undefined,
 ): Promise<google.maps.LatLngLiteral[]> {
-  let pts = await fetchPlanSegmentPathLatLng(
-    seg.originPlaceId,
-    seg.destPlaceId,
-    seg.travelModeCanon,
-  );
+  let pts = await decodePlanSegmentPathLatLng(encodedPolyline);
   if (seg.originLocation && seg.destLocation && pts.length >= 2) {
     pts = orientPathSmallerStopToLarger(
       pts,
