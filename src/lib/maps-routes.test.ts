@@ -3,134 +3,60 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildPlanItineraryRouteConnectorDotIcons,
   buildPlanItineraryRouteConnectorPaths,
-  fetchPlanSegmentPathLatLng,
+  decodePlanSegmentPathLatLng,
 } from "./maps";
 
-describe("fetchPlanSegmentPathLatLng", () => {
+/** Maps JS geometry 라이브러리 stub — decodePath는 LatLng 객체를 돌려준다 */
+function stubGeometry(
+  decodePath: (encoded: string) => Array<{ lat(): number; lng(): number }>,
+) {
+  const importLibrary = vi.fn(async (name: string) => {
+    if (name === "geometry") return { encoding: { decodePath } };
+    throw new Error(`unexpected library: ${name}`);
+  });
+  vi.stubGlobal("google", { maps: { importLibrary } });
+  return importLibrary;
+}
+
+function latLng(lat: number, lng: number) {
+  return { lat: () => lat, lng: () => lng };
+}
+
+describe("decodePlanSegmentPathLatLng", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("Place ID로 Route를 계산하고 overview path 좌표를 반환한다", async () => {
-    const placeIds: string[] = [];
-    class Place {
-      constructor({ id }: { id: string }) {
-        placeIds.push(id);
-      }
-    }
-
-    const computeRoutes = vi.fn().mockResolvedValue({
-      routes: [
-        {
-          path: [
-            { lat: 37.5665, lng: 126.978, altitude: 0 },
-            { lat: 37.5446, lng: 127.0557, altitude: 0 },
-          ],
-        },
-      ],
-      fallbackInfo: null,
-      geocodingResults: null,
-    });
-    const importLibrary = vi.fn(async (name: string) => {
-      if (name === "places") return { Place };
-      if (name === "routes") return { Route: { computeRoutes } };
-      throw new Error(`unexpected library: ${name}`);
-    });
-
-    vi.stubGlobal("google", {
-      maps: {
-        importLibrary,
-        TravelMode: {
-          WALKING: "WALKING",
-          DRIVING: "DRIVING",
-          BICYCLING: "BICYCLING",
-          TRANSIT: "TRANSIT",
-        },
-      },
-    });
+  it("서버 폴리라인을 디코딩해 좌표 배열로 반환한다", async () => {
+    const decodePath = vi.fn(() => [
+      latLng(37.5665, 126.978),
+      latLng(37.5446, 127.0557),
+    ]);
+    stubGeometry(decodePath);
 
     await expect(
-      fetchPlanSegmentPathLatLng(
-        " ChIJ-origin ",
-        " ChIJ-destination ",
-        "DRIVING",
-      ),
+      decodePlanSegmentPathLatLng("  _p~iF~ps|U_ulLnnqC  "),
     ).resolves.toEqual([
       { lat: 37.5665, lng: 126.978 },
       { lat: 37.5446, lng: 127.0557 },
     ]);
-    expect(placeIds).toEqual(["ChIJ-origin", "ChIJ-destination"]);
-    expect(computeRoutes).toHaveBeenCalledWith({
-      origin: expect.any(Place),
-      destination: expect.any(Place),
-      travelMode: "DRIVING",
-      fields: ["path"],
-      polylineQuality: "OVERVIEW",
-    });
+    expect(decodePath).toHaveBeenCalledWith("_p~iF~ps|U_ulLnnqC");
   });
 
-  it("이동수단이 누락되면 일정 기본값 DRIVING으로 경로를 계산한다", async () => {
-    class Place {}
-    const computeRoutes = vi.fn().mockResolvedValue({
-      routes: [{ path: [] }],
-      fallbackInfo: null,
-      geocodingResults: null,
-    });
-    const importLibrary = vi.fn(async (name: string) => {
-      if (name === "places") return { Place };
-      if (name === "routes") return { Route: { computeRoutes } };
-      throw new Error(`unexpected library: ${name}`);
-    });
+  it("폴리라인이 없으면 지도 라이브러리를 부르지 않고 빈 경로를 반환한다", async () => {
+    const importLibrary = stubGeometry(() => []);
 
-    vi.stubGlobal("google", {
-      maps: {
-        importLibrary,
-        TravelMode: {
-          WALKING: "WALKING",
-          DRIVING: "DRIVING",
-          BICYCLING: "BICYCLING",
-          TRANSIT: "TRANSIT",
-        },
-      },
-    });
-
-    await fetchPlanSegmentPathLatLng("origin", "destination", undefined);
-
-    expect(computeRoutes).toHaveBeenCalledWith(
-      expect.objectContaining({ travelMode: "DRIVING" }),
-    );
+    await expect(decodePlanSegmentPathLatLng(undefined)).resolves.toEqual([]);
+    await expect(decodePlanSegmentPathLatLng("   ")).resolves.toEqual([]);
+    expect(importLibrary).not.toHaveBeenCalled();
   });
 
-  it("경로 계산에 실패하면 빈 경로를 반환한다", async () => {
-    const importLibrary = vi.fn(async (name: string) => {
-      if (name === "places") {
-        return { Place: class Place {} };
-      }
-      if (name === "routes") {
-        return {
-          Route: {
-            computeRoutes: vi.fn().mockRejectedValue(new Error("routes error")),
-          },
-        };
-      }
-      throw new Error(`unexpected library: ${name}`);
+  it("디코딩에 실패하면 빈 경로를 반환한다", async () => {
+    stubGeometry(() => {
+      throw new Error("decode error");
     });
 
-    vi.stubGlobal("google", {
-      maps: {
-        importLibrary,
-        TravelMode: {
-          WALKING: "WALKING",
-          DRIVING: "DRIVING",
-          BICYCLING: "BICYCLING",
-          TRANSIT: "TRANSIT",
-        },
-      },
-    });
-
-    await expect(
-      fetchPlanSegmentPathLatLng("origin", "destination", "WALKING"),
-    ).resolves.toEqual([]);
+    await expect(decodePlanSegmentPathLatLng("broken")).resolves.toEqual([]);
   });
 
   it("점선 보조 구간은 큰 점과 80% 불투명도로 표시한다", () => {

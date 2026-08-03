@@ -12,9 +12,10 @@ import {
   buildPlanItineraryRouteConnectorDotIcons,
   buildPlanItineraryRouteConnectorPaths,
   buildPlanItineraryRouteArrowIcons,
-  fetchOrientedPlanItinerarySegmentPath,
+  decodeOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
+import { resolveScheduleSegmentRoute } from "@/lib/plan/scheduleSegmentRoute";
 import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import {
   scheduleIdsToRouteColors,
@@ -142,7 +143,18 @@ export function PlanItineraryMapRoutes() {
           directionsEpoch,
           segmentEpoch,
         ),
-        queryFn: () => fetchOrientedPlanItinerarySegmentPath(seg),
+        queryFn: async () => {
+          const route = await resolveScheduleSegmentRoute({
+            roomId: rid,
+            scheduleId: seg.scheduleId,
+            segmentSourceItemId: seg.segmentSourceItemId,
+            travelMode: seg.travelModeCanon,
+          });
+          return decodeOrientedPlanItinerarySegmentPath(
+            seg,
+            route?.encodedPolyline,
+          );
+        },
         enabled: rid.length > 0 && segments.length > 0,
         staleTime: Infinity,
         refetchOnMount: false,
