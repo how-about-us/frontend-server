@@ -170,10 +170,14 @@ export function PlanItineraryMapRoutes() {
               { segmentReady: true },
             ),
           );
-          return decodeOrientedPlanItinerarySegmentPath(
-            seg,
-            route?.encodedPolyline,
-          );
+          /** 경로 없음과 "경로는 있는데 폴리라인이 없음"을 구분해야 렌더링 경고가 정확해집니다. */
+          return {
+            path: await decodeOrientedPlanItinerarySegmentPath(
+              seg,
+              route?.encodedPolyline,
+            ),
+            hasRoute: route != null,
+          };
         },
         enabled: rid.length > 0 && segments.length > 0,
         staleTime: Infinity,
@@ -191,9 +195,13 @@ export function PlanItineraryMapRoutes() {
         const status =
           !query || query.isPending || query.isFetching
             ? "loading"
-            : query.isError || !query.data?.length
+            : query.isError
               ? "unavailable"
-              : "available";
+              : !query.data?.hasRoute
+                ? "no-route"
+                : !query.data.path.length
+                  ? "unavailable"
+                  : "available";
         return {
           scheduleId: seg.scheduleId,
           segmentSourceItemId: seg.segmentSourceItemId,
@@ -211,7 +219,7 @@ export function PlanItineraryMapRoutes() {
   segments.forEach((seg, segIdx) => {
     const query = pathsPerSegmentQueries[segIdx];
     if (!query || query.isPending || query.isFetching) return;
-    const pts = query.data ?? [];
+    const pts = query.data?.path ?? [];
 
     const segEpochKey = planMapSegmentEpochStoreKey(
       rid,
