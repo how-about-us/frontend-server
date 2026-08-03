@@ -1,16 +1,19 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { useMemo } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 
 import { useSelectedPlace } from "@/contexts/SelectedPlaceContext";
 import { useAllRoomBookmarks, useBookmarkCategories } from "@/hooks/useRooms";
 import { normalizeGooglePlaceResourceId } from "@/lib/maps";
 import type { PlacePreview } from "@/lib/api/places";
-import { placePreviewQueryOptions } from "@/lib/places/place-queries";
 
+import {
+  buildMapBookmarkPreviewPlan,
+  settleMapBookmarkPreviewBatch,
+} from "./map-bookmark-preview-query";
 import {
   MAP_PIN_BORDER_STROKE,
   MAP_PIN_BORDER_STROKE_WIDTH,
@@ -47,6 +50,7 @@ export function MapBookmarkPins({
   enabled,
   hiddenNormalizedPlaceIds,
 }: MapBookmarkPinsProps) {
+  const queryClient = useQueryClient();
   const { selectedPlace, setSelectedPlace } = useSelectedPlace();
 
   const { data: categories, isSuccess: categoriesReady } =
@@ -58,7 +62,7 @@ export function MapBookmarkPins({
     isError: bookmarksError,
   } = useAllRoomBookmarks(roomId, { enabled: !!roomId });
 
-  const categoryList = categories ?? [];
+  const categoryList = useMemo(() => categories ?? [], [categories]);
   const categoryColorById = useMemo(() => {
     const map = new Map<number, string>();
     for (const cat of categoryList) {
@@ -88,14 +92,41 @@ export function MapBookmarkPins({
     return out;
   }, [allBookmarks, categoryColorById, listsSettled]);
 
+  const [settledPreviewIdsKey, setSettledPreviewIdsKey] = useState<string | null>(
+    null,
+  );
+  const previewPlan = useMemo(
+    () =>
+      buildMapBookmarkPreviewPlan(
+        flattenedBookmarks,
+        hiddenNormalizedPlaceIds,
+        settledPreviewIdsKey,
+      ),
+    [flattenedBookmarks, hiddenNormalizedPlaceIds, settledPreviewIdsKey],
+  );
+  const { visibleBookmarks, previewIdsKey } = previewPlan;
+
+  useEffect(() => {
+    if (!previewIdsKey.length) return;
+
+    let cancelled = false;
+    void settleMapBookmarkPreviewBatch(previewIdsKey, queryClient).then(
+      (settledKey) => {
+        if (!cancelled) setSettledPreviewIdsKey(settledKey);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewIdsKey, queryClient]);
+
   const placeQueryDefs = useMemo(() => {
-    if (!roomId || !listsSettled || flattenedBookmarks.length === 0) {
+    if (!roomId || !listsSettled || visibleBookmarks.length === 0) {
       return [];
     }
-    return flattenedBookmarks.map((row) =>
-      placePreviewQueryOptions(row.googlePlaceId),
-    );
-  }, [roomId, listsSettled, flattenedBookmarks]);
+    return previewPlan.queryOptions;
+  }, [roomId, listsSettled, visibleBookmarks.length, previewPlan.queryOptions]);
 
   const placeQueries = useQueries({ queries: placeQueryDefs });
 
@@ -109,7 +140,7 @@ export function MapBookmarkPins({
 
   return (
     <>
-      {flattenedBookmarks.map((row, i) => {
+      {visibleBookmarks.map((row, i) => {
         const preview = placeQueries[i]?.data;
         const loc = preview?.location;
         if (!preview || loc == null) return null;
@@ -118,10 +149,6 @@ export function MapBookmarkPins({
         if (selectedNormalized && legacyId === selectedNormalized) {
           return null;
         }
-        if (hiddenNormalizedPlaceIds?.has(legacyId)) {
-          return null;
-        }
-
         return (
           <AdvancedMarker
             key={`${row.bookmarkId}-${legacyId}`}
