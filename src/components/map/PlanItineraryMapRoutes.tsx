@@ -15,7 +15,8 @@ import {
   decodeOrientedPlanItinerarySegmentPath,
   normalizeGooglePlaceResourceId,
 } from "@/lib/maps";
-import { resolveScheduleSegmentRoute } from "@/lib/plan/scheduleSegmentRoute";
+import { persistedScheduleItemRouteQueryOptions } from "@/lib/plan/scheduleItemRoutePersistedQuery";
+import { schedulePlacesFingerprint } from "@/lib/plan/planTravelLocalStorage";
 import { readSchedulePlanPlacesFromCache } from "@/lib/plan/scheduleItemPlaces";
 import {
   scheduleIdsToRouteColors,
@@ -123,6 +124,17 @@ export function PlanItineraryMapRoutes() {
     buckets,
   );
 
+  /**
+   * sessionStorage 시드가 일정 변경 뒤 엇나가지 않도록 리스트와 같은 지문을 넘깁니다.
+   * `buckets`는 매 렌더 새로 만들어지므로 memo 없이 그때그때 계산합니다.
+   */
+  const fingerprintByScheduleId = new Map<number, string>(
+    orderedScheduleIdsForQueries.map((scheduleId, bucketIdx) => [
+      scheduleId,
+      schedulePlacesFingerprint(buckets[bucketIdx] ?? []),
+    ]),
+  );
+
   const pathsPerSegmentQueries = useQueries({
     queries: segments.map((seg) => {
       const epochKey = planMapSegmentEpochStoreKey(
@@ -143,13 +155,21 @@ export function PlanItineraryMapRoutes() {
           directionsEpoch,
           segmentEpoch,
         ),
+        /**
+         * 구간 경로는 일정 리스트와 같은 쿼리를 통해 가져옵니다. `fetchQuery`에 맡겨야
+         * in-flight 합치기와 재정렬 중 뒤늦게 온 응답 폐기를 React Query가 처리합니다.
+         */
         queryFn: async () => {
-          const route = await resolveScheduleSegmentRoute({
-            roomId: rid,
-            scheduleId: seg.scheduleId,
-            segmentSourceItemId: seg.segmentSourceItemId,
-            travelMode: seg.travelModeCanon,
-          });
+          const route = await queryClient.fetchQuery(
+            persistedScheduleItemRouteQueryOptions(
+              rid,
+              seg.scheduleId,
+              seg.segmentSourceItemId,
+              seg.travelModeCanon,
+              fingerprintByScheduleId.get(seg.scheduleId) ?? "",
+              { segmentReady: true },
+            ),
+          );
           return decodeOrientedPlanItinerarySegmentPath(
             seg,
             route?.encodedPolyline,

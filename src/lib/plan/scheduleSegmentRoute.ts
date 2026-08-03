@@ -18,15 +18,14 @@ export type ResolveScheduleSegmentRouteArgs = {
   scheduleFingerprint?: string;
 };
 
-const inFlightByRouteKey = new Map<string, Promise<ScheduleSegmentRoute>>();
-
 /**
- * 구간 `(room, schedule, 출발 항목, 이동수단)`의 경로를 한 곳에서 해석합니다.
- * 거리·소요 시간과 지도 폴리라인이 같은 캐시 항목을 공유하도록, 일정 리스트와 지도 모두
- * 이 함수를 거칩니다.
+ * 구간 `(room, schedule, 출발 항목, 이동수단)` 경로를 가져오는 fetch 본체입니다.
+ * 거리·소요 시간과 지도 폴리라인이 같은 캐시 항목을 공유하도록 일정 리스트와 지도가 모두
+ * 이 함수를 queryFn으로 쓰는 하나의 쿼리(`scheduleItemRouteQueryKey`)를 거칩니다.
  *
- * batch 완료 대기 → 구간 캐시 → 단건 GET 순으로 조회하며, GET 결과는 구간 캐시에 되써서
- * 먼저 도착한 쪽이 나머지 호출을 막습니다.
+ * in-flight 합치기와 재정렬 중 뒤늦게 도착한 응답 폐기는 React Query가 담당합니다.
+ * 여기서 직접 캐시에 쓰지 않습니다 — `setQueryData`는 무효화 플래그까지 지워서
+ * 순서가 바뀐 뒤의 낡은 경로를 유효한 값으로 만들어 버립니다.
  */
 export async function resolveScheduleSegmentRoute({
   roomId,
@@ -38,67 +37,26 @@ export async function resolveScheduleSegmentRoute({
   const rid = roomId.trim();
   if (!rid.length) return null;
 
+  /** 저장 이동수단 기준 batch가 이 구간·수단을 시딩했을 수 있어 완료를 기다림 */
+  await awaitScheduleRoutesBatch(rid, scheduleId);
+
   const routeKey = scheduleItemRouteQueryKey(
     rid,
     scheduleId,
     segmentSourceItemId,
     travelMode,
   );
-
-  /** 저장 이동수단 기준 batch가 이 구간·수단을 시딩했을 수 있어 완료를 기다림 */
-  await awaitScheduleRoutesBatch(rid, scheduleId);
-
-  const qc = getQueryClient();
-  if (qc) {
-    const cached = qc.getQueryState<ScheduleSegmentRoute>(routeKey);
-    if (cached?.data !== undefined && !cached.isInvalidated) {
-      return cached.data;
-    }
+  const cached = getQueryClient()?.getQueryState<ScheduleSegmentRoute>(routeKey);
+  if (cached?.data !== undefined && !cached.isInvalidated) {
+    return cached.data;
   }
 
-  /** 리스트와 지도가 동시에 miss해도 GET은 한 번만 나가게 합침 */
-  const dedupeKey = JSON.stringify(routeKey);
-  const inFlight = inFlightByRouteKey.get(dedupeKey);
-  if (inFlight) return inFlight;
-
-  const promise = fetchAndSeed({
-    rid,
-    scheduleId,
-    segmentSourceItemId,
-    travelMode,
-    scheduleFingerprint,
-    routeKey,
-  }).finally(() => {
-    inFlightByRouteKey.delete(dedupeKey);
-  });
-
-  inFlightByRouteKey.set(dedupeKey, promise);
-  return promise;
-}
-
-async function fetchAndSeed({
-  rid,
-  scheduleId,
-  segmentSourceItemId,
-  travelMode,
-  scheduleFingerprint,
-  routeKey,
-}: {
-  rid: string;
-  scheduleId: number;
-  segmentSourceItemId: number;
-  travelMode: ScheduleTravelModeValue;
-  scheduleFingerprint?: string;
-  routeKey: ReturnType<typeof scheduleItemRouteQueryKey>;
-}): Promise<ScheduleSegmentRoute> {
   const fresh = await getScheduleItemRoute(
     rid,
     scheduleId,
     segmentSourceItemId,
     travelMode,
   );
-
-  getQueryClient()?.setQueryData(routeKey, fresh);
 
   const fp = scheduleFingerprint?.trim() ?? "";
   if (fp.length > 0) {
