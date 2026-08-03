@@ -57,6 +57,7 @@ describe("hydrateScheduleRoutesBatch", () => {
     travelMode: "DRIVING",
     distanceMeters: 1200,
     durationSeconds: 300,
+    encodedPolyline: "_p~iF~ps|U_ulLnnqC",
   };
 
   it("응답 시점에 일정 지문이 그대로면 경로를 시딩한다", async () => {
@@ -73,7 +74,29 @@ describe("hydrateScheduleRoutesBatch", () => {
       queryClient.getQueryData(
         scheduleItemRouteQueryKey(ROOM_ID, SCHEDULE_ID, 1, "DRIVING"),
       ),
-    ).toMatchObject({ distanceMeters: 1200, durationSeconds: 300 });
+    ).toMatchObject({
+      distanceMeters: 1200,
+      durationSeconds: 300,
+      encodedPolyline: "_p~iF~ps|U_ulLnnqC",
+    });
+  });
+
+  it("폴리라인이 없는 구간은 encodedPolyline 없이 시딩한다", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(
+      scheduleItemsQueryKey(ROOM_ID, SCHEDULE_ID),
+      snapshot,
+    );
+    const { encodedPolyline: _omitted, ...withoutPolyline } = routeResult;
+    getScheduleItemRoutesBatchMock.mockResolvedValue([withoutPolyline]);
+
+    await hydrateScheduleRoutesBatch(queryClient, ROOM_ID, SCHEDULE_ID, snapshot);
+
+    expect(
+      queryClient.getQueryData(
+        scheduleItemRouteQueryKey(ROOM_ID, SCHEDULE_ID, 1, "DRIVING"),
+      ),
+    ).not.toHaveProperty("encodedPolyline");
   });
 
   it("응답 대기 중 일정이 바뀌면(지문 불일치) 늦게 도착한 결과를 버린다", async () => {
