@@ -5,14 +5,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type { ScheduleItemRouteResponse } from "@/lib/api/rooms";
-import { getScheduleItemRoute } from "@/lib/api/rooms";
-import { awaitScheduleRoutesBatch } from "@/lib/plan/schedule-bulk-hydration";
+import { resolveScheduleSegmentRoute } from "@/lib/plan/scheduleSegmentRoute";
 import { scheduleItemRouteQueryKey } from "@/lib/query-keys";
-import { getQueryClient } from "@/lib/query-client";
-import {
-  readScheduleRouteFromSessionStorage,
-  writeScheduleRouteToSessionStorage,
-} from "@/lib/plan/planTravelLocalStorage";
+import { readScheduleRouteFromSessionStorage } from "@/lib/plan/planTravelLocalStorage";
 import type { ScheduleTravelModeValue } from "@/lib/plan/scheduleTravelMode";
 
 type RouteCached = ScheduleItemRouteResponse | null;
@@ -92,45 +87,14 @@ export function persistedScheduleItemRouteQueryOptions(
           initialDataUpdatedAt: typeof window !== "undefined" ? Date.now() : 0,
         }
       : {}),
-    queryFn: async (): Promise<RouteCached> => {
-      const routeKey = scheduleItemRouteQueryKey(
-        keyRoom,
-        keySchedule,
-        keySegment,
-        keyMode,
-      );
-      const qc = getQueryClient();
-
-      /** 저장 이동수단 기준 batch가 이 구간·수단을 시딩했을 수 있어 완료를 기다림 */
-      if (rid.length > 0 && sidOk) {
-        await awaitScheduleRoutesBatch(rid, sid!);
-      }
-
-      if (qc) {
-        const cached = qc.getQueryState<RouteCached>(routeKey);
-        if (cached?.data !== undefined && !cached.isInvalidated) {
-          return cached.data;
-        }
-      }
-
-      const fresh = await getScheduleItemRoute(
-        rid,
-        sid!,
-        segmentSourceItemId!,
+    queryFn: (): Promise<RouteCached> =>
+      resolveScheduleSegmentRoute({
+        roomId: rid,
+        scheduleId: sid!,
+        segmentSourceItemId: segmentSourceItemId!,
         travelMode,
-      );
-      if (fp.length > 0 && sidOk && itemOk) {
-        writeScheduleRouteToSessionStorage(
-          rid,
-          sid!,
-          segmentSourceItemId!,
-          travelMode,
-          fp,
-          fresh,
-        );
-      }
-      return fresh;
-    },
+        scheduleFingerprint: fp,
+      }),
     enabled,
     /** batch·sessionStorage 시딩 후에는 캐시 우선 — 명시 invalidate 시에만 재조회 */
     staleTime: 1000 * 60 * 60 * 6,
