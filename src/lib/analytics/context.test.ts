@@ -130,19 +130,21 @@ describe("analytics context", () => {
     ).not.toHaveProperty("page_referrer");
   });
 
-  it("removes every query parameter from the current page and referrer", () => {
+  it("keeps standard campaign parameters and removes other query data", () => {
     expect(
       buildAnalyticsPageView({
         origin: "https://uttae.example",
-        pathname:
-          "/search?q=raw-search&utm_source=newsletter&utm_campaign=summer",
+        pathname: "/search",
         referrer:
           "https://campaign.example/landing/private?utm_medium=email&q=other-secret#offer",
+        search:
+          "?q=raw-search&utm_id=summer-2026&utm_source=newsletter&utm_medium=email&utm_campaign=summer&utm_source_platform=mailchimp&utm_term=travel&utm_content=hero&utm_creative_format=banner&utm_marketing_tactic=prospecting#details",
         title: "검색",
       }),
     ).toEqual({
       page_path: "/search",
-      page_location: "https://uttae.example/search",
+      page_location:
+        "https://uttae.example/search?utm_id=summer-2026&utm_source=newsletter&utm_medium=email&utm_campaign=summer&utm_source_platform=mailchimp&utm_term=travel&utm_content=hero&utm_creative_format=banner&utm_marketing_tactic=prospecting",
       page_referrer: "https://campaign.example/",
       page_title: "검색",
     });
