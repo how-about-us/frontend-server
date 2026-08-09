@@ -11,6 +11,7 @@ import {
 } from "@/lib/analytics/consent-actions";
 import { analyticsConsentStore } from "@/lib/analytics/consent-store";
 
+import { AmplitudeAnalytics } from "@/components/analytics/AmplitudeAnalytics";
 type ConsentGatedAnalyticsProps = {
   children: ReactNode;
   debugMode: boolean;
@@ -43,7 +44,10 @@ export function ConsentGatedAnalytics({
       ) : null}
       {consent === "granted" ? (
         <>
-          <GoogleAnalyticsScript debugMode={debugMode} gaId={gaId} />
+          <AmplitudeAnalytics />
+          {gaId ? (
+            <GoogleAnalyticsScript debugMode={debugMode} gaId={gaId} />
+          ) : null}
           {children}
         </>
       ) : null}

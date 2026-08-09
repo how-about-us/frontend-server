@@ -12,17 +12,20 @@ export function AppChromeShell({
   analytics: ReactNode;
   children: ReactNode;
 }) {
+  const gaId =
+    analyticsRuntime.enabled && analyticsRuntime.measurementId
+      ? analyticsRuntime.measurementId
+      : "";
+
   return (
     <>
       <MobileChrome>{children}</MobileChrome>
-      {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
-        <ConsentGatedAnalytics
-          debugMode={analyticsRuntime.debugMode}
-          gaId={analyticsRuntime.measurementId}
-        >
-          {analytics}
-        </ConsentGatedAnalytics>
-      ) : null}
+      <ConsentGatedAnalytics
+        debugMode={analyticsRuntime.debugMode}
+        gaId={gaId}
+      >
+        {analytics}
+      </ConsentGatedAnalytics>
       <Toaster position="bottom-right" richColors />
     </>
   );
