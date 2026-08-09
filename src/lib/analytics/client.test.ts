@@ -123,7 +123,8 @@ describe("Google Consent Mode", () => {
 
     trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder);
     client.trackAnalyticsPageView({
-      page_location: "https://example.com/search",
+      page_location:
+        "https://example.com/search?utm_source=newsletter&utm_campaign=summer",
       page_path: "/search",
       page_referrer: "",
       page_title: "검색",
@@ -152,7 +153,11 @@ describe("Google Consent Mode", () => {
       [
         "event",
         "page_view",
-        expect.objectContaining({ page_path: "/search" }),
+        expect.objectContaining({
+          page_location:
+            "https://example.com/search?utm_source=newsletter&utm_campaign=summer",
+          page_path: "/search",
+        }),
       ],
       ["set", { user_id: "42" }],
     ]);

@@ -7,6 +7,17 @@ const amplitude = vi.hoisted(() => ({
   track: vi.fn(),
 }));
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}
+
 vi.mock("@amplitude/unified", () => amplitude);
 
 beforeEach(() => {
@@ -87,8 +98,86 @@ describe("Amplitude browser client", () => {
 
     client.initializeAmplitude();
 
-    expect(amplitude.track).toHaveBeenCalledWith("create_plan", { days: 3 });
-    expect(amplitude.setUserId).toHaveBeenCalledWith("42");
+    await vi.waitFor(() => {
+      expect(amplitude.track).toHaveBeenCalledWith("create_plan", { days: 3 });
+      expect(amplitude.setUserId).toHaveBeenCalledWith("42");
+    });
+  });
+
+  it("keeps queued commands pending until initialization succeeds", async () => {
+    const initialization = deferred<void>();
+    amplitude.initAll.mockReturnValueOnce(initialization.promise);
+    vi.stubGlobal("window", {});
+    const client = await import("@/lib/analytics/amplitude");
+
+    client.sendAmplitudeDataCommand("event", "create_plan", { days: 3 });
+    client.initializeAmplitude();
+
+    expect(amplitude.setOptOut).not.toHaveBeenCalled();
+    expect(amplitude.track).not.toHaveBeenCalled();
+
+    initialization.resolve();
+
+    await vi.waitFor(() => {
+      expect(amplitude.setOptOut).toHaveBeenCalledWith(false);
+      expect(amplitude.track).toHaveBeenCalledWith("create_plan", { days: 3 });
+    });
+  });
+
+  it("preserves queued commands and allows retry after initialization fails", async () => {
+    const firstInitialization = deferred<void>();
+    amplitude.initAll
+      .mockReturnValueOnce(firstInitialization.promise)
+      .mockResolvedValueOnce();
+    vi.stubGlobal("window", {});
+    const client = await import("@/lib/analytics/amplitude");
+
+    client.sendAmplitudeDataCommand("event", "create_plan", { days: 3 });
+    client.initializeAmplitude();
+    firstInitialization.reject(new Error("remote config unavailable"));
+    await firstInitialization.promise.catch(() => undefined);
+
+    client.initializeAmplitude();
+
+    await vi.waitFor(() => {
+      expect(amplitude.initAll).toHaveBeenCalledTimes(2);
+      expect(amplitude.track).toHaveBeenCalledWith("create_plan", { days: 3 });
+    });
+  });
+
+  it("does not re-enable or flush analytics when consent is revoked during initialization", async () => {
+    const initialization = deferred<void>();
+    amplitude.initAll.mockReturnValueOnce(initialization.promise);
+    vi.stubGlobal("window", {});
+    const client = await import("@/lib/analytics/amplitude");
+
+    client.sendAmplitudeDataCommand("event", "create_plan", { days: 3 });
+    client.initializeAmplitude();
+    client.revokeAmplitudeConsent();
+    initialization.resolve();
+    await initialization.promise;
+    await Promise.resolve();
+
+    expect(amplitude.setOptOut).not.toHaveBeenCalledWith(false);
+    expect(amplitude.track).not.toHaveBeenCalled();
+  });
+
+  it("discards commands issued after consent is revoked during initialization", async () => {
+    const initialization = deferred<void>();
+    amplitude.initAll.mockReturnValueOnce(initialization.promise);
+    vi.stubGlobal("window", {});
+    const client = await import("@/lib/analytics/amplitude");
+
+    client.initializeAmplitude();
+    client.revokeAmplitudeConsent();
+    client.sendAmplitudeDataCommand("event", "denied_event");
+    initialization.resolve();
+    await initialization.promise;
+    await Promise.resolve();
+
+    client.initializeAmplitude();
+
+    expect(amplitude.track).not.toHaveBeenCalled();
   });
 
   it("opts out after consent is revoked and resumes without reinitializing", async () => {
@@ -96,6 +185,9 @@ describe("Amplitude browser client", () => {
     const client = await import("@/lib/analytics/amplitude");
 
     client.initializeAmplitude();
+    await vi.waitFor(() => {
+      expect(amplitude.setOptOut).toHaveBeenCalledWith(false);
+    });
     client.revokeAmplitudeConsent();
     client.initializeAmplitude();
 

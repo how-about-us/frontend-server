@@ -5,6 +5,8 @@ import * as amplitude from "@amplitude/unified";
 import { amplitudeRuntime } from "@/lib/analytics/amplitude-runtime";
 const pendingAmplitudeCommands: unknown[][] = [];
 let amplitudeInitialization: Promise<void> | null = null;
+let amplitudeInitialized = false;
+let amplitudeConsentState: "denied" | "granted" | "unknown" = "unknown";
 
 function dispatchAmplitudeDataCommand(...args: unknown[]): void {
   const [command, nameOrProperties, maybeProperties] = args;
@@ -29,6 +31,12 @@ function dispatchAmplitudeDataCommand(...args: unknown[]): void {
   }
 }
 
+function flushPendingAmplitudeCommands(): void {
+  for (const command of pendingAmplitudeCommands.splice(0)) {
+    dispatchAmplitudeDataCommand(...command);
+  }
+}
+
 export function initializeAmplitude(): void {
   if (
     typeof window === "undefined" ||
@@ -38,7 +46,17 @@ export function initializeAmplitude(): void {
     return;
   }
 
-  amplitudeInitialization ??= amplitude.initAll(amplitudeRuntime.apiKey, {
+  amplitudeConsentState = "granted";
+
+  if (amplitudeInitialized) {
+    amplitude.setOptOut(false);
+    flushPendingAmplitudeCommands();
+    return;
+  }
+
+  if (amplitudeInitialization !== null) return;
+
+  const initialization = amplitude.initAll(amplitudeRuntime.apiKey, {
     analytics: {
       autocapture: {
         attribution: true,
@@ -63,17 +81,31 @@ export function initializeAmplitude(): void {
       sampleRate: amplitudeRuntime.sessionReplaySampleRate,
     },
   });
-  amplitude.setOptOut(false);
+  amplitudeInitialization = initialization;
 
-  for (const command of pendingAmplitudeCommands.splice(0)) {
-    dispatchAmplitudeDataCommand(...command);
-  }
+  void initialization
+    .then(() => {
+      if (amplitudeInitialization !== initialization) return;
+
+      amplitudeInitialized = true;
+      if (amplitudeConsentState !== "granted") return;
+
+      amplitude.setOptOut(false);
+      flushPendingAmplitudeCommands();
+    })
+    .catch(() => {
+      if (amplitudeInitialization !== initialization) return;
+
+      amplitudeInitialization = null;
+      amplitudeInitialized = false;
+    });
 }
 
 export function sendAmplitudeDataCommand(...args: unknown[]): void {
   if (typeof window === "undefined" || !amplitudeRuntime.enabled) return;
+  if (amplitudeConsentState === "denied") return;
 
-  if (amplitudeInitialization === null) {
+  if (!amplitudeInitialized) {
     pendingAmplitudeCommands.push(args);
     return;
   }
@@ -82,6 +114,7 @@ export function sendAmplitudeDataCommand(...args: unknown[]): void {
 }
 
 export function revokeAmplitudeConsent(): void {
+  amplitudeConsentState = "denied";
   pendingAmplitudeCommands.length = 0;
   if (typeof window === "undefined" || amplitudeInitialization === null) return;
 
