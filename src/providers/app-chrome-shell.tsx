@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 
 import { ConsentGatedAnalytics } from "@/components/analytics/ConsentGatedAnalytics";
 import { MobileChrome } from "@/components/mobile/MobileChrome";
+import { amplitudeRuntime } from "@/lib/analytics/amplitude-runtime";
 import { analyticsRuntime } from "@/lib/analytics/runtime";
 
 export function AppChromeShell({
@@ -12,13 +13,20 @@ export function AppChromeShell({
   analytics: ReactNode;
   children: ReactNode;
 }) {
+  const gaId =
+    analyticsRuntime.enabled && analyticsRuntime.measurementId
+      ? analyticsRuntime.measurementId
+      : "";
+  const analyticsEnabled =
+    analyticsRuntime.enabled || amplitudeRuntime.enabled;
+
   return (
     <>
       <MobileChrome>{children}</MobileChrome>
-      {analyticsRuntime.enabled && analyticsRuntime.measurementId ? (
+      {analyticsEnabled ? (
         <ConsentGatedAnalytics
           debugMode={analyticsRuntime.debugMode}
-          gaId={analyticsRuntime.measurementId}
+          gaId={gaId}
         >
           {analytics}
         </ConsentGatedAnalytics>

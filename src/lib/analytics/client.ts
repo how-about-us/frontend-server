@@ -2,6 +2,10 @@ import type { AnalyticsPageViewParams } from "@/lib/analytics/context";
 import { analyticsConsentStore } from "@/lib/analytics/consent-store";
 import { analyticsRuntime } from "@/lib/analytics/runtime";
 
+import {
+  revokeAmplitudeConsent,
+  sendAmplitudeDataCommand,
+} from "@/lib/analytics/amplitude";
 type GoogleAnalyticsConfig = {
   debug_mode?: true;
   send_page_view: false;
@@ -63,8 +67,11 @@ function ensureGoogleTag(): GoogleTag | null {
 }
 
 export function sendAnalyticsDataCommand(...args: unknown[]): void {
-  if (!analyticsRuntime.enabled) return;
   if (!analyticsConsentStore.isGranted()) return;
+
+  sendAmplitudeDataCommand(...args);
+
+  if (!analyticsRuntime.enabled) return;
 
   if (!analyticsTransportReady) {
     pendingAnalyticsCommands.push(args);
@@ -121,6 +128,7 @@ export function initializeGoogleAnalytics(
 }
 
 export function revokeGoogleAnalyticsConsent(): void {
+  revokeAmplitudeConsent();
   analyticsTransportReady = false;
   pendingAnalyticsCommands.length = 0;
 
