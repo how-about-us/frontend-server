@@ -19,6 +19,7 @@ export function AnonymousAnalyticsRouteTracker() {
       origin: window.location.origin,
       pathname,
       referrer: previousPageLocation.current ?? document.referrer,
+      search: window.location.search,
       title: document.title,
     });
 

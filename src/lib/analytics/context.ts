@@ -10,6 +10,7 @@ export type AnalyticsPageViewInput = {
   origin: string;
   pathname: string;
   referrer: string;
+  search?: string;
   title: string;
 };
 
@@ -25,6 +26,18 @@ const dynamicPagePaths: ReadonlyArray<readonly [RegExp, string]> = [
   [/^\/plan\/[^/]+$/, "/plan/[roomId]"],
   [/^\/bookmark\/[^/]+$/, "/bookmark/[folderId]"],
 ];
+
+const analyticsCampaignParameterNames = [
+  "utm_id",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_source_platform",
+  "utm_term",
+  "utm_content",
+  "utm_creative_format",
+  "utm_marketing_tactic",
+] as const;
 
 function nonNegativeInteger(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
@@ -112,12 +125,33 @@ export function analyticsPagePath(pathname: string): string {
   return dynamicPath?.[1] ?? normalizedPath;
 }
 
-function analyticsPageLocation(origin: string, pathname: string): string {
+function analyticsCampaignSearch(search: string): string {
+  const input = search.split("#", 1)[0];
+  const source = new URLSearchParams(
+    input.startsWith("?") ? input.slice(1) : input,
+  );
+  const campaign = new URLSearchParams();
+
+  for (const name of analyticsCampaignParameterNames) {
+    const value = source.get(name)?.trim();
+    if (value) campaign.set(name, value);
+  }
+
+  const query = campaign.toString();
+  return query ? `?${query}` : "";
+}
+
+function analyticsPageLocation(
+  origin: string,
+  pathname: string,
+  search = "",
+): string {
   const pagePath = analyticsPagePath(pathname);
+  const campaignSearch = analyticsCampaignSearch(search);
   try {
-    return `${new URL(origin).origin}${pagePath}`;
+    return `${new URL(origin).origin}${pagePath}${campaignSearch}`;
   } catch {
-    return pagePath;
+    return `${pagePath}${campaignSearch}`;
   }
 }
 
@@ -160,12 +194,13 @@ export function buildAnalyticsPageView({
   origin,
   pathname,
   referrer,
+  search,
   title,
 }: AnalyticsPageViewInput): AnalyticsPageViewParams {
   const pageReferrer = analyticsPageReferrer(origin, referrer);
   return {
     page_path: analyticsPagePath(pathname),
-    page_location: analyticsPageLocation(origin, pathname),
+    page_location: analyticsPageLocation(origin, pathname, search),
     ...(pageReferrer ? { page_referrer: pageReferrer } : {}),
     page_title: title,
   };

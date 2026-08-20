@@ -1,0 +1,79 @@
+# Amplitude 운영 가이드
+
+## 목적과 범위
+
+우때 프론트엔드는 분석 쿠키에 동의한 브라우저에서만 `@amplitude/unified`를 초기화한다. 동일한 의미의 제품 이벤트는 `src/lib/analytics/track.ts`를 통해 GA4와 Amplitude에 함께 전달하고, Session Replay도 같은 동의 경계 안에서 동작한다.
+
+SDK 초기화는 애플리케이션 생명주기 동안 한 번만 수행된다. 서버 렌더링과 API 서버에서는 Amplitude SDK를 실행하지 않는다.
+
+## 환경별 프로젝트와 환경변수
+
+Amplitude의 Development와 Production 프로젝트를 분리하고 API 키를 배포 환경별로 설정한다. Preview는 Development 프로젝트를 공유해도 되지만 Production 프로젝트 키를 사용하지 않는다.
+
+| 배포 환경 | `NEXT_PUBLIC_AMPLITUDE_API_KEY` | 권장 Amplitude 프로젝트 | 기본 Replay 비율 |
+| --- | --- | --- | --- |
+| Local development | 개발 프로젝트 API 키 | Development | `1` |
+| Preview / staging | 개발 또는 별도 Preview API 키 | Development / Preview | `0.1` (`NODE_ENV=production`) |
+| Production | 운영 프로젝트 API 키 | Production | `0.1` |
+
+- API 키는 클라이언트 번들에 포함되는 공개 식별자이지만, 프로젝트 혼입을 막기 위해 소스에 리터럴로 커밋하지 않는다.
+- `NEXT_PUBLIC_AMPLITUDE_API_KEY`가 비어 있으면 Amplitude만 비활성화된다. GA4와 애플리케이션 렌더링은 계속 동작한다.
+- `NEXT_PUBLIC_AMPLITUDE_SESSION_REPLAY_SAMPLE_RATE`로 `0`부터 `1` 사이의 Replay 비율을 덮어쓸 수 있다. `0`은 Replay 수집을 끄고 `1`은 모든 동의 세션을 대상으로 한다.
+- 범위를 벗어나거나 숫자가 아닌 Replay 값은 무시하며, Production은 `0.1`, 그 외 환경은 `1`을 사용한다.
+
+환경변수 변경 후에는 새 클라이언트 번들이 필요하므로 반드시 다시 빌드하고 배포한다.
+
+## 수집 정책
+
+제품 분석의 기준은 `docs/analytics/amplitude-tracking-plan.md`와 타입으로 관리되는 커스텀 이벤트다.
+
+- 자동 수집: 세션과 마케팅 유입 정보만 활성화한다.
+- 페이지 조회: 앱의 SPA 라우트 추적기가 `page_view`를 직접 전송하므로 Amplitude 기본 page view autocapture는 끈다.
+- 사용자 행동: element, form, file download, frustration, network, Web Vitals, performance autocapture는 끈다.
+- URL 보강: 이벤트 분석에 필요한 현재 페이지 URL 보강은 유지한다.
+- 사용자 ID: 로그인 성공 뒤 내부 사용자 ID만 설정하며, 동의 철회 시 제거하고 opt-out 처리한다.
+
+Amplitude 프로젝트의 원격 autocapture 설정이 로컬 설정과 충돌하지 않는지 배포 때 확인한다.
+
+## Session Replay 개인정보 보호
+
+기본 마스킹 레벨은 `conservative`이며 모든 텍스트를 마스킹한다. 채팅, 검색, 사용자 이름, 여행 제목처럼 화면에 렌더링되는 민감 가능 데이터를 기본적으로 노출하지 않는 쪽을 우선한다.
+
+- `.amp-mask` 또는 `[data-amplitude-mask]`: 특정 영역의 텍스트를 명시적으로 마스킹한다.
+- `.amp-block` 또는 `[data-amplitude-block]`: 이미지나 복합 UI 전체를 동일 크기의 자리 표시자로 대체한다.
+- `.amp-unmask`나 원격 unmask 규칙은 개인정보 검토 없이 추가하지 않는다.
+- Amplitude Session Replay 설정 화면의 원격 개인정보 규칙이 SDK의 로컬 규칙을 덮어쓸 수 있으므로 권한과 변경 이력을 제한한다.
+
+개인정보처리방침과 쿠키 안내에는 Amplitude Analytics 및 Session Replay의 목적, 동의 철회 방법, 보유 기간을 반영한다.
+
+## 배포 전 검증
+
+1. 분석 쿠키를 거부한 상태에서 Amplitude 도메인 요청이 발생하지 않는지 확인한다.
+2. 동의 후 `create_plan` 등 테스트 이벤트 하나를 발생시킨다.
+3. 브라우저 개발자 도구에서 Analytics와 Replay 요청이 성공하는지 확인한다.
+4. Amplitude Development 프로젝트의 Events와 User Lookup에서 테스트 이벤트를 확인한다.
+5. Replay 표본에 텍스트가 마스킹되어 있는지 확인한다.
+6. Production API 키가 Development/Preview 배포에 포함되지 않았는지 확인한다.
+7. Production 배포 후 실제 이벤트 하나를 다시 발생시키고 Production 프로젝트 수신을 확인한다.
+
+AdGuard 같은 DNS 광고 차단기를 사용하면 아래 호스트를 허용해야 직접 검증할 수 있다.
+
+- `api2.amplitude.com`: Analytics 이벤트 수집
+- `sr-client-cfg.amplitude.com`: Session Replay 원격 설정
+- `api-sr.amplitude.com`: Session Replay 업로드
+
+일부 실제 사용자의 차단으로 인한 누락이 사업 지표에 중요해지면, 개인정보·인프라 검토 후 퍼스트파티 프록시를 별도 도입한다.
+
+## 대시보드 시작점
+
+- 활성화 퍼널: `sign_up` 또는 `login` → `create_plan` → `add_to_itinerary`
+- 협업 퍼널: `invite_view` → `join_group` → `view_plan` → `chat_message_sent`
+- 공유 퍼널: `create_plan` → `share` → `invite_view` → `join_group`
+- 탐색 퍼널: `view_search_results` → `view_place` → `add_to_bookmark` 또는 `add_to_itinerary`
+- 온보딩 퍼널: `tutorial_begin` → `tutorial_complete`; `tutorial_skip`은 `skip_step`별 이탈을 분석한다.
+
+## 긴급 비활성화
+
+- Analytics와 Replay 모두 중지: 배포 환경에서 `NEXT_PUBLIC_AMPLITUDE_API_KEY`를 제거하고 재배포한다.
+- Replay만 중지: `NEXT_PUBLIC_AMPLITUDE_SESSION_REPLAY_SAMPLE_RATE=0`으로 설정하고 재배포한다.
+- 사용자별 중지: 분석 동의를 철회하면 사용자 ID를 지우고 Amplitude opt-out을 활성화한다.

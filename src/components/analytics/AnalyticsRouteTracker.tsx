@@ -26,6 +26,7 @@ export function AnalyticsRouteTracker() {
       origin: window.location.origin,
       pathname,
       referrer: previousPageLocation.current ?? document.referrer,
+      search: window.location.search,
       title: document.title,
       lastTrackedPathname: lastTrackedPathname.current,
       queryStatus,

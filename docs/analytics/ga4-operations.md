@@ -15,7 +15,7 @@
 - 세션 확인 중 경로가 여러 번 바뀌면 준비 완료 시점의 최신 경로만 전송하고 기술적 중간 화면은 집계하지 않는다.
 - 현재 페이지와 같은 출처의 리퍼러는 정규화된 내부 경로를 보존하고, 외부 HTTP(S) 리퍼러는 `https://host[:port]/` 형식의 출처 루트만 보존한다. 외부 사용자 정보, 경로, 쿼리, 해시는 보내지 않는다.
 - 비 HTTP(S) 또는 파싱할 수 없는 리퍼러는 `page_referrer`에서 생략한다.
-- UTM을 포함한 모든 쿼리와 해시는 `page_path`, `page_location`, `page_referrer`에서 제거한다.
+- `page_location`에는 표준 UTM 캠페인 파라미터만 허용한다. 그 밖의 쿼리와 모든 해시는 제거하며, `page_path`와 `page_referrer`에는 쿼리를 포함하지 않는다.
 - 동적 경로는 다음과 같이 낮은 카디널리티의 템플릿으로 전송한다.
 
 | 실제 경로 | GA 전송 경로 |
@@ -28,7 +28,9 @@
 
 도메인 기반 유입 출처는 외부 리퍼러의 origin으로 분석한다. 외부 페이지의 세부 경로는 유입 도메인 판정에 필요하지 않으므로 수집하지 않는다.
 
-`utm_source`, `utm_medium`, `utm_campaign`을 포함한 모든 쿼리 파라미터는 현재 페이지 URL에서도 수집하지 않는다. 따라서 임의의 UTM 값에 개인정보가 섞이는 위험은 줄지만, GA4의 수동 캠페인별 획득 보고는 제한된다. 캠페인 분석이 필요해지면 허용할 키와 값, 동의 문구 및 개인정보 정책을 별도로 검토한 뒤 도입한다.
+현재 페이지의 `page_location`에는 GA4 수동 캠페인 분석에 사용하는 `utm_id`, `utm_source`, `utm_medium`, `utm_campaign`, `utm_source_platform`, `utm_term`, `utm_content`, `utm_creative_format`, `utm_marketing_tactic`만 허용한다. 검색어, 초대 코드, 방 이름 등 그 밖의 쿼리와 모든 해시는 제거한다. `page_path`와 `page_referrer`는 캠페인 파라미터를 포함하지 않는다.
+
+운영자가 만드는 UTM 값에는 이름, 이메일, 전화번호, 검색어 등 개인을 식별하거나 사용자가 입력한 값을 넣지 않는다. 허용 키를 추가하려면 실제 분석 목적과 개인정보 처리방침의 수집 범위를 먼저 검토한다.
 
 ## 배포 환경 변수
 
@@ -148,12 +150,13 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 9. 비로그인 상태로 일반 경로에 진입해 세션 확인 뒤 `user_id: null → page_view` 순서로 한 번만 발생하는지 확인한다.
 10. `/login`과 `/auth/callback`에서 세션 확인을 기다리지 않고 익명 `page_view`가 한 번만 발생하는지 확인한다.
 11. 세션 확인 중 빠르게 리다이렉트되면 중간 경로는 없고 최종 경로의 `page_view`만 한 번 발생하는지 확인한다.
-12. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
-13. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
-14. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
-15. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
-16. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
-17. 미선택 또는 거부 상태에서 페이지뷰, User-ID, 일반 이벤트 호출 경로와 중앙 데이터 명령을 직접 실행해도 `dataLayer`에 데이터 명령이 추가되지 않고, 이후 허용해도 이전 명령이 되살아나지 않는지 확인한다.
-18. 같은 출처 화면 이동의 `page_referrer`에는 정규화된 내부 경로가 남고, 외부 HTTP(S) 유입에는 출처 루트만 남는지 `page_view` 페이로드에서 확인한다.
-19. 외부 리퍼러의 사용자 정보·경로·쿼리·해시와 `mailto:`, `ftp:` 등 비 HTTP(S) 리퍼러가 `page_view` 페이로드에 없는지 확인한다.
-20. UTM이 포함된 URL로 진입해 `page_location`, `page_path`, `page_referrer`에 UTM을 포함한 어떤 쿼리도 없는지 확인한다.
+12. `/?utm_source=newsletter&utm_medium=email&utm_campaign=launch`로 진입해 `page_location`에 세 값이 있고 획득 보고서에 반영되는지 확인한다.
+13. `/search?q=secret`, `/join/secret`, `/plan/123`, `/bookmark/456`을 이동해 GA 요청에 원문 값이 없는지 확인한다.
+14. 스테이징 DebugView에서 `sign_up`, `create_plan`, `join_group`, `share`, `add_to_itinerary`, `view_search_results`, `tutorial_begin`, `tutorial_complete`, `tutorial_skip`과 파라미터를 확인한다.
+15. 텍스트 검색과 지도 재검색을 각각 한 번 실행해 `view_search_results`가 실행당 한 번만 발생하는지 확인한다.
+16. DebugView와 `google-analytics.com/g/collect` 요청에 `search_term`, 검색어 원문, `q=<원문>`이 없는지 확인한다.
+17. 개발자·내부 트래픽 필터가 운영 보고서에서 의도대로 제외되는지 확인한다.
+18. 미선택 또는 거부 상태에서 페이지뷰, User-ID, 일반 이벤트 호출 경로와 중앙 데이터 명령을 직접 실행해도 `dataLayer`에 데이터 명령이 추가되지 않고, 이후 허용해도 이전 명령이 되살아나지 않는지 확인한다.
+19. 같은 출처 화면 이동의 `page_referrer`에는 정규화된 내부 경로가 남고, 외부 HTTP(S) 유입에는 출처 루트만 남는지 `page_view` 페이로드에서 확인한다.
+20. 외부 리퍼러의 사용자 정보·경로·쿼리·해시와 `mailto:`, `ftp:` 등 비 HTTP(S) 리퍼러가 `page_view` 페이로드에 없는지 확인한다.
+21. UTM과 임의 쿼리가 함께 포함된 URL로 진입해 `page_location`에는 허용된 UTM만 있고 `page_path`, `page_referrer`에는 쿼리가 없는지 확인한다.
