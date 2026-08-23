@@ -11,6 +11,7 @@ type Props = {
   id: string;
   value: string;
   min?: string;
+  max?: string;
   onChange: (value: string) => void;
   readOnly?: boolean;
 };
@@ -19,6 +20,7 @@ export function TripDateField({
   id,
   value,
   min,
+  max = "9999-12-31",
   onChange,
   readOnly = false,
 }: Props) {
@@ -48,6 +50,7 @@ export function TripDateField({
         type="date"
         value={value}
         min={min}
+        max={max}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
         className={cn(
           TRIP_DATE_INPUT_CLASS,
