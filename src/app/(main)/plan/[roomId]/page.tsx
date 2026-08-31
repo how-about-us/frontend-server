@@ -17,8 +17,6 @@ function PlanRoomPageContent() {
     typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
 
   useLayoutEffect(() => {
-    usePlanItineraryExpandedStore.getState().resetForRoomChange();
-    usePlanScheduleRouteVisibilityStore.getState().resetForRoomChange();
     if (roomId.trim().length > 0) {
       setCurrentRoomId(roomId);
     }
