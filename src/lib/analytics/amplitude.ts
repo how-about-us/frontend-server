@@ -65,7 +65,7 @@ export function initializeAmplitude(): void {
         formInteractions: false,
         frustrationInteractions: false,
         networkTracking: false,
-        pageUrlEnrichment: true,
+        pageUrlEnrichment: false,
         pageViews: false,
         performanceTracking: false,
         sessions: true,

@@ -14,6 +14,7 @@
 - 검색어 원문, 채팅 메시지 원문, 사용자 이름·이메일, 여행 제목, 초대 코드, 장소 ID는 이벤트 속성으로 보내지 않는다.
 - 수량과 순위는 가능한 한 아래의 고정 버킷으로 보낸다.
 - `undefined`, 빈 문자열, `null` 속성은 전송 전에 제거한다.
+- 모든 제품 이벤트에는 동적 식별자와 쿼리·해시를 제거한 `page_path`, `page_location`을 공통으로 추가한다.
 - 새로운 이벤트나 속성을 추가할 때는 타입, 테스트, 이 문서, Amplitude Tracking Plan을 같은 변경에서 갱신한다.
 - 속성 의미를 바꾸지 않는다. 의미가 달라지면 새 속성 또는 새 이벤트 이름을 사용한다.
 
@@ -24,13 +25,13 @@
 | `sign_up` | Google 신규 가입 흐름이 성공했을 때 | `entry_point`, `method=google` | 없음 |
 | `login` | Google 기존 사용자 로그인이 성공했을 때 | `entry_point`, `method=google` | 없음 |
 | `create_bookmark_folder` | 북마크 폴더 생성 요청이 성공했을 때 | 없음 | 없음 |
-| `add_to_bookmark` | 장소가 하나 이상 북마크에 추가됐을 때 | 없음 | `place_category`, `source` |
+| `add_to_bookmark` | 장소가 하나 이상 북마크에 추가됐을 때 | 없음 | `interaction_source`, `place_category` |
 | `create_plan` | 여행 계획 생성 요청이 성공했을 때 | `entry_point` | `trip_days_bucket` |
 | `view_plan` | 사용자가 새로운 계획 상세를 조회했을 때 | `member_count_bucket` | `role` |
 | `invite_view` | 초대 진입 페이지가 조회됐을 때 | `entry_point` | 없음 |
 | `join_group` | 즉시 참가 또는 참가 승인 완료로 계획에 합류했을 때 | 없음 | `member_count_bucket`, `role` |
-| `view_place` | 사용자가 새로운 장소 상세를 조회했을 때 | 없음 | `place_category`, `rank_bucket`, `source` |
-| `add_to_itinerary` | 장소가 일정에 추가됐을 때 | `item_count_bucket`, `source` | `place_category` |
+| `view_place` | 사용자가 새로운 장소 상세를 조회했을 때 | 없음 | `interaction_source`, `place_category`, `rank_bucket` |
+| `add_to_itinerary` | 장소가 일정에 추가됐을 때 | `interaction_source`, `item_count_bucket` | `place_category` |
 | `remove_from_itinerary` | 장소가 일정에서 제거됐을 때 | `item_count_bucket` | 없음 |
 | `reorder_itinerary` | 드래그 앤 드롭 일정 재정렬이 반영됐을 때 | `item_count_bucket`, `method=drag_drop` | 없음 |
 | `view_search_results` | 새로운 검색 결과 세대가 화면에 반영됐을 때 | `result_count_bucket`, `search_mode` | 없음 |
@@ -54,7 +55,7 @@ Amplitude 기본 page view autocapture는 `page_view` 중복을 막기 위해 �
 | --- | --- |
 | `entry_point` | `direct`, `invite` |
 | `role` | `host`, `member` |
-| `source` | `bookmark`, `chat`, `map`, `plan`, `search` |
+| `interaction_source` | `bookmark`, `chat`, `map`, `plan`, `search` |
 | `method` (`share`) | `copy_link`, `native_share` |
 | `method` (`reorder_itinerary`) | `drag_drop` |
 | `message_type` | `ai`, `place`, `text` |

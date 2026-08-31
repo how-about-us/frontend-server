@@ -24,11 +24,11 @@ export type SetSelectedPlaceOptions = {
    * `skipMapRecenter: true`이면 무시됩니다.
    */
   preserveMapZoom?: boolean;
-  /** `add_to_itinerary` GA4 `source` — 장소 상세에서 일정 추가 시 사용 */
+  /** `add_to_itinerary`의 `interaction_source` — 장소 상세에서 일정 추가 시 사용 */
   itinerarySource?: ItinerarySource;
   /** 검색 결과 선택 순위 버킷 — `view_place` 이벤트에서 사용 */
   analyticsRankBucket?: SearchRankBucket;
-  /** `view_place` GA4 `source` */
+  /** `view_place`의 `interaction_source` */
   analyticsSource?: AnalyticsSource;
 };
 
