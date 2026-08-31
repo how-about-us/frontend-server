@@ -2,8 +2,35 @@ import { describe, expect, it } from "vitest";
 
 import {
   beginClientSessionReconciliationTransition,
+  isProtectedAppPath,
   shouldReconcileClientSessionTransition,
 } from "@/lib/auth-session";
+
+describe("isProtectedAppPath", () => {
+  it.each([
+    "/home",
+    "/home/new",
+    "/plan",
+    "/plan/room-1",
+    "/bookmark",
+    "/bookmark/folder-1",
+    "/search",
+    "/member-settings",
+    "/room-settings",
+    "/contact",
+    "/settings",
+    "/waiting",
+  ])("treats %s as a protected app URL", (pathname) => {
+    expect(isProtectedAppPath(pathname)).toBe(true);
+  });
+
+  it.each(["/", "/terms", "/privacy", "/join/invite-code"])(
+    "does not treat %s as a protected app URL",
+    (pathname) => {
+      expect(isProtectedAppPath(pathname)).toBe(false);
+    },
+  );
+});
 
 describe("shouldReconcileClientSessionTransition", () => {
   it.each([

@@ -6,11 +6,9 @@ import {
   OPERATIONS_POLICY_EFFECTIVE_DATE,
   OPERATIONS_POLICY_MARKDOWN,
 } from "@/lib/agreements/static-policies/operations-policy-content";
+import { publicPageMetadata } from "@/lib/public-site-metadata";
 
-export const metadata: Metadata = {
-  title: "운영정책 — 우때",
-  description: "우때 서비스 운영정책",
-};
+export const metadata: Metadata = publicPageMetadata("/operations-policy");
 
 export default function OperationsPolicyPage() {
   return (

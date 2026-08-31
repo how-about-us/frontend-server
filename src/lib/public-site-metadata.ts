@@ -1,26 +1,83 @@
+import type { Metadata } from "next";
+
 import { SUPPORT_EMAIL } from "@/lib/contact";
 import { PUBLIC_FOUNDERS, PUBLIC_SITE } from "@/lib/public-site";
 
-export const PUBLIC_SITEMAP_ENTRIES = [
-  { path: "/", changeFrequency: "weekly", priority: 1 },
-  { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/operations-policy", changeFrequency: "yearly", priority: 0.3 },
-  { path: "/copyright-policy", changeFrequency: "yearly", priority: 0.3 },
+export const PUBLIC_INDEXABLE_ROUTES = [
+  {
+    path: "/",
+    title: "우때 — 실시간 협업 여행 플래너",
+    description:
+      "우때에서 친구들과 장소를 찾고 대화하며 여행 일정을 함께 완성하세요.",
+    changeFrequency: "weekly",
+    priority: 1,
+  },
+  {
+    path: "/terms",
+    title: "이용약관 — 우때",
+    description: "우때 서비스 이용 조건과 회원의 권리 및 의무를 안내합니다.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
+  {
+    path: "/privacy",
+    title: "개인정보 처리방침 — 우때",
+    description: "우때의 개인정보 수집, 이용, 보관 및 보호 방침을 안내합니다.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
+  {
+    path: "/operations-policy",
+    title: "운영정책 — 우때",
+    description: "우때 서비스의 이용 기준과 운영 원칙을 안내합니다.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
+  {
+    path: "/copyright-policy",
+    title: "저작권 정책 — 우때",
+    description: "우때 서비스 콘텐츠의 저작권 및 이용 정책을 안내합니다.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
 ] as const;
 
-export const PUBLIC_ROBOT_DISALLOW_PATHS = [
-  "/api/",
-  "/auth/",
-  "/home",
-  "/plan",
-  "/bookmark",
-  "/search",
-  "/member-settings",
-  "/room-settings",
-  "/settings",
-  "/waiting",
-] as const;
+export type PublicIndexablePath =
+  (typeof PUBLIC_INDEXABLE_ROUTES)[number]["path"];
+
+type PublicPageMetadata = Metadata & {
+  title: string;
+  description: string;
+};
+
+export function publicPageMetadata(
+  path: PublicIndexablePath,
+): PublicPageMetadata {
+  const route = PUBLIC_INDEXABLE_ROUTES.find((entry) => entry.path === path);
+
+  if (!route) {
+    throw new Error(`Missing public metadata for ${path}`);
+  }
+
+  return {
+    title: route.title,
+    description: route.description,
+    robots: { index: true, follow: true },
+    alternates: {
+      canonical: new URL(route.path, PUBLIC_SITE.origin).toString(),
+    },
+  };
+}
+
+export const NOINDEX_FOLLOW_METADATA: Metadata = {
+  robots: { index: false, follow: true },
+};
+
+export const NOINDEX_NOFOLLOW_METADATA: Metadata = {
+  robots: { index: false, follow: false },
+};
+
+export const PUBLIC_ROBOT_DISALLOW_PATHS = ["/api/"] as const;
 
 export const ORGANIZATION_JSON_LD = {
   "@context": "https://schema.org",

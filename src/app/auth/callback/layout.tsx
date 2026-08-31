@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
 import { NOINDEX_NOFOLLOW_METADATA } from "@/lib/public-site-metadata";
 
-import { HomeSessionSync } from "./_components/HomeSessionSync";
-
 export const metadata: Metadata = NOINDEX_NOFOLLOW_METADATA;
 
-export default function HomeLayout({
+export default function AuthCallbackLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  return <HomeSessionSync>{children}</HomeSessionSync>;
+  return <>{children}</>;
 }

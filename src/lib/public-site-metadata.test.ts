@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  NOINDEX_FOLLOW_METADATA,
+  NOINDEX_NOFOLLOW_METADATA,
   ORGANIZATION_JSON_LD,
+  PUBLIC_INDEXABLE_ROUTES,
   PUBLIC_ROBOT_DISALLOW_PATHS,
-  PUBLIC_SITEMAP_ENTRIES,
+  publicPageMetadata,
   SOFTWARE_APPLICATION_JSON_LD,
 } from "@/lib/public-site-metadata";
 
@@ -54,18 +57,45 @@ describe("public site structured data", () => {
     );
   });
 
-  it("lists only public reviewable pages in the sitemap contract", () => {
-    expect(PUBLIC_SITEMAP_ENTRIES.map((entry) => entry.path)).toEqual([
+  it("defines the only indexable route allowlist and complete metadata", () => {
+    expect(PUBLIC_INDEXABLE_ROUTES.map((entry) => entry.path)).toEqual([
       "/",
       "/terms",
       "/privacy",
       "/operations-policy",
       "/copyright-policy",
     ]);
+
+    const titles = new Set<string>();
+    const descriptions = new Set<string>();
+
+    for (const entry of PUBLIC_INDEXABLE_ROUTES) {
+      const metadata = publicPageMetadata(entry.path);
+
+      expect(metadata.title).toBe(entry.title);
+      expect(metadata.description).toBe(entry.description);
+      expect(metadata.robots).toEqual({ index: true, follow: true });
+      expect(metadata.alternates?.canonical).toBe(
+        new URL(entry.path, "https://www.uttae.app").toString(),
+      );
+      titles.add(entry.title);
+      descriptions.add(entry.description);
+    }
+
+    expect(titles.size).toBe(PUBLIC_INDEXABLE_ROUTES.length);
+    expect(descriptions.size).toBe(PUBLIC_INDEXABLE_ROUTES.length);
     expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/api/");
-    expect(PUBLIC_ROBOT_DISALLOW_PATHS).toContain("/home");
-    expect(PUBLIC_SITEMAP_ENTRIES.map((entry) => entry.path)).not.toContain(
+    expect(PUBLIC_INDEXABLE_ROUTES.map((entry) => entry.path)).not.toContain(
       "/product",
     );
+  });
+
+  it("defines the two non-indexable crawler policies", () => {
+    expect(NOINDEX_FOLLOW_METADATA).toEqual({
+      robots: { index: false, follow: true },
+    });
+    expect(NOINDEX_NOFOLLOW_METADATA).toEqual({
+      robots: { index: false, follow: false },
+    });
   });
 });
