@@ -13,8 +13,7 @@ type ExpandedState = {
   roomResetRevision: number;
   setScheduleExpanded: (scheduleId: number, expanded: boolean) => void;
   syncScheduleExpansionState: (activeScheduleIds: readonly number[]) => void;
-  /** 방 전환 시 이전 방 scheduleId로 맵·일정 쿼리가 먼저 도는 것을 방지 */
-  resetForRoomChange: () => void;
+
 };
 
 function appendExpansionOrder(order: number[], scheduleId: number): number[] {
@@ -66,11 +65,5 @@ export const usePlanItineraryExpandedStore = create<ExpandedState>((set) => ({
       return { expandedByScheduleId: next, expansionOrder };
     });
   },
-  resetForRoomChange: () => {
-    set((s) => ({
-      expandedByScheduleId: {},
-      expansionOrder: [],
-      roomResetRevision: s.roomResetRevision + 1,
-    }));
-  },
+  
 }));

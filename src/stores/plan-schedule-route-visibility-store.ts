@@ -12,7 +12,6 @@ type State = {
   visibilityOrder: number[];
   setRouteVisible: (scheduleId: number, visible: boolean) => void;
   syncRouteVisibility: (activeScheduleIds: readonly number[]) => void;
-  resetForRoomChange: () => void;
 };
 
 function appendOrder(order: number[], scheduleId: number): number[] {
@@ -57,7 +56,5 @@ export const usePlanScheduleRouteVisibilityStore = create<State>((set) => ({
       return { visibleByScheduleId: next, visibilityOrder: order };
     });
   },
-  resetForRoomChange: () => {
-    set({ visibleByScheduleId: {}, visibilityOrder: [] });
-  },
+  
 }));

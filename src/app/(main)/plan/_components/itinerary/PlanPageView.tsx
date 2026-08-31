@@ -42,7 +42,8 @@ export function PlanPageView() {
       : "";
 
   const roomIdForQueries = roomId.length > 0 ? roomId : null;
-  const { data: roomDetail } = useRoomDetail(roomIdForQueries);
+  // rooms/${roomId}` 
+  const { data: roomDetail }= useRoomDetail(roomIdForQueries);
   const lastTrackedPlanIdRef = useRef<string | null>(null);
 
   useEffect(() => {
