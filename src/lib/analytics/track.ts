@@ -1,12 +1,14 @@
 import { sendAnalyticsDataCommand } from "@/lib/analytics/client";
-import type {
-  AnalyticsEntryPoint,
-  AnalyticsRoomRole,
-  ItemCountBucket,
-  MemberCountBucket,
-  ResultCountBucket,
-  SearchRankBucket,
-  TripDaysBucket,
+import {
+  buildAnalyticsEventPageContext,
+  type AnalyticsEntryPoint,
+  type AnalyticsEventPageContext,
+  type AnalyticsRoomRole,
+  type ItemCountBucket,
+  type MemberCountBucket,
+  type ResultCountBucket,
+  type SearchRankBucket,
+  type TripDaysBucket,
 } from "@/lib/analytics/context";
 
 export type AnalyticsUserIdCommand = [
@@ -73,8 +75,8 @@ export type AnalyticsEventParamsMap = {
   };
   [AnalyticsEvents.createBookmarkFolder]: undefined;
   [AnalyticsEvents.addToBookmark]: {
+    interaction_source?: AnalyticsSource;
     place_category?: string;
-    source?: AnalyticsSource;
   };
   [AnalyticsEvents.createPlan]: {
     entry_point: AnalyticsEntryPoint;
@@ -92,14 +94,14 @@ export type AnalyticsEventParamsMap = {
     role?: AnalyticsRoomRole;
   };
   [AnalyticsEvents.viewPlace]: {
+    interaction_source?: AnalyticsSource;
     place_category?: string;
     rank_bucket?: SearchRankBucket;
-    source?: AnalyticsSource;
   };
   [AnalyticsEvents.addToItinerary]: {
+    interaction_source: AnalyticsSource;
     item_count_bucket: ItemCountBucket;
     place_category?: string;
-    source: AnalyticsSource;
   };
   [AnalyticsEvents.removeFromItinerary]: {
     item_count_bucket: ItemCountBucket;
@@ -186,12 +188,32 @@ function cleanParams(
   return cleaned;
 }
 
+function currentAnalyticsEventPageContext():
+  | AnalyticsEventPageContext
+  | undefined {
+  if (
+    typeof window === "undefined" ||
+    typeof window.location?.origin !== "string" ||
+    typeof window.location?.pathname !== "string"
+  ) {
+    return undefined;
+  }
+
+  return buildAnalyticsEventPageContext(
+    window.location.origin,
+    window.location.pathname,
+  );
+}
+
 export function trackAnalyticsEvent<EventName extends AnalyticsEventName>(
   eventName: EventName,
   ...args: AnalyticsEventArguments<EventName>
 ): void {
   const params = args[0];
-  const cleaned = cleanParams(params);
+  const cleaned = {
+    ...cleanParams(params),
+    ...currentAnalyticsEventPageContext(),
+  };
   if (Object.keys(cleaned).length > 0) {
     sendAnalyticsDataCommand("event", eventName, cleaned);
   } else {

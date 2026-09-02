@@ -48,7 +48,7 @@ describe("Amplitude browser client", () => {
           formInteractions: false,
           frustrationInteractions: false,
           networkTracking: false,
-          pageUrlEnrichment: true,
+          pageUrlEnrichment: false,
           pageViews: false,
           performanceTracking: false,
           sessions: true,

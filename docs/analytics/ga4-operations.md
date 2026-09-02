@@ -100,7 +100,7 @@ NEXT_PUBLIC_GA_DEBUG_MODE=true
 | `result_count_bucket` | 검색 결과 수 구간 |
 | `role` | 방 역할 |
 | `search_mode` | 검색 방식 |
-| `source` | 기능 진입 출처 |
+| `interaction_source` | 제품 내부 상호작용 출처 |
 | `trip_days_bucket` | 여행 일수 구간 |
 | `tutorial_version` | 튜토리얼 버전 |
 | `skip_step` | 튜토리얼을 건너뛴 단계 |

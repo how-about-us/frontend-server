@@ -5,6 +5,7 @@ import {
   type AnalyticsEventParamsMap,
   buildAnalyticsUserIdCommand,
   buildTutorialExitAnalyticsEvent,
+  trackAnalyticsEvent,
 } from "@/lib/analytics/track";
 
 afterEach(() => {
@@ -50,6 +51,32 @@ describe("AnalyticsEvents", () => {
       result_count_bucket: "0" | "1_5" | "6_20" | "21_plus";
       search_mode: "map_recenter" | "text";
     }>();
+  });
+
+  it("reserves source and exposes interaction_source for product interactions", () => {
+    type EventWithReservedSource = {
+      [EventName in keyof AnalyticsEventParamsMap]:
+        AnalyticsEventParamsMap[EventName] extends undefined
+          ? never
+          : "source" extends keyof AnalyticsEventParamsMap[EventName]
+            ? EventName
+            : never;
+    }[keyof AnalyticsEventParamsMap];
+
+    expectTypeOf<EventWithReservedSource>().toEqualTypeOf<never>();
+    expectTypeOf<
+      AnalyticsEventParamsMap[typeof AnalyticsEvents.addToItinerary]
+    >().toEqualTypeOf<{
+      interaction_source: "bookmark" | "chat" | "map" | "plan" | "search";
+      item_count_bucket: "0" | "1" | "2_3" | "4_7" | "8_plus";
+      place_category?: string;
+    }>();
+  });
+
+  it("does not require browser URL context during SSR", () => {
+    expect(() =>
+      trackAnalyticsEvent(AnalyticsEvents.createBookmarkFolder),
+    ).not.toThrow();
   });
 });
 

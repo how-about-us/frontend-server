@@ -21,6 +21,11 @@ export type AnalyticsPageViewParams = {
   page_title: string;
 };
 
+export type AnalyticsEventPageContext = Pick<
+  AnalyticsPageViewParams,
+  "page_location" | "page_path"
+>;
+
 const dynamicPagePaths: ReadonlyArray<readonly [RegExp, string]> = [
   [/^\/join\/[^/]+$/, "/join/[inviteCode]"],
   [/^\/plan\/[^/]+$/, "/plan/[roomId]"],
@@ -153,6 +158,16 @@ function analyticsPageLocation(
   } catch {
     return `${pagePath}${campaignSearch}`;
   }
+}
+
+export function buildAnalyticsEventPageContext(
+  origin: string,
+  pathname: string,
+): AnalyticsEventPageContext {
+  return {
+    page_path: analyticsPagePath(pathname),
+    page_location: analyticsPageLocation(origin, pathname),
+  };
 }
 
 function analyticsPageReferrer(

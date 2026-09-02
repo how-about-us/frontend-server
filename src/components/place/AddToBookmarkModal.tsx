@@ -139,7 +139,7 @@ export function AddToBookmarkModal({
           if (result.added > 0) {
             trackAnalyticsEvent(AnalyticsEvents.addToBookmark, {
               place_category: placeCategory,
-              source,
+              interaction_source: source,
             });
             onAdded?.();
           }
