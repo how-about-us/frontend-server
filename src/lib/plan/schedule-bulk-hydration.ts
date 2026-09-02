@@ -213,9 +213,8 @@ export async function hydrateScheduleItemsFromSchedulesWithItems(
 }
 
 function batchRouteItemToResponse(
-  item: ScheduleItemRouteBatchItem,
-): import("@/lib/api/rooms/schedule-items").ScheduleItemRouteResponse | null {
-  if (!isBatchItemOk(item)) return null;
+  item: Extract<ScheduleItemRouteBatchItem, { status: "OK" }>,
+): import("@/lib/api/rooms/schedule-items").ScheduleItemRouteResponse {
   return {
     distanceMeters: item.distanceMeters,
     durationSeconds: item.durationSeconds,
@@ -318,6 +317,7 @@ export async function hydrateScheduleRoutesBatch(
   if (!snapshotFp.length || snapshotFp !== currentFp) return;
 
   for (const result of results) {
+    if (!isBatchItemOk(result)) continue;
     const route = batchRouteItemToResponse(result);
     const itemId = result.itemId;
     const mode = canonicalScheduleTravelMode(result.travelMode);

@@ -8,13 +8,17 @@ vi.mock("@/lib/api/rooms/schedule-items", async (importOriginal) => {
     await importOriginal<typeof import("@/lib/api/rooms/schedule-items")>();
   return {
     ...actual,
+    getScheduleItemRoute: vi.fn(),
     getScheduleItemRoutesBatch: vi.fn(),
   };
 });
 
 let hydrateScheduleRoutesBatch: typeof import("@/lib/plan/schedule-bulk-hydration").hydrateScheduleRoutesBatch;
+let resolveScheduleSegmentRoute: typeof import("@/lib/plan/scheduleSegmentRoute").resolveScheduleSegmentRoute;
 let scheduleItemsQueryKey: typeof import("@/lib/query-keys").scheduleItemsQueryKey;
 let scheduleItemRouteQueryKey: typeof import("@/lib/query-keys").scheduleItemRouteQueryKey;
+let registerQueryClient: typeof import("@/lib/query-client").registerQueryClient;
+let getScheduleItemRouteMock: ReturnType<typeof vi.fn>;
 let getScheduleItemRoutesBatchMock: ReturnType<typeof vi.fn>;
 
 const ROOM_ID = "room-1";
@@ -38,14 +42,21 @@ beforeAll(async () => {
   ({ hydrateScheduleRoutesBatch } = await import(
     "@/lib/plan/schedule-bulk-hydration"
   ));
+  ({ resolveScheduleSegmentRoute } = await import(
+    "@/lib/plan/scheduleSegmentRoute"
+  ));
   ({ scheduleItemsQueryKey, scheduleItemRouteQueryKey } = await import(
     "@/lib/query-keys"
   ));
-  ({ getScheduleItemRoutesBatch: getScheduleItemRoutesBatchMock } =
-    vi.mocked(await import("@/lib/api/rooms/schedule-items")));
+  ({ registerQueryClient } = await import("@/lib/query-client"));
+  ({
+    getScheduleItemRoute: getScheduleItemRouteMock,
+    getScheduleItemRoutesBatch: getScheduleItemRoutesBatchMock,
+  } = vi.mocked(await import("@/lib/api/rooms/schedule-items")));
 });
 
 beforeEach(() => {
+  getScheduleItemRouteMock.mockReset();
   getScheduleItemRoutesBatchMock.mockReset();
 });
 
@@ -98,6 +109,70 @@ describe("hydrateScheduleRoutesBatch", () => {
         scheduleItemRouteQueryKey(ROOM_ID, SCHEDULE_ID, 1, "DRIVING"),
       ),
     ).not.toHaveProperty("encodedPolyline");
+  });
+
+  it("mixed batch의 비 OK 구간은 no-route로 시딩하지 않고 단건 GET으로 fallback한다", async () => {
+    const queryClient = new QueryClient();
+    registerQueryClient(queryClient);
+    const mixedSnapshot = [
+      place(1, "places/a"),
+      place(2, "places/b"),
+      place(3, "places/c"),
+    ];
+    queryClient.setQueryData(
+      scheduleItemsQueryKey(ROOM_ID, SCHEDULE_ID),
+      mixedSnapshot,
+    );
+    getScheduleItemRoutesBatchMock.mockResolvedValue([
+      routeResult,
+      {
+        status: "ERROR",
+        itemId: 2,
+        travelMode: "WALKING",
+        errorCode: "UPSTREAM_TIMEOUT",
+      },
+    ]);
+    const fallbackRoute = {
+      travelMode: "WALKING",
+      distanceMeters: 800,
+      durationSeconds: 600,
+    };
+    getScheduleItemRouteMock
+      .mockRejectedValueOnce(new Error("temporary single route failure"))
+      .mockResolvedValueOnce(fallbackRoute);
+
+    await hydrateScheduleRoutesBatch(
+      queryClient,
+      ROOM_ID,
+      SCHEDULE_ID,
+      mixedSnapshot,
+    );
+
+    const failedKey = scheduleItemRouteQueryKey(
+      ROOM_ID,
+      SCHEDULE_ID,
+      2,
+      "WALKING",
+    );
+    expect(queryClient.getQueryData(failedKey)).toBeUndefined();
+    await expect(
+      resolveScheduleSegmentRoute({
+        roomId: ROOM_ID,
+        scheduleId: SCHEDULE_ID,
+        segmentSourceItemId: 2,
+        travelMode: "WALKING",
+      }),
+    ).rejects.toThrow("temporary single route failure");
+    expect(queryClient.getQueryData(failedKey)).toBeUndefined();
+    await expect(
+      resolveScheduleSegmentRoute({
+        roomId: ROOM_ID,
+        scheduleId: SCHEDULE_ID,
+        segmentSourceItemId: 2,
+        travelMode: "WALKING",
+      }),
+    ).resolves.toEqual(fallbackRoute);
+    expect(getScheduleItemRouteMock).toHaveBeenCalledTimes(2);
   });
 
   it("응답 대기 중 일정이 바뀌면(지문 불일치) 늦게 도착한 결과를 버린다", async () => {

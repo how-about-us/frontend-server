@@ -249,7 +249,13 @@ async function requestPlacePhotoUrlsBatchChunk(
       ...(options?.refresh === true ? { refresh: true } : {}),
     }),
   });
-  if (res.status === 204) return [];
+  if (res.status === 204) {
+    return googlePlaceIds.map((googlePlaceId) => ({
+      status: "OK",
+      googlePlaceId,
+      photoUrl: null,
+    }));
+  }
   if (!res.ok) {
     const body = await tryParseJson(res);
     const detail = readUserFacingMessageFromApiBody(body);
