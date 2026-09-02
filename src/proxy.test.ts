@@ -94,3 +94,44 @@ describe("protected route redirect indexing contract", () => {
     expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
 });
+
+describe("public entry route indexing contract", () => {
+  beforeEach(() => {
+    verifySessionWithOptionalRefresh.mockReset();
+  });
+
+  it.each(["/login", "/"])(
+    "marks the authenticated %s redirect noindex, nofollow",
+    async (path) => {
+      verifySessionWithOptionalRefresh.mockResolvedValue({
+        ok: true,
+        setCookies: ["session=refreshed; Path=/; HttpOnly"],
+      });
+
+      const response = await proxy(appRequest(path));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toBe(
+        "https://www.uttae.app/home",
+      );
+      expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+      expect(response.headers.get("set-cookie")).toBe(
+        "session=refreshed; Path=/; HttpOnly",
+      );
+    },
+  );
+
+  it("keeps the anonymous public root indexable", async () => {
+    verifySessionWithOptionalRefresh.mockResolvedValue({
+      ok: false,
+      setCookies: [],
+    });
+
+    const response = await proxy(appRequest("/"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+});

@@ -55,9 +55,11 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === "/login") {
     if (hasSession) {
-      return withRefreshedCookies(
-        NextResponse.redirect(new URL("/home", request.url)),
-        setCookies,
+      return withNoindexNofollow(
+        withRefreshedCookies(
+          NextResponse.redirect(new URL("/home", request.url)),
+          setCookies,
+        ),
       );
     }
     return NextResponse.next();
@@ -65,9 +67,11 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === "/") {
     if (hasSession) {
-      return withRefreshedCookies(
-        NextResponse.redirect(new URL("/home", request.url)),
-        setCookies,
+      return withNoindexNofollow(
+        withRefreshedCookies(
+          NextResponse.redirect(new URL("/home", request.url)),
+          setCookies,
+        ),
       );
     }
     return NextResponse.next();
