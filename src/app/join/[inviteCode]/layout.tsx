@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { brandAssets } from "@/lib/public-assets";
+import { NOINDEX_NOFOLLOW_METADATA } from "@/lib/public-site-metadata";
 import { inviteShareMetadata } from "@/lib/share-metadata";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
+  ...NOINDEX_NOFOLLOW_METADATA,
   metadataBase: new URL(SITE_URL),
   title: inviteShareMetadata.title,
   description: inviteShareMetadata.description,

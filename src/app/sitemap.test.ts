@@ -15,5 +15,7 @@ describe("sitemap metadata", () => {
       "https://www.uttae.app/copyright-policy",
     ]);
     expect(urls.join(" ")).not.toMatch(/\/home|\/api|\/join/);
+    expect(entries.every((entry) => !("lastModified" in entry))).toBe(true);
+    expect(entries).toHaveLength(5);
   });
 });
