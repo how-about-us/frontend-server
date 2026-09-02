@@ -30,7 +30,7 @@ Amplitude의 Development와 Production 프로젝트를 분리하고 API 키를 �
 - 자동 수집: 세션과 마케팅 유입 정보만 활성화한다.
 - 페이지 조회: 앱의 SPA 라우트 추적기가 `page_view`를 직접 전송하므로 Amplitude 기본 page view autocapture는 끈다.
 - 사용자 행동: element, form, file download, frustration, network, Web Vitals, performance autocapture는 끈다.
-- URL 보강: 이벤트 분석에 필요한 현재 페이지 URL 보강은 유지한다.
+- URL 보강: SDK 자동 URL 보강은 끄고, 제품 이벤트에는 정규화된 `page_path`와 쿼리·해시가 없는 `page_location`을 명시적으로 전달한다.
 - 사용자 ID: 로그인 성공 뒤 내부 사용자 ID만 설정하며, 동의 철회 시 제거하고 opt-out 처리한다.
 
 Amplitude 프로젝트의 원격 autocapture 설정이 로컬 설정과 충돌하지 않는지 배포 때 확인한다.

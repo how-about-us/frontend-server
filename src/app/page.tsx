@@ -5,17 +5,15 @@ import { StructuredData } from "@/components/seo/StructuredData";
 import { brandAssets } from "@/lib/public-assets";
 import {
   ORGANIZATION_JSON_LD,
+  publicPageMetadata,
   SOFTWARE_APPLICATION_JSON_LD,
 } from "@/lib/public-site-metadata";
 
-const title = "우때 — 실시간 협업 여행 플래너";
-const description =
-  "우때에서 친구들과 장소를 찾고 대화하며 여행 일정을 함께 완성하세요.";
+const publicMetadata = publicPageMetadata("/");
+const { title, description } = publicMetadata;
 
 export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/" },
+  ...publicMetadata,
   openGraph: {
     title,
     description,

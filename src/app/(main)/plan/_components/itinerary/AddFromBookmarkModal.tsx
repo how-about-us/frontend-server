@@ -161,7 +161,7 @@ export function AddFromBookmarkModal({
         });
         trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
           item_count_bucket: bucketItemCount(places.length + 1),
-          source: "bookmark",
+          interaction_source: "bookmark",
         });
         toast.success("일정에 추가했어요.");
         onClose();

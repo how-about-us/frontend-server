@@ -158,7 +158,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
         });
         trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
           item_count_bucket: bucketItemCount(places.length + 1),
-          source: "search",
+          interaction_source: "search",
         });
         setActiveInsertIndex(null);
       } catch {

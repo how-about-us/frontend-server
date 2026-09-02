@@ -82,7 +82,7 @@ export function PlaceDetailPanel({
     trackAnalyticsEvent(AnalyticsEvents.viewPlace, {
       place_category: displayCategory,
       rank_bucket: analyticsRankBucketRef.current ?? undefined,
-      source: analyticsSourceRef.current ?? itinerarySource,
+      interaction_source: analyticsSourceRef.current ?? itinerarySource,
     });
   }, [
     analyticsRankBucketRef,

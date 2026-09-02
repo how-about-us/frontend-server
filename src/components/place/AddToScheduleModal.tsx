@@ -77,7 +77,7 @@ export function AddToScheduleModal({
       trackAnalyticsEvent(AnalyticsEvents.addToItinerary, {
         item_count_bucket: bucketItemCount(cached.length + 1),
         place_category: placeCategory,
-        source,
+        interaction_source: source,
       });
       toast.success("일정에 추가했어요.");
       onAdded?.();

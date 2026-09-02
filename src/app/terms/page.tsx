@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 
 import { PolicyDocumentView } from "@/components/agreements/PolicyDocumentView";
 import { PolicyPageShell } from "@/components/agreements/PolicyPageShell";
+import { publicPageMetadata } from "@/lib/public-site-metadata";
 
-export const metadata: Metadata = {
-  title: "이용약관 — 우때",
-  description: "우때 서비스 이용약관",
-};
+export const metadata: Metadata = publicPageMetadata("/terms");
 
 export default function TermsPage() {
   return (
