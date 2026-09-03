@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppRootProviders } from "@/providers/root-providers";
 import { brandAssets, faviconAssets } from "@/lib/public-assets";
 import { PUBLIC_SITE } from "@/lib/public-site";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-app-inter",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(PUBLIC_SITE.origin),
@@ -32,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${inter.variable} h-full`}>
+    <html lang="ko" className="h-full">
       <head>
         <script
           {...{
