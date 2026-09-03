@@ -20,17 +20,11 @@ export function LandingHeader() {
           className="flex items-center gap-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
         >
           <BrandLogo
-            alt=""
-            variant="favicon"
-            aria-hidden
-            style={{ width: 42, height: 42 }}
+            variant="combination"
+            size="S"
+            alt="우때 로고"
           />
-          <BrandLogo
-            alt=""
-            variant="logo"
-            aria-hidden
-            style={{ width: 60, height: "auto", marginLeft: -2 }}
-          />
+          
         </Link>
         <nav aria-label="랜딩 페이지" className="ml-auto hidden items-center gap-7 landing-sm:flex">
           {navItems.map((item) => (

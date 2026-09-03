@@ -83,7 +83,7 @@ const HeaderBar = () => {
               </span>
             )}
           </div>
-          <BrandLogo alt="logo" />
+          <BrandLogo variant="combination" size="S" alt="로고" />
         </div>
       </div>
     </header>

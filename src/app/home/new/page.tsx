@@ -84,7 +84,7 @@ export default function NewTripPage() {
             href="/home"
             className="inline-flex rounded-md outline-none ring-offset-2 transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-brand-red"
           >
-            <BrandLogo alt="로고" style={{ width: 116, height: 66 }} />
+            <BrandLogo alt="로고" variant="combination" size="M" />
           </Link>
         </div>
 

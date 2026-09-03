@@ -89,7 +89,10 @@ export function HomeHeader() {
     <>
       <header className="sticky top-0 z-40 border-b border-gray-border bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-2">
-          <BrandLogo alt="로고" />
+          <BrandLogo 
+          variant="combination"
+          size="S"
+          alt="로고" />
 
           <div ref={profileRef} className="relative">
             <button
