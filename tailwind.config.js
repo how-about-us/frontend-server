@@ -14,9 +14,7 @@ module.exports = {
         heading: ["var(--font-sans)"],
       },
       colors: {
-        "brand-red": "#f12d33",
         "light-gray": "#d9d9d9",
-        "brand-green": "#03c75a",
         "dark-gray": "#6a7282",
         "gray-border": "#e5e7eb",
         "bubble-gray": "#f1f1f1",

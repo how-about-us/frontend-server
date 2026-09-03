@@ -82,13 +82,13 @@ function WaitingContent() {
           <div className="relative flex h-24 w-24 items-center justify-center">
             {!isRejected && (
               <>
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-red/20" />
-                <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-brand-red/15 [animation-delay:0.4s]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/20" />
+                <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-primary/15 [animation-delay:0.4s]" />
               </>
             )}
             <div
               className={`relative flex h-16 w-16 items-center justify-center rounded-full ${
-                isRejected ? "bg-gray-100" : "bg-brand-red/10"
+                isRejected ? "bg-gray-100" : "bg-primary/10"
               }`}
             >
               {isRejected ? (
@@ -116,7 +116,7 @@ function WaitingContent() {
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-brand-red"
+                  className="text-primary"
                 >
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
@@ -156,7 +156,7 @@ function WaitingContent() {
 
         {/* 오류 */}
         {fetchError && (
-          <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-center text-[14px] text-brand-red">
+          <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-center text-[14px] text-primary">
             상태 조회에 실패했습니다. 다시 시도해 주세요.
           </p>
         )}
@@ -200,7 +200,7 @@ export default function WaitingPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-bubble-gray/80 via-white to-white">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-primary" />
         </div>
       }
     >

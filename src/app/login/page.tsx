@@ -53,7 +53,7 @@ function LoginShell({ children }: { children: ReactNode }) {
         <Link
           href="/"
           aria-label="우때 홈으로 돌아가기"
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-red"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </Link>

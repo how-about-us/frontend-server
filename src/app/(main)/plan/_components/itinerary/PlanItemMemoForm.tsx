@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 const SCHEDULE_ITEM_MEMO_MAX_LENGTH = 2000;
 
 const MEMO_LINK_CLASS_NAME =
-  "break-all text-brand-green underline underline-offset-2 hover:opacity-80";
+  "break-all text-secondary underline underline-offset-2 hover:opacity-80";
 
 type PlanItemMemoEditorProps = {
   roomId: string;
@@ -100,7 +100,7 @@ function MemoOverwriteConfirmDialog({
             type="button"
             disabled={isPending}
             onClick={onConfirm}
-            className="cursor-pointer rounded-md bg-brand-green px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-md bg-secondary px-3 py-1.5 text-sm font-medium text-white transition hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending ? "저장 중…" : "확인"}
           </button>
@@ -143,7 +143,7 @@ export function PlanItemMemoReadOnly({
             e.stopPropagation();
             onDelete();
           }}
-          className="shrink-0 cursor-pointer self-start rounded-md p-1 text-dark-gray transition hover:bg-brand-red/10 hover:text-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+          className="shrink-0 cursor-pointer self-start rounded-md p-1 text-dark-gray transition hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
         </button>
@@ -276,7 +276,7 @@ export function PlanItemMemoEditor({
               onClick={() => void handleSave()}
               disabled={isPending || !dirty}
               className={cn(
-                "cursor-pointer bg-brand-green text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-40",
+                "cursor-pointer bg-secondary text-white transition hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-40",
                 PLAN_PLACE_CARD_TW.timeSaveButtonCompact,
               )}
             >

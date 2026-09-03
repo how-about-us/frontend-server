@@ -28,7 +28,7 @@ export function LandingHero() {
           </LandingActionLink>
           <Link
             href="/#features"
-            className="inline-flex items-center justify-center rounded-full border border-gray-border bg-white px-7 py-3 text-base font-bold text-dark-gray transition hover:border-brand-red/40 hover:text-brand-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
+            className="inline-flex items-center justify-center rounded-full border border-gray-border bg-white px-7 py-3 text-base font-bold text-dark-gray transition hover:border-primary/40 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             기능 살펴보기
           </Link>

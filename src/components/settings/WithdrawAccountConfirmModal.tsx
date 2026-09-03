@@ -44,7 +44,7 @@ export function WithdrawAccountConfirmModal({
       >
         <div className="px-6 pb-2 pt-6 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-            <UserX size={22} className="text-brand-red" aria-hidden />
+            <UserX size={22} className="text-primary" aria-hidden />
           </div>
           <h2 id="withdraw-account-title" className="text-[19px] font-bold">
             정말 탈퇴하시겠어요?

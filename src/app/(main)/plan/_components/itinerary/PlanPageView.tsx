@@ -178,7 +178,7 @@ export function PlanPageView() {
         {isError ? (
           <p
             className={cn(
-              "rounded-xl border border-gray-border bg-white py-3 text-[17px] text-brand-red",
+              "rounded-xl border border-gray-border bg-white py-3 text-[17px] text-primary",
               MAIN_CARD_INNER_PADDING_X_CLASS,
             )}
           >

@@ -17,7 +17,7 @@ export function LandingHeader() {
         <Link
           href="/"
           aria-label="우때 홈"
-          className="flex items-center gap-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
+          className="flex items-center gap-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <BrandLogo
             variant="combination"
@@ -31,7 +31,7 @@ export function LandingHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm font-semibold text-dark-gray transition hover:text-brand-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red"
+              className="text-sm font-semibold text-dark-gray transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {item.label}
             </Link>

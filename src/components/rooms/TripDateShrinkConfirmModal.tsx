@@ -44,7 +44,7 @@ export function TripDateShrinkConfirmModal({
       >
         <div className="px-6 pb-2 pt-6 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
-            <CalendarRange size={22} className="text-brand-red" />
+            <CalendarRange size={22} className="text-primary" />
           </div>
           <h2
             id="trip-date-shrink-dialog-title"

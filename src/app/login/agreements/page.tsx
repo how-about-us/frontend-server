@@ -151,7 +151,7 @@ export default function LoginAgreementsPage() {
           type="button"
           onClick={returnToLogin}
           aria-label="로그인으로 돌아가기"
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-brand-red"
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-dark-gray outline-none ring-offset-2 transition hover:bg-bubble-gray/80 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
         </button>
@@ -174,16 +174,16 @@ export default function LoginAgreementsPage() {
           {errorMessage && (
             <div
               role="alert"
-              className="w-full rounded-xl border border-brand-red/35 bg-brand-red/[0.06] px-4 py-3 text-left"
+              className="w-full rounded-xl border border-primary/35 bg-primary/[0.06] px-4 py-3 text-left"
             >
-              <p className="text-[17px] font-medium text-brand-red">
+              <p className="text-[17px] font-medium text-primary">
                 {errorMessage}
               </p>
               {isExpired && (
                 <button
                   type="button"
                   onClick={returnToLogin}
-                  className="mt-3 text-[17px] font-semibold text-brand-red underline-offset-2 hover:underline"
+                  className="mt-3 text-[17px] font-semibold text-primary underline-offset-2 hover:underline"
                 >
                   Google 로그인 다시 시작하기
                 </button>
@@ -198,7 +198,7 @@ export default function LoginAgreementsPage() {
             onClick={() => void handleSubmit()}
             disabled={submitDisabled}
             aria-disabled={submitDisabled}
-            className="flex w-full items-center justify-center rounded-xl bg-brand-red px-4 py-3 text-lg font-semibold text-white shadow-sm transition hover:bg-brand-red/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-lg font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting
               ? "처리 중…"

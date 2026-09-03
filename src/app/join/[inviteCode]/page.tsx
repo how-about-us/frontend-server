@@ -86,7 +86,7 @@ export default function JoinPage() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
         <BrandLogo variant="combination" size="M" alt="우때 로고" />
         <div className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-          <p className="mb-1 font-semibold text-brand-red">입장 요청 실패</p>
+          <p className="mb-1 font-semibold text-primary">입장 요청 실패</p>
           <p className="text-[17px] text-dark-gray">{error}</p>
         </div>
         <button
@@ -102,7 +102,7 @@ export default function JoinPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gradient-to-b from-bubble-gray/80 via-white to-white px-4">
       <BrandLogo variant="combination" size="M" alt="우때 로고" />
-      <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-brand-red" />
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-border border-t-primary" />
       <p className="text-[17px] text-dark-gray">입장 요청 중…</p>
     </div>
   );

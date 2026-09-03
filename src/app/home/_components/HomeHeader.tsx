@@ -98,7 +98,7 @@ export function HomeHeader() {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-brand-red transition hover:opacity-90"
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary transition hover:opacity-90"
               aria-label="프로필"
               aria-expanded={open}
             >
@@ -140,7 +140,7 @@ export function HomeHeader() {
                     setOpen(false);
                     setShowWithdrawConfirm(true);
                   }}
-                  className="w-full border-t border-gray-border px-4 py-2.5 text-left text-[17px] text-brand-red transition hover:bg-brand-red/5"
+                  className="w-full border-t border-gray-border px-4 py-2.5 text-left text-[17px] text-primary transition hover:bg-primary/5"
                 >
                   회원 탈퇴
                 </button>
