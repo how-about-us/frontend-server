@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppRootProviders } from "@/providers/root-providers";
-import { brandAssets, faviconAssets } from "@/lib/public-assets";
+import { faviconAssets } from "@/lib/public-assets";
 import { PUBLIC_SITE } from "@/lib/public-site";
 
 export const metadata: Metadata = {

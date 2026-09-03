@@ -158,7 +158,7 @@ export default function LoginAgreementsPage() {
 
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
-            <BrandLogo alt="" style={{ width: 116, height: 66 }} />
+            <BrandLogo variant="combination" size="M" alt="우때 로고" />
             <div>
               <h1 className="text-2xl font-bold text-neutral-900">
                 {isSignup ? "서비스 약관 동의" : "변경된 약관 재동의"}

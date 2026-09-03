@@ -59,7 +59,7 @@ function LoginShell({ children }: { children: ReactNode }) {
         </Link>
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-3">
-            <BrandLogo alt="" style={{ width: 116, height: 66 }} />
+            <BrandLogo variant="combination" size="M" alt="우때 로고" />
             <p className="text-[17px] leading-relaxed text-dark-gray">
               로그인하고 여행 계획을 이어가세요!
             </p>
