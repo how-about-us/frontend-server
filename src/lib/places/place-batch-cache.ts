@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/places";
 import { isBatchItemError, isBatchItemOk } from "@/lib/api/batch-types";
 import {
+  PLACE_PHOTO_EMPTY_STALE_MS,
   placePhotoUrlQueryDefaults,
   placePhotoUrlQueryKey,
 } from "@/lib/place-photo-query";
@@ -194,8 +195,15 @@ function uncachedPhotoPlaceIds(
   for (const raw of googlePlaceIds) {
     const id = typeof raw === "string" ? raw.trim() : "";
     if (!id.length) continue;
-    const cached = queryClient.getQueryData(placePhotoUrlQueryKey(id));
-    if (cached != null) continue;
+    const state = queryClient.getQueryState<string>(placePhotoUrlQueryKey(id));
+    const cached = state?.data;
+    if (typeof cached === "string" && cached.trim().length > 0) continue;
+    if (
+      typeof cached === "string" &&
+      Date.now() - (state?.dataUpdatedAt ?? 0) < PLACE_PHOTO_EMPTY_STALE_MS
+    ) {
+      continue;
+    }
     out.push(id);
   }
   return [...new Set(out)];
@@ -327,7 +335,7 @@ export async function fetchAndSeedPlacePhotoUrls(
   }
 }
 
-/** batch 시딩 후 개별 query key에 데이터가 있도록 defaults와 함께 prefetch */
+/** 미캐시·만료된 장소 사진 URL을 batch로 시딩 */
 export async function ensurePlacePhotoUrlsCached(
   googlePlaceIds: readonly string[],
   queryClient?: QueryClient | null,
@@ -336,16 +344,6 @@ export async function ensurePlacePhotoUrlsCached(
   if (!qc) return;
 
   await fetchAndSeedPlacePhotoUrls(googlePlaceIds, qc);
-
-  for (const raw of googlePlaceIds) {
-    const id = typeof raw === "string" ? raw.trim() : "";
-    if (!id.length) continue;
-    const cached = qc.getQueryData<string>(placePhotoUrlQueryKey(id));
-    if (cached == null) continue;
-    qc.setQueryData(placePhotoUrlQueryKey(id), cached, {
-      updatedAt: Date.now(),
-    });
-  }
 }
 
 export {
