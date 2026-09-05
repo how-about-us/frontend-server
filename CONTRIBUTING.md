@@ -25,7 +25,7 @@ docs: 개발자 온보딩 보완
 | :-- | :-- |
 | `feature/*` → `dev` | Squash and merge |
 | `dev` → `main` | Create a merge commit |
-| `hotfix/*` → `main` | Create a merge commit |
+| `hotfix/*` → `main` | Squash and merge |
 | `main` → `dev` 백머지 | Create a merge commit |
 
 - hotfix나 revert가 `main`에 먼저 반영되면 최신 `main`의 정확한 HEAD를 merge commit으로 `dev`에 백머지합니다. cherry-pick, re-squash 또는 동일한 패치를 다시 적용하는 방식으로 전달하지 않습니다.
