@@ -46,6 +46,20 @@ Frontend, Backend, AI Server는 모두 같은 브랜치 전략을 사용합니�
 - `main` — 배포 기준 브랜치이며 직접 push하지 않습니다.
 - `dev` — 기능을 통합하고 `main` 병합 전에 함께 검증하는 브랜치입니다.
 - `feature/<topic>` — `dev`에서 분기하고 PR 대상도 `dev`로 지정합니다.
-- `hotfix/<topic>` — `main`에서 분기하고 PR 대상은 `main`으로 지정합니다. 병합 후 같은 변경을 `dev`에 백머지합니다.
+- `hotfix/<topic>` — `main`에서 분기하고 PR 대상은 `main`으로 지정합니다. 병합 후 `main`을 `dev`에 백머지합니다.
 
 브랜치는 하나의 작업 단위로 짧게 유지합니다.
+
+#### 병합 정책
+
+| 병합 방향 | 방식 |
+| :-- | :-- |
+| `feature/*` → `dev` | Squash and merge |
+| `dev` → `main` | Create a merge commit |
+| `hotfix/*` → `main` | Create a merge commit |
+| `main` → `dev` 백머지 | Create a merge commit |
+
+- hotfix나 revert가 `main`에 먼저 반영되면 반드시 정확한 `main` 브랜치를 merge commit으로 `dev`에 백머지합니다. cherry-pick, re-squash, 동일 패치 복사는 사용하지 않습니다.
+- 백머지 충돌을 해결하고 결과를 검증하기 전에는 다음 `dev` → `main` 릴리스를 병합하지 않습니다.
+- Rebase merge, 공유 중인 `main`·`dev`의 이력 재작성이나 force-push, squash 완료 후 feature 브랜치 재사용은 금지합니다.
+- 정책 도입 전의 기존 이력은 Frontend PR #140과 같은 과거 merge commit 예외를 포함해 그대로 보존하며, 토폴로지 정리만을 목적으로 revert하거나 재작성하지 않습니다.
