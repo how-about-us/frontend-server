@@ -192,7 +192,7 @@ export function AddMemberPanel({
             disabled={!inviteUrl}
             className={`flex-shrink-0 cursor-pointer rounded-lg border px-3 py-2 text-[14px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               copied
-                ? "border-secondary bg-secondary/10 text-secondary"
+                ? "border-status-positive bg-status-positive/10 text-status-positive"
                 : "border-gray-border bg-white text-dark-gray hover:border-gray-400"
             }`}
           >

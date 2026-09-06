@@ -72,7 +72,7 @@ function JoinRequestCard({
         <button
           onClick={() => approve({ roomId, requestId: request.requestId })}
           disabled={isPending}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-secondary/40 bg-secondary/10 text-secondary transition-colors hover:bg-secondary/20 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="승인"
         >
           <CheckIcon size={14} strokeWidth={2.5} />
@@ -80,7 +80,7 @@ function JoinRequestCard({
         <button
           onClick={() => reject({ roomId, requestId: request.requestId })}
           disabled={isPending}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-status-negative/30 bg-status-negative/10 text-status-negative transition-colors hover:bg-status-negative/20 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="거절"
         >
           <XIcon size={14} strokeWidth={2.5} />
