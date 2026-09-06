@@ -5,6 +5,7 @@
 - 
 
 ## 테스트
-- [ ] `./gradlew build`
-- [ ] `/review-code-against-docs` 스킬로 검증
+- [ ] `npm run lint`
+- [ ] `npm test`
+- [ ] `npm run build`
 - [ ] 그 외 수동 검증:
