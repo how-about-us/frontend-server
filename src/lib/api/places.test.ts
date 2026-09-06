@@ -122,4 +122,30 @@ describe("place photo API requests", () => {
       refresh: true,
     });
   });
+
+  it("represents whole-batch 204 as explicit no-photo items instead of per-item failures", async () => {
+    const { requestPlacePhotoUrlsBatch } = await import("@/lib/api/places");
+    apiFetch.mockResolvedValueOnce({
+      status: 204,
+      ok: true,
+      json: async () => {
+        throw new Error("body should not be parsed");
+      },
+    });
+
+    await expect(
+      requestPlacePhotoUrlsBatch(["ChIJ-place-1", "ChIJ-place-2"]),
+    ).resolves.toEqual([
+      {
+        status: "OK",
+        googlePlaceId: "ChIJ-place-1",
+        photoUrl: null,
+      },
+      {
+        status: "OK",
+        googlePlaceId: "ChIJ-place-2",
+        photoUrl: null,
+      },
+    ]);
+  });
 });
