@@ -324,7 +324,7 @@ export function SidebarTutorial() {
           </div>
 
           {errorMessage ? (
-            <p className="mt-3 text-[14px] font-medium text-primary" role="alert">
+            <p className="mt-3 text-[14px] font-medium text-status-negative" role="alert">
               {errorMessage}
             </p>
           ) : null}
