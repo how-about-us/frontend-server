@@ -393,7 +393,7 @@ export default function SearchPage() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {showSearchLoading && (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 text-dark-gray">
-            <Loader2 className="h-6 w-6 animate-spin text-secondary" />
+            <Loader2 className="h-6 w-6 animate-spin text-primary-strong" />
             <span className="text-[17px]">장소를 검색하는 중...</span>
           </div>
         )}
@@ -455,7 +455,7 @@ export default function SearchPage() {
             ) : null}
             {isFetching && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/50">
-                <Loader2 className="h-6 w-6 animate-spin text-secondary" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary-strong" />
               </div>
             )}
           </div>

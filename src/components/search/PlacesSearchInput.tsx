@@ -279,7 +279,7 @@ export function PlacesSearchInput({
                 <span className="flex min-w-0 flex-1 items-baseline gap-0 truncate">
                   <PlacePredictionInlineDescription
                     prediction={prediction}
-                    matchClassName="font-semibold text-secondary"
+                    matchClassName="font-semibold text-primary-strong"
                     primaryTextClassName="text-base text-[#111827]"
                     secondaryTextClassName="ml-1.5 truncate text-[13px] text-[#9ca3af]"
                   />
