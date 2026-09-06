@@ -70,7 +70,7 @@ function WaitingContent() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center gap-10 overflow-hidden bg-gradient-to-b from-bubble-gray/60 via-white to-white px-4 py-12">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(241,45,51,0.07),_transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(1,131,255,0.07),_transparent_55%)]"
         aria-hidden
       />
 

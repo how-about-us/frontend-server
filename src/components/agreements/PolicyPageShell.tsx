@@ -20,7 +20,7 @@ export function PolicyPageShell({ title, children, className }: Props) {
       )}
     >
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(241,45,51,0.08),_transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(1,131,255,0.08),_transparent_55%)]"
         aria-hidden
       />
 

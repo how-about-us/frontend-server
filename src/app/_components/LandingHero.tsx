@@ -11,7 +11,7 @@ import { landingTypography } from "@/lib/landing/landing-typography";
 
 export function LandingHero() {
   return (
-    <section className="bg-[radial-gradient(circle_at_50%_12%,rgba(241,45,51,0.11),transparent_35%)] pt-20 pb-10 landing-lg:pt-28 landing-lg:pb-14">
+    <section className="bg-[radial-gradient(circle_at_50%_12%,rgba(1,131,255,0.11),transparent_35%)] pt-20 pb-10 landing-lg:pt-28 landing-lg:pb-14">
       <div className={`${LANDING_CONTAINER_CLASS} text-center`}>
         <p className={landingTypography.eyebrow}>REAL-TIME TRAVEL PLANNER</p>
         <h1 className={`${landingTypography.heroTitle} mx-auto mt-4 max-w-4xl`}>
