@@ -1,8 +1,3 @@
-import type { ImgHTMLAttributes } from "react";
-
-import { cn } from "@/lib/utils";
-import { brandAssets } from "@/lib/public-assets";
-
 type BrandLogoProps = {
   variant: "symbol" | "wordmark" | "combination";
   size: "S" | "M" | "L";
@@ -16,7 +11,7 @@ export function BrandLogo({
   variant = "combination",
   size = "M",
   alt = "우때 로고",
-}: BrandLogoProps) {
+}: Readonly<BrandLogoProps>) {
   const LOGO_ASSETS = {
     symbol: {
       S: { src: "/brand/App_Icon.svg", width: 23, height: 23 },
