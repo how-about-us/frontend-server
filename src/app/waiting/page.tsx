@@ -156,7 +156,7 @@ function WaitingContent() {
 
         {/* 오류 */}
         {fetchError && (
-          <p className="mb-4 rounded-xl bg-red-50 px-4 py-2.5 text-center text-[14px] text-primary">
+          <p className="mb-4 rounded-xl bg-status-negative/10 px-4 py-2.5 text-center text-[14px] text-status-negative">
             상태 조회에 실패했습니다. 다시 시도해 주세요.
           </p>
         )}
