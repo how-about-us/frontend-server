@@ -33,3 +33,9 @@ docs: 개발자 온보딩 보완
 - Rebase merge는 사용하지 않습니다.
 - 공유 중인 `main`과 `dev`의 이력을 재작성하거나 force-push하지 않습니다.
 - 정책 도입 전의 기존 이력과 merge commit은 역사적 예외로 그대로 보존합니다. 토폴로지를 정리할 목적만으로 revert하거나 이력을 재작성하지 않습니다.
+
+## Pull Request Rules
+- PR 제목은 커밋 컨벤션과 동일한 형식(feat: ...)을 따른다.
+- main으로 직접 merge 전 최소 1명의 리뷰가 필요하다.
+- PR 본문은 .github/pull_request_template.md 형식을 그대로 따른다.
+- PR 본문에 변경 이유와 테스트 방법을 간략히 적는다.
