@@ -321,7 +321,7 @@ export function ChatInputBar({
                 isMinimized ? "text-[13px]" : "text-[14px]",
               )}
             >
-              <span className="font-medium text-secondary">
+              <span className="font-medium text-primary-strong">
                 {CHAT_AI_MENTION_LABEL}
               </span>
               <span className="ml-2 text-dark-gray">AI에게 질문하기</span>
@@ -392,7 +392,7 @@ export function ChatInputBar({
             transition={chatTapTransition}
             className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors ${
               aiEnabled
-                ? "bg-secondary text-white"
+                ? "bg-primary text-white"
                 : "bg-light-gray text-black/40"
             }`}
           >
