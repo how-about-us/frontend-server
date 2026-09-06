@@ -187,7 +187,7 @@ export function PlanItinerary({ roomId, scheduleId }: PlanItineraryProps) {
     >
       {isLoading ?
         <div className="flex items-center justify-center gap-2 py-8 text-dark-gray">
-          <Loader2 className="h-5 w-5 animate-spin text-secondary" />
+          <Loader2 className="h-5 w-5 animate-spin text-primary-strong" />
           <span className="text-[17px]">장소 목록을 불러오는 중…</span>
         </div>
       : null}

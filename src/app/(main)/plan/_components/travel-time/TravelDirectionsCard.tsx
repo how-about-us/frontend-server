@@ -109,7 +109,7 @@ export function TravelDirectionsCard({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Google Maps에서 길찾기"
-            className="inline-flex h-10 shrink-0 items-center gap-1 px-2 text-[12px] font-medium text-secondary underline-offset-2 hover:underline"
+            className="inline-flex h-10 shrink-0 items-center gap-1 px-2 text-[12px] font-medium text-primary-strong underline-offset-2 hover:underline"
           >
             Google 길찾기
             <ExternalLink className="h-3 w-3" aria-hidden />

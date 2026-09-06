@@ -239,7 +239,7 @@ export function PlanDaySection({
               className={cn(
                 "shrink-0 cursor-pointer self-center rounded-lg p-2 transition-colors mobile:hidden",
                 routeVisible
-                  ? "text-primary hover:bg-red-50"
+                  ? "text-primary hover:bg-primary/10"
                   : "text-dark-gray hover:bg-bubble-gray/60",
               )}
             >
@@ -294,7 +294,7 @@ export function PlanDaySection({
                       role="menuitem"
                       disabled={isDeleteScheduleDisabled}
                       className={cn(
-                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-primary hover:bg-red-50",
+                        "flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-left text-[17px] text-status-negative hover:bg-bubble-gray",
                         isDeleteScheduleDisabled
                           ? "cursor-not-allowed opacity-40"
                           : "cursor-pointer",

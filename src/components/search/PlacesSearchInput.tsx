@@ -316,7 +316,7 @@ export function PlacesSearchInput({
             onFocus={() => predictions.length > 0 && setIsOpen(true)}
             placeholder={placeholder}
             autoComplete="off"
-            className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-[17px] outline-none placeholder:text-[#99A1AF] focus:border-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-inset disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg border border-gray-border bg-white py-2 pl-9 pr-8 text-[17px] outline-none placeholder:text-[#99A1AF] focus:border-primary focus:ring-2 focus:ring-primary/30 focus:ring-inset disabled:cursor-not-allowed disabled:opacity-60"
           />
           {inputValue ? (
             <button

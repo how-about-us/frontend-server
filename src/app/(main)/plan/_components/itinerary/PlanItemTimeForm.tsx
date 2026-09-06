@@ -172,7 +172,7 @@ export function PlanItemTimeEditor({
         className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-3xl bg-white shadow-xl"
       >
         <div className="flex items-center gap-2 px-6 pb-3 pt-6">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
             <Clock className="h-5 w-5" aria-hidden />
           </span>
           <h2
@@ -275,7 +275,7 @@ export function PlanItemTimeEditor({
               type="button"
               onClick={() => void handleSave()}
               disabled={!canSave}
-              className="h-10 shrink-0 cursor-pointer rounded-lg bg-secondary px-4 text-sm font-medium text-white transition hover:bg-secondary/90 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-10 shrink-0 cursor-pointer rounded-lg bg-primary px-4 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isPending ? "저장 중…" : "저장"}
             </button>

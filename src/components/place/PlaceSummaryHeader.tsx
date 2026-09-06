@@ -76,7 +76,7 @@ export function PlaceSummaryHeader({
           type="button"
           onClick={onAddToSchedule}
           disabled={addToScheduleDisabled || !onAddToSchedule}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Calendar className="h-4 w-4" strokeWidth={2} />
           일정에 추가
@@ -85,7 +85,7 @@ export function PlaceSummaryHeader({
           type="button"
           onClick={onAddBookmark}
           disabled={addBookmarkDisabled || !onAddBookmark}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-red-600 active:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-3 text-[14px] font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Bookmark className="h-4 w-4" strokeWidth={2} />
           북마크에 추가

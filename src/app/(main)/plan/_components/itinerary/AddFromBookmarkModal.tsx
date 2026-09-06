@@ -262,7 +262,7 @@ export function AddFromBookmarkModal({
                       className={cn(
                         "flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-left text-[14px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                         selected
-                          ? "border-secondary bg-secondary/10 text-gray-900"
+                          ? "border-primary bg-primary/10 text-gray-900"
                           : "border-gray-border bg-white text-dark-gray hover:bg-gray-50",
                       )}
                     >

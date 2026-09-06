@@ -303,7 +303,7 @@ export function BookmarkFoldersView() {
                         <button
                           type="button"
                           role="menuitem"
-                          className="block w-full cursor-pointer px-4 py-2 text-left text-[17px] text-primary hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="block w-full cursor-pointer px-4 py-2 text-left text-[17px] text-status-negative hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                           disabled={
                             isRowDeleting(folder.id) || isRowUpdating(folder.id)
                           }
