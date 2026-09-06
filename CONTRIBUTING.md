@@ -39,4 +39,3 @@ docs: 개발자 온보딩 보완
 - main으로 직접 merge 전 최소 1명의 리뷰가 필요하다.
 - PR 본문은 .github/pull_request_template.md 형식을 그대로 따른다.
 - PR 본문에 변경 이유와 테스트 방법을 간략히 적는다.
-- PR 생성 및 업데이트 시 변경된 파일 경로에 따라 자동으로 라벨(backend, test, database, monitoring, ci-cd)이 지정되므로 참고한다.
